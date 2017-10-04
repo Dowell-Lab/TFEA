@@ -16,8 +16,11 @@ def run():
     #Choose what type of ranking metric to be used to rank regions of interest:
     rank_metric = "log2fc"
 
+    #Home directory
+    homedir = os.path.dirname(os.path.realpath(__file__))
+
     #Directory where all temp files will be stored
-    filedir = "../files/"
+    filedir = parent_dir(homedir) + '/files/'
 
     #Path to count file. Can be changed if using your own count file. Generated in count_reads module
     count_file = filedir + "count_file.bed"
@@ -47,3 +50,11 @@ def run():
     #Calculates an Enrichment Score and a Normalized Enrichment Score for all specified motifs
     if calculate:
         ES_calculator.run()
+
+
+#Return parent directory
+def parent_dir(directory):
+    pathlist = directory.split('/')
+    newdir = '/'.join(pathlist[0:len(pathlist)-1])
+    
+    return newdir
