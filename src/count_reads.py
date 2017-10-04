@@ -7,14 +7,14 @@ def run(BED,BAM1,BAM2,filedir):
     os.system("bedtools multicov -bams " + " ".join(BAM1) + " " + " ".join(BAM2) + " -bed " + BED + " > " + filedir + "count_file.bed")
 
     #This for loop goes through the count file to record the total number of mapped reads for each BAM file and saves all lines in line_storage to input into an outfile
-    read_totals = [0]*(len(BAM1)+len(BAM2))
+    total_reads = [0]*(len(BAM1)+len(BAM2))
     line_storage = list()
     with open(filedir + "count_file.bed") as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
             counts = [float(x)+1.0 for x in line[3:]]
-            read_totals = [a+b for a,b in zip(read_totals,counts)]
+            total_reads = [a+b for a,b in zip(total_reads,counts)]
             line_storage.append((chrom,start,stop,counts))
 
     #This loop goes through line_storage lines normalizing counts relative to the total counts for the first BAM file then writes all results to count_file.bed
