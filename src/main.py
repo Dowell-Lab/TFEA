@@ -1,7 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
-from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEME
+from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB
 import count_reads
 import rank_regions
 import motif_distance
