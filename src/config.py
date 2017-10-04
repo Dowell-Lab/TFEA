@@ -21,4 +21,4 @@ GENOME = '/full/path/to/genome.fa'
 
 #Specify full path to MEME directory with motif databases. Make sure you have updated the motif databases in MEME using the following command (where MEMEDB is the full path to where MEME databases are located):
 #update-sequence-db MEMEDB
-MEMEDB = '/full/path/to/MEME/databases'
+MEMEDB = '/full/path/to/MEME/databases/'
