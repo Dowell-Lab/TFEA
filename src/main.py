@@ -1,5 +1,6 @@
 __author__ = 'Jonathan Rubin'
 
+import os
 from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME
 import count_reads
 import rank_regions
