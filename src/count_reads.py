@@ -18,7 +18,10 @@ def run(BED,BAM1,BAM2,filedir):
             line_storage.append((chrom,start,stop,counts))
 
     #This loop goes through line_storage lines normalizing counts relative to the total counts for the first BAM file then writes all results to count_file.bed
-    normalization_factors = [total_reads[0]/a for a in total_reads]
+    try:
+        normalization_factors = [total_reads[0]/a for a in total_reads]
+    except ZeroDivisionError:
+        print "One of your BAM files has 0 total reads mapping to your regions of interest"
     outfile = open(filedir + "count_file.bed",'w')
     for line in line_storage:
         chrom,start,stop,counts = line
