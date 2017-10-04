@@ -27,16 +27,22 @@ def run():
 
     #This module counts reads from all Bam files in BAM1 and BAM2 and creates count_file with this info.
     if count:
+        print "Counting reads in regions..."
         count_reads.run(BED,BAM1,BAM2,filedir)
+        print "done"
 
     #This module ranks regions in BED based on some specified metric
     if rank:
+        print "Ranking regions based on " + rank_metric + "..."
         if rank_metric == "log2fc":
-            rank_regions.log2fc(count_file,filedir,BAM1,BAM2)
+            rank_regions.log2fc(count_file,filedir,GENOME,BAM1,BAM2)
+        print "done"
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
     if distance:
+        print "Finding motif hits in regions..."
         motif_distance.run(ranked_file,filedir)
+        print "done"
 
     #Calculates an Enrichment Score and a Normalized Enrichment Score for all specified motifs
     if calculate:

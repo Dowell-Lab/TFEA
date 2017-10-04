@@ -3,7 +3,7 @@ __author__ = 'Jonathan Rubin'
 import math
 import os
 
-def log2fc(count_file,filedir,BAM1,BAM2):
+def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     condition1 = float(len(BAM1))
     condition2 = float(len(BAM2))
     ranks = list()
@@ -21,4 +21,4 @@ def log2fc(count_file,filedir,BAM1,BAM2):
     for region in sorted(ranks, key=lambda x: x[3], reverse=True):
         outfile.write('\t'.join(region[:-1]) + '\n')
 
-    os.system("bedtools getfasta -fi " + genome + " -bed " + filedir + "ranked_file.bed > " + filedir + "ranked_file.fasta")
+    os.system("bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed > " + filedir + "ranked_file.fasta")
