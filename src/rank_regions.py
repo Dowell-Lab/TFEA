@@ -2,6 +2,7 @@ __author__ = 'Jonathan Rubin'
 
 import math
 import os
+import subprocess
 
 def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     #This loop calculates log2fc based on the average normalized counts for all replicates and appends that and chrom,start,stop to a list called ranks
@@ -23,9 +24,9 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
         outfile.write('\t'.join(region[:-1]) + '\n')
 
     #This os.system call uses bedtools to convert the ranked_file.bed into fasta format (ranked_file.fasta)
-    command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
-    os.system(command)
-    print command
+    # command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
+    subprocess.call("bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta")
+    # print command
     # exit_code = os.system("bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta")
     # print exit_code
     # print os.environ
