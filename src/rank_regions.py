@@ -23,6 +23,9 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
         outfile.write('\t'.join(region[:-1]) + '\n')
 
     #This os.system call uses bedtools to convert the ranked_file.bed into fasta format (ranked_file.fasta)
-    exit_code = os.system("bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta")
-    print exit_code
-    print os.environ
+    command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
+    os.system(command)
+    print command
+    # exit_code = os.system("bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta")
+    # print exit_code
+    # print os.environ
