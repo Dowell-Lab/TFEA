@@ -21,7 +21,7 @@ def run(BED,BAM1,BAM2,filedir):
     try:
         normalization_factors = [total_reads[0]/a for a in total_reads]
     except ZeroDivisionError:
-        print "One of your BAM files has 0 total reads mapping to your regions of interest"
+        print "One of your BAM files has 0 reads mapping to your regions of interest"
     outfile = open(filedir + "count_file.bed",'w')
     for line in line_storage:
         chrom,start,stop,counts = line

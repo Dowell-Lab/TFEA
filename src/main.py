@@ -1,7 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
-from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB
+from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,DESEQFILE
 import count_reads
 import rank_regions
 import motif_distance
@@ -15,7 +15,8 @@ def run():
     calculate = True
 
     #Choose what type of ranking metric to be used to rank regions of interest:
-    rank_metric = "log2fc"
+    #Options: "log2fc", "deseqfile"
+    rank_metric = "deseqfile"
 
     #Home directory
     homedir = os.path.dirname(os.path.realpath(__file__))
@@ -40,6 +41,8 @@ def run():
         print "Ranking regions based on " + rank_metric + "..."
         if rank_metric == "log2fc":
             rank_regions.log2fc(count_file,filedir,GENOME,BAM1,BAM2)
+        if rank_metric == "deseqfile":
+            rank_regions.deseqfile()
         print "done"
 
     #Scans ranked BED regions for motifs of interest and records them in distance file

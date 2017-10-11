@@ -13,12 +13,15 @@ LABEL2 = 'Condition2'
 
 #Specify whether you want to run a single motif or a database. By default, TFEA runs on the latest version of HOCMOCO obtained through MEME.
 #Default:False. Change to a motif name if you want to run TFEA on a single motif (make sure your single motif is in the specified database).
-SINGLEMOTIF=False
+SINGLEMOTIF='P53_f2'
 DATABASE='HOCOMOCOv9.meme'
 
 #Specify full path to genome fasta file
-GENOME = '/full/path/to/genome.fa'
+GENOME = '/Users/joru1876/scratch_backup/hg19_reference_files/hg19_all.fa'
 
 #Specify full path to MEME directory with motif databases. Make sure you have updated the motif databases in MEME using the following command (where MEMEDB is the full path to where MEME databases are located):
 #update-sequence-db MEMEDB
-MEMEDB = '/full/path/to/MEME/databases/'
+MEMEDB = '/opt/meme/4.10.1_4/db/motif_databases/HUMAN/'
+
+#Optional: If choosing deseqfile() option for ranking, provide deseq resSig.txt output file
+DESEQFILE = '/full/path/to/DESEQ/FILE.resSig.txt'

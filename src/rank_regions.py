@@ -30,3 +30,26 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     # exit_code = os.system("bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta")
     # print exit_code
     # print os.environ
+
+def deseqfile(DESEQFILE,filedir):
+    ranks = list()
+    with open(DESEQFILE) as F:
+        F.readline()
+        for line in F:
+            try:
+                line = line.strip('\n').split('\t')
+                pval = float(line[-2])
+                chrom,start,stop = line[1].split(',')
+                ranks.append((chrom,start,stop,pval))
+            except ValueError:
+                pass
+
+
+    outfile = open(filedir + "ranked_file.bed",'w')
+    for region in sorted(ranks, key=lambda x: x[3]):
+        outfile.write('\t'.join(region[:-1] + '\n'))
+
+    command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
+    print command
+
+
