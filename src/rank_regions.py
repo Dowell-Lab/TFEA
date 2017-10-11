@@ -47,7 +47,7 @@ def deseqfile(DESEQFILE,filedir):
 
     outfile = open(filedir + "ranked_file.bed",'w')
     for region in sorted(ranks, key=lambda x: x[3]):
-        outfile.write('\t'.join(region[:-1] + '\n'))
+        outfile.write('\t'.join(region[:-1]) + '\n')
 
     command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
     print command
