@@ -31,7 +31,7 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     # print exit_code
     # print os.environ
 
-def deseqfile(DESEQFILE,filedir):
+def deseqfile(DESEQFILE,GENOME,filedir):
     ranks = list()
     with open(DESEQFILE) as F:
         F.readline()
