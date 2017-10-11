@@ -42,7 +42,7 @@ def run():
         if rank_metric == "log2fc":
             rank_regions.log2fc(count_file,filedir,GENOME,BAM1,BAM2)
         if rank_metric == "deseqfile":
-            rank_regions.deseqfile()
+            rank_regions.deseqfile(DESEQFILE,filedir)
         print "done"
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
