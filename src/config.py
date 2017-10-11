@@ -23,5 +23,5 @@ GENOME = '/Users/joru1876/scratch_backup/hg19_reference_files/hg19_all.fa'
 #update-sequence-db MEMEDB
 MEMEDB = '/opt/meme/4.10.1_4/db/motif_databases/HUMAN/'
 
-#Optional: If choosing deseqfile() option for ranking, provide deseq resSig.txt output file
-DESEQFILE = '/full/path/to/DESEQ/FILE.resSig.txt'
+#Optional: If choosing deseqfile() option for ranking, provide deseq res.txt output file
+DESEQFILE = '/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_all_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
