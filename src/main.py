@@ -9,7 +9,7 @@ import ES_calculator
 
 def run():
     #Booleans that allow you to run specific parts of this python package
-    count = True
+    count = False
     rank = True
     distance = True
     calculate = True
