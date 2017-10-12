@@ -39,7 +39,7 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
         for line in F:
             try:
                 line = line.strip('\n').split('\t')
-                pval = float(line[-2])
+                pval = format(line[-2],'.8f')
                 chrom,start,stop = line[1].split(',')
                 chrom = chrom.strip('"')
                 stop = stop.strip('"')
@@ -58,15 +58,11 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
                 b = BedTool(MOTIF_HITS + MOTIF_FILE)
                 c = a.closest(b,d=True)
 
-    ranked_regions = list()
-    for region in c:
-        ranked_regions.append([region[3],region[-1]])
-
 
 
     outfile = open(filedir + "ranked_file.bed",'w')
-    for region in sorted(ranked_regions, key=lambda x: x[0]):
-        outfile.write('\t'.join(region) + '\n')
+    for region in sorted(c, key=lambda x: x[3]):
+        outfile.write('\t'.join([region[3],region[-1]]) + '\n')
 
     # command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
     # print command
