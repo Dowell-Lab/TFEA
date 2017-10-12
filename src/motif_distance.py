@@ -26,7 +26,7 @@ def run(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF):
             if MOTIF_FILE == SINGLEMOTIF:
                 a = BedTool(filedir + "ranked_file.center.bed")
                 b = BedTool(MOTIF_HITS + MOTIF_FILE)
-                c = a.closest(b,d=True)
+                c = a.closest(b,s=True,d=True)
                 print c
                 # .saveas(filedir + "ranked_file.center.distance.bed")
                 # command = "bedtools closest -d -a " + filedir + "ranked_file.center.bed -b " + MOTIF_HITS + MOTIF_FILE + " > " + filedir + "ranked_file.center.distance.bed"
