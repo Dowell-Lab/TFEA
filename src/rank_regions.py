@@ -57,7 +57,7 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
                 a = BedTool(ranks)
                 b = BedTool(MOTIF_HITS + MOTIF_FILE)
                 c = a.closest(b,d=True)
-                print c
+                print c[0]
 
 
     # outfile = open(filedir + "ranked_file.bed",'w')
