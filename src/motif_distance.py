@@ -1,6 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
+from pybedtools import BedTool
 
 def runfimo(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF):
     if os.path.isdir(filedir + "fimo_out/"):
@@ -23,7 +24,8 @@ def run(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF):
     else:
         for MOTIF_FILE in os.listdir(MOTIF_HITS):
             if MOTIF_FILE == SINGLEMOTIF:
-                command = "bedtools closest -d -a " + filedir + "ranked_file.center.bed -b " + MOTIF_HITS + MOTIF_FILE + " > " + filedir + "ranked_file.center.distance.bed"
-                exit_code = os.system(command)
-                print exit_code
-                print command
+                BedTool(filedir + "ranked_file.center.bed").closest(BedTool(MOTIF_HITS + MOTIF_FILE),d=True).saveas(filedir + "ranked_file.center.distance.bed")
+                # command = "bedtools closest -d -a " + filedir + "ranked_file.center.bed -b " + MOTIF_HITS + MOTIF_FILE + " > " + filedir + "ranked_file.center.distance.bed"
+                # exit_code = os.system(command)
+                # print exit_code
+                # print command
