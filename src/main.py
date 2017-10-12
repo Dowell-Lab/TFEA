@@ -11,7 +11,7 @@ def run():
     #Booleans that allow you to run specific parts of this python package
     count = False
     rank = True
-    distance = True
+    distance = False
     calculate = True
 
     #Choose what type of ranking metric to be used to rank regions of interest:
