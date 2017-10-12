@@ -3,6 +3,7 @@ __author__ = 'Jonathan Rubin'
 import math
 import os
 import subprocess
+from pybedtools import BedTool
 
 def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     #This loop calculates log2fc based on the average normalized counts for all replicates and appends that and chrom,start,stop to a list called ranks
@@ -31,7 +32,7 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     # print exit_code
     # print os.environ
 
-def deseqfile(DESEQFILE,GENOME,filedir):
+def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
     ranks = list()
     with open(DESEQFILE) as F:
         F.readline()
@@ -42,16 +43,28 @@ def deseqfile(DESEQFILE,GENOME,filedir):
                 chrom,start,stop = line[1].split(',')
                 chrom = chrom.strip('"')
                 stop = stop.strip('"')
-                ranks.append((chrom,start,stop,pval))
+                center = (int(start)+int(stop))/2
+                ranks.append((chrom,str(center),str(center+1),pval))
             except ValueError:
                 pass
 
 
-    outfile = open(filedir + "ranked_file.bed",'w')
-    for region in sorted(ranks, key=lambda x: x[3]):
-        outfile.write('\t'.join(region[:-1]) + '\n')
+    if SINGLEMOTIF == False:
+        print "This module isn't finished yet"
+    else:
+        for MOTIF_FILE in os.listdir(MOTIF_HITS):
+            if MOTIF_FILE == SINGLEMOTIF:
+                a = BedTool(ranks)
+                b = BedTool(MOTIF_HITS + MOTIF_FILE)
+                c = a.closest(b,d=True)
+                print c
 
-    command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
-    print command
+
+    # outfile = open(filedir + "ranked_file.bed",'w')
+    # for region in sorted(ranks, key=lambda x: x[3]):
+    #     outfile.write('\t'.join(region[:-1]) + '\n')
+
+    # command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
+    # print command
 
 
