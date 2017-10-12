@@ -62,7 +62,7 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
 
     outfile = open(filedir + "ranked_file.bed",'w')
     for region in sorted(c, key=lambda x: x[3]):
-        outfile.write('\t'.join([region[3],region[-1]]) + '\n')
+        outfile.write('\t'.join(region[:3]) + '\t' + region[-1] + '\n')
 
     # command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
     # print command
