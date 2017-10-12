@@ -22,5 +22,7 @@ def run(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF):
         print "This module isn't finished yet"
     else:
         for MOTIF_FILE in os.listdir(MOTIF_HITS):
+            print MOTIF_FILE
             if MOTIF_FILE == SINGLEMOTIF:
-                os.system("bedtools closest -d -a " + filedir + "ranked_file.center.bed -b " + MOTIF_HITS + MOTIF_FILE + " > " + filedir + "ranked_file.center.distance.bed")
+                exit_code = os.system("bedtools closest -d -a " + filedir + "ranked_file.center.bed -b " + MOTIF_HITS + MOTIF_FILE + " > " + filedir + "ranked_file.center.distance.bed")
+                print exit_code
