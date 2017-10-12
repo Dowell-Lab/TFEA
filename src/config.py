@@ -13,7 +13,7 @@ LABEL2 = 'Condition2'
 
 #Specify whether you want to run a single motif or a database. By default, TFEA runs on the latest version of HOCMOCO obtained through MEME.
 #Default:False. Change to a motif name if you want to run TFEA on a single motif (make sure your single motif is in the specified database).
-SINGLEMOTIF='P53_HUMAN.H11MO.0.A'
+SINGLEMOTIF='HO_P53_HUMAN.H10MO.B.bed'
 DATABASE='HOCOMOCOv11_full_HUMAN_mono_meme_format.meme'
 
 #Specify full path to genome fasta file
