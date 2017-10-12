@@ -21,7 +21,7 @@ GENOME = '/Users/joru1876/scratch_backup/hg19_reference_files/hg19_all.fa'
 
 #Specify full path to MEME directory with motif databases. Make sure you have updated the motif databases in MEME using the following command (where MEMEDB is the full path to where MEME databases are located):
 #update-sequence-db MEMEDB
-MEMEDB = '/opt/meme/4.10.1_4/db/motif_databases/HUMAN/'
+MEMEDB = '/Users/joru1876/scratch_backup/TFEA/motif_databases/'
 
-#Optional: If choosing deseqfile() option for ranking, provide deseq res.txt output file
-DESEQFILE = '/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_all_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
+#Optional: If choosing deseqfile() option for ranking, provide deseq res.txt output file 
+DESEQFILE = '/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_SRR3739_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
