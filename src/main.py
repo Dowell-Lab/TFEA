@@ -1,7 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
-from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,DESEQFILE
+from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE
 import count_reads
 import rank_regions
 import motif_distance
@@ -53,7 +53,7 @@ def run():
             motif_distance.runfimo(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF)
         else:
             print "Finding motif hits in regions..."
-            motif_distance.run(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF)
+            motif_distance.run(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF)
         print "done"
 
     #Calculates an Enrichment Score and a Normalized Enrichment Score for all specified motifs
