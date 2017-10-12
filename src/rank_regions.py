@@ -40,6 +40,8 @@ def deseqfile(DESEQFILE,GENOME,filedir):
                 line = line.strip('\n').split('\t')
                 pval = float(line[-2])
                 chrom,start,stop = line[1].split(',')
+                chrom = chrom.strip('"')
+                stop = stop.strip('"')
                 ranks.append((chrom,start,stop,pval))
             except ValueError:
                 pass
