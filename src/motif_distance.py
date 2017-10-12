@@ -11,7 +11,7 @@ def runfimo(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF):
         os.system("fimo -o " + filedir + "fimo_out/ " + "--motif " + SINGLEMOTIF + " " + MEMEDB + DATABASE + " " + ranked_file)
 
 def run(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF):
-    outfile = open(filedir+"ranked_file.center.bed")
+    outfile = open(filedir+"ranked_file.center.bed",'w')
     with open(ranked_file) as F:
         for line in F:
             chrom,start,stop = line.strip('\n').split('\t')
