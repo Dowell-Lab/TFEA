@@ -39,7 +39,7 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
         for line in F:
             try:
                 line = line.strip('\n').split('\t')
-                pval = format(float(line[-2],'.8f'))
+                pval = format(float(line[-2]),'.8f')
                 chrom,start,stop = line[1].split(',')
                 chrom = chrom.strip('"')
                 stop = stop.strip('"')
