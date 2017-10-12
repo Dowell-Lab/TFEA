@@ -47,8 +47,13 @@ def run():
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
     if distance:
-        print "Finding motif hits in regions..."
-        motif_distance.run(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF)
+        fimo = False
+        if fimo:
+            print "Warning: This part of this package is incomplete"
+            motif_distance.runfimo(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF)
+        else:
+            print "Finding motif hits in regions..."
+            motif_distance.run(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF)
         print "done"
 
     #Calculates an Enrichment Score and a Normalized Enrichment Score for all specified motifs
