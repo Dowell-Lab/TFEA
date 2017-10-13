@@ -10,7 +10,7 @@ import ES_calculator
 def run():
     #Booleans that allow you to run specific parts of this python package
     count = False
-    rank = True
+    rank = False
     distance = False
     calculate = True
 
@@ -23,6 +23,8 @@ def run():
 
     #Directory where all temp files will be stored
     filedir = parent_dir(homedir) + '/files/'
+
+    figuredir = parent_dir(homedir) + '/figures/'
 
     #Path to count file. Can be changed if using your own count file. Generated in count_reads module
     count_file = filedir + "count_file.bed"
@@ -55,7 +57,9 @@ def run():
 
     #Calculates an Enrichment Score and a Normalized Enrichment Score for all specified motifs
     if calculate:
-        ES_calculator.run()
+        print "Calculating ES..."
+        ES_calculator.run(filedir + "ranked_file.bed",figuredir)
+        print "done"
 
 
 #Return parent directory

@@ -23,7 +23,7 @@ GENOME = '/Users/joru1876/scratch_backup/hg19_reference_files/hg19_all.fa'
 #update-sequence-db MEMEDB
 MEMEDB = '/Users/joru1876/scratch_backup/TFEA/motif_databases/'
 
-MOTIF_HITS = '/scratch/Shares/dowell/md_score_paper/PSSM_hits_genome_wide/pval-6/'
+MOTIF_HITS = '/scratch/Shares/dowell/md_score_paper/PSSM_hits_genome_wide/pval-7/'
 
 #Optional: If choosing deseqfile() option for ranking, provide deseq res.txt output file 
 DESEQFILE = '/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_SRR3739_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
