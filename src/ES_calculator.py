@@ -1,44 +1,75 @@
 __author__ = 'Jonathan Rubin'
 
 import math
+import os
 import numpy as np
 import matplotlib.pyplot as plt
+import pybedtools as py
+
+def parent_dir(directory):
+    pathlist = directory.split('/')
+    newdir = '/'.join(pathlist[0:len(pathlist)-1])
+    
+    return newdir
 
 def run(ranked_file,figuredir):
+    #Home directory
+    homedir = os.path.dirname(os.path.realpath(__file__))
+
+    #Directory where all temp files will be stored
+    filedir = parent_dir(homedir) + '/files/'
     H = 1500
     ES = list()
-    colors = list()
+    vals = list()
+    redvals = list()
+    redind = list()
+    ind = list()
+    i = 0
+    D = py.BedTool(filedir + 'SRR1105737-1_bidir_predictions.bed')
+    N = py.BedTool(filedir + 'SRR1105739-1_bidir_predictions.bed')
+    R = py.BedTool(ranked_file)
+    R.intersect((N-D),c=True).saveas(ranked_file)
+    pvalcut1 = list()
+    pvalcut2 = list()
     with open(ranked_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
-            val = float(line[-1])
+            val = float(line[4])
+            pval = float(line[3])
+            if pval > 0.05 and len(pvalcut1) == 0:
+                pvalcut1.append(i)
+            if pval > 0.1 and len(pvalcut2) == 0:
+                pvalcut2.append(i)
             if val > H:
-                colors.append(0)
+                pass
             else:
-                colors.append(math.fabs(val-H)/H)
+                vals.append(math.fabs(val-H)/H)
+                ind.append(i)
+                if line[-2] != "0":
+                    redvals.append(math.fabs(val-H)/H)
+                    redind.append(i)
+            i += 1
 
-    ind = np.arange(0,len(colors))
-    ticks = list()
-    for val in colors:
-        if val > 0:
-            ticks.append(1)
-        else:
-            ticks.append(0)
-    F = plt.figure(figsize=(300,20))
+    print len(vals)
+    F = plt.figure(figsize=(30,5))
     # cbar = plt.colorbar(colors)
-    plt.scatter(ind,colors,edgecolor="")
+    plt.scatter(ind,vals,edgecolor="")
+    plt.scatter(redind,redvals,c='r',edgecolor="")
+    plt.axvline(pvalcut1,linestyle='dashed')
+    plt.axvline(pvalcut2,linestyle='dashed')
+    plt.tick_params(
+        axis='y',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        left='off',      # ticks along the bottom edge are off
+        right='off',         # ticks along the top edge are off
+        labelleft='off')
     plt.tick_params(
         axis='x',          # changes apply to the x-axis
         which='both',      # both major and minor ticks are affected
         bottom='off',      # ticks along the bottom edge are off
         top='off',         # ticks along the top edge are off
         labelbottom='off')
-    plt.tick_params(
-        axis='y',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom='off',      # ticks along the bottom edge are off
-        top='off',         # ticks along the top edge are off
-        labelbottom='off')
+    plt.xlim((ind[0],ind[-1]))
     plt.savefig(figuredir + 'test.png')
 
     plt.close()

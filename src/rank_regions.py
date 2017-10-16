@@ -33,7 +33,8 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     # print os.environ
 
 def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
-    ranks = list()
+    rankup = list()
+    rankdown = list()
     with open(DESEQFILE) as F:
         F.readline()
         for line in F:
@@ -44,7 +45,11 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
                 chrom = chrom.strip('"')
                 stop = stop.strip('"')
                 center = (int(start)+int(stop))/2
-                ranks.append((chrom,str(center),str(center+1),pval))
+                fc = float(line[5])
+                if fc > 1:
+                    rankup.append((chrom,str(center),str(center+1),pval))
+                else:
+                    rankdown.append((chrom,str(center),str(center+1),pval))
             except ValueError:
                 pass
 
@@ -54,14 +59,20 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
     else:
         for MOTIF_FILE in os.listdir(MOTIF_HITS):
             if MOTIF_FILE == SINGLEMOTIF:
-                a = BedTool(ranks)
+                a = BedTool(rankup)
                 b = BedTool(MOTIF_HITS + MOTIF_FILE)
                 c = a.closest(b,d=True)
+                d = BedTool(rankdown)
+                e = d.closest(b,d=True)
 
 
 
-    outfile = open(filedir + "ranked_file.bed",'w')
+    outfile = open(filedir + "ranked_file_up.bed",'w')
     for region in sorted(c, key=lambda x: x[3]):
+        outfile.write('\t'.join(region[:4]) + '\t' + region[-1] + '\n')
+
+    outfile = open(filedir + "ranked_file_down.bed",'w')
+    for region in sorted(e, key=lambda x: x[3]):
         outfile.write('\t'.join(region[:4]) + '\t' + region[-1] + '\n')
 
 
