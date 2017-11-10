@@ -2,6 +2,10 @@
 
 ###Name the job
 #SBATCH --job-name=TFEA
+
+###Specify the queue
+#SBATCH -p long
+
 ### Specify the number of nodes/cores
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
