@@ -26,4 +26,4 @@ MEMEDB = '/scratch/Users/joru1876/scratch_backup/TFEA/motif_databases/'
 MOTIF_HITS = '/scratch/Shares/dowell/md_score_paper/PSSM_hits_genome_wide/pval-7/'
 
 #Optional: If choosing deseqfile() option for ranking, provide deseq res.txt output file 
-DESEQFILE = '/scratch/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_SRR3739_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
+DESEQFILE = '/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_SRR3739_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
