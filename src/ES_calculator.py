@@ -90,7 +90,7 @@ def run(ranked_center_distance_file,figuredir,filedir):
         for line in F:
             line = line.strip('\n').split('\t')
             val = float(line[-1])
-            r = int(line[-2])
+            r = int(line[4])
             total += 1
             if val > H:
                 pass

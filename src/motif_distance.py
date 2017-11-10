@@ -34,8 +34,6 @@ def run(ranked_file,filedir,MOTIF_PATH):
     command = "bedtools closest -d -a " + filedir + "ranked_file.center.sorted.bed -b " + MOTIF_PATH + " > " + filedir + "ranked_file.center.sorted.distance.bed"
     os.system("sortBed -i " + filedir + "ranked_file.center.bed > " + filedir + "ranked_file.center.sorted.bed")
     exit_code = os.system(command)
-    print exit_code
-    print command
 
 def run_pybedtools(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF):
     #Get center base for each region
