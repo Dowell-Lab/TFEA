@@ -95,7 +95,7 @@ def run(ranked_center_distance_file,figuredir,filedir):
             if val > H:
                 pass
             else:
-                vals.append(math.fabs(val-H)/H)
+                vals.append(val)
                 ind.append(r)
                 distance_sum += H-val
 
