@@ -63,7 +63,7 @@ def run():
                     motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE,SINGLEMOTIF)
                     if calculate:
                         ES.append((ES_calculator.run(ranked_center_distance_file,figuredir,filedir),MOTIF_FILE))
-        print "done"
+        print ES
 
 
 #Return parent directory

@@ -1,7 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
-from pybedtools import BedTool
+# from pybedtools import BedTool
 
 def runfimo(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF):
     #This os.system call uses bedtools to convert the ranked_file.bed into fasta format (ranked_file.fasta)
@@ -46,20 +46,20 @@ def run_pybedtools(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF):
 
     #Get closest motif hit to center base of each region
 
-    if SINGLEMOTIF == False:
-        for MOTIF_FILE in os.listdir(MOTIF_HITS):
-            a = BedTool(filedir + "ranked_file.center.bed")
-            b = BedTool(MOTIF_HITS + MOTIF_FILE)
-            c = a.closest(b,d=True)
-            c.saveas(filedir + "ranked_file.center.distance.bed")
-    else:
-        for MOTIF_FILE in os.listdir(MOTIF_HITS):
-            if MOTIF_FILE == SINGLEMOTIF:
-                a = BedTool(filedir + "ranked_file.center.bed")
-                b = BedTool(MOTIF_HITS + MOTIF_FILE)
-                c = a.closest(b,d=True)
-                c.saveas(filedir + "ranked_file.center.distance.bed")
-                # command = "bedtools closest -d -a " + filedir + "ranked_file.center.bed -b " + MOTIF_HITS + MOTIF_FILE + " > " + filedir + "ranked_file.center.distance.bed"
-                # exit_code = os.system(command)
-                # print exit_code
-                # print command
+    # if SINGLEMOTIF == False:
+    #     for MOTIF_FILE in os.listdir(MOTIF_HITS):
+    #         a = BedTool(filedir + "ranked_file.center.bed")
+    #         b = BedTool(MOTIF_HITS + MOTIF_FILE)
+    #         c = a.closest(b,d=True)
+    #         c.saveas(filedir + "ranked_file.center.distance.bed")
+    # else:
+    #     for MOTIF_FILE in os.listdir(MOTIF_HITS):
+    #         if MOTIF_FILE == SINGLEMOTIF:
+    #             a = BedTool(filedir + "ranked_file.center.bed")
+    #             b = BedTool(MOTIF_HITS + MOTIF_FILE)
+    #             c = a.closest(b,d=True)
+    #             c.saveas(filedir + "ranked_file.center.distance.bed")
+    #             # command = "bedtools closest -d -a " + filedir + "ranked_file.center.bed -b " + MOTIF_HITS + MOTIF_FILE + " > " + filedir + "ranked_file.center.distance.bed"
+    #             # exit_code = os.system(command)
+    #             # print exit_code
+    #             # print command

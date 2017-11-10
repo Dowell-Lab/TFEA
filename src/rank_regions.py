@@ -3,7 +3,7 @@ __author__ = 'Jonathan Rubin'
 import math
 import os
 import subprocess
-from pybedtools import BedTool
+# from pybedtools import BedTool
 
 def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     #This loop calculates log2fc based on the average normalized counts for all replicates and appends that and chrom,start,stop to a list called ranks
@@ -47,16 +47,16 @@ def deseqfile_up_down(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
                 pass
 
 
-    if SINGLEMOTIF == False:
-        print "This module isn't finished yet"
-    else:
-        for MOTIF_FILE in os.listdir(MOTIF_HITS):
-            if MOTIF_FILE == SINGLEMOTIF:
-                a = BedTool(rankup)
-                b = BedTool(MOTIF_HITS + MOTIF_FILE)
-                c = a.closest(b,d=True)
-                d = BedTool(rankdown)
-                e = d.closest(b,d=True)
+    # if SINGLEMOTIF == False:
+    #     print "This module isn't finished yet"
+    # else:
+    #     for MOTIF_FILE in os.listdir(MOTIF_HITS):
+    #         if MOTIF_FILE == SINGLEMOTIF:
+    #             a = BedTool(rankup)
+    #             b = BedTool(MOTIF_HITS + MOTIF_FILE)
+    #             c = a.closest(b,d=True)
+    #             d = BedTool(rankdown)
+    #             e = d.closest(b,d=True)
 
 
 
