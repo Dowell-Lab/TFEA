@@ -61,7 +61,7 @@ def run():
                 ES = list()
                 i=0
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
-                    if i > 1:
+                    if i > 0:
                         break
                     motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
                     if calculate:
