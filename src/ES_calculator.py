@@ -103,7 +103,7 @@ def run(ranked_center_distance_file,figuredir,filedir):
         if i in ind:
             ES += (H-vals[ind.index(i)])/float(distance_sum)
         else:
-            ES += -1/(len(total)-len(ind))
+            ES += -1/(total-len(ind))
 
     # F = plt.figure(figsize=(30,5))
     # # cbar = plt.colorbar(colors)
