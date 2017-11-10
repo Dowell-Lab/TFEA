@@ -11,7 +11,7 @@ def run():
     #Booleans that allow you to run specific parts of this python package
     count = False
     rank = False
-    distance = False
+    distance = True
     calculate = True
 
     #Choose what type of ranking metric to be used to rank regions of interest:
@@ -28,6 +28,11 @@ def run():
 
     #Path to count file. Can be changed if using your own count file. Generated in count_reads module
     count_file = filedir + "count_file.bed"
+
+    #Path to ranked file. Can be changed if using your own ranked file. Generated in rank_regions module
+    ranked_file = filedir + "ranked_file.bed"
+
+    ranked_center_distance_file = filedir + "ranked_file.center.distance.bed"
 
     #This module counts reads from all Bam files in BAM1 and BAM2 and creates count_file with this info.
     if count:
@@ -49,16 +54,15 @@ def run():
         fimo = False
         if fimo:
             print "Warning: This part of this package is incomplete"
-            motif_distance.runfimo(filedir + "ranked_file.fasta",filedir,MEMEDB,DATABASE,SINGLEMOTIF)
+            motif_distance.runfimo(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF)
         else:
             print "Finding motif hits in regions..."
-            motif_distance.run(filedir + "ranked_file.bed",filedir,MOTIF_HITS,SINGLEMOTIF)
-        print "done"
-
-    #Calculates an Enrichment Score and a Normalized Enrichment Score for all specified motifs
-    if calculate:
-        print "Calculating ES..."
-        ES_calculator.run(filedir + "ranked_file.bed",figuredir)
+            if SINGLEMOTIF == False:
+                ES = list()
+                for MOTIF_FILE in os.listdir(MOTIF_HITS):
+                    motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE,SINGLEMOTIF)
+                    if calculate:
+                        ES.append((ES_calculator.run(ranked_center_distance_file,figuredir,filedir),MOTIF_FILE))
         print "done"
 
 

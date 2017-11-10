@@ -12,56 +12,106 @@ def parent_dir(directory):
     
     return newdir
 
-def run(ranked_file,figuredir):
+def run_deseq(ranked_file,figuredir):
     #Home directory
     homedir = os.path.dirname(os.path.realpath(__file__))
 
     #Directory where all temp files will be stored
     filedir = parent_dir(homedir) + '/files/'
+
+    ranked_files = [filedir + 'ranked_file_up.bed',filedir + 'ranked_file_down.bed']
+    for ranked_file in ranked_files:
+        H = 1500
+        ES = list()
+        vals = list()
+        redvals = list()
+        redind = list()
+        ind = list()
+        i = 0
+        D = py.BedTool(filedir + 'SRR1105737-1_bidir_predictions.bed')
+        N = py.BedTool(filedir + 'SRR1105739-1_bidir_predictions.bed')
+        R = py.BedTool(ranked_file)
+        R.intersect((N-D),c=True).saveas(ranked_file)
+        pvalcut1 = list()
+        pvalcut2 = list()
+        with open(ranked_file) as F:
+            for line in F:
+                line = line.strip('\n').split('\t')
+                val = float(line[4])
+                pval = float(line[3])
+                if pval > 0.05 and len(pvalcut1) == 0:
+                    pvalcut1.append(i)
+                if pval > 0.1 and len(pvalcut2) == 0:
+                    pvalcut2.append(i)
+                if val > H:
+                    pass
+                else:
+                    vals.append(math.fabs(val-H)/H)
+                    ind.append(i)
+                    if line[-2] != "0":
+                        redvals.append(math.fabs(val-H)/H)
+                        redind.append(i)
+                i += 1
+
+        print len(vals)
+        F = plt.figure(figsize=(30,5))
+        # cbar = plt.colorbar(colors)
+        plt.scatter(ind,vals,edgecolor="")
+        plt.scatter(redind,redvals,c='r',edgecolor="")
+        plt.axvline(pvalcut1,linestyle='dashed')
+        plt.axvline(pvalcut2,linestyle='dashed')
+        plt.tick_params(
+            axis='y',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            left='off',      # ticks along the bottom edge are off
+            right='off',         # ticks along the top edge are off
+            labelleft='off')
+        plt.tick_params(
+            axis='x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom='off',      # ticks along the bottom edge are off
+            top='off',         # ticks along the top edge are off
+            labelbottom='off')
+        plt.xlim((ind[0],ind[-1]))
+        plt.savefig(figuredir + ranked_file.split('/')[-1] + 'test.png')
+
+        plt.close()
+
+def run(ranked_center_distance_file,figuredir,filedir):
     H = 1500
-    ES = list()
+    ES = 0
     vals = list()
-    redvals = list()
-    redind = list()
     ind = list()
+    total = 0
+    distance_sum = 0
     i = 0
-    D = py.BedTool(filedir + 'SRR1105737-1_bidir_predictions.bed')
-    N = py.BedTool(filedir + 'SRR1105739-1_bidir_predictions.bed')
-    R = py.BedTool(ranked_file)
-    R.intersect((N-D),c=True).saveas(ranked_file)
-    pvalcut1 = list()
-    pvalcut2 = list()
-    with open(ranked_file) as F:
+    with open(ranked_center_distance_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
-            val = float(line[4])
-            pval = float(line[3])
-            if pval > 0.05 and len(pvalcut1) == 0:
-                pvalcut1.append(i)
-            if pval > 0.1 and len(pvalcut2) == 0:
-                pvalcut2.append(i)
+            val = float(line[-1])
+            total += 1
             if val > H:
                 pass
             else:
                 vals.append(math.fabs(val-H)/H)
                 ind.append(i)
-                if line[-2] != "0":
-                    redvals.append(math.fabs(val-H)/H)
-                    redind.append(i)
+                distance_sum += H-d
             i += 1
 
-    print len(vals)
+    for i in range(total):
+        if i in ind:
+            ES += (H-vals[i])/float(distance_sum)
+        else:
+            ES += -1/(len(total)-len(ind))
+
     F = plt.figure(figsize=(30,5))
     # cbar = plt.colorbar(colors)
     plt.scatter(ind,vals,edgecolor="")
-    plt.scatter(redind,redvals,c='r',edgecolor="")
-    plt.axvline(pvalcut1,linestyle='dashed')
-    plt.axvline(pvalcut2,linestyle='dashed')
     plt.tick_params(
         axis='y',          # changes apply to the x-axis
         which='both',      # both major and minor ticks are affected
-        left='off',      # ticks along the bottom edge are off
-        right='off',         # ticks along the top edge are off
+        left='off',        # ticks along the bottom edge are off
+        right='off',       # ticks along the top edge are off
         labelleft='off')
     plt.tick_params(
         axis='x',          # changes apply to the x-axis
@@ -70,6 +120,9 @@ def run(ranked_file,figuredir):
         top='off',         # ticks along the top edge are off
         labelbottom='off')
     plt.xlim((ind[0],ind[-1]))
-    plt.savefig(figuredir + 'test.png')
+    plt.savefig(figuredir + ranked_file.split('/')[-1] + '.png')
 
     plt.close()
+
+    return ES
+

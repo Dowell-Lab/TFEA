@@ -22,17 +22,10 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
     #Creates an out file called ranked_file.bed which just has chrom,start,stop for all regions sorted by log2fc
     outfile = open(filedir + "ranked_file.bed",'w')
     for region in sorted(ranks, key=lambda x: x[3], reverse=True):
-        outfile.write('\t'.join(region[:-1]) + '\n')
+        outfile.write('\t'.join(region) + '\n')
 
-    #This os.system call uses bedtools to convert the ranked_file.bed into fasta format (ranked_file.fasta)
-    command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
-    print command
-    subprocess.call(command,shell=True)
-    # exit_code = os.system("bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta")
-    # print exit_code
-    # print os.environ
 
-def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
+def deseqfile_up_down(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
     rankup = list()
     rankdown = list()
     with open(DESEQFILE) as F:
@@ -74,5 +67,28 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
     outfile = open(filedir + "ranked_file_down.bed",'w')
     for region in sorted(e, key=lambda x: x[3]):
         outfile.write('\t'.join(region[:4]) + '\t' + region[-1] + '\n')
+
+
+def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
+    #Parse a deseq file and obtain the exact middle of each region (for motif distance calc later) and pvalue (to rank)
+    ranked = list()
+    with open(DESEQFILE) as F:
+        F.readline()
+        for line in F:
+            try:
+                line = line.strip('\n').split('\t')
+                pval = format(float(line[-2]),'.12f')
+                chrom,start,stop = line[1].split(',')
+                chrom = chrom.strip('"')
+                stop = stop.strip('"')
+                ranked.append((chrom,start,stop,pval))
+            except ValueError:
+                pass
+
+    #Save ranked regions in a bed file (pvalue included)
+    outfile = open(filedir + "ranked_file.bed",'w')
+    for region in sorted(c, key=lambda x: x[3]):
+        outfile.write('\t'.join(region) + '\n')
+
 
 

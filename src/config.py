@@ -21,9 +21,9 @@ GENOME = '/Users/joru1876/scratch_backup/hg19_reference_files/hg19_all.fa'
 
 #Specify full path to MEME directory with motif databases. Make sure you have updated the motif databases in MEME using the following command (where MEMEDB is the full path to where MEME databases are located):
 #update-sequence-db MEMEDB
-MEMEDB = '/Users/joru1876/scratch_backup/TFEA/motif_databases/'
+MEMEDB = '/scratch/Users/joru1876/scratch_backup/TFEA/motif_databases/'
 
 MOTIF_HITS = '/scratch/Shares/dowell/md_score_paper/PSSM_hits_genome_wide/pval-7/'
 
 #Optional: If choosing deseqfile() option for ranking, provide deseq res.txt output file 
-DESEQFILE = '/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_SRR3739_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
+DESEQFILE = '/scratch/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_SRR3739_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
