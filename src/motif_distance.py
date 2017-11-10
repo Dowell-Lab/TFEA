@@ -25,7 +25,7 @@ def run(ranked_file,filedir,MOTIF_PATH):
     outfile = open(filedir+"ranked_file.center.bed",'w')
     with open(ranked_file) as F:
         for line in F:
-            chrom,start,stop = line.strip('\n').split('\t')
+            chrom,start,stop = line.strip('\n').split('\t')[:3]
             center = (int(start)+int(stop))/2
             outfile.write(chrom + '\t' + str(center) + '\t' + str(center+1) + '\n')
 
