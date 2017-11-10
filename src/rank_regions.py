@@ -87,8 +87,10 @@ def deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
 
     #Save ranked regions in a bed file (pvalue included)
     outfile = open(filedir + "ranked_file.bed",'w')
+    r=1
     for region in sorted(ranked, key=lambda x: x[3]):
-        outfile.write('\t'.join(region) + '\n')
+        outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
+        r += 1
 
 
 

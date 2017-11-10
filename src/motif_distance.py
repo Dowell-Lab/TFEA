@@ -30,7 +30,8 @@ def run(ranked_file,filedir,MOTIF_PATH):
             outfile.write(chrom + '\t' + str(center) + '\t' + str(center+1) + '\n')
 
     #Get closest motif hit to center base of each region
-    command = "bedtools closest -d -a " + filedir + "ranked_file.center.bed -b " + MOTIF_PATH + " > " + filedir + "ranked_file.center.distance.bed"
+    command = "bedtools closest -d -a " + filedir + "ranked_file.center.sorted.bed -b " + MOTIF_PATH + " > " + filedir + "ranked_file.center.sorted.distance.bed"
+    os.system("sortBed -i " + filedir + "ranked_file.center.bed > " + filedir + "ranked_file.center.sorted.bed")
     exit_code = os.system(command)
     print exit_code
     print command

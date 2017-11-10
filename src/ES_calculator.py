@@ -86,19 +86,18 @@ def run(ranked_center_distance_file,figuredir,filedir):
     ind = list()
     total = 0
     distance_sum = 0
-    i = 0
     with open(ranked_center_distance_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
             val = float(line[-1])
+            r = int(line[-2])
             total += 1
             if val > H:
                 pass
             else:
                 vals.append(math.fabs(val-H)/H)
-                ind.append(i)
+                ind.append(r)
                 distance_sum += H-d
-            i += 1
 
     for i in range(total):
         if i in ind:
