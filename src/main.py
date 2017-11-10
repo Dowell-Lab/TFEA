@@ -32,7 +32,7 @@ def run():
     #Path to ranked file. Can be changed if using your own ranked file. Generated in rank_regions module
     ranked_file = filedir + "ranked_file.bed"
 
-    ranked_center_distance_file = filedir + "ranked_file.center.distance.bed"
+    ranked_center_distance_file = filedir + "ranked_file.center.sorted.distance.bed"
 
     #This module counts reads from all Bam files in BAM1 and BAM2 and creates count_file with this info.
     if count:
