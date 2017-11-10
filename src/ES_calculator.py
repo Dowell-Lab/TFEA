@@ -101,7 +101,7 @@ def run(ranked_center_distance_file,figuredir,filedir):
 
     for i in range(total):
         if i in ind:
-            ES += (H-vals[ind.index(i)])/float(distance_sum)
+            ES += float((H-vals[ind.index(i)]))/float(distance_sum)
         else:
             ES += -1.0/(total-len(ind))
 
