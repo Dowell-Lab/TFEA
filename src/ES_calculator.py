@@ -1,12 +1,12 @@
 __author__ = 'Jonathan Rubin'
 
-import matplotlib
-matplotlib.use('Agg')
+# import matplotlib
+# matplotlib.use('Agg')
 import math
 import os
 import numpy as np
-import matplotlib.pyplot as plt
-import pybedtools as py
+# import matplotlib.pyplot as plt
+# import pybedtools as py
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -106,25 +106,25 @@ def run(ranked_center_distance_file,figuredir,filedir):
         else:
             ES += -1/(len(total)-len(ind))
 
-    F = plt.figure(figsize=(30,5))
-    # cbar = plt.colorbar(colors)
-    plt.scatter(ind,vals,edgecolor="")
-    plt.tick_params(
-        axis='y',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        left='off',        # ticks along the bottom edge are off
-        right='off',       # ticks along the top edge are off
-        labelleft='off')
-    plt.tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom='off',      # ticks along the bottom edge are off
-        top='off',         # ticks along the top edge are off
-        labelbottom='off')
-    plt.xlim((ind[0],ind[-1]))
-    plt.savefig(figuredir + ranked_file.split('/')[-1] + '.png')
+    # F = plt.figure(figsize=(30,5))
+    # # cbar = plt.colorbar(colors)
+    # plt.scatter(ind,vals,edgecolor="")
+    # plt.tick_params(
+    #     axis='y',          # changes apply to the x-axis
+    #     which='both',      # both major and minor ticks are affected
+    #     left='off',        # ticks along the bottom edge are off
+    #     right='off',       # ticks along the top edge are off
+    #     labelleft='off')
+    # plt.tick_params(
+    #     axis='x',          # changes apply to the x-axis
+    #     which='both',      # both major and minor ticks are affected
+    #     bottom='off',      # ticks along the bottom edge are off
+    #     top='off',         # ticks along the top edge are off
+    #     labelbottom='off')
+    # plt.xlim((ind[0],ind[-1]))
+    # plt.savefig(figuredir + ranked_file.split('/')[-1] + '.png')
 
-    plt.close()
+    # plt.close()
 
     return ES
 
