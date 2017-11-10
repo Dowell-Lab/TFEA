@@ -54,13 +54,13 @@ def run():
         fimo = False
         if fimo:
             print "Warning: This part of this package is incomplete"
-            motif_distance.runfimo(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF)
+            motif_distance.runfimo(ranked_file,filedir,MEMEDB,DATABASE)
         else:
             print "Finding motif hits in regions..."
             if SINGLEMOTIF == False:
                 ES = list()
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
-                    motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE,SINGLEMOTIF)
+                    motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
                     if calculate:
                         ES.append((ES_calculator.run(ranked_center_distance_file,figuredir,filedir),MOTIF_FILE))
                 print ES
