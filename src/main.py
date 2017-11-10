@@ -59,14 +59,10 @@ def run():
             print "Finding motif hits in regions..."
             if SINGLEMOTIF == False:
                 ES = list()
-                i=0
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
-                    if i > 0:
-                        break
                     motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
                     if calculate:
                         ES.append((ES_calculator.run(ranked_center_distance_file,figuredir,filedir),MOTIF_FILE))
-                    i += 1
                 print ES
         print "done"
 
