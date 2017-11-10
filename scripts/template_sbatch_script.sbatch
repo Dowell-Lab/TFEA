@@ -23,8 +23,8 @@
 ### Load required modules
 module load bedtools/2.25.0
 module load meme/4.12.0
-module load python/2.7.14/pybedtools/0.7.8
-module load python/3.6.3/matplotlib/1.5.1
+###module load python/2.7.14/pybedtools/0.7.8
+module load python/2.7.14/matplotlib/1.5.1
 
 ### now call your program
 
