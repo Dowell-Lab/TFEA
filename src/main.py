@@ -64,6 +64,9 @@ def run():
                     if calculate:
                         ES.append((ES_calculator.run(ranked_center_distance_file,figuredir,filedir),MOTIF_FILE))
                 print ES
+                outfile = open(filedir + 'results.txt', 'w')
+                for val in sorted(ES, key=lambda x: x[0]):
+                    outfile.write('\t'.join(val) + '\n')
         print "done"
 
 
