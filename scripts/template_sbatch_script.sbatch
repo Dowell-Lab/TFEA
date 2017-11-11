@@ -14,7 +14,7 @@
 #SBATCH --mem=10gb
 
 ### Set your expected walltime
-#SBATCH --time=100:00:00
+#SBATCH --time=20:00:00
 
 ### Setting to mail when the job is complete
 #SBATCH --error /scratch/Users/joru1876/e_and_o/
