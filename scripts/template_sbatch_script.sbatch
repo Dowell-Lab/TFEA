@@ -22,6 +22,7 @@
 #SBATCH --mail-user=joru1876@colorado.edu
 
 ### Load required modules
+module load python/2.7.14
 module load bedtools/2.25.0
 module load meme/4.12.0
 ###module load python/2.7.14/pybedtools/0.7.8
