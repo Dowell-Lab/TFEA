@@ -14,8 +14,8 @@
 #SBATCH --mem=10gb
 
 ### Setting to mail when the job is complete
-#SBATCH --error /scratch/Users/joru1876/e_and_o/
-#SBATCH --output /scratch/Users/joru1876/e_and_o/  
+#SBATCH --error /scratch/Users/joru1876/e_and_o/%x.err
+#SBATCH --output /scratch/Users/joru1876/e_and_o/%x.out
 
 ### Set your email address
 #SBATCH --mail-type=ALL
