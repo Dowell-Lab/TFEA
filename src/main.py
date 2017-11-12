@@ -66,7 +66,7 @@ def run():
                 print ES
                 outfile = open(filedir + 'results.txt', 'w')
                 for val in sorted(ES, key=lambda x: x[0]):
-                    outfile.write('\t'.join(val) + '\n')
+                    outfile.write(str(val[0]) + '\t' + str(val[1]) + '\n')
         print "done"
 
 
