@@ -79,9 +79,10 @@ def run_deseq(ranked_file,figuredir):
 
         plt.close()
 
-def run(ranked_center_distance_file,figuredir,filedir):
+def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     H = 1500
-    ES = 0
+    ES = list()
+    Eval = 0
     vals = list()
     ind = list()
     total = 0
@@ -101,9 +102,11 @@ def run(ranked_center_distance_file,figuredir,filedir):
 
     for i in range(total):
         if i in ind:
-            ES += float((H-vals[ind.index(i)]))/float(distance_sum)
+            Eval += float((H-vals[ind.index(i)]))/float(distance_sum)
+            ES.append(Eval)
         else:
-            ES += -1.0/(total-len(ind))
+            Eval += -1.0/(total-len(ind))
+            ES.append(Eval)
 
     # F = plt.figure(figsize=(30,5))
     # # cbar = plt.colorbar(colors)
@@ -125,5 +128,5 @@ def run(ranked_center_distance_file,figuredir,filedir):
 
     # plt.close()
 
-    return ES
+    return abs(max(ES,key=abs))
 

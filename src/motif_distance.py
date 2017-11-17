@@ -3,6 +3,15 @@ __author__ = 'Jonathan Rubin'
 import os
 # from pybedtools import BedTool
 
+def get_line_count(MOTIF_FILE):
+    i = 0
+    with open(MOTIF_FILE) as F:
+        for line in F:
+            i += 1
+
+    return i
+
+
 def runfimo(ranked_file,filedir,MEMEDB,DATABASE,SINGLEMOTIF):
     #This os.system call uses bedtools to convert the ranked_file.bed into fasta format (ranked_file.fasta)
     # command = "bedtools getfasta -fi " + GENOME + " -bed " + filedir + "ranked_file.bed -fo " + filedir + "ranked_file.fasta"
@@ -34,6 +43,8 @@ def run(ranked_file,filedir,MOTIF_PATH):
     command = "bedtools closest -d -a " + filedir + "ranked_file.center.sorted.bed -b " + MOTIF_PATH + " > " + filedir + "ranked_file.center.sorted.distance.bed"
     os.system("sortBed -i " + filedir + "ranked_file.center.bed > " + filedir + "ranked_file.center.sorted.bed")
     exit_code = os.system(command)
+
+    return get_line_count(MOTIF_PATH)
 
 def run_pybedtools(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF):
     #Get center base for each region
