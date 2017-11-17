@@ -60,10 +60,9 @@ def run():
             if SINGLEMOTIF == False:
                 ES = list()
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
-                    if 'P53' in MOTIF_FILE:
-                        total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
-                        if calculate:
-                            ES.append((ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits),MOTIF_FILE))
+                    total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
+                    if calculate:
+                        ES.append((ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits),MOTIF_FILE))
                 print ES
                 outfile = open(filedir + 'results.txt', 'w')
                 for val in sorted(ES, key=lambda x: x[0]):
