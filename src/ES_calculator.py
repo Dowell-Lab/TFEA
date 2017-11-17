@@ -128,5 +128,5 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
     # plt.close()
 
-    return abs(max(ES,key=abs))
+    return max(ES,key=abs)
 
