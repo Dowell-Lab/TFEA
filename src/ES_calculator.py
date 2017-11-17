@@ -48,7 +48,7 @@ def run_deseq(ranked_file,figuredir):
                     print i
                 if pval > 0.1 and len(pvalcut2) == 0:
                     pvalcut2.append(i)
-                    prnt "pval < 0.01"
+                    print "pval < 0.01"
                     print len(vals)
                     print i
                 if val > H:
