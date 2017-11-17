@@ -67,6 +67,10 @@ def run():
                 outfile = open(filedir + 'results.txt', 'w')
                 for val in sorted(ES, key=lambda x: x[0]):
                     outfile.write(str(val[0]) + '\t' + str(val[1]) + '\n')
+
+            else:
+                total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+SINGLEMOTIF)
+                ES_calculator.run_deseq(ranked_center_distance_file,figuredir)
         print "done"
 
 
