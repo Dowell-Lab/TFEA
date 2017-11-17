@@ -1,12 +1,12 @@
 __author__ = 'Jonathan Rubin'
 
-# import matplotlib
-# matplotlib.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 import math
 import os
 import numpy as np
-# import matplotlib.pyplot as plt
-# import pybedtools as py
+import matplotlib.pyplot as plt
+import pybedtools as py
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -43,8 +43,14 @@ def run_deseq(ranked_file,figuredir):
                 pval = float(line[3])
                 if pval > 0.05 and len(pvalcut1) == 0:
                     pvalcut1.append(i)
+                    print "pval < 0.05"
+                    print len(vals)
+                    print i
                 if pval > 0.1 and len(pvalcut2) == 0:
                     pvalcut2.append(i)
+                    prnt "pval < 0.01"
+                    print len(vals)
+                    print i
                 if val > H:
                     pass
                 else:
