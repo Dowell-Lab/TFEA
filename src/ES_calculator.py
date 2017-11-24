@@ -44,13 +44,13 @@ def run_deseq(ranked_file,figuredir):
                 if pval > 0.05 and len(pvalcut1) == 0:
                     pvalcut1.append(i)
                     print "pval < 0.05"
-                    print len(vals)
-                    print i
+                    print 'positives:',len(vals)
+                    print 'total',i
                 if pval > 0.1 and len(pvalcut2) == 0:
                     pvalcut2.append(i)
                     print "pval < 0.01"
-                    print len(vals)
-                    print i
+                    print 'positives',len(vals)
+                    print 'total',i
                 if val > H:
                     pass
                 else:
