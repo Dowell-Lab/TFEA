@@ -41,3 +41,4 @@ if __name__ == "__main__":
     DMSO = '/scratch/Shares/dowell/md_score_paper/tfit_bed_files/human/recent/SRR1105737-1_K_models_MLE.tsv'
     Nutlin = '/scratch/Shares/dowell/md_score_paper/tfit_bed_files/human/recent/SRR1105739-1_K_models_MLE.tsv'
     deseq = '/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_SRR3739_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
+    run(DMSO,Nutlin,deseq)
