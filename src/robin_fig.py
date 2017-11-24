@@ -28,7 +28,7 @@ def run(DMSO,Nutlin,deseq):
                     i = 0
                 if i == 2:
                     line = line.strip('\n').split('\t')
-                    mu = float(line[2])
+                    mu = float(line[1])
                     interval.append(mu)
                     d[interval[0]].append(interval[1:])
                 i += 1
