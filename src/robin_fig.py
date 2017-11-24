@@ -64,7 +64,7 @@ def run(DMSO,Nutlin,deseq,P53):
                     line = line.strip('\n').split('|')
                     chrom = line[1].split(':')[0]
                     start,stop = line[1].split(':')[1].split('-')
-                    if chrom not in d1:
+                    if chrom not in d2:
                         d2[chrom] = list()
                     interval.append(chrom)
                     interval.append(int(start))
