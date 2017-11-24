@@ -30,7 +30,7 @@ def run(DMSO,Nutlin,deseq,P53):
                 regions.append((chrom,int(start),int(stop),pval))
 
     sorted_regions = sorted(regions,key=lambda x: x[3])
-    print sorted_regions
+    print regions
 
     d = dict()
     with open(DMSO) as F:
