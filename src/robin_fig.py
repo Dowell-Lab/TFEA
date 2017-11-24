@@ -25,8 +25,8 @@ def run(DMSO,Nutlin,deseq,P53):
             line = line.strip('\n').split('\t')
             if 'e' in line[-2]:
                 print line[-2]
-                print format(float(line[-2]),'.12f')
-                print format(float(line[-2]),'.12f') < 0.05
+                print float(format(float(line[-2]),'.12f'))
+                print float(format(float(line[-2]),'.12f')) < 0.05
             pval = format(float(line[-2]),'.12f')
             chrom,start,stop = line[1].split(',')
             if pval < 0.05:
