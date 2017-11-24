@@ -29,7 +29,7 @@ def run(DMSO,Nutlin,deseq,P53):
                 regions.append((chrom.strip('"'),int(start.strip('"')),int(stop.strip('"')),pval))
 
     sorted_regions = sorted(regions,key=lambda x: x[3])
-    print len(regions)
+    print sorted_regions
 
     d = dict()
     with open(DMSO) as F:
@@ -119,12 +119,12 @@ def run(DMSO,Nutlin,deseq,P53):
             else:
                 pass
 
-        print "finished ", total, " rounds"
+    #     print "finished ", total, " rounds"
 
 
 
-    print "Total regions p < 0.05: ", total
-    print "Total P53 hits H < 1500: ", hits
+    # print "Total regions p < 0.05: ", total
+    # print "Total P53 hits H < 1500: ", hits
 
 
 if __name__ == "__main__":
