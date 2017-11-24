@@ -23,9 +23,8 @@ def run(DMSO,Nutlin,deseq,P53):
         F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
-            chrom,start,stop = line[1].split(',')
             pval = format(float(line[-2]),'.12f')
-            print pval
+            chrom,start,stop = line[1].split(',')
             if pval < 0.05:
                 regions.append((chrom,int(start),int(stop),pval))
 
