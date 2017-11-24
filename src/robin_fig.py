@@ -5,6 +5,7 @@ import pybedtools as py
 def run(DMSO,Nutlin,deseq):
     regions = list()
     with open(deseq) as F:
+        F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
             regions.append((line[1],format(float(line[-2]),'.12f')))
