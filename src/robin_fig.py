@@ -26,7 +26,7 @@ def run(DMSO,Nutlin,deseq,P53):
             pval = format(float(line[-2]),'.12f')
             chrom,start,stop = line[1].split(',')
             if float(pval) < 0.05:
-                regions.append((chrom,int(start),int(stop),pval))
+                regions.append((chrom,int(start.strip('"')),int(stop.strip('"')),pval))
 
     sorted_regions = sorted(regions,key=lambda x: x[3])
     print len(regions)
