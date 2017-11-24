@@ -119,6 +119,8 @@ def run(DMSO,Nutlin,deseq,P53):
             else:
                 pass
 
+        print "finished ", total, " rounds"
+
 
 
     print "Total regions p < 0.05: ", total
