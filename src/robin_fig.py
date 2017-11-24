@@ -23,17 +23,13 @@ def run(DMSO,Nutlin,deseq,P53):
         F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
-            if 'e' in line[-2]:
-                print line[-2]
-                print float(str(format(float(line[-2]),'.12f')))
-                print float(str(format(float(line[-2]),'.12f'))) < 0.05
             pval = format(float(line[-2]),'.12f')
             chrom,start,stop = line[1].split(',')
-            if pval < 0.05:
+            if float(pval) < 0.05:
                 regions.append((chrom,int(start),int(stop),pval))
 
     sorted_regions = sorted(regions,key=lambda x: x[3])
-    print regions
+    print len(regions)
 
     d = dict()
     with open(DMSO) as F:
