@@ -136,7 +136,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
     # plt.close()
     actualES = max(ES,key=abs)
-    simES = simulate(H,ind,val,distance_sum,total)
+    simES = simulate(H,ind,vals,distance_sum,total)
     mu = np.mean(simES)
     sigma = np.std(simES)
     NES = actualES/mu
@@ -144,7 +144,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     p = min(p,1-p)
     return actualES,NES,p
 
-def simulate(H,ind,val,distance_sum,total,N=1000):
+def simulate(H,ind,vals,distance_sum,total,N=1000):
     simES = list()
     for i in range(N):
         Eval = 0
