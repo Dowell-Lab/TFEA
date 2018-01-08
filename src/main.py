@@ -46,7 +46,7 @@ def run():
         if rank_metric == "log2fc":
             rank_regions.log2fc(count_file,filedir,GENOME,BAM1,BAM2)
         if rank_metric == "deseqfile":
-            rank_regions.deseqfile_up_down(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF)
+            rank_regions.deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF)
         print "done"
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
@@ -62,9 +62,10 @@ def run():
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
                     total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
                     if calculate:
-                        ES.append((ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits),MOTIF_FILE))
+                        ES.append((MOTIF_FILE,ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)))
                 print ES
                 outfile = open(filedir + 'results.txt', 'w')
+                outfile.write('TF-Motif\tES\tNES\tp-value\n')
                 for val in sorted(ES, key=lambda x: x[0]):
                     outfile.write(str(val[0]) + '\t' + str(val[1]) + '\n')
 

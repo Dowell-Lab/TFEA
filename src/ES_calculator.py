@@ -7,6 +7,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pybedtools as py
+from random import shuffle
+import scipy
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -133,6 +135,27 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     # plt.savefig(figuredir + ranked_file.split('/')[-1] + '.png')
 
     # plt.close()
+    actualES = max(ES,key=abs)
+    simES = simulate(H,ind,val,distance_sum,total)
+    mu = np.mean(simES)
+    sigma = np.std(simES)
+    NES = actualES/mu
+    p = scipy.stats.norm.cdf(actualES,mu,sigma)
+    p = min(p,1-p)
+    return actualES,NES,p
 
-    return max(ES,key=abs)
+def simulate(H,ind,val,distance_sum,total,N=1000):
+    simES = list()
+    for i in range(N):
+        shuffle(ind)
+        for j in range(total):
+            if j in ind:
+                Eval += float((H-vals[ind.index(j)]))/float(distance_sum)
+                ES.append(Eval)
+            else:
+                Eval += -1.0/(total-len(ind))
+                ES.append(Eval)
+        simES.append(max(ES,key=abs))
+
+    return simES
 
