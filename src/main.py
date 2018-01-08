@@ -66,7 +66,7 @@ def run():
                 print ES
                 outfile = open(filedir + 'results.txt', 'w')
                 outfile.write('TF-Motif\tES\tNES\tp-value\n')
-                for val in sorted(ES, key=lambda x: x[0]):
+                for val in sorted(ES, key=lambda x: x[3]):
                     outfile.write(str(val[0]) + '\t' + str(val[1]) + '\n')
 
             else:
