@@ -6,6 +6,9 @@
 ###Specify the queue
 #SBATCH -p long
 
+###Specify WallTime
+#SBATCH --time=100:00:00
+
 ### Specify the number of nodes/cores
 #SBATCH --nodes=1
 #SBATCH --ntasks=64
