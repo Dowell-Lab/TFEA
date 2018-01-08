@@ -8,7 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pybedtools as py
 from random import shuffle
-import scipy
+from scipy.stats import norm
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -140,7 +140,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     mu = np.mean(simES)
     sigma = np.std(simES)
     NES = actualES/mu
-    p = scipy.stats.norm.cdf(actualES,mu,sigma)
+    p = norm.cdf(actualES,mu,sigma)
     p = min(p,1-p)
     return actualES,NES,p
 
