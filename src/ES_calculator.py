@@ -146,8 +146,9 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
 def simulate(H,ind,val,distance_sum,total,N=1000):
     simES = list()
-    Eval = 0
     for i in range(N):
+        Eval = 0
+        ES = list()
         shuffle(ind)
         for j in range(total):
             if j in ind:
