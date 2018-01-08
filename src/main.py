@@ -65,12 +65,12 @@ def run():
                     total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
                     if calculate:
                         results = (MOTIF_FILE,ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits))
-                        outfile1.write('\t'.join(results) +  '\n')
+                        outfile1.write('\t'.join([str(val) for val in results]) +  '\n')
                         ES.append(results)
                 outfile = open(filedir + 'results.txt', 'w')
                 outfile.write('TF-Motif\tES\tNES\tp-value\n')
                 for val in sorted(ES, key=lambda x: x[3]):
-                    outfile.write('\t'.join(val) +  '\n')
+                    outfile.write('\t'.join([str(i) for i in val]) +  '\n')
 
             else:
                 total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+SINGLEMOTIF)
