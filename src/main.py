@@ -58,16 +58,19 @@ def run():
         else:
             print "Finding motif hits in regions..."
             if SINGLEMOTIF == False:
+                outfile1 = open(filedir + 'results.tmp', 'w')
+                outfile1.write('TF-Motif\tES\tNES\tp-value\n')
                 ES = list()
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
                     total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
                     if calculate:
-                        ES.append((MOTIF_FILE,ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)))
-                print ES
+                        results = (MOTIF_FILE,ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits))
+                        outfile1.write('\t'.join(results) +  '\n')
+                        ES.append(results)
                 outfile = open(filedir + 'results.txt', 'w')
                 outfile.write('TF-Motif\tES\tNES\tp-value\n')
                 for val in sorted(ES, key=lambda x: x[3]):
-                    outfile.write(str(val[0]) + '\t' + str(val[1]) + '\n')
+                    outfile.write('\t'.join(val) +  '\n')
 
             else:
                 total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+SINGLEMOTIF)
