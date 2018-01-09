@@ -150,16 +150,14 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     p = min(p,1-p)
     return actualES,NES,p
 
-def simulate(H,ind,vals,distance_sum,total,N=10):
+def simulate(H,ind,vals,distance_sum,total,N=1000):
     simES = list()
-    print "length of ind: ",len(ind)
     for i in range(N):
         Eval = 0
         ES = list()
         a = time.time()
         shuffled = ind
         np.random.shuffle(shuffled)
-        print "One shuffle done in: ", time.time()-a, "s"
         for j in range(total):
             if j in shuffled:
                 Eval += float((H-vals[shuffled.index(j)]))/float(distance_sum)
