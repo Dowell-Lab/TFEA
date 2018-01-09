@@ -98,7 +98,10 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     with open(ranked_center_distance_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
-            val = float(line[-1])
+            try:
+                val = float(line[-1])
+            except ValueError:
+                print line
             r = int(line[4])
             total += 1
             if val > H:
