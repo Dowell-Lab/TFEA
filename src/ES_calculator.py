@@ -155,15 +155,16 @@ def simulate(H,ind,vals,distance_sum,total,N=1000):
     for i in range(N):
         Eval = 0
         ES = list()
+        neg = -1.0/total-len(shuffled)
         a = time.time()
         shuffled = ind
         np.random.shuffle(shuffled)
         for j in range(total):
-            if j in shuffled:
+            try:
                 Eval += float((H-vals[shuffled.index(j)]))/float(distance_sum)
                 ES.append(Eval)
-            else:
-                Eval += -1.0/(total-len(shuffled))
+            except ValueError:
+                Eval += neg
                 ES.append(Eval)
         simES.append(max(ES,key=abs))
 
