@@ -156,7 +156,7 @@ def simulate(H,ind,vals,distance_sum,total,N=10):
         Eval = 0
         ES = list()
         a = time.time()
-        shuffle(ind)
+        np.random.shuffle(ind)
         print "One shuffle done in: ", time.time()-a, "s"
         for j in range(total):
             if j in ind:

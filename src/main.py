@@ -71,6 +71,7 @@ def run():
                         results = (MOTIF_FILE,ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits))
                         outfile1.write('\t'.join([str(val) for val in results]) +  '\n')
                         ES.append(results)
+                        print ES
                         print "ES calculation done in: ", time.time()-a,"s"
                 print ES
                 outfile = open(filedir + 'results.txt', 'w')
