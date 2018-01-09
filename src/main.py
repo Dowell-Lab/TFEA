@@ -81,7 +81,7 @@ def run():
 
             else:
                 total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+SINGLEMOTIF)
-                print ES_calculator.run_deseq(ranked_center_distance_file,figuredir)
+                print ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)
         print "done"
 
 
