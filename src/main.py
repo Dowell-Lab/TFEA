@@ -58,7 +58,7 @@ def run():
         else:
             print "Finding motif hits in regions..."
             if SINGLEMOTIF == False:
-                outfile1 = open(filedir + 'results.tmp', 'w')
+                outfile1 = open(filedir + 'results_temp.txt', 'w')
                 outfile1.write('TF-Motif\tES\tNES\tp-value\n')
                 ES = list()
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
