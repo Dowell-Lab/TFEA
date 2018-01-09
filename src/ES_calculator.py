@@ -1,6 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import matplotlib
+import sys
 matplotlib.use('Agg')
 import math
 import os
@@ -113,12 +114,15 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
                 ind.append(r)
                 distance_sum += H-val
 
-    for i in range(total):
-        if i in ind:
-            Eval += float((H-vals[ind.index(i)]))/float(distance_sum)
+    neg = -1.0/total-len(ind)
+    vals = [neg if x==-1 else x for x in vals]
+    vals = [vals[i] for i in ind]
+    for val in vals:
+        if val != neg:
+            Eval += val/distance_sum
             ES.append(Eval)
         else:
-            Eval += -1.0/(total-len(ind))
+            Eval += val
             ES.append(Eval)
 
     # F = plt.figure(figsize=(30,5))
@@ -154,6 +158,11 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 def simulate(H,ind,vals,distance_sum,total,N=1000):
     simES = list()
     for i in range(N):
+        b = "Simulations done: " + str(i)
+        print "\r",
+        sys.stdout.write("\033[K")
+        print "\r",b,
+        sys.stdout.flush()
         Eval = 0.0
         ES = list()
         neg = -1.0/total-len(ind)
