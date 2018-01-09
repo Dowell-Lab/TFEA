@@ -89,13 +89,13 @@ def run_deseq(ranked_file,figuredir):
         plt.close()
 
 def run(ranked_center_distance_file,figuredir,filedir,total_hits):
-    H = 1500
+    H = 1500.0
     ES = list()
-    Eval = 0
+    Eval = 0.0
     vals = list()
     ind = list()
-    total = 0
-    distance_sum = 0
+    total = 0.0
+    distance_sum = 0.0
     with open(ranked_center_distance_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
@@ -106,9 +106,10 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
             r = int(line[4])
             total += 1
             if val > H:
-                pass
+                vals.append(-1)
+                ind.append(r)
             else:
-                vals.append(val)
+                vals.append(H-val)
                 ind.append(r)
                 distance_sum += H-val
 
@@ -153,17 +154,18 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 def simulate(H,ind,vals,distance_sum,total,N=1000):
     simES = list()
     for i in range(N):
-        Eval = 0
+        Eval = 0.0
         ES = list()
         neg = -1.0/total-len(ind)
-        a = time.time()
+        vals = [neg if x==-1 else x for x in vals]
         np.random.shuffle(ind)
-        for j in range(total):
-            try:
-                Eval += float((H-vals[ind.index(j)]))/float(distance_sum)
+        vals = [vals[i] for i in ind]
+        for val in vals:
+            if val != neg:
+                Eval += val/distance_sum
                 ES.append(Eval)
-            except ValueError:
-                Eval += neg
+            else:
+                Eval += val
                 ES.append(Eval)
         simES.append(max(ES,key=abs))
 
