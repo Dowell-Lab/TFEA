@@ -1,6 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
+import time
 from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE
 import count_reads
 import rank_regions
@@ -62,11 +63,15 @@ def run():
                 outfile1.write('TF-Motif\tES\tNES\tp-value\n')
                 ES = list()
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
+                    a = time.time()
                     total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
+                    print "Motif distances done in: ",time.time()-a,"s"
                     if calculate:
+                        a = time.time()
                         results = (MOTIF_FILE,ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits))
                         outfile1.write('\t'.join([str(val) for val in results]) +  '\n')
                         ES.append(results)
+                        print "ES calculation done in: ", time.time()-a,"s"
                 print ES
                 outfile = open(filedir + 'results.txt', 'w')
                 outfile.write('TF-Motif\tES\tNES\tp-value\n')

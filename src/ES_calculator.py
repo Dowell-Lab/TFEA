@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pybedtools as py
 from random import shuffle
 from scipy.stats import norm
+import time
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -139,7 +140,9 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
     # plt.close()
     actualES = max(ES,key=abs)
+    a = time.time()
     simES = simulate(H,ind,vals,distance_sum,total)
+    print "Simulation done in: ", time.time()-a, "s"
     mu = np.mean(simES)
     sigma = np.std(simES)
     NES = actualES/mu
@@ -152,7 +155,9 @@ def simulate(H,ind,vals,distance_sum,total,N=10):
     for i in range(N):
         Eval = 0
         ES = list()
+        a = time.time()
         shuffle(ind)
+        print "One shuffle done in: ", time.time()-a, "s"
         for j in range(total):
             if j in ind:
                 Eval += float((H-vals[ind.index(j)]))/float(distance_sum)
