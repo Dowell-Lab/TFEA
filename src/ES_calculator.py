@@ -114,7 +114,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
                 ind.append(r)
                 distance_sum += H-val
 
-    neg = -1.0/total-len(ind)
+    neg = -1.0/(total-len(ind))
     vals = [neg if x==-1 else x for x in vals]
     print vals[:10]
     vals = [vals[i] for i in ind]
