@@ -152,6 +152,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
 def simulate(H,ind,vals,distance_sum,total,N=10):
     simES = list()
+    print "length of ind: ",len(ind)
     for i in range(N):
         Eval = 0
         ES = list()
