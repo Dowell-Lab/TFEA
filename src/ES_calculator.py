@@ -116,9 +116,9 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
     neg = -1.0/total-len(ind)
     vals = [neg if x==-1 else x for x in vals]
-    print vals
+    print vals[:10]
     vals = [vals[i] for i in ind]
-    print vals
+    print vals[:10]
     for val in vals:
         if val != neg:
             Eval += val/distance_sum
@@ -126,7 +126,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
         else:
             Eval += val
             ES.append(Eval)
-    print ES
+    
     # F = plt.figure(figsize=(30,5))
     # # cbar = plt.colorbar(colors)
     # plt.scatter(ind,vals,edgecolor="")
