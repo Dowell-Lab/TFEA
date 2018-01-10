@@ -106,11 +106,11 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
             total += 1
             if distance > H:
                 distances.append(-1)
-                ind.append(r)
+                ind.append(rank)
                 negatives += 1.0
             else:
                 distances.append(H-distance)
-                ind.append(r)
+                ind.append(rank)
                 distance_sum += H-distance
 
     neg = -1.0/negatives
