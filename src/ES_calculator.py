@@ -165,9 +165,7 @@ def simulate(H,ind,distances,distance_sum,total,negatives,N=1000):
         Eval = 0.0
         ES = list()
         neg = -1.0/negatives
-        distances = [neg if x==-1 else x for x in distances]
-        np.random.shuffle(ind)
-        distances = [x for _,x in sorted(zip(ind,distances))]
+        np.random.shuffle(distances)
         for distance in distances:
             if distance != neg:
                 Eval += distance/distance_sum
