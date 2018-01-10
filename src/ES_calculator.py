@@ -96,6 +96,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     vals = list()
     ind = list()
     total = 0.0
+    negatives = 0.0
     distance_sum = 0.0
     with open(ranked_center_distance_file) as F:
         for line in F:
@@ -109,12 +110,13 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
             if val > H:
                 vals.append(-1)
                 ind.append(r)
+                negatives += 1.0
             else:
                 vals.append(H-val)
                 ind.append(r)
                 distance_sum += H-val
 
-    neg = -1.0/(total-len(ind))
+    neg = -1.0/negatives
     vals = [neg if x==-1 else x for x in vals]
     print vals[:10]
     vals = [vals[i] for i in ind]
@@ -148,7 +150,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     # plt.close()
     actualES = max(ES,key=abs)
     a = time.time()
-    simES = simulate(H,ind,vals,distance_sum,total)
+    simES = simulate(H,ind,vals,distance_sum,total,negatives)
     print "Simulation done in: ", time.time()-a, "s"
     mu = np.mean(simES)
     sigma = np.std(simES)
@@ -157,7 +159,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     p = min(p,1-p)
     return actualES,NES,p
 
-def simulate(H,ind,vals,distance_sum,total,N=1000):
+def simulate(H,ind,vals,distance_sum,total,negatives,N=1000):
     simES = list()
     for i in range(N):
         b = "Simulations done: " + str(i)
@@ -167,7 +169,7 @@ def simulate(H,ind,vals,distance_sum,total,N=1000):
         sys.stdout.flush()
         Eval = 0.0
         ES = list()
-        neg = -1.0/total-len(ind)
+        neg = -1.0/negatives
         vals = [neg if x==-1 else x for x in vals]
         np.random.shuffle(ind)
         vals = [vals[i] for i in ind]
