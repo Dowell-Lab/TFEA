@@ -153,7 +153,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     NES = actualES/mu
     p = norm.cdf(actualES,mu,sigma)
     p = min(p,1-p)
-    return actualES,NES,p
+    return [actualES,NES,p]
 
 def simulate(H,ind,distances,distance_sum,total,negatives,N=1000):
     simES = list()

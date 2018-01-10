@@ -66,8 +66,8 @@ def run():
                     print "Motif distances done in: ",time.time()-a,"s"
                     if calculate:
                         a = time.time()
-                        results = (MOTIF_FILE,ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits))
-                        ES.append(results)
+                        results = ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)
+                        ES.append((MOTIF_FILE,results[0],results[1],results[2]))
                         print results
                         print "ES calculation done in: ", time.time()-a,"s"
                 outfile = open(filedir + 'results.txt', 'w')
