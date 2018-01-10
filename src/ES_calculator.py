@@ -156,8 +156,8 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
 def simulate(H,ind,distances,distance_sum,total,negatives,N=1000):
     simES = list()
-    for i in range(1,N):
-        b = "Simulations done: " + str(i)
+    for i in range(N):
+        b = "Simulations done: " + str(i+1)
         print "\r",
         sys.stdout.write("\033[K")
         print "\r",b,
