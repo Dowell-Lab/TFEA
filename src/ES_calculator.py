@@ -115,7 +115,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
     neg = -1.0/negatives
     distances = [neg if x==-1 else x for x in distances]
-    distances = [distances[i] for i in ind]
+    distances = [x for _,x in sorted(zip(distances,ind))]
     print distances[:10]
     for distance in distances:
         if distance != neg:
@@ -168,7 +168,7 @@ def simulate(H,ind,distances,distance_sum,total,negatives,N=1000):
         neg = -1.0/negatives
         distances = [neg if x==-1 else x for x in distances]
         np.random.shuffle(ind)
-        distances = [distances[i] for i in ind]
+        distances = [x for _,x in sorted(zip(distances,ind))]
         for distance in distances:
             if distance != neg:
                 Eval += distance/distance_sum
