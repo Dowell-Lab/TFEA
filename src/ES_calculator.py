@@ -161,7 +161,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
     #To get NES, first simulate 1000 permuations of region ranks
     a = time.time()
-    simES = simulate(H,ind,distances,distance_sum,total,neg)
+    simES = simulate(H,distances,distance_sum,total,neg)
     print "Simulation done in: ", time.time()-a, "s"
 
     #NES is the actualES divided by the mean ES of all permutations with the same sign as actualES
@@ -195,7 +195,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     # p = min(p,1-p)
     return [actualES,NES,p,simNES]
 
-def simulate(H,ind,distances,distance_sum,total,neg,N=1000):
+def simulate(H,distances,distance_sum,total,neg,N=1000):
     #Simulate 1000 permuations of region ranks
     simES = list()
     for i in range(N):
@@ -213,6 +213,8 @@ def simulate(H,ind,distances,distance_sum,total,neg,N=1000):
                 Eval += distance
                 ES.append(Eval)
         simES.append(max(ES,key=abs))
+
+    return simES
 
 def FDR(TFresults,NESlist):
     for i in range(len(TFresults)):
