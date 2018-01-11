@@ -167,7 +167,7 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     #NES is the actualES divided by the mean ES of all permutations with the same sign as actualES
     #p-value is caluclated empirically (i.e. (# of simulated ES scores larger than actualES)/(rest of simulated ES scores))
     if actualES < 0:
-        simESsubset = [x in simES if x < 0 for x]
+        simESsubset = [x for x in simES if x < 0]
         mu = np.mean(simESsubset)
         NES = -(actualES/mu)
         p = float(sum([x for x in simESsubset if x < actualES ]))/float(sum([x for x in simESsubset if x > actualES]))
