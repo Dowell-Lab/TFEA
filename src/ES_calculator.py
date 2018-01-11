@@ -170,22 +170,22 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
         simESsubset = [x if x < 0 for x in simES]
         mu = np.mean(simESsubset)
         NES = -(actualES/mu)
-        p = float(sum([x if x < actualES for x in simESsubset]))/float(sum([x if x > actualES for x in simESsubset]))
+        p = float(sum([x for x in simESsubset if x < actualES ]))/float(sum([x for x in simESsubset if x > actualES]))
     else:
         simESsubset = [x if x > 0 for x in simES]
         mu = np.mean(simESsubset)
         NES = actualES/mu
-        p = float(sum([x if x > actualES for x in simESsubset]))/float(sum([x if x < actualES for x in simESsubset]))
+        p = float(sum([x for x in simESsubset if x > actualES]))/float(sum([x for x in simESsubset if x < actualES]))
 
     #Now calculate an NES for each simulated ES
     simNES = list()
     for ES in simES:
         if ES < 0:
-            simESsubset = [x if x < 0 for x in simES]
+            simESsubset = [x for x in simES if x < 0]
             mu = np.mean(simESsubset)
             simNES.append(-(ES/mu))
         else:
-            simESsubset = [x if x > 0 for x in simES]
+            simESsubset = [x for x in simES if x > 0]
             mu = np.mean(simESsubset)
             simNES.append(ES/mu)
 
@@ -219,9 +219,9 @@ def FDR(TFresults,NESlist):
         NES = TFresults[i][2]
         simNESlist = TFresults[i][4]
         if NES < 0:
-            q = (sum([x if x<NES for x in simNESlist])*sum([x if x<0 for x in NESlist]))/sum([x if x<NES for x in NESlist])
+            q = (sum([x in simNESlist if x<NES for x])*sum([x in NESlist if x<0 for x]))/sum([x in NESlist if x<NES for x])
         else:
-            q = (sum([x if x>NES for x in simNESlist])*sum([x if x>0 for x in NESlist]))/sum([x if x>NES for x in NESlist])
+            q = (sum([x in simNESlist if x>NES for x])*sum([x in NESlist if x>0 for x]))/sum([x in NESlist if x>NES for x])
         TFresults[i].append(q)
 
 

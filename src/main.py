@@ -76,7 +76,7 @@ def run():
                 outfile = open(filedir + 'results.txt', 'w')
                 outfile.write('TF-Motif\tES\tNES\tp-value\n')
                 for val in sorted(TFresults, key=lambda x: x[3]):
-                    outfile.write('\t'.join([str(val[i]) if i!=4 for i in range(len(val))]) +  '\n')
+                    outfile.write('\t'.join([str(val[i]) for i in range(len(val)) if i!=4]) +  '\n')
 
             else:
                 total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+SINGLEMOTIF)
