@@ -90,6 +90,7 @@ def run_deseq(ranked_file,figuredir):
         plt.close()
 
 def run(ranked_center_distance_file,figuredir,filedir,total_hits):
+    #Initiate some variables
     H = 1500.0
     ES = list()
     Eval = 0.0
@@ -98,6 +99,8 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     total = 0.0
     negatives = 0.0
     distance_sum = 0.0
+
+    #First parse file containing motif distance and region rank. Also count total negatives to be used later
     with open(ranked_center_distance_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
@@ -112,12 +115,17 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
                 distances.append(H-distance)
                 ind.append(rank)
                 distance_sum += H-distance
+
+    #actualES calculation:
     try:
         neg = -1.0/negatives
     except:
         neg = -1.0
+    #1. Replace negatives values in distances with -1.0/negatives
     distances = [neg if x==-1 else x for x in distances]
+    #2. Reorder list of motif distances based on rank
     distances = [x for _,x in sorted(zip(ind,distances))]
+    #3. Go through distances and add appropriately to cumulative sum (ES) list
     for distance in distances:
         if distance != neg:
             Eval += distance/distance_sum
@@ -125,7 +133,11 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
         else:
             Eval += distance
             ES.append(Eval)
-    
+
+    #4. The enrichment score is the maximum deviation from 0
+    actualES = max(ES,key=abs)
+
+
     # F = plt.figure(figsize=(30,5))
     # # cbar = plt.colorbar(colors)
     # plt.scatter(ind,vals,edgecolor="")
@@ -145,23 +157,54 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     # plt.savefig(figuredir + ranked_file.split('/')[-1] + '.png')
 
     # plt.close()
-    actualES = max(ES,key=abs)
+
+
+    #To get NES, first simulate 1000 permuations of region ranks
     a = time.time()
     simES = simulate(H,ind,distances,distance_sum,total,neg)
     print "Simulation done in: ", time.time()-a, "s"
-    mu = np.mean(simES)
-    sigma = np.std(simES)
-    NES = actualES/mu
-    p = norm.cdf(actualES,mu,sigma)
-    p = min(p,1-p)
-    return [actualES,NES,p]
+
+    #NES is the actualES divided by the mean ES of all permutations with the same sign as actualES
+    #p-value is caluclated empirically (i.e. (# of simulated ES scores larger than actualES)/(rest of simulated ES scores))
+    if actualES < 0:
+        simESsubset = [x if x < 0 for x in simES]
+        mu = np.mean(simESsubset)
+        NES = -(actualES/mu)
+        p = float(sum([x if x < actualES for x in simESsubset]))/float(sum([x if x > actualES for x in simESsubset]))
+    else:
+        simESsubset = [x if x > 0 for x in simES]
+        mu = np.mean(simESsubset)
+        NES = actualES/mu
+        p = float(sum([x if x > actualES for x in simESsubset]))/float(sum([x if x < actualES for x in simESsubset]))
+
+    #Now calculate an NES for each simulated ES
+    simNES = list()
+    for ES in simES:
+        if ES < 0:
+            simESsubset = [x if x < 0 for x in simES]
+            mu = np.mean(simESsubset)
+            simNES.append(-(ES/mu))
+        else:
+            simESsubset = [x if x > 0 for x in simES]
+            mu = np.mean(simESsubset)
+            simNES.append(ES/mu)
+
+    # sigma = np.std(simES)
+    # NES = actualES/mu
+    # p = norm.cdf(actualES,mu,sigma)
+    # p = min(p,1-p)
+    return [actualES,NES,p,simNES]
 
 def simulate(H,ind,distances,distance_sum,total,neg,N=1000):
+    #Simulate 1000 permuations of region ranks
     simES = list()
     for i in range(N):
         Eval = 0.0
         ES = list()
+        #Here we actually shuffle the regions
         np.random.shuffle(distances)
+
+        #Then we calculate an ES just like before
         for distance in distances:
             if distance != neg:
                 Eval += distance/distance_sum
@@ -170,4 +213,16 @@ def simulate(H,ind,distances,distance_sum,total,neg,N=1000):
                 Eval += distance
                 ES.append(Eval)
         simES.append(max(ES,key=abs))
+
+def FDR(TFresults,NESlist):
+    for i in range(len(TFresults)):
+        NES = TFresults[i][2]
+        simNESlist = TFresults[i][4]
+        if NES < 0:
+            q = (sum([x if x<NES for x in simNESlist])*sum([x if x<0 for x in NESlist]))/sum([x if x<NES for x in NESlist])
+        else:
+            q = (sum([x if x>NES for x in simNESlist])*sum([x if x>0 for x in NESlist]))/sum([x if x>NES for x in NESlist])
+        TFresults[i].append(q)
+
+
 
