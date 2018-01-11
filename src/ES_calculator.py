@@ -219,9 +219,9 @@ def FDR(TFresults,NESlist):
         NES = TFresults[i][2]
         simNESlist = TFresults[i][4]
         if NES < 0:
-            q = (sum([x if x<NES for x in simNESlist])*sum([x if x<0 for x in NESlist]))/sum([x if x<NES for x in NESlist])
+            q = (sum([x for x in simNESlist if x<NES])*sum([x for x in NESlist if x<0]))/sum([x for x in NESlist if x<NES])
         else:
-            q = (sum([x if x>NES for x in simNESlist])*sum([x if x>0 for x in NESlist]))/sum([x if x>NES for x in NESlist])
+            q = (sum([x for x in simNESlist if x>NES])*sum([x for x in NESlist if x>0]))/sum([x for x in NESlist if x>NES])
         TFresults[i].append(q)
 
 
