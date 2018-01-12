@@ -236,5 +236,7 @@ def FDR(TFresults,NESlist):
             q = (sum([x for x in simNESlist if x>NES])*sum([x for x in NESlist if x>0]))/sum([x for x in NESlist if x>NES])
         TFresults[i].append(q)
 
+    return TFresults
+
 
 

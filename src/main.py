@@ -2,19 +2,15 @@ __author__ = 'Jonathan Rubin'
 
 import os
 import time
-from config import BED,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE
+from config import COMBINE,COUNT,RANK,DISTANCE,CALCULATE,BEDS,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE
+import combine_bed
 import count_reads
 import rank_regions
+import DESeq
 import motif_distance
 import ES_calculator
 
 def run():
-    #Booleans that allow you to run specific parts of this python package
-    count = False
-    rank = True
-    distance = True
-    calculate = True
-
     #Choose what type of ranking metric to be used to rank regions of interest:
     #Options: "log2fc", "deseqfile"
     rank_metric = "deseqfile"
@@ -35,23 +31,32 @@ def run():
 
     ranked_center_distance_file = filedir + "ranked_file.center.sorted.distance.bed"
 
+    #This module takes the input list of BED files, concatenates them, and then merges them (bedtools).
+    if COMBINE:
+        BED = combine_bed.run(BEDS,filedir)
+    else:
+        BED = BEDS[0]
+
     #This module counts reads from all Bam files in BAM1 and BAM2 and creates count_file with this info.
-    if count:
+    if COUNT:
         print "Counting reads in regions..."
         count_reads.run(BED,BAM1,BAM2,filedir)
         print "done"
 
     #This module ranks regions in BED based on some specified metric
-    if rank:
+    if RANK:
         print "Ranking regions based on " + rank_metric + "..."
         if rank_metric == "log2fc":
             rank_regions.log2fc(count_file,filedir,GENOME,BAM1,BAM2)
         if rank_metric == "deseqfile":
             rank_regions.deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF)
+        if rank_metric == "deseq":
+            DESEQFILE = DESeq.run(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir)
+            rank_regions.deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF)
         print "done"
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
-    if distance:
+    if DISTANCE:
         fimo = False
         if fimo:
             print "Warning: This part of this package is incomplete"
@@ -65,7 +70,10 @@ def run():
                     a = time.time()
                     total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
                     print "Motif distances done in: ",time.time()-a,"s"
-                    if calculate:
+
+                    #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
+                    #the HOCOMOCO database.
+                    if CALCULATE:
                         a = time.time()
                         results = ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)
                         TFresults.append([MOTIF_FILE,results[0],results[1],results[2],results[3]])
@@ -78,9 +86,12 @@ def run():
                 for val in sorted(TFresults, key=lambda x: x[3]):
                     outfile.write('\t'.join([str(val[i]) for i in range(len(val)) if i!=4]) +  '\n')
 
+            #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine a NES or FDR for the given motif.
+            #This will return only
             else:
                 total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+SINGLEMOTIF)
-                print ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)
+                results = ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)
+                print SINGLEMOTIF, results[0], results[1], results[2], results[3]
         print "done"
 
 

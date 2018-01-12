@@ -18,5 +18,7 @@ def write_script(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir):
     outfile.write('write.table(res, file = "'+filedir+'DESeq.res.txt", append = FALSE$\n')
     outfile.write('sink()')
 
-def run(scriptdir):
+def run(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir):
+    write_script(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir)
     os.system("R < " + scriptdir + "DESeq.R --no-save")
+    return filedir+'DESeq.res.txt'
