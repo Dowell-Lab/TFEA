@@ -227,16 +227,43 @@ def simulate(H,distances,distance_sum,total,neg,N=1000):
     return simES
 
 def FDR(TFresults,NESlist):
+    #This function iterates through the results and calculates an FDR for each TF motif
     for i in range(len(TFresults)):
         NES = TFresults[i][2]
         simNESlist = TFresults[i][4]
-        if NES < 0:
-            q = ((sum([x for x in simNESlist if x<NES])/len(simNESlist))*sum([x for x in NESlist if x<0]))/sum([x for x in NESlist if x<NES])
-        else:
-            q = ((sum([x for x in simNESlist if x>NES])/len(simNESlist))*sum([x for x in NESlist if x>0]))/sum([x for x in NESlist if x>NES])
-        TFresults[i].append(q)
+        PVAL = TFresults[i][3]
+
+        #Here we calculate a theoretical p-value for the actual value of this TF motif's NES against all other actual NESs (from the other TF motifs)
+        mu = np.mean(NESlist)
+        sigma = np.std(NESlist)
+        actualp = norm.cdf(NES,mu,sigma)
+        actualp = min(actualp,1-actualp)
+
+        #Here we calculate a theoretical p-valuefor the actual value of this TF motif's NES against the simulated NESs for this motif
+        simmu = np.mean(simNESlist)
+        simsigma = np.std(simNESlist)
+        simp = norm.cdf(NES,simmu,simsigma)
+        simp = min(simp,1-simp)
+
+        #The FDR is then the NES p-value against the distribution of simulated NESs divided by the NES p-value against the distribution of measured NESs
+        FDR1 = simp/actualp
+        TFresults[i].append(FDR1)
+
+        #Using classical FDR calculation
+        TFresults[i].append((PVAL*len(NESlist))/float(i))
+
+
+
+        #This is identical to the above calculation but uses EMPIRICAL p-value instead of theoretical
+        # if NES < 0:
+        #     q = ((sum([x for x in simNESlist if x<NES])/len(simNESlist))*sum([x for x in NESlist if x<0]))/sum([x for x in NESlist if x<NES])
+        # else:
+        #     q = ((sum([x for x in simNESlist if x>NES])/len(simNESlist))*sum([x for x in NESlist if x>0]))/sum([x for x in NESlist if x>NES])
+        # TFresults[i].append(q)
 
     return TFresults
+
+def plot()
 
 
 
