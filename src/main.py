@@ -82,7 +82,7 @@ def run():
                         print "ES calculation done in: ", time.time()-a,"s"
                 TFresults = ES_calculator.FDR(TFresults,NESlist)
                 outfile = open(filedir + 'results.txt', 'w')
-                outfile.write('TF-Motif\tES\tNES\tp-value\n')
+                outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
                 for val in sorted(TFresults, key=lambda x: x[3]):
                     outfile.write('\t'.join([str(val[i]) for i in range(len(val)) if i!=4]) +  '\n')
 
