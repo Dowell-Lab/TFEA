@@ -51,8 +51,8 @@ def run():
         if rank_metric == "deseqfile":
             rank_regions.deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF)
         if rank_metric == "deseq":
-            DESEQFILE = DESeq.run(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir)
-            rank_regions.deseqfile(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF)
+            DESEQFILE2 = DESeq.run(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir)
+            rank_regions.deseqfile(DESEQFILE2,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF)
         print "done"
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
