@@ -263,7 +263,8 @@ def FDR(TFresults,NESlist):
 
     return TFresults
 
-def plot()
+def plot(TFresults):
+    return
 
 
 
