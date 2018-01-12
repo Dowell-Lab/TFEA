@@ -4,6 +4,7 @@
 BED='/full/path/to/bed/file.bed'
 
 #Input bam files as a list containing transcription data. Must specify at least two bam files. If multiple replicates, specify each as a full path in the appropriate list.
+BAMDIR = '/Users/joru1876/scratch_backup/TFEA_grant_figure/'
 BAM1 = ['/full/path/to/bam1/rep1.bam','/full/path/to/bam1/rep2.bam','...']
 BAM2 = ['/full/path/to/bam2/rep1.bam','/full/path/to/bam2/rep2.bam','...']
 

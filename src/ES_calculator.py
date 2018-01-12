@@ -170,12 +170,20 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
         simESsubset = [x for x in simES if x < 0]
         mu = np.mean(simESsubset)
         NES = -(actualES/mu)
-        p = float(sum([x for x in simESsubset if x < actualES ]))/float(sum([x for x in simESsubset if x > actualES]))
+        # try:
+        #     p = float(sum([x for x in simESsubset if x < actualES]))/float(sum([x for x in simESsubset if x > actualES]))
+        # except ZeroDivisionError:
+        #     print [x for x in simESsubset if x > actualES]
+        #     p = 1.0
     else:
         simESsubset = [x for x in simES if x > 0]
         mu = np.mean(simESsubset)
         NES = actualES/mu
-        p = float(sum([x for x in simESsubset if x > actualES]))/float(sum([x for x in simESsubset if x < actualES]))
+        # try:
+        #     p = float(sum([x for x in simESsubset if x > actualES]))/float(sum([x for x in simESsubset if x < actualES]))
+        # except ZeroDivisionError:
+        #     print [x for x in simESsubset if x < actualES]
+        #     p = 1.0
 
     #Now calculate an NES for each simulated ES
     simNES = list()
@@ -189,10 +197,12 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
             mu = np.mean(simESsubset)
             simNES.append(ES/mu)
 
-    # sigma = np.std(simES)
-    # NES = actualES/mu
-    # p = norm.cdf(actualES,mu,sigma)
-    # p = min(p,1-p)
+    #This section calculates the theoretical p-value based on the mean and standard deviation of the 1000 simulations
+    #The p-value is then the CDF where x = actualES. Test is two tailed, hence: min(p,1-p)
+    mu = np.mean(simES)
+    sigma = np.std(simES)
+    p = norm.cdf(actualES,mu,sigma)
+    p = min(p,1-p)
     return [actualES,NES,p,simNES]
 
 def simulate(H,distances,distance_sum,total,neg,N=1000):
