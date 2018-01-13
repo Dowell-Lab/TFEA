@@ -9,6 +9,7 @@ import rank_regions
 import DESeq
 import motif_distance
 import ES_calculator
+import create_html
 
 def run():
     #Choose what type of ranking metric to be used to rank regions of interest:
@@ -21,7 +22,10 @@ def run():
     #Directory where all temp files will be stored
     filedir = parent_dir(homedir) + '/files/'
 
-    figuredir = parent_dir(homedir) + '/figures/'
+    figuredir = parent_dir(homedir) + '/output/plots/'
+
+    #Output directory
+    output = parent_dir(homedir) + '/output/'
 
     #Path to count file. Can be changed if using your own count file. Generated in count_reads module
     count_file = filedir + "count_file.bed"
@@ -75,16 +79,16 @@ def run():
                     #the HOCOMOCO database.
                     if CALCULATE:
                         a = time.time()
-                        results = ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)
-                        TFresults.append([MOTIF_FILE,results[0],results[1],results[2],results[3]])
+                        TFresults.append(ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits))
                         NESlist.append(results[1])
                         print MOTIF_FILE,results[0],results[1],results[2]
                         print "ES calculation done in: ", time.time()-a,"s"
                 TFresults = ES_calculator.FDR(TFresults,NESlist)
-                outfile = open(filedir + 'results.txt', 'w')
+                outfile = open(output + 'results.txt', 'w')
                 outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
                 for val in sorted(TFresults, key=lambda x: x[3]):
                     outfile.write('\t'.join([str(val[i]) for i in range(len(val)) if i!=4]) +  '\n')
+                create_html.run(TFresults,output)
 
             #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine a NES or FDR for the given motif.
             #This will return only

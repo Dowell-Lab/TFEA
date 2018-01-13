@@ -1,7 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
-def run(filedir,TFresults,figuredir):
-    outfile = open(filedir+'results.html','w')
+def run(TFresults,outputdir):
+    outfile = open(outputdir+'results.html','w')
     outfile.write("""<!DOCTYPE html>
     <html>
     <head>
@@ -27,6 +27,9 @@ def run(filedir,TFresults,figuredir):
     <body style="width: 1250px; overflow:scroll">
 
     <h1>TFEA Results</h1>
+    
+    <img src=" ../figures/TFEA_Results_Moustache_Plot.svg" alt="Moustache Plot (FDR vs. NES)">
+
     <div>
         <div id="Positively Enriched" style="float: left; width: 600px; overflow:scroll">
             <h1>Positively Enriched</h1>
@@ -42,20 +45,24 @@ def run(filedir,TFresults,figuredir):
 
     for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
         if NES > 0:
-            outfile.write("""                <tr>
-                """)
-            outfile.write("""                    <td>"""+MOTIF_FILE+"""</td>
-                """)
-            outfile.write("""                    <td>"""+str("%.3f" % ES)+"""</td>
-                """)
-            outfile.write("""                    <td>"""+str("%.3f" % NES)+"""</td>
-                """)
-            outfile.write("""                    <td>"""+str("%.4g" % PVAL)+"""</td>
-                """)
-            outfile.write("""                    <td>"""+str("%.4g" % FDR)+"""</td>
-                """)
-            outfile.write("""                </tr>
-                """)
+            if PVAL < pow(10,-6):
+                outfile.write("""                <tr>
+                        <td><a href="../output/plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.3f" % ES)+"""</td>
+                        <td>"""+str("%.3f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % FDR)+"""</td>
+                    </tr>
+                    """)
+            else:
+                outfile.write("""                <tr>
+                        <td>"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.3f" % ES)+"""</td>
+                        <td>"""+str("%.3f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % FDR)+"""</td>
+                    </tr>
+                    """)
 
 
     outfile.write("""            </table>
@@ -75,20 +82,24 @@ def run(filedir,TFresults,figuredir):
 
     for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
         if NES < 0:
-            outfile.write("""                <tr>
-                """)
-            outfile.write("""                    <td>"""+MOTIF_FILE+"""</td>
-                """)
-            outfile.write("""                    <td>"""+str("%.3f" % ES)+"""</td>
-                """)
-            outfile.write("""                    <td>"""+str("%.3f" % NES)+"""</td>
-                """)
-            outfile.write("""                    <td>"""+str("%.4g" % PVAL)+"""</td>
-                """)
-            outfile.write("""                    <td>"""+str("%.4g" % FDR)+"""</td>
-                """)
-            outfile.write("""                </tr>
-                """)
+            if PVAL < pow(10,-6):
+                outfile.write("""                <tr>
+                        <td><a href="../output/plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.3f" % ES)+"""</td>
+                        <td>"""+str("%.3f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % FDR)+"""</td>
+                    </tr>
+                    """)
+            else:
+                outfile.write("""                <tr>
+                        <td>"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.3f" % ES)+"""</td>
+                        <td>"""+str("%.3f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % FDR)+"""</td>
+                    </tr>
+                    """)
 
     outfile.write("""        </table>
         </div>
@@ -96,6 +107,8 @@ def run(filedir,TFresults,figuredir):
 
     </body>
     </html>""")
+
+    outfile.close()
 
 if __name__ == "__main__":
     TFresults = [['HO_P53_HUMAN.H10MO.B.bed',0.182143716966,6.22622338072,7.43595407471e-10,0.0]]

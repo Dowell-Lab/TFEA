@@ -2,11 +2,12 @@ __author__ = 'Jonathan Rubin'
 
 import matplotlib
 import sys
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import math
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 import pybedtools as py
 from random import shuffle
 from scipy.stats import norm
@@ -89,7 +90,7 @@ def run_deseq(ranked_file,figuredir):
 
         plt.close()
 
-def run(ranked_center_distance_file,figuredir,filedir,total_hits):
+def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
     #Initiate some variables
     H = 1500.0
     ES = list()
@@ -117,14 +118,17 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
                 distance_sum += H-distance
 
     #actualES calculation:
+
     try:
         neg = -1.0/negatives
     except:
         neg = -1.0
     #1. Replace negatives values in distances with -1.0/negatives
     distances = [neg if x==-1 else x for x in distances]
+
     #2. Reorder list of motif distances based on rank
     distances = [x for _,x in sorted(zip(ind,distances))]
+
     #3. Go through distances and add appropriately to cumulative sum (ES) list
     for distance in distances:
         if distance != neg:
@@ -136,28 +140,6 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
     #4. The enrichment score is the maximum deviation from 0
     actualES = max(ES,key=abs)
-
-
-    # F = plt.figure(figsize=(30,5))
-    # # cbar = plt.colorbar(colors)
-    # plt.scatter(ind,vals,edgecolor="")
-    # plt.tick_params(
-    #     axis='y',          # changes apply to the x-axis
-    #     which='both',      # both major and minor ticks are affected
-    #     left='off',        # ticks along the bottom edge are off
-    #     right='off',       # ticks along the top edge are off
-    #     labelleft='off')
-    # plt.tick_params(
-    #     axis='x',          # changes apply to the x-axis
-    #     which='both',      # both major and minor ticks are affected
-    #     bottom='off',      # ticks along the bottom edge are off
-    #     top='off',         # ticks along the top edge are off
-    #     labelbottom='off')
-    # plt.xlim((ind[0],ind[-1]))
-    # plt.savefig(figuredir + ranked_file.split('/')[-1] + '.png')
-
-    # plt.close()
-
 
     #To get NES, first simulate 1000 permuations of region ranks
     a = time.time()
@@ -187,8 +169,8 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
 
     #Now calculate an NES for each simulated ES
     simNES = list()
-    for ES in simES:
-        if ES < 0:
+    for singleES in simES:
+        if singleES < 0:
             simESsubset = [x for x in simES if x < 0]
             mu = np.mean(simESsubset)
             simNES.append(-(ES/mu))
@@ -203,7 +185,96 @@ def run(ranked_center_distance_file,figuredir,filedir,total_hits):
     sigma = np.std(simES)
     p = norm.cdf(actualES,mu,sigma)
     p = min(p,1-p)
-    return [actualES,NES,p,simNES]
+
+    #Plot results for significant hits while list of simulated ES scores is saved to memory
+    if p < pow(10,-6):
+        F = plt.figure()
+        gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+        ax0 = plt.subplot(gs[0])
+        ax0.plot(range(1,len(ES)+1),ES,color='green')
+        ax1 = plt.subplot(gs[1])
+        ax1.bar(range(1,len(ES)+1), [1 if x!=neg else 0 for x in distances],color='black')
+        # plt.plot(range(1,len(ES)+1),ES)
+        ax0.tick_params(
+            axis='y',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            left='off',        # ticks along the bottom edge are off
+            right='off',       # ticks along the top edge are off
+            labelleft='on')
+        ax0.tick_params(
+            axis='x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom='off',      # ticks along the bottom edge are off
+            top='off',         # ticks along the top edge are off
+            labelbottom='off')
+        ax1.tick_params(
+            axis='y',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            left='off',        # ticks along the bottom edge are off
+            right='off',       # ticks along the top edge are off
+            labelleft='off')
+        ax1.tick_params(
+            axis='x',          # changes apply to the x-axis
+            which='both',      # both major and minor ticks are affected
+            bottom='off',      # ticks along the bottom edge are off
+            top='off',         # ticks along the top edge are off
+            labelbottom='on')
+        ax0.set_title('Enrichment Plot: '+ MOTIF_FILE,fontsize=14)
+        ax1.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+        ax1.set_ylabel('Hits', fontsize=14)
+        ax0.set_ylabel('Enrichment Score (ES)', fontsize=14)
+        plt.savefig(figuredir + MOTIF_FILE + '_enrichment_plot.svg')
+        plt.close()
+
+        #Generate an html file to be used in results.html
+        outfile = open(figuredir + MOTIF_FILE + 'results.html','w')
+        outfile.write("""<!DOCTYPE html>
+        <html>
+        <head>
+        <title>"""+MOTIF_FILE+""" Results</title>
+        <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        </style>
+        </head>
+        <body>
+        <h1>"""+MOTIF_FILE+""" Results</h1>
+        <div>
+            <div id="Positively Enriched" style="float: left; width: 600px; overflow:scroll">
+                <table> 
+                    <tr>
+                        <th>TF Motif</th>
+                        <th>ES</th> 
+                        <th>NES</th>
+                        <th>P-value</th>
+                        <th>FDR</th>
+                    </tr>
+                    <tr>
+                        <td>"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.3f" % ES)+"""</td>
+                        <td>"""+str("%.3f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % FDR)+"""</td>
+                    </tr>
+        <img src="../figures/""" + MOTIF_FILE + """_enrichment_plot.svg" alt="Enrichment Plot">
+        </body>
+        </html>""")
+        outfile.close()
+
+    return [MOTIF_FILE,actualES,NES,p,simNES]
 
 def simulate(H,distances,distance_sum,total,neg,N=1000):
     #Simulate 1000 permuations of region ranks
@@ -227,31 +298,32 @@ def simulate(H,distances,distance_sum,total,neg,N=1000):
     return simES
 
 def FDR(TFresults,NESlist):
-    #This function iterates through the results and calculates an FDR for each TF motif
+    #This function iterates through the results and calculates an FDR for each TF motif. Also creates a moustache plot.
+    FDRlist = list()
+    LABELS = list()
+    sigx = list()
+    sigy = list()
     for i in range(len(TFresults)):
         NES = TFresults[i][2]
         simNESlist = TFresults[i][4]
         PVAL = TFresults[i][3]
 
-        #Here we calculate a theoretical p-value for the actual value of this TF motif's NES against all other actual NESs (from the other TF motifs)
-        mu = np.mean(NESlist)
-        sigma = np.std(NESlist)
-        actualp = norm.cdf(NES,mu,sigma)
-        actualp = min(actualp,1-actualp)
 
-        #Here we calculate a theoretical p-valuefor the actual value of this TF motif's NES against the simulated NESs for this motif
-        simmu = np.mean(simNESlist)
-        simsigma = np.std(simNESlist)
-        simp = norm.cdf(NES,simmu,simsigma)
-        simp = min(simp,1-simp)
+        # #Here we calculate a theoretical p-value for the actual value of this TF motif's NES against all other actual NESs (from the other TF motifs)
+        # mu = np.mean(NESlist)
+        # sigma = np.std(NESlist)
+        # actualp = norm.cdf(NES,mu,sigma)
+        # actualp = min(actualp,1-actualp)
 
-        #The FDR is then the NES p-value against the distribution of simulated NESs divided by the NES p-value against the distribution of measured NESs
-        FDR1 = simp/actualp
-        TFresults[i].append(FDR1)
+        # #Here we calculate a theoretical p-valuefor the actual value of this TF motif's NES against the simulated NESs for this motif
+        # simmu = np.mean(simNESlist)
+        # simsigma = np.std(simNESlist)
+        # simp = norm.cdf(NES,simmu,simsigma)
+        # simp = min(simp,1-simp)
 
-        #Using classical FDR calculation
-        TFresults[i].append((PVAL*len(NESlist))/float(i))
-
+        # #The FDR is then the NES p-value against the distribution of simulated NESs divided by the NES p-value against the distribution of measured NESs
+        # FDR1 = simp/actualp
+        # TFresults[i].append(FDR1)
 
 
         #This is identical to the above calculation but uses EMPIRICAL p-value instead of theoretical
@@ -261,10 +333,152 @@ def FDR(TFresults,NESlist):
         #     q = ((sum([x for x in simNESlist if x>NES])/len(simNESlist))*sum([x for x in NESlist if x>0]))/sum([x for x in NESlist if x>NES])
         # TFresults[i].append(q)
 
+
+        #Using classical FDR calculation
+        FDR = (PVAL*len(NESlist))/float(i)
+        TFresults[i].append(FDR)
+        FDRlist.append(FDR)
+        if PVAL < pow(10,-6):
+            sigx.append(NES)
+            sigy.append(FDR)
+
+    F = plt.figure()
+    plt.scatter(NESlist,FDRlist,color='black',edgecolor='')
+    plt.scatter(sigx,sigy,color='red',edgecolor='')
+    plt.title("TFEA Results Moustache Plot",fontsize=14)
+    plt.xlabel("Normalized Enrichment Score (NES)",fontsize=14)
+    plt.ylabel("False Discovery Rate (FDR)",fontsize=14)
+    plt.tick_params(
+        axis='y',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        left='off',        # ticks along the bottom edge are off
+        right='off',       # ticks along the top edge are off
+        labelleft='on')
+    plt.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        labelbottom='on')
+    plt.savefig(figuredir + 'TFEA_Results_Moustache_Plot.svg')
     return TFresults
 
 def plot(TFresults):
     return
 
+if __name__ == "__main__":
+    NESlist = np.random.randn(1000)
+    FDRlist = np.random.randn(1000)
+    sigx = NESlist[:10]
+    sigy = FDRlist[:10]
+    F = plt.figure()
+    plt.scatter(NESlist,FDRlist,color='black',edgecolor='')
+    plt.scatter(sigx,sigy,color='red',edgecolor='')
+    plt.title("TFEA Results Moustache Plot",fontsize=14)
+    plt.xlabel("Normalized Enrichment Score (NES)",fontsize=14)
+    plt.ylabel("False Discovery Rate (FDR)",fontsize=14)
+    plt.tick_params(
+        axis='y',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        left='off',        # ticks along the bottom edge are off
+        right='off',       # ticks along the top edge are off
+        labelleft='on')
+    plt.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        labelbottom='on')
+    plt.savefig('../figures/TFEA_Results_Moustache_Plot.svg')
+    # plt.show()
+
+    ES = np.random.randn(1000)
+    F = plt.figure()
+    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+    ax0 = plt.subplot(gs[0])
+    ax0.plot(range(1,len(ES)+1),ES,color='green')
+    ax1 = plt.subplot(gs[1])
+    ax1.bar(range(1,len(ES)+1), [1 if x>2 else 0 for x in ES],color='black')
+    # plt.plot(range(1,len(ES)+1),ES)
+    ax0.tick_params(
+        axis='y',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        left='off',        # ticks along the bottom edge are off
+        right='off',       # ticks along the top edge are off
+        labelleft='on')
+    ax0.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        labelbottom='off')
+    ax1.tick_params(
+        axis='y',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        left='off',        # ticks along the bottom edge are off
+        right='off',       # ticks along the top edge are off
+        labelleft='off')
+    ax1.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        labelbottom='on')
+    ax0.set_title('Enrichment Plot: ',fontsize=14)
+    ax1.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+    ax1.set_ylabel('Hits', fontsize=14)
+    ax0.set_ylabel('Enrichment Score (ES)', fontsize=14)
+    plt.savefig('../figures/HO_P53_HUMAN.H10MO.B.bed_enrichment_plot.svg')
+    # plt.show()
+
+    MOTIF_FILE,ES,NES,PVAL,FDR = ['HO_P53_HUMAN.H10MO.B.bed',0.182143716966,6.22622338072,7.43595407471e-10,0.0]
+    outfile = open('../figures/' + MOTIF_FILE + '.results.html','w')
+    outfile.write("""<!DOCTYPE html>
+    <html>
+    <head>
+    <title>"""+MOTIF_FILE+""" Results</title>
+    <style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+    </style>
+    </head>
+    <body>
+    <h1>"""+MOTIF_FILE+""" Results</h1>
+    <div>
+        <div id="Positively Enriched" style="float: left;">
+            <table> 
+                <tr>
+                    <th>TF Motif</th>
+                    <th>ES</th> 
+                    <th>NES</th>
+                    <th>P-value</th>
+                    <th>FDR</th>
+                </tr>
+                <tr>
+                    <td>"""+MOTIF_FILE+"""</td>
+                    <td>"""+str("%.3f" % ES)+"""</td>
+                    <td>"""+str("%.3f" % NES)+"""</td>
+                    <td>"""+str("%.4g" % PVAL)+"""</td>
+                    <td>"""+str("%.4g" % FDR)+"""</td>
+                </tr>
+        </div>
+    </div>
+    <img src="../figures/""" + MOTIF_FILE + """_enrichment_plot.svg" alt="Enrichment Plot">
+    </body>
+    </html>""")
+    outfile.close()
 
 
