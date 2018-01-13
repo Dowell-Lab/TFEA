@@ -79,7 +79,8 @@ def run():
                     #the HOCOMOCO database.
                     if CALCULATE:
                         a = time.time()
-                        TFresults.append(ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits))
+                        results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits)
+                        TFresults.append(results)
                         NESlist.append(results[1])
                         print MOTIF_FILE,results[0],results[1],results[2]
                         print "ES calculation done in: ", time.time()-a,"s"
