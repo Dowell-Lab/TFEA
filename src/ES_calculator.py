@@ -187,92 +187,92 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
     p = min(p,1-p)
 
     #Plot results for significant hits while list of simulated ES scores is saved to memory
-    if p < pow(10,-6):
-        F = plt.figure()
-        gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
-        ax0 = plt.subplot(gs[0])
-        ax0.plot(range(1,len(ES)+1),ES,color='green')
-        ax1 = plt.subplot(gs[1])
-        ax1.bar(range(1,len(ES)+1), [1 if x!=neg else 0 for x in distances],color='black')
-        # plt.plot(range(1,len(ES)+1),ES)
-        ax0.tick_params(
-            axis='y',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            left='off',        # ticks along the bottom edge are off
-            right='off',       # ticks along the top edge are off
-            labelleft='on')
-        ax0.tick_params(
-            axis='x',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            bottom='off',      # ticks along the bottom edge are off
-            top='off',         # ticks along the top edge are off
-            labelbottom='off')
-        ax1.tick_params(
-            axis='y',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            left='off',        # ticks along the bottom edge are off
-            right='off',       # ticks along the top edge are off
-            labelleft='off')
-        ax1.tick_params(
-            axis='x',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            bottom='off',      # ticks along the bottom edge are off
-            top='off',         # ticks along the top edge are off
-            labelbottom='on')
-        ax0.set_title('Enrichment Plot: '+ MOTIF_FILE,fontsize=14)
-        ax1.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-        ax1.set_ylabel('Hits', fontsize=14)
-        ax0.set_ylabel('Enrichment Score (ES)', fontsize=14)
-        plt.savefig(figuredir + MOTIF_FILE + '_enrichment_plot.svg')
-        plt.close()
+    # if p < pow(10,-6):
+    F = plt.figure()
+    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+    ax0 = plt.subplot(gs[0])
+    ax0.plot(range(1,len(ES)+1),ES,color='green')
+    ax1 = plt.subplot(gs[1])
+    ax1.bar(range(1,len(ES)+1), [1 if x!=neg else 0 for x in distances],color='black')
+    # plt.plot(range(1,len(ES)+1),ES)
+    ax0.tick_params(
+        axis='y',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        left='off',        # ticks along the bottom edge are off
+        right='off',       # ticks along the top edge are off
+        labelleft='on')
+    ax0.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        labelbottom='off')
+    ax1.tick_params(
+        axis='y',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        left='off',        # ticks along the bottom edge are off
+        right='off',       # ticks along the top edge are off
+        labelleft='off')
+    ax1.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom='off',      # ticks along the bottom edge are off
+        top='off',         # ticks along the top edge are off
+        labelbottom='on')
+    ax0.set_title('Enrichment Plot: '+ MOTIF_FILE,fontsize=14)
+    ax1.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+    ax1.set_ylabel('Hits', fontsize=14)
+    ax0.set_ylabel('Enrichment Score (ES)', fontsize=14)
+    plt.savefig(figuredir + MOTIF_FILE + '_enrichment_plot.svg')
+    plt.close()
 
-        #Generate an html file to be used in results.html
-        outfile = open(figuredir + MOTIF_FILE + 'results.html','w')
-        outfile.write("""<!DOCTYPE html>
-        <html>
-        <head>
-        <title>"""+MOTIF_FILE+""" Results</title>
-        <style>
-        table {
-            font-family: arial, sans-serif;
-            border-collapse: collapse;
-            width: 100%;
-        }
+    #Generate an html file to be used in results.html
+    outfile = open(figuredir + MOTIF_FILE + 'results.html','w')
+    outfile.write("""<!DOCTYPE html>
+    <html>
+    <head>
+    <title>"""+MOTIF_FILE+""" Results</title>
+    <style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
 
-        td, th {
-            border: 1px solid #dddddd;
-            text-align: left;
-            padding: 8px;
-        }
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
 
-        tr:nth-child(even) {
-            background-color: #dddddd;
-        }
-        </style>
-        </head>
-        <body>
-        <h1>"""+MOTIF_FILE+""" Results</h1>
-        <div>
-            <div id="Positively Enriched" style="float: left; width: 600px; overflow:scroll">
-                <table> 
-                    <tr>
-                        <th>TF Motif</th>
-                        <th>ES</th> 
-                        <th>NES</th>
-                        <th>P-value</th>
-                        <th>FDR</th>
-                    </tr>
-                    <tr>
-                        <td>"""+MOTIF_FILE+"""</td>
-                        <td>"""+str("%.3f" % ES)+"""</td>
-                        <td>"""+str("%.3f" % NES)+"""</td>
-                        <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str("%.4g" % FDR)+"""</td>
-                    </tr>
-        <img src="../figures/""" + MOTIF_FILE + """_enrichment_plot.svg" alt="Enrichment Plot">
-        </body>
-        </html>""")
-        outfile.close()
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+    </style>
+    </head>
+    <body>
+    <h1>"""+MOTIF_FILE+""" Results</h1>
+    <div>
+        <div id="Positively Enriched" style="float: left; width: 600px; overflow:scroll">
+            <table> 
+                <tr>
+                    <th>TF Motif</th>
+                    <th>ES</th> 
+                    <th>NES</th>
+                    <th>P-value</th>
+                    <th>FDR</th>
+                </tr>
+                <tr>
+                    <td>"""+MOTIF_FILE+"""</td>
+                    <td>"""+str("%.3f" % ES)+"""</td>
+                    <td>"""+str("%.3f" % NES)+"""</td>
+                    <td>"""+str("%.4g" % PVAL)+"""</td>
+                    <td>"""+str("%.4g" % FDR)+"""</td>
+                </tr>
+    <img src="../figures/""" + MOTIF_FILE + """_enrichment_plot.svg" alt="Enrichment Plot">
+    </body>
+    </html>""")
+    outfile.close()
 
     return [MOTIF_FILE,actualES,NES,p,simNES]
 

@@ -82,7 +82,7 @@ def run():
                         results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits)
                         TFresults.append(results)
                         NESlist.append(results[1])
-                        print MOTIF_FILE,results[0],results[1],results[2]
+                        print results[0],results[1],results[2],results[3]
                         print "ES calculation done in: ", time.time()-a,"s"
                 TFresults = ES_calculator.FDR(TFresults,NESlist)
                 outfile = open(output + 'results.txt', 'w')
