@@ -25,57 +25,12 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
         outfile.write('\t'.join(region) + '\n')
 
 
-# def deseqfile_up_down(DESEQFILE,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF):
-#     rankup = list()
-#     rankdown = list()
-#     with open(DESEQFILE) as F:
-#         F.readline()
-#         for line in F:
-#             try:
-#                 line = line.strip('\n').split('\t')
-#                 pval = format(float(line[-2]),'.12f')
-#                 chrom,start,stop = line[1].split(',')
-#                 chrom = chrom.strip('"')
-#                 stop = stop.strip('"')
-#                 center = (int(start)+int(stop))/2
-#                 fc = float(line[5])
-#                 if fc > 1:
-#                     rankup.append((chrom,str(center),str(center+1),pval))
-#                 else:
-#                     rankdown.append((chrom,str(center),str(center+1),pval))
-#             except ValueError:
-#                 pass
-
-
-#     if SINGLEMOTIF == False:
-#         print "This module isn't finished yet"
-#     else:
-#         for MOTIF_FILE in os.listdir(MOTIF_HITS):
-#             if MOTIF_FILE == SINGLEMOTIF:
-#                 a = BedTool(rankup)
-#                 b = BedTool(MOTIF_HITS + MOTIF_FILE)
-#                 c = a.closest(b,d=True)
-#                 d = BedTool(rankdown)
-#                 e = d.closest(b,d=True)
-
-
-
-#     outfile = open(filedir + "ranked_file_up.bed",'w')
-#     for region in sorted(c, key=lambda x: x[3]):
-#         outfile.write('\t'.join(region[:4]) + '\t' + region[-1] + '\n')
-
-#     outfile = open(filedir + "ranked_file_down.bed",'w')
-#     for region in sorted(e, key=lambda x: x[3]):
-#         outfile.write('\t'.join(region[:4]) + '\t' + region[-1] + '\n')
-
-
 def deseqfile(DESEQFILE,filedir):
     #Parse a deseq file and obtain the exact middle of each region (for motif distance calc later) and pvalue (to rank)
     ranked = list()
     with open(DESEQFILE) as F:
         F.readline()
         for line in F:
-            # try:
             line = line.strip('\n').split('\t')
             pval = format(float(line[-2]),'.12f')
             region = line[1].split(':')
@@ -86,10 +41,7 @@ def deseqfile(DESEQFILE,filedir):
             chrom = chrom.strip('"')
             stop = stop.strip('"')
             ranked.append((chrom,start,stop,pval))
-            # except ValueError:
-            #     print line[-2]
-            #     pass
-    print ranked
+
     #Save ranked regions in a bed file (pvalue included)
     outfile = open(filedir + "ranked_file.bed",'w')
     r=1
