@@ -1,3 +1,5 @@
+import read_conditions
+
 #User defined input. Spceify here the parameters used to run TFEA including full paths to all the necessary input files
 #======================================================================================================================#
 #Will you be using the batch analysis module? If so, BEDS, BAM variables, and LABEL variables are specified in sbatch script.
@@ -5,7 +7,7 @@ BATCH = False
 
 #Which parts of TFEA would you like to run? These are switches to turn on/off different modules in TFEA
 COMBINE = True
-COUNT = False
+COUNT = True
 RANK = True
 DISTANCE = True
 CALCULATE = True
@@ -15,22 +17,40 @@ OUTPUT = False
 
 #Define the FDR cutoff to be used for calling significant hits
 FDRCUTOFF = pow(10,-6)
+# FDRCUTOFF = 0.05
 
-#Input a list of bed files with regions of interest to be analyzed. Ideally, these are meant to be Tfit output files corresponding to each bam file submitted. 
-#These files will be concatenated and merged (bedtools) to produce detected regions in all samples. If you only have one bed file with regions of interest
-#submit it as a single item in the BEDS list and set COMBINE to False.
-BEDDIR = '/scratch/Shares/dowell/md_score_paper/tfit_bed_files/human/recent/'
-BEDS = [BEDDIR+'SRR1105736-1_bidir_predictions.bed',BEDDIR+'SRR1105737-1_bidir_predictions.bed',BEDDIR+'SRR1105738-1_bidir_predictions.bed',BEDDIR+'SRR1105739-1_bidir_predictions.bed']
+CONDITION = False
 
-#Input bam files as a list containing transcription data. Must specify at least two bam files. 
-#If multiple replicates, specify each as a full path in the appropriate list.
-BAMDIR = '/scratch/Shares/dowell/pubgro/Allen2014/bowtie2/sortedbam/'
-BAM1 = [BAMDIR+'SRR1105736.fastqbowtie2.sorted.bam',BAMDIR+'SRR1105737.fastqbowtie2.sorted.bam']
-BAM2 = [BAMDIR+'SRR1105738.fastqbowtie2.sorted.bam',BAMDIR+'SRR1105739.fastqbowtie2.sorted.bam']
+if CONDITION:
+    CONDITIONS='/scratch/Users/joru1876/TFEA_files/conditions_short_20161103_tentative.txt_20161107-165140.csv'
+    SPECIFICCELLTYPE = 'HCT116'
+    LABEL1='DMSO_1hr'
+    LABEL2='Nutlin_1hr'
+    BAMDIR='/scratch/Users/joru1876/TFEA_files/bams/'
+    BEDDIR='/scratch/Users/joru1876/TFEA_files/tfit_beds/'
+    KEYWORD='Allen2014'
+    FILEDIR='/scratch/Users/joru1876/TFEA_files/Allen2014-30/'
+    BAM1,BAM2,BEDS = read_conditions.run(CONDITIONS,KEYWORD,SPECIFICCELLTYPE,LABEL1,LABEL2,BAMDIR,BEDDIR)
+else:
+    #Input a list of bed files with regions of interest to be analyzed. Ideally, these are meant to be Tfit output files corresponding to each bam file submitted. 
+    #These files will be concatenated and merged (bedtools) to produce detected regions in all samples. If you only have one bed file with regions of interest
+    #submit it as a single item in the BEDS list and set COMBINE to False.
+    # BEDDIR1 = ''
+    BEDDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/genomecoveragebed/fortdf/Tfit/'
+    BEDS = [BEDDIR2+'JDR_Tfit-5_bidir_predictions.bed',BEDDIR2+'JDR_Tfit-7_bidir_predictions.bed']
 
-#Specify conditions for bam files
-LABEL1 = 'DMSO_1hr'
-LABEL2 = 'Nutlin_1hr'
+    #Input bam files as a list containing transcription data. Must specify at least two bam files. 
+    #If multiple replicates, specify each as a full path in the appropriate list.
+    BAMDIR1 = '/scratch/Users/joru1876/Taatjes/161220_K00262_0062_BHH7CHBBXX_IRISREP1/trimmed/flipped/bowtie2_first_run/sortedbam/'
+    BAMDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/'
+    BAM1 = [BAMDIR2+'0_2_S1_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'0-1_S11_L006_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+    BAM2 = [BAMDIR2+'30_2_S3_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-1_S15_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+
+    #Specify conditions for bam files
+    LABEL1 = '0 IFN'
+    LABEL2 = '30 IFN'
+
+    FILEDIR = '/scratch/Users/joru1876/TFEA_files/IRIS/'
 
 #Specify cell type
 CELLTYPE = 'HCT116'

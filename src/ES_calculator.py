@@ -19,14 +19,13 @@ def parent_dir(directory):
     
     return newdir
 
-def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
+def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir):
     #Initiate some variables
     H = 1500.0
     ES = list()
     Eval = 0.0
     distances = list()
     ind = list()
-    total = 0.0
     negatives = 0.0
     distance_sum = 0.0
 
@@ -36,7 +35,6 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
             line = line.strip('\n').split('\t')
             distance = float(line[-1])
             rank = int(line[4])
-            total += 1
             if distance > H:
                 distances.append(-1)
                 ind.append(rank)
@@ -47,7 +45,6 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
                 distance_sum += H-distance
 
     #actualES calculation:
-
     try:
         neg = -1.0/negatives
     except:
@@ -72,7 +69,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
 
     #To get NES, first simulate 1000 permuations of region ranks
     a = time.time()
-    simES = simulate(H,distances,distance_sum,total,neg)
+    simES = simulate(H,distances,distance_sum,neg)
     print "Simulation done in: ", time.time()-a, "s"
 
     #NES is the actualES divided by the mean ES of all permutations with the same sign as actualES
@@ -80,23 +77,22 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
     if actualES < 0:
         simESsubset = [x for x in simES if x < 0]
         mu = np.mean(simESsubset)
+        sigma = np.std(simESsubset)
         NES = -(actualES/mu)
     else:
         simESsubset = [x for x in simES if x > 0]
         mu = np.mean(simESsubset)
         NES = actualES/mu
 
-    #Now calculate an NES for each simulated ES
-    simNES = list()
-    for singleES in simES:
-        if singleES < 0:
-            simESsubset = [x for x in simES if x < 0]
-            mu = np.mean(simESsubset)
-            simNES.append(-(singleES/mu))
-        else:
-            simESsubset = [x for x in simES if x > 0]
-            mu = np.mean(simESsubset)
-            simNES.append(singleES/mu)
+    # #Now calculate an NES for each simulated ES
+    # simNES = list()
+    # for singleES in simES:
+    #     if singleES < 0:
+    #         mu = np.mean(negativesubset)
+    #         simNES.append(-(singleES/mu))
+    #     else:
+    #         mu = np.mean(positivesubset)
+    #         simNES.append(singleES/mu)
 
     #This section calculates the theoretical p-value based on the mean and standard deviation of the 1000 simulations
     #The p-value is then the CDF where x = actualES. Test is two tailed, hence: min(p,1-p)
@@ -108,20 +104,37 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
     #Plot results for significant hits while list of simulated ES scores is in memory
     if p < FDRCUTOFF:
         #Smooth hits to plot later
-        hits = [1 if x!=neg else 0 for x in distances]
-        window = 100
-        newhits = [0]*len(hits)
-        for i in range(0,len(hits),window):
-            if sum(hits[i:i+window]) > window/2:
-                newhits[i+window/2] = 1
+        hits = [1.0*(x/H) if x!=neg else 0 for x in distances]
+        hitlength = len(hits)
+        width = hitlength/1000
+        # YlOrRd = plt.get_cmap('YlOrRd')
+        # hist,_=np.histogram(hits,bins=width)
+        # newhits = [0]*len(hits)
+        # for i in range(0,len(hits),window):
+        #     if sum(hits[i:i+window]) > 1:
+        #         newhits[i+window/2] = 1
 
-        F = plt.figure()
+        newhits = list()
+        for i in range(0,hitlength,width):
+            newhits.append(float(sum(hits[i:i+width])))
+
+        newhitmax = float(max(newhits))
+        newhitlength = len(newhits)
+
+        alphas = [(x/newhitmax) for x in newhits]
+        rgba_colors = np.zeros((newhitlength,4))
+        rgba_colors[:,0] = 0.0
+        rgba_colors[:,1] = 0.0
+        rgba_colors[:,2] = 0.0
+        rgba_colors[:,3] = alphas
+
+        F = plt.figure(figsize=(15,6))
         gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
         ax0 = plt.subplot(gs[0])
         ax0.plot(range(1,len(ES)+1),ES,color='green')
         ax1 = plt.subplot(gs[1])
-        ax1.bar(range(1,len(ES)+1), newhits ,color='black')
-        # plt.plot(range(1,len(ES)+1),ES)
+        print range(1,hitlength+1,width)[:10], ([1]*newhitlength)[:10], rgba_colors[:10]
+        ax1.bar(range(1,hitlength+1,width), [1]*newhitlength ,color=rgba_colors,edgecolor = "none")
         ax0.tick_params(
             axis='y',          # changes apply to the x-axis
             which='both',      # both major and minor ticks are affected
@@ -147,18 +160,25 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
             top='off',         # ticks along the top edge are off
             labelbottom='on')
         ax0.set_title('Enrichment Plot: '+ MOTIF_FILE,fontsize=14)
+        ylims = ax0.get_ylim()
+        ymax = math.fabs(max(ylims,key=abs))
+        ax0.set_ylim([-ymax,ymax])
+        ax0.set_xlim([1,hitlength])
+        ax1.set_xlim([1,hitlength])
         ax1.set_xlabel('Rank in Ordered Dataset', fontsize=14)
         ax1.set_ylabel('Hits', fontsize=14)
         ax0.set_ylabel('Enrichment Score (ES)', fontsize=14)
-        plt.savefig(figuredir + MOTIF_FILE + '_enrichment_plot.svg')
+        plt.savefig(figuredir + MOTIF_FILE + '_enrichment_plot.svg',bbox_inches='tight')
         plt.close()
 
         F = plt.figure()
         ax2 = plt.subplot(111)
+        maximum = max(simES)
+        minimum = min(simES)
         ax2.hist(simES,bins=100)
-        width = (max(simES)-min(simES))/100.0
-        ax2.bar(actualES,ax2.get_ylim()[1]-1.0,color='red',width=width)
-        ax2.set_xlim([min(min(simES),actualES)+width,max(max(simES),actualES)+width])
+        width = (maximum-minimum)/100.0
+        ax2.bar(actualES,ax2.get_ylim()[1]-1.0,color='red',width=width*2)
+        ax2.set_xlim([min(minimum,actualES)-(width*4),max(maximum,actualES)+(width*4)])
         ax2.tick_params(
             axis='y',          # changes apply to the x-axis
             which='both',      # both major and minor ticks are affected
@@ -179,12 +199,13 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits):
 
     return [MOTIF_FILE,actualES,NES,p]
 
-def simulate(H,distances,distance_sum,total,neg,N=1000):
+def simulate(H,distances,distance_sum,neg,N=1000):
     #Simulate 1000 permuations of region ranks
     simES = list()
     for i in range(N):
         Eval = 0.0
-        ES = list()
+        maximum = 0.0
+        minimum = 0.0
         #Here we actually shuffle the regions
         np.random.shuffle(distances)
 
@@ -192,11 +213,13 @@ def simulate(H,distances,distance_sum,total,neg,N=1000):
         for distance in distances:
             if distance != neg:
                 Eval += distance/distance_sum
-                ES.append(Eval)
+                if Eval > maximum:
+                    maximum = Eval
             else:
                 Eval += distance
-                ES.append(Eval)
-        simES.append(max(ES,key=abs))
+                if Eval < minimum:
+                    minimum = Eval
+        simES.append(max(maximum,minimum,key=abs))
 
     return simES
 

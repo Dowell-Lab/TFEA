@@ -13,26 +13,29 @@ import create_html
 
 def run():
     #Import all variables from config file
-    from config import BATCH,COMBINE,COUNT,RANK,DISTANCE,CALCULATE,BEDS,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE,LABEL1,LABEL2,OUTPUT
+    from config import BATCH,COMBINE,COUNT,RANK,DISTANCE,CALCULATE,BEDS,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE,LABEL1,LABEL2,OUTPUT,FILEDIR
 
     #Choose what type of ranking metric to be used to rank regions of interest:
     #Options: "log2fc", "deseqfile","deseq"
-    rank_metric = "deseqfile"
+    rank_metric = "deseq"
 
     #Home directory
     homedir = os.path.dirname(os.path.realpath(__file__))
 
     #Directory where all temp files will be stored
     # filedir = parent_dir(homedir) + '/files/'
-    filedir = '/scratch/Users/joru1876/TFEA_files/Allen2014/'
+    filedir = FILEDIR
 
     #Output directory
     # output = parent_dir(homedir) + '/output/'
-    output = '/scratch/Users/joru1876/TFEA_files/Allen2014/output/'
+    output = FILEDIR + 'output/'
+    if not os.path.isdir(output):
+        os.makedirs(output)
 
     #Directory where plots used in html file will be stored.
     figuredir = output + 'plots/'
-
+    if not os.path.isdir(figuredir):
+        os.makedirs(figuredir)
     #Scripts directory
     scriptdir = parent_dir(homedir) + '/scripts/'
 
@@ -75,7 +78,7 @@ def run():
             rank_regions.deseqfile(DESEQFILE,filedir)
         if rank_metric == "deseq":
             DESEQFILE2 = DESeq.run(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir)
-            rank_regions.deseqfile(DESEQFILE2,GENOME,filedir,MOTIF_HITS,SINGLEMOTIF)
+            rank_regions.deseqfile(DESEQFILE2,filedir)
         print "done"
     RANKtime = time.time()-RANKtime
 
@@ -94,14 +97,14 @@ def run():
                 CALCULATEtime = 0.0
                 for MOTIF_FILE in os.listdir(MOTIF_HITS):
                     a = time.time()
-                    total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
+                    motif_distance.run(ranked_file,filedir,MOTIF_HITS+MOTIF_FILE)
                     DISTANCEtime += time.time()-a
 
                     #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                     #the HOCOMOCO database.
                     if CALCULATE:
                         b = time.time()
-                        results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,total_hits)
+                        results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir)
                         TFresults.append(results)
                         CALCULATEtime += time.time()-b
                 TFresults = ES_calculator.FDR(TFresults,figuredir)
@@ -109,7 +112,6 @@ def run():
                 outfile = open(output + 'results.txt', 'w')
                 outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
                 for val in TFresults:
-                    # outfile.write('\t'.join([str(val[i]) for i in range(len(val)) if i!=4]) +  '\n')
                     outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
                 outfile.close()
                 create_html.run(TFresults,output,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULATEtime)

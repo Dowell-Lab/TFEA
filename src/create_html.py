@@ -50,10 +50,20 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
             }
             </style>
             </head>
-            <body>
+            <body style="width: 1300px; overflow:scroll">
             <h1>"""+MOTIF_FILE+""" Results</h1>
             <div>
-                <div id="Positively Enriched" style="float: left; width: 1000px; overflow:scroll">
+                <div style="float: left; width 1250px">
+                    <img src="./"""+MOTIF_FILE+"""_enrichment_plot.svg" alt="Enrichment Plot">
+                </div>
+            </div>
+            <div>
+                <div style="float:left; overflow:scroll">
+                    <img src="./"""+MOTIF_FILE+"""_simulation_plot.svg" alt="Simulation Plot">
+                </div>
+                <div style="float: right; width: 500px; overflow:scroll">
+                    <img src="../../logo/"""+MOTIF_FILE+"""_direct.png" alt="Direct Logo">
+                    <img src="../../logo/"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
                     <table> 
                         <tr>
                             <th>TF Motif</th>
@@ -69,8 +79,8 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
                             <td>"""+str("%.4g" % PVAL)+"""</td>
                             <td>"""+str("%.4g" % FDR)+"""</td>
                         </tr>
-            <img src="./"""+MOTIF_FILE+"""_enrichment_plot.svg" alt="Enrichment Plot">
-            <img src="./"""+MOTIF_FILE+"""_simulation_plot.svg" alt="Simulation Plot">
+                </div>
+            </div>
             </body>
             </html>""")
             outfile.close()
@@ -151,8 +161,8 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
         </div>
     </div>
     <div>
-        <div id="Positively Enriched" style="float: left; width: 600px; overflow:scroll">
-            <h1>Positively Enriched</h1>
+        <div id="Positive Enrichement Score" style="float: left; width: 600px; overflow:scroll">
+            <h1>Positive Enrichement Score</h1>
             <table> 
                 <tr>
                     <th>TF Motif</th>
@@ -188,8 +198,8 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
     outfile.write("""            </table>
         </div>
 
-        <div id="Negatively Enriched" style="float: right; width: 600px; overflow:scroll">
-            <h1>Negatively Enriched</h1>
+        <div id="Negative Enrichement Score" style="float: right; width: 600px; overflow:scroll">
+            <h1>Negative Enrichement Score</h1>
             <table> 
                 <tr>
                     <th>TF Motif</th>

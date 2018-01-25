@@ -38,13 +38,12 @@ def run(ranked_file,filedir,MOTIF_PATH):
             chrom,start,stop = line[:3]
             center = (int(start)+int(stop))/2
             outfile.write(chrom + '\t' + str(center) + '\t' + str(center+1) + '\t' + '\t'.join(line[3:]) + '\n')
+    outfile.close()
 
     #Get closest motif hit to center base of each region
-    command = "bedtools closest -d -a " + filedir + "ranked_file.center.sorted.bed -b " + MOTIF_PATH + " > " + filedir + "ranked_file.center.sorted.distance.bed"
-    os.system("sortBed -i " + filedir + "ranked_file.center.bed > " + filedir + "ranked_file.center.sorted.bed")
-    exit_code = os.system(command)
+    os.system("sort -k1,1 -k2,2n " + filedir + "ranked_file.center.bed > " + filedir + "ranked_file.center.sorted.bed")
+    os.system("bedtools closest -d -a " + filedir + "ranked_file.center.sorted.bed -b " + MOTIF_PATH + " > " + filedir + "ranked_file.center.sorted.distance.bed")
 
-    return get_line_count(MOTIF_PATH)
 
 def run_pybedtools(ranked_file,filedir,MOTIF_HITS,SINGLEMOTIF):
     #Get center base for each region

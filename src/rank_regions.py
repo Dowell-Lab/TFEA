@@ -28,6 +28,8 @@ def log2fc(count_file,filedir,GENOME,BAM1,BAM2):
 def deseqfile(DESEQFILE,filedir):
     #Parse a deseq file and obtain the exact middle of each region (for motif distance calc later) and pvalue (to rank)
     ranked = list()
+    up = list()
+    down = list()
     with open(DESEQFILE) as F:
         F.readline()
         for line in F:
@@ -40,14 +42,28 @@ def deseqfile(DESEQFILE,filedir):
             stop = coordinates[1]
             chrom = chrom.strip('"')
             stop = stop.strip('"')
+            fc = float(line[4])
+            if fc < 1:
+                down.append((chrom,start,stop,pval,str(fc)))
+            else:
+                up.append((chrom,start,stop,pval,str(fc)))
             ranked.append((chrom,start,stop,pval))
 
     #Save ranked regions in a bed file (pvalue included)
     outfile = open(filedir + "ranked_file.bed",'w')
+    # r=1
+    # for region in sorted(ranked, key=lambda x: x[3]):
+    #     outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
+    #     r += 1
     r=1
-    for region in sorted(ranked, key=lambda x: x[3]):
+    for region in sorted(up, key=lambda x: x[3]):
         outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
         r += 1
+    for region in sorted(down, key=lambda x: x[3], reverse=True):
+        outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
+        r += 1
+
+    outfile.close()
 
 
 
