@@ -8,18 +8,18 @@ BATCH = False
 #Which parts of TFEA would you like to run? These are switches to turn on/off different modules in TFEA
 COMBINE = True
 COUNT = True
+DESEQ = True
 RANK = True
 DISTANCE = True
 CALCULATE = True
 
-#Specify output directory
-OUTPUT = False
-
 #Define the FDR cutoff to be used for calling significant hits
 FDRCUTOFF = pow(10,-6)
+PVALCUTOFF = 0.01
+DRAWPVALCUTOFF = False
 # FDRCUTOFF = 0.05
 
-CONDITION = False
+CONDITION = True
 
 if CONDITION:
     CONDITIONS='/scratch/Users/joru1876/TFEA_files/conditions_short_20161103_tentative.txt_20161107-165140.csv'
@@ -29,7 +29,7 @@ if CONDITION:
     BAMDIR='/scratch/Users/joru1876/TFEA_files/bams/'
     BEDDIR='/scratch/Users/joru1876/TFEA_files/tfit_beds/'
     KEYWORD='Allen2014'
-    FILEDIR='/scratch/Users/joru1876/TFEA_files/Allen2014-30/'
+    OUTPUT='/scratch/Users/joru1876/TFEA_files/Allen2014/'
     BAM1,BAM2,BEDS = read_conditions.run(CONDITIONS,KEYWORD,SPECIFICCELLTYPE,LABEL1,LABEL2,BAMDIR,BEDDIR)
 else:
     #Input a list of bed files with regions of interest to be analyzed. Ideally, these are meant to be Tfit output files corresponding to each bam file submitted. 
@@ -50,14 +50,12 @@ else:
     LABEL1 = '0 IFN'
     LABEL2 = '30 IFN'
 
-    FILEDIR = '/scratch/Users/joru1876/TFEA_files/IRIS/'
-
-#Specify cell type
-CELLTYPE = 'HCT116'
+    OUTPUT = '/scratch/Users/joru1876/TFEA_files/IRIS/'
 
 #Specify whether you want to run a single motif or a database. By default, TFEA runs on the latest version of HOCMOCO obtained through MEME.
 #Default:False. Change to a motif name if you want to run TFEA on a single motif (make sure your single motif is in the specified database).
 # SINGLEMOTIF='HO_P53_HUMAN.H10MO.B.bed'
+# SINGLEMOTIF='HO_PROX1_HUMAN.H10MO.D.bed'
 SINGLEMOTIF=False
 DATABASE='HOCOMOCOv11_full_HUMAN_mono_meme_format.meme'
 

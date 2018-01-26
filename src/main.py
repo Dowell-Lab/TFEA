@@ -13,7 +13,7 @@ import create_html
 
 def run():
     #Import all variables from config file
-    from config import BATCH,COMBINE,COUNT,RANK,DISTANCE,CALCULATE,BEDS,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE,LABEL1,LABEL2,OUTPUT,FILEDIR
+    from config import BATCH,COMBINE,COUNT,DESEQ,RANK,DISTANCE,CALCULATE,BEDS,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE,LABEL1,LABEL2,OUTPUT
 
     #Choose what type of ranking metric to be used to rank regions of interest:
     #Options: "log2fc", "deseqfile","deseq"
@@ -23,12 +23,11 @@ def run():
     homedir = os.path.dirname(os.path.realpath(__file__))
 
     #Directory where all temp files will be stored
-    # filedir = parent_dir(homedir) + '/files/'
-    filedir = FILEDIR
+    filedir = parent_dir(homedir) + '/files/'
 
     #Output directory
     # output = parent_dir(homedir) + '/output/'
-    output = FILEDIR + 'output/'
+    output = OUTPUT + 'output/'
     if not os.path.isdir(output):
         os.makedirs(output)
 
@@ -40,12 +39,17 @@ def run():
     scriptdir = parent_dir(homedir) + '/scripts/'
 
     #Path to count file. Can be changed if using your own count file. Generated in count_reads module
-    count_file = filedir + "count_file.bed"
+    count_file = filedir + "count_file.header.bed"
+
+    #Path to DESeq file. Can be changed if using your own DESeq file. Generated in DESeq module
+    deseq_file = filedir + "DESeq.res.txt"
 
     #Path to ranked file. Can be changed if using your own ranked file. Generated in rank_regions module
     ranked_file = filedir + "ranked_file.bed"
 
     ranked_center_distance_file = filedir + "ranked_file.center.sorted.distance.bed"
+
+    logos = parent_dir(homedir) + '/logo/'
 
     if BATCH:
         BEDS,BAM1,BAM2,LABEL1,LABEL2,OUTPUT = sys.argv
@@ -67,6 +71,11 @@ def run():
         count_reads.run(BED,BAM1,BAM2,LABEL1,LABEL2,filedir)
         print "done"
     COUNTtime = time.time()-COUNTtime
+
+    #This module runs DESeq on specified 
+    if DESEQ:
+        deseq_file = DESeq.run(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir,count_file)
+
 
     #This module ranks regions in BED based on some specified metric
     RANKtime = time.time()
@@ -104,7 +113,7 @@ def run():
                     #the HOCOMOCO database.
                     if CALCULATE:
                         b = time.time()
-                        results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir)
+                        results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,logos)
                         TFresults.append(results)
                         CALCULATEtime += time.time()-b
                 TFresults = ES_calculator.FDR(TFresults,figuredir)
@@ -119,9 +128,9 @@ def run():
             #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
             #This will return only
             else:
-                total_hits = motif_distance.run(ranked_file,filedir,MOTIF_HITS+SINGLEMOTIF)
-                results = ES_calculator.run(ranked_center_distance_file,figuredir,filedir,total_hits)
-                print SINGLEMOTIF, results[0], results[1], results[2], results[3]
+                motif_distance.run(ranked_file,filedir,MOTIF_HITS+SINGLEMOTIF)
+                results = ES_calculator.run(SINGLEMOTIF,ranked_center_distance_file,figuredir,filedir,logos)
+                create_html.single_motif(results,output)
         print "done"
 
 

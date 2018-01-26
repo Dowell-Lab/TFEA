@@ -11,7 +11,8 @@ from matplotlib import gridspec
 from random import shuffle
 from scipy.stats import norm
 import time
-from config import FDRCUTOFF
+from config import FDRCUTOFF,PVALCUTOFF,SINGLEMOTIF,DRAWPVALCUTOFF
+import collections
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -19,7 +20,7 @@ def parent_dir(directory):
     
     return newdir
 
-def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir):
+def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,logos):
     #Initiate some variables
     H = 1500.0
     ES = list()
@@ -34,15 +35,19 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir):
         for line in F:
             line = line.strip('\n').split('\t')
             distance = float(line[-1])
-            rank = int(line[4])
+            pval = float(line[3])
+            rank = int(line[5])
+            fc = float(line[4])
             if distance > H:
                 distances.append(-1)
                 ind.append(rank)
                 negatives += 1.0
             else:
-                distances.append(H-distance)
+                value = math.exp(-distance)
+                distances.append(value)
                 ind.append(rank)
-                distance_sum += H-distance
+                distance_sum += value
+
 
     #actualES calculation:
     try:
@@ -84,16 +89,6 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir):
         mu = np.mean(simESsubset)
         NES = actualES/mu
 
-    # #Now calculate an NES for each simulated ES
-    # simNES = list()
-    # for singleES in simES:
-    #     if singleES < 0:
-    #         mu = np.mean(negativesubset)
-    #         simNES.append(-(singleES/mu))
-    #     else:
-    #         mu = np.mean(positivesubset)
-    #         simNES.append(singleES/mu)
-
     #This section calculates the theoretical p-value based on the mean and standard deviation of the 1000 simulations
     #The p-value is then the CDF where x = actualES. Test is two tailed, hence: min(p,1-p)
     mu = np.mean(simES)
@@ -102,102 +97,107 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir):
     p = min(p,1-p)
 
     #Plot results for significant hits while list of simulated ES scores is in memory
-    if p < FDRCUTOFF:
-        #Smooth hits to plot later
-        hits = [1.0*(x/H) if x!=neg else 0 for x in distances]
-        hitlength = len(hits)
-        width = hitlength/1000
-        # YlOrRd = plt.get_cmap('YlOrRd')
-        # hist,_=np.histogram(hits,bins=width)
-        # newhits = [0]*len(hits)
-        # for i in range(0,len(hits),window):
-        #     if sum(hits[i:i+window]) > 1:
-        #         newhits[i+window/2] = 1
+    if p < FDRCUTOFF or SINGLEMOTIF != False:
+        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
+        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
+        scatterx = list()
+        sigscatterx = list()
+        scattery = list()
+        sigscattery = list()
+        logpval = list()
+        #First parse file containing motif distance and region rank. Also count total negatives to be used later
+        with open(ranked_center_distance_file) as F:
+            for line in F:
+                line = line.strip('\n').split('\t')
+                distance = float(line[-1])
+                pval = float(line[3])
+                rank = int(line[5])
+                fc = float(line[4])
+                if fc > 1:
+                    try:
+                        logpval.append(-math.log(pval,10))
+                    except ValueError:
+                        logpval.append(500.0)
+                else:
+                    try:
+                        logpval.append(math.log(pval,10))
+                    except ValueError:
+                        logpval.append(-500.0)
+                if distance < H:
+                    if pval < PVALCUTOFF:
+                        sigscatterx.append(rank)
+                        sigscattery.append(distance)
+                    else:
+                        scatterx.append(rank)
+                        scattery.append(distance)
 
-        newhits = list()
-        for i in range(0,hitlength,width):
-            newhits.append(float(sum(hits[i:i+width])))
-
-        newhitmax = float(max(newhits))
-        newhitlength = len(newhits)
-
-        alphas = [(x/newhitmax) for x in newhits]
-        rgba_colors = np.zeros((newhitlength,4))
-        rgba_colors[:,0] = 0.0
-        rgba_colors[:,1] = 0.0
-        rgba_colors[:,2] = 0.0
-        rgba_colors[:,3] = alphas
-
-        F = plt.figure(figsize=(15,6))
-        gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+        logpval = [x for _,x in sorted(zip(ind,logpval))]
+        #Plots the enrichment plot which contains three subplots:
+        #   1. Typical ES vs. region rank (GSEA-style)
+        #   2. A scatter plot with distance to motif on y-axis and rank on x-axis
+        #   3. A plot similar to GSEAs 'phenotype label' plot to show where the fc crosses 1. On the y-axis is log10(pval) (positive if
+        #       fc > 1, else negative) on the x-axis is regions ranked
+        F = plt.figure(figsize=(16.5,6))
+        xvals = range(1,len(ES)+1)
+        limits = [1,len(ES)]
+        gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1])
         ax0 = plt.subplot(gs[0])
-        ax0.plot(range(1,len(ES)+1),ES,color='green')
-        ax1 = plt.subplot(gs[1])
-        print range(1,hitlength+1,width)[:10], ([1]*newhitlength)[:10], rgba_colors[:10]
-        ax1.bar(range(1,hitlength+1,width), [1]*newhitlength ,color=rgba_colors,edgecolor = "none")
-        ax0.tick_params(
-            axis='y',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            left='off',        # ticks along the bottom edge are off
-            right='off',       # ticks along the top edge are off
-            labelleft='on')
-        ax0.tick_params(
-            axis='x',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            bottom='off',      # ticks along the bottom edge are off
-            top='off',         # ticks along the top edge are off
-            labelbottom='off')
-        ax1.tick_params(
-            axis='y',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            left='off',        # ticks along the bottom edge are off
-            right='off',       # ticks along the top edge are off
-            labelleft='off')
-        ax1.tick_params(
-            axis='x',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            bottom='off',      # ticks along the bottom edge are off
-            top='off',         # ticks along the top edge are off
-            labelbottom='on')
-        ax0.set_title('Enrichment Plot: '+ MOTIF_FILE,fontsize=14)
+        ax0.plot(xvals,ES,color='green')
+        ax0.axhline(0, color='black',linestyle='dashed')
+        ax0.set_title('Enrichment Plot: '+ MOTIF_FILE.split('.bed')[0],fontsize=14)
+        ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
+        ax0.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
+        ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
         ylims = ax0.get_ylim()
         ymax = math.fabs(max(ylims,key=abs))
         ax0.set_ylim([-ymax,ymax])
-        ax0.set_xlim([1,hitlength])
-        ax1.set_xlim([1,hitlength])
-        ax1.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-        ax1.set_ylabel('Hits', fontsize=14)
-        ax0.set_ylabel('Enrichment Score (ES)', fontsize=14)
-        plt.savefig(figuredir + MOTIF_FILE + '_enrichment_plot.svg',bbox_inches='tight')
+        ax0.set_xlim(limits)
+        ax1 = plt.subplot(gs[1])
+        ax1.scatter(scatterx,scattery,edgecolor="",color="black",s=10)
+        if DRAWPVALCUTOFF != False:
+            ax1.scatter(sigscatterx,sigscattery,edgecolor="",color="red",s=10)
+            ax1.axvline(PVALCUTOFF,linestyle='dashed')
+            ax1.text(PVALCUTOFF,H+H/10,str(PVALCUTOFF),ha='center',va='bottom')
+        ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+        ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+        ax1.set_xlim(limits)
+        ax1.set_ylim([0,H])
+        # ax1.yaxis.set_ticks([0,H])
+        plt.yticks([0,H],['0',str(float(H)/1000.0)])
+        ax1.set_ylabel('Distance (kb)', fontsize=10)
+        ax2 = plt.subplot(gs[2])
+        ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
+        ax2.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
+        ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+        ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
+        ax2.set_ylim([-ylim,ylim])
+        ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
+        ax2.set_xlim(limits)
+        ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+        ax2.set_ylabel('Rank Metric',fontsize=10)
+        plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.svg',bbox_inches='tight')
         plt.close()
 
-        F = plt.figure()
+        #Plots the distribution of simulated ESs and in a red bar plots the observed ES
+        F = plt.figure(figsize=(7.5,6))
         ax2 = plt.subplot(111)
         maximum = max(simES)
         minimum = min(simES)
         ax2.hist(simES,bins=100)
         width = (maximum-minimum)/100.0
-        ax2.bar(actualES,ax2.get_ylim()[1]-1.0,color='red',width=width*2)
-        ax2.set_xlim([min(minimum,actualES)-(width*4),max(maximum,actualES)+(width*4)])
-        ax2.tick_params(
-            axis='y',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            left='off',        # ticks along the bottom edge are off
-            right='off',       # ticks along the top edge are off
-            labelleft='on')
-        ax2.tick_params(
-            axis='x',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            bottom='off',      # ticks along the bottom edge are off
-            top='off',         # ticks along the top edge are off
-            labelbottom='on')
+        rect = ax2.bar(actualES,ax2.get_ylim()[1]-10.0,color='red',width=width*2)[0]
+        height = rect.get_height()
+        ax2.text(rect.get_x() + rect.get_width()/2., 1.05*height, 'Observed ES', ha='center', va='bottom')
+        ax2.set_xlim([min(minimum,actualES)-(width*30),max(maximum,actualES)+(width*30)])
+        ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+        ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
         plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
         ax2.set_ylabel('Number of Simulations',fontsize=14)
         ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
-        plt.savefig(figuredir + MOTIF_FILE + '_simulation_plot.svg')
+        plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.svg',bbox_inches='tight')
         plt.close()
 
-    return [MOTIF_FILE,actualES,NES,p]
+    return [MOTIF_FILE.split('.bed')[0],actualES,NES,p]
 
 def simulate(H,distances,distance_sum,neg,N=1000):
     #Simulate 1000 permuations of region ranks
@@ -243,6 +243,7 @@ def FDR(TFresults,figuredir):
             sigx.append(NES)
             sigy.append(FDR)
 
+    #Creates a moustache plot of the global FDRs vs. NESs
     F = plt.figure()
     plt.scatter(newNESlist,FDRlist,color='black',edgecolor='')
     plt.scatter(sigx,sigy,color='red',edgecolor='')
@@ -251,18 +252,8 @@ def FDR(TFresults,figuredir):
     plt.ylabel("False Discovery Rate (FDR)",fontsize=14)
     limit = math.fabs(max(newNESlist,key=abs))
     plt.xlim([-limit,limit])
-    plt.tick_params(
-        axis='y',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        left='off',        # ticks along the bottom edge are off
-        right='off',       # ticks along the top edge are off
-        labelleft='on')
-    plt.tick_params(
-        axis='x',          # changes apply to the x-axis
-        which='both',      # both major and minor ticks are affected
-        bottom='off',      # ticks along the bottom edge are off
-        top='off',         # ticks along the top edge are off
-        labelbottom='on')
+    plt.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     plt.savefig(figuredir + 'TFEA_Results_Moustache_Plot.svg')
     return TFresults
 

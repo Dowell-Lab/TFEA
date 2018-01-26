@@ -1,6 +1,6 @@
 __author__ = 'Jonathan Rubin'
 
-from config import BATCH,COMBINE,COUNT,RANK,DISTANCE,CALCULATE,FDRCUTOFF,BEDS,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE,CELLTYPE,LABEL1,LABEL2
+from config import BATCH,COMBINE,COUNT,RANK,DISTANCE,CALCULATE,FDRCUTOFF,BEDS,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE,SPECIFICCELLTYPE,LABEL1,LABEL2,PVALCUTOFF
 
 def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULATEtime):
     #summary.html contains all user-defined variables, and also information about module used
@@ -21,7 +21,7 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
                 <p>MEMEDB = """+str(MEMEDB)+"""</p>
                 <p>MOTIF_HITS = """+str(MOTIF_HITS)+"""</p>
                 <p>DESEQFILE = """+str(DESEQFILE)+"""</p>
-                <p>CELLTYPE = """+str(CELLTYPE)+"""</p>
+                <p>CELLTYPE = """+str(SPECIFICCELLTYPE)+"""</p>
             </body>""")
 
     #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
@@ -53,7 +53,7 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
             <body style="width: 1300px; overflow:scroll">
             <h1>"""+MOTIF_FILE+""" Results</h1>
             <div>
-                <div style="float: left; width 1250px">
+                <div style="float: left; width 1250px; padding-bottom:50px">
                     <img src="./"""+MOTIF_FILE+"""_enrichment_plot.svg" alt="Enrichment Plot">
                 </div>
             </div>
@@ -61,9 +61,7 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
                 <div style="float:left; overflow:scroll">
                     <img src="./"""+MOTIF_FILE+"""_simulation_plot.svg" alt="Simulation Plot">
                 </div>
-                <div style="float: right; width: 500px; overflow:scroll">
-                    <img src="../../logo/"""+MOTIF_FILE+"""_direct.png" alt="Direct Logo">
-                    <img src="../../logo/"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
+                <div style="float: right; width: 650px; overflow:scroll">
                     <table> 
                         <tr>
                             <th>TF Motif</th>
@@ -79,6 +77,12 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
                             <td>"""+str("%.4g" % PVAL)+"""</td>
                             <td>"""+str("%.4g" % FDR)+"""</td>
                         </tr>
+                    </table>
+                    <p>Forward:</p>
+                    <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
+                    <p>Reverse:</p>
+                    <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
+
                 </div>
             </div>
             </body>
@@ -119,7 +123,7 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
             <p><a href="./Summary.html">Full Summary of Variables Used</a></p>
             <p>FDR cutoff = """ + str(FDRCUTOFF) + """</p>
             <p>Genome = """ + GENOME + """</p>
-            <p>Cell Type = """ + CELLTYPE + """</p>
+            <p>Cell Type = """ + SPECIFICCELLTYPE + """</p>
             <table>
                 <tr>
                     <th>Module</th>
@@ -161,8 +165,8 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
         </div>
     </div>
     <div>
-        <div id="Positive Enrichement Score" style="float: left; width: 600px; overflow:scroll">
-            <h1>Positive Enrichement Score</h1>
+        <div id="Positive Enrichment Score" style="float: left; width: 600px; overflow:scroll">
+            <h1>Positive Enrichment Score</h1>
             <table> 
                 <tr>
                     <th>TF Motif</th>
@@ -198,8 +202,8 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
     outfile.write("""            </table>
         </div>
 
-        <div id="Negative Enrichement Score" style="float: right; width: 600px; overflow:scroll">
-            <h1>Negative Enrichement Score</h1>
+        <div id="Negative Enrichment Score" style="float: right; width: 600px; overflow:scroll">
+            <h1>Negative Enrichment Score</h1>
             <table> 
                 <tr>
                     <th>TF Motif</th>
@@ -239,6 +243,68 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
     </html>""")
 
     outfile.close()
+
+def single_motif(results,outputdir):
+    MOTIF_FILE,ES,NES,PVAL = results
+    outfile = open(outputdir + MOTIF_FILE + '.results.html','w')
+    outfile.write("""<!DOCTYPE html>
+    <html>
+    <head>
+    <title>"""+MOTIF_FILE+""" Results</title>
+    <style>
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+    </style>
+    </head>
+    <body style="width: 1300px; overflow:scroll">
+    <h1>"""+MOTIF_FILE+""" Results</h1>
+    <div>
+        <div style="float: left; width 1250px; padding-bottom:50px">
+            <img src="./plots/"""+MOTIF_FILE+"""_enrichment_plot.svg" alt="Enrichment Plot">
+        </div>
+    </div>
+    <div>
+        <div style="float:left; overflow:scroll">
+            <img src="./plots/"""+MOTIF_FILE+"""_simulation_plot.svg" alt="Simulation Plot">
+        </div>
+        <div style="float: right; width: 650px; overflow:scroll">
+            <table> 
+                <tr>
+                    <th>TF Motif</th>
+                    <th>ES</th> 
+                    <th>NES</th>
+                    <th>P-value</th>
+                </tr>
+                <tr>
+                    <td>"""+MOTIF_FILE+"""</td>
+                    <td>"""+str("%.3f" % ES)+"""</td>
+                    <td>"""+str("%.3f" % NES)+"""</td>
+                    <td>"""+str("%.4g" % PVAL)+"""</td>
+                </tr>
+            </table>
+            <p>Forward:</p>
+            <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
+            <p>Reverse:</p>
+            <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
+        </div>
+    </div>
+    </body>
+    </html>""")
+    outfile.close()
+
 
 if __name__ == "__main__":
     TFresults = [['HO_P53_HUMAN.H10MO.B.bed',0.182143716966,6.22622338072,7.43595407471e-10,0.0]]

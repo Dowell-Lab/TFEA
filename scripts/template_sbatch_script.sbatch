@@ -11,10 +11,10 @@
 
 ### Specify the number of nodes/cores
 #SBATCH --nodes=1
-#SBATCH --ntasks=64
+#SBATCH --ntasks=1
 
 ### Allocate the amount of memory needed
-#SBATCH --mem=500gb
+#SBATCH --mem=100gb
 
 ### Setting to mail when the job is complete
 #SBATCH --error /scratch/Users/joru1876/e_and_o/%x.err

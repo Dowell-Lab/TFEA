@@ -2,11 +2,11 @@ __author__ = 'Jonathan Rubin'
 
 import os
 
-def write_script(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir):
+def write_script(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir,count_file):
     outfile = open(scriptdir + 'DESeq.R','w')
     outfile.write('sink("'+filedir+'DESeq.Rout")\n')
     outfile.write('library("DESeq")\n')
-    outfile.write('data <- read.delim("'+filedir+'count_file.header.bed", sep="\t", header=TRUE)\n')
+    outfile.write('data <- read.delim("'+count_file+'", sep="\t", header=TRUE)\n')
     outfile.write('countsTable <- subset(data, select=c('+', '.join([str(i) for i in range(5,5+len(BAM1)+len(BAM2))])+'))\n')
     outfile.write('rownames(countsTable) <- data$region\n')
     outfile.write('conds <- c(' + ', '.join(['"'+LABEL1+'"']*len(BAM1)) + ', ' + ', '.join(['"'+LABEL2+'"']*len(BAM2)) + ')\n')
