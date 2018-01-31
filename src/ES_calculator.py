@@ -1,18 +1,16 @@
 __author__ = 'Jonathan Rubin'
 
 import matplotlib
-import sys
 matplotlib.use('Agg')
+import sys
 import math
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
-from random import shuffle
 from scipy.stats import norm
 import time
-from config import FDRCUTOFF,PVALCUTOFF,SINGLEMOTIF,DRAWPVALCUTOFF
-import collections
+from config import *
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -20,7 +18,7 @@ def parent_dir(directory):
     
     return newdir
 
-def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,logos):
+def run(MOTIF_FILE,ranked_center_distance_file,figuredir,logos):
     #Initiate some variables
     H = 1500.0
     ES = list()
@@ -38,15 +36,16 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,logos):
             pval = float(line[3])
             rank = int(line[5])
             fc = float(line[4])
-            if distance > H:
-                distances.append(-1)
-                ind.append(rank)
-                negatives += 1.0
-            else:
+            if 0 < distance < H:
                 value = math.exp(-distance)
                 distances.append(value)
                 ind.append(rank)
                 distance_sum += value
+            else:
+                distances.append(-1)
+                ind.append(rank)
+                negatives += 1.0
+                
 
 
     #actualES calculation:
@@ -73,9 +72,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,logos):
     actualES = max(ES,key=abs)
 
     #To get NES, first simulate 1000 permuations of region ranks
-    a = time.time()
     simES = simulate(H,distances,distance_sum,neg)
-    print "Simulation done in: ", time.time()-a, "s"
 
     #NES is the actualES divided by the mean ES of all permutations with the same sign as actualES
     #p-value is caluclated empirically (i.e. (# of simulated ES scores larger than actualES)/(rest of simulated ES scores))
@@ -123,13 +120,12 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,logos):
                         logpval.append(math.log(pval,10))
                     except ValueError:
                         logpval.append(-500.0)
-                if distance < H:
+                if 0 < distance < H:
+                    scatterx.append(rank)
+                    scattery.append(distance)
                     if pval < PVALCUTOFF:
                         sigscatterx.append(rank)
                         sigscattery.append(distance)
-                    else:
-                        scatterx.append(rank)
-                        scattery.append(distance)
 
         logpval = [x for _,x in sorted(zip(ind,logpval))]
         #Plots the enrichment plot which contains three subplots:
@@ -153,7 +149,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,logos):
         ax0.set_ylim([-ymax,ymax])
         ax0.set_xlim(limits)
         ax1 = plt.subplot(gs[1])
-        ax1.scatter(scatterx,scattery,edgecolor="",color="black",s=10)
+        ax1.scatter(scatterx,scattery,edgecolor="",color="black",s=10,alpha=0.25)
         if DRAWPVALCUTOFF != False:
             ax1.scatter(sigscatterx,sigscattery,edgecolor="",color="red",s=10)
             ax1.axvline(PVALCUTOFF,linestyle='dashed')
@@ -188,7 +184,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,filedir,logos):
         rect = ax2.bar(actualES,ax2.get_ylim()[1]-10.0,color='red',width=width*2)[0]
         height = rect.get_height()
         ax2.text(rect.get_x() + rect.get_width()/2., 1.05*height, 'Observed ES', ha='center', va='bottom')
-        ax2.set_xlim([min(minimum,actualES)-(width*30),max(maximum,actualES)+(width*30)])
+        ax2.set_xlim([min(minimum,actualES)-(width*40),max(maximum,actualES)+(width*40)])
         ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
         ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
         plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)

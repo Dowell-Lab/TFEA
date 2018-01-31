@@ -2,22 +2,26 @@ import read_conditions
 
 #User defined input. Spceify here the parameters used to run TFEA including full paths to all the necessary input files
 #======================================================================================================================#
-#Will you be using the batch analysis module? If so, BEDS, BAM variables, and LABEL variables are specified in sbatch script.
-BATCH = False
 
 #Which parts of TFEA would you like to run? These are switches to turn on/off different modules in TFEA
+
+#This module combines bed files from BED and merges them using bedtools. If False, it will assume BEDS[0] contains the bed file of interest (must be a sorted bed file)
 COMBINE = True
+
+#This module performs bedtools multicov which requires bam files and a bed file. It will count reads for each bam file across all regions in the inputted bed file
 COUNT = True
+
+#This module performs DESeq and then ranks regions based on the p-value obtained from DESeq, if you set this to false, TFEA will look for the DESeq file within your specified output directory
 DESEQ = True
-RANK = True
-DISTANCE = True
+
+#This module performs the bulk of the calculation of TFEA and will most likely take the longest. Unless you just want to generate files, this should usually be set to True
 CALCULATE = True
 
 #Define the FDR cutoff to be used for calling significant hits
-FDRCUTOFF = pow(10,-6)
+# FDRCUTOFF = pow(10,-6)
+FDRCUTOFF = 0.1
 PVALCUTOFF = 0.01
 DRAWPVALCUTOFF = False
-# FDRCUTOFF = 0.05
 
 CONDITION = True
 
@@ -35,7 +39,6 @@ else:
     #Input a list of bed files with regions of interest to be analyzed. Ideally, these are meant to be Tfit output files corresponding to each bam file submitted. 
     #These files will be concatenated and merged (bedtools) to produce detected regions in all samples. If you only have one bed file with regions of interest
     #submit it as a single item in the BEDS list and set COMBINE to False.
-    # BEDDIR1 = ''
     BEDDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/genomecoveragebed/fortdf/Tfit/'
     BEDS = [BEDDIR2+'JDR_Tfit-5_bidir_predictions.bed',BEDDIR2+'JDR_Tfit-7_bidir_predictions.bed']
 
@@ -47,8 +50,8 @@ else:
     BAM2 = [BAMDIR2+'30_2_S3_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-1_S15_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
 
     #Specify conditions for bam files
-    LABEL1 = '0 IFN'
-    LABEL2 = '30 IFN'
+    LABEL1 = '0_IFN'
+    LABEL2 = '30_IFN'
 
     OUTPUT = '/scratch/Users/joru1876/TFEA_files/IRIS/'
 
@@ -56,19 +59,8 @@ else:
 #Default:False. Change to a motif name if you want to run TFEA on a single motif (make sure your single motif is in the specified database).
 # SINGLEMOTIF='HO_P53_HUMAN.H10MO.B.bed'
 # SINGLEMOTIF='HO_PROX1_HUMAN.H10MO.D.bed'
+# SINGLEMOTIF='HO_ZBED1_HUMAN.H10MO.D.bed'
 SINGLEMOTIF=False
-DATABASE='HOCOMOCOv11_full_HUMAN_mono_meme_format.meme'
 
-#Specify full path to genome fasta file
-GENOME = '/Users/joru1876/scratch_backup/hg19_reference_files/hg19_all.fa'
-
-#Specify full path to MEME directory with motif databases. Make sure you have updated the motif databases in MEME 
-#using the following command (where MEMEDB is the full path to where MEME databases are located):
-#update-sequence-db MEMEDB
-MEMEDB = '/scratch/Users/joru1876/scratch_backup/TFEA/motif_databases/'
-
+#This is a folder that contains PSSM hits across the genome. This folder is needed for running DE-Seq and must be downloaded separately
 MOTIF_HITS = '/scratch/Shares/dowell/md_score_paper/PSSM_hits_genome_wide/pval-6/'
-
-#Optional: If choosing deseqfile() option for ranking, provide deseq res.txt output file 
-# DESEQFILE = '/Users/joru1876/scratch_backup/TFEA_grant_figure/Tfit_SRR3739_bidir_predictions.sorted.merge.count.bed.id.bed.DMSONutlinnascent.res.txt'
-DESEQFILE = '/scratch/Users/joru1876/TFEA_files/Allen2014/DESeq.res.txt'

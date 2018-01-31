@@ -1,8 +1,17 @@
 __author__ = 'Jonathan Rubin'
 
-from config import BATCH,COMBINE,COUNT,RANK,DISTANCE,CALCULATE,FDRCUTOFF,BEDS,BAM1,BAM2,SINGLEMOTIF,DATABASE,GENOME,MEMEDB,MOTIF_HITS,DESEQFILE,SPECIFICCELLTYPE,LABEL1,LABEL2,PVALCUTOFF
+from config import *
+import datetime
 
-def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULATEtime):
+def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
+    #Creates results.txt which is a tab-delimited text file with the results    
+    TFresults = sorted(TFresults, key=lambda x: x[4])
+    outfile = open(outputdir + 'results.txt', 'w')
+    outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
+    for val in TFresults:
+        outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
+    outfile.close()
+
     #summary.html contains all user-defined variables, and also information about module used
     outfile = open(outputdir+'summary.html','w')
     outfile.write("""<!DOCTYPE html>
@@ -13,15 +22,13 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
             <body>
                 <h1>Variables Used</h1>
                 <p>BEDS = """+str(BEDS)+"""</p>
+                <p>LABEL1 = """+LABEL1+"""</p>
+                <p>LABEL2 = """+LABEL2+"""</p>
                 <p>BAM1 = """+str(BAM1)+"""</p>
                 <p>BAM2 = """+str(BAM2)+"""</p>
                 <p>SINGLEMOTIF = """+str(SINGLEMOTIF)+"""</p>
-                <p>DATABASE = """+str(DATABASE)+"""</p>
-                <p>GENOME = """+str(GENOME)+"""</p>
-                <p>MEMEDB = """+str(MEMEDB)+"""</p>
                 <p>MOTIF_HITS = """+str(MOTIF_HITS)+"""</p>
-                <p>DESEQFILE = """+str(DESEQFILE)+"""</p>
-                <p>CELLTYPE = """+str(SPECIFICCELLTYPE)+"""</p>
+                <p>OUTPUT = """+OUTPUT+"""
             </body>""")
 
     #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
@@ -79,9 +86,9 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
                         </tr>
                     </table>
                     <p>Forward:</p>
-                    <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
+                    <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
                     <p>Reverse:</p>
-                    <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
+                    <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
 
                 </div>
             </div>
@@ -119,46 +126,34 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,RANKtime,DISTANCEtime,CALCULAT
         <div style="float: left">
             <img src="./plots/TFEA_Results_Moustache_Plot.svg" alt="Moustache Plot (FDR vs. NES)">
         </div>
-        <div id="Summary of Variables Used" style="float: right; width: 400px">
+        <div id="Summary of Variables Used" style="float: right; width: 400px; padding-top:50px">
             <p><a href="./Summary.html">Full Summary of Variables Used</a></p>
-            <p>FDR cutoff = """ + str(FDRCUTOFF) + """</p>
-            <p>Genome = """ + GENOME + """</p>
-            <p>Cell Type = """ + SPECIFICCELLTYPE + """</p>
+            <p><b>FDR < """ + str(FDRCUTOFF) + """</b></p>
             <table>
                 <tr>
                     <th>Module</th>
                     <th>Switch</th>
-                    <th>Time (s)</th>
-                </tr>
-                <tr>
-                    <td>BATCH</td>
-                    <td>"""+str(BATCH)+"""</td>
-                    <td>N/A</td>
+                    <th>Time (hh:mm:ss)</th>
                 </tr>
                 <tr>
                     <td>COMBINE</td>
                     <td>"""+str(COMBINE)+"""</td>
-                    <td>"""+str(COMBINEtime)+"""</td>
+                    <td>"""+str(datetime.timedelta(seconds=int(COMBINEtime)))+"""</td>
                 </tr>
                 <tr>
                     <td>COUNT</td>
                     <td>"""+str(COUNT)+"""</td>
-                    <td>"""+str(COUNTtime)+"""</td>
+                    <td>"""+str(datetime.timedelta(seconds=int(COUNTtime)))+"""</td>
                 </tr>
                 <tr>
-                    <td>RANK</td>
-                    <td>"""+str(RANK)+"""</td>
-                    <td>"""+str(RANKtime)+"""</td>
-                </tr>
-                <tr>
-                    <td>DISTANCE</td>
-                    <td>"""+str(DISTANCE)+"""</td>
-                    <td>"""+str(DISTANCEtime)+"""</td>
+                    <td>DESEQ</td>
+                    <td>"""+str(DESEQ)+"""</td>
+                    <td>"""+str(datetime.timedelta(seconds=int(DESEQtime)))+"""</td>
                 </tr>
                 <tr>
                     <td>CALCULATE</td>
                     <td>"""+str(CALCULATE)+"""</td>
-                    <td>"""+str(CALCULATEtime)+"""</td>
+                    <td>"""+str(datetime.timedelta(seconds=int(CALCULATEtime)))+"""</td>
                 </tr>
             </table>
                 

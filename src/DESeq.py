@@ -2,8 +2,8 @@ __author__ = 'Jonathan Rubin'
 
 import os
 
-def write_script(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir,count_file):
-    outfile = open(scriptdir + 'DESeq.R','w')
+def write_script(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file):
+    outfile = open(filedir + 'DESeq.R','w')
     outfile.write('sink("'+filedir+'DESeq.Rout")\n')
     outfile.write('library("DESeq")\n')
     outfile.write('data <- read.delim("'+count_file+'", sep="\t", header=TRUE)\n')
@@ -18,7 +18,6 @@ def write_script(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir,count_file):
     outfile.write('write.table(res, file = "'+filedir+'DESeq.res.txt", append = FALSE, sep= "\t" )\n')
     outfile.write('sink()')
 
-def run(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir):
-    write_script(LABEL1,LABEL2,BAM1,BAM2,scriptdir,filedir)
-    os.system("R < " + scriptdir + "DESeq.R --no-save")
-    return filedir+'DESeq.res.txt'
+def run(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file):
+    write_script(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file)
+    os.system("R < " + filedir + "DESeq.R --no-save")
