@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from scipy.stats import norm
 import time
+# import HTSeq as hts
 from config import *
 
 def parent_dir(directory):
@@ -18,7 +19,7 @@ def parent_dir(directory):
     
     return newdir
 
-def run(MOTIF_FILE,ranked_center_distance_file,figuredir,logos):
+def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figuredir,logos):
     #Initiate some variables
     H = 1500.0
     ES = list()
@@ -102,10 +103,12 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,logos):
         scattery = list()
         sigscattery = list()
         logpval = list()
-        #First parse file containing motif distance and region rank. Also count total negatives to be used later
+
+        #First parse file containing motif distance and region rank.
         with open(ranked_center_distance_file) as F:
             for line in F:
                 line = line.strip('\n').split('\t')
+                chrom,start,stop = line[:3]
                 distance = float(line[-1])
                 pval = float(line[3])
                 rank = int(line[5])
@@ -128,6 +131,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,logos):
                         sigscattery.append(distance)
 
         logpval = [x for _,x in sorted(zip(ind,logpval))]
+
         #Plots the enrichment plot which contains three subplots:
         #   1. Typical ES vs. region rank (GSEA-style)
         #   2. A scatter plot with distance to motif on y-axis and rank on x-axis
@@ -192,6 +196,10 @@ def run(MOTIF_FILE,ranked_center_distance_file,figuredir,logos):
         ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
         plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.svg',bbox_inches='tight')
         plt.close()
+
+
+
+
 
     return [MOTIF_FILE.split('.bed')[0],actualES,NES,p]
 

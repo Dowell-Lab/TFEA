@@ -55,9 +55,11 @@ def run():
     homedir = os.path.dirname(os.path.realpath(__file__))
 
     directories = sys.argv[1:]
-    print len(directories)
     if len(directories) == 0:
         output,filedir,figuredir,e_and_o = make_out_directories(True)
+        print "No preexisting directories specified, creating appropriate output directories. If you would like to specify output directories, use the command: python src/ output filedir figuredir e_and_o"
+        print "Made the following directories: output filedir figuredir e_and_o"
+        print output,filedir,figuredir,e_and_o
     else:
         output,filedir,figuredir,e_and_o = directories
 
@@ -75,6 +77,8 @@ def run():
 
     #Path to ranked centered file. Just a bed file with single basepair coordinates for the exact middle of each bed region
     ranked_center_file = filedir + "ranked_file.center.bed"
+
+    ranked_center_sorted_file = filedir + "ranked_file.center.sorted.bed"
 
     #Path to the centered ranked file with measures of distance to the motif
     ranked_center_distance_file = filedir + "ranked_file.center.sorted.distance.bed"
@@ -120,18 +124,18 @@ def run():
 
                 #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                 #the HOCOMOCO database.
-                results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,figuredir,logos)
+                results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figuredir,logos)
                 TFresults.append(results)
                 CALCULATEtime += time.time()-a
                 print MOTIF_FILE + " calculation done in: " + str(CALCULATEtime) + "s"
-
+            TFresults = sorted(TFresults, key=lambda x: x[3])
             TFresults = ES_calculator.FDR(TFresults,figuredir)
             create_html.run(TFresults,output,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime)
 
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
         else:
-            motif_distance.run(ranked_file,filedir,config.MOTIF_HITS+SINGLEMOTIF)
-            results = ES_calculator.run(config.SINGLEMOTIF,ranked_center_distance_file,figuredir,logos)
+            motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
+            results = ES_calculator.run(config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_sorted_file,figuredir,logos)
             create_html.single_motif(results,output)
         print "done"
 

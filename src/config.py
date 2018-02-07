@@ -19,41 +19,61 @@ CALCULATE = True
 
 #Define the FDR cutoff to be used for calling significant hits
 # FDRCUTOFF = pow(10,-6)
-FDRCUTOFF = 0.1
+FDRCUTOFF = 0.05
 PVALCUTOFF = 0.01
 DRAWPVALCUTOFF = False
 
-CONDITION = True
+CONDITION = False
 
 if CONDITION:
     CONDITIONS='/scratch/Users/joru1876/TFEA_files/conditions_short_20161103_tentative.txt_20161107-165140.csv'
-    SPECIFICCELLTYPE = 'HCT116'
-    LABEL1='DMSO_1hr'
-    LABEL2='Nutlin_1hr'
+    SPECIFICCELLTYPE = 'MCF7'
+    LABEL1='vehicle'
+    LABEL2='E2_40min'
     BAMDIR='/scratch/Users/joru1876/TFEA_files/bams/'
     BEDDIR='/scratch/Users/joru1876/TFEA_files/tfit_beds/'
-    KEYWORD='Allen2014'
-    OUTPUT='/scratch/Users/joru1876/TFEA_files/Allen2014/'
+    KEYWORD='Hah2013'
+    OUTPUT='/scratch/Users/joru1876/TFEA_files/Hah2013/'
     BAM1,BAM2,BEDS = read_conditions.run(CONDITIONS,KEYWORD,SPECIFICCELLTYPE,LABEL1,LABEL2,BAMDIR,BEDDIR)
 else:
+    # #Input a list of bed files with regions of interest to be analyzed. Ideally, these are meant to be Tfit output files corresponding to each bam file submitted. 
+    # #These files will be concatenated and merged (bedtools) to produce detected regions in all samples. If you only have one bed file with regions of interest
+    # #submit it as a single item in the BEDS list and set COMBINE to False.
+    # BEDDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/genomecoveragebed/fortdf/Tfit/'
+    # BEDS = [BEDDIR2+'JDR_Tfit-5_bidir_predictions.bed',BEDDIR2+'JDR_Tfit-7_bidir_predictions.bed']
+
+    # #Input bam files as a list containing transcription data. Must specify at least two bam files. 
+    # #If multiple replicates, specify each as a full path in the appropriate list.
+    # BAMDIR1 = '/scratch/Users/joru1876/Taatjes/161220_K00262_0062_BHH7CHBBXX_IRISREP1/trimmed/flipped/bowtie2_first_run/sortedbam/'
+    # BAMDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/'
+    # BAM1 = [BAMDIR2+'0_2_S1_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'0-1_S11_L006_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+    # BAM2 = [BAMDIR2+'30_2_S3_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-1_S15_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+
+    # #Specify conditions for bam files
+    # LABEL1 = '0_IFN'
+    # LABEL2 = '30_IFN'
+
+    # OUTPUT = '/scratch/Users/joru1876/TFEA_files/IRIS/'
+
     #Input a list of bed files with regions of interest to be analyzed. Ideally, these are meant to be Tfit output files corresponding to each bam file submitted. 
     #These files will be concatenated and merged (bedtools) to produce detected regions in all samples. If you only have one bed file with regions of interest
     #submit it as a single item in the BEDS list and set COMBINE to False.
-    BEDDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/genomecoveragebed/fortdf/Tfit/'
-    BEDS = [BEDDIR2+'JDR_Tfit-5_bidir_predictions.bed',BEDDIR2+'JDR_Tfit-7_bidir_predictions.bed']
+    BEDDIR1 = '/scratch/Users/joru1876/Taatjes/170825_NB501447_0152_fastq_SERCAREP2_30REP1_RESEQUENCING/Demux/cat/trimmed/flipped/bowtie2/sortedbam/genomecoveragebed/fortdf/Tfit/'
+    BEDDIR2 = '/scratch/Users/joru1876/Taatjes/170207_K00262_0069_AHHMHVBBXX_SERCAREP1/cat/trimmed/flipped/bowtie2/sortedbam/genomecoveragebed/fortdf/Tfit_run2/'
+    BEDS = [BEDDIR1+'foot_print_testing-9_bidir_predictions.bed',BEDDIR1+'foot_print_testing-11_bidir_predictions.bed',BEDDIR2+'foot_print_testing-7_bidir_predictions.bed',BEDDIR2+'foot_print_testing-11_bidir_predictions.bed']
 
     #Input bam files as a list containing transcription data. Must specify at least two bam files. 
     #If multiple replicates, specify each as a full path in the appropriate list.
-    BAMDIR1 = '/scratch/Users/joru1876/Taatjes/161220_K00262_0062_BHH7CHBBXX_IRISREP1/trimmed/flipped/bowtie2_first_run/sortedbam/'
-    BAMDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/'
-    BAM1 = [BAMDIR2+'0_2_S1_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'0-1_S11_L006_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
-    BAM2 = [BAMDIR2+'30_2_S3_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-1_S15_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+    BAMDIR1 = '/scratch/Users/joru1876/Taatjes/170207_K00262_0069_AHHMHVBBXX_SERCAREP1/cat/trimmed/flipped/bowtie2/sortedbam/'
+    BAMDIR2 = '/scratch/Users/joru1876/Taatjes/170825_NB501447_0152_fastq_SERCAREP2_30REP1_RESEQUENCING/Demux/cat/trimmed/flipped/bowtie2/sortedbam/'
+    BAM1 = [BAMDIR1+'J12_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR2+'J1DO1_AGTCAA_S1_L007and8_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+    BAM2 = [BAMDIR1+'J52_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR2+'J5D451_GTCCGC_S3_L007and8_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
 
-    #Specify conditions for bam files
-    LABEL1 = '0_IFN'
-    LABEL2 = '30_IFN'
+    #Specify conditions for bam files (no spaces allwed)
+    LABEL1 = '0_Serum'
+    LABEL2 = '45_Serum'
 
-    OUTPUT = '/scratch/Users/joru1876/TFEA_files/IRIS/'
+    OUTPUT = '/scratch/Users/joru1876/TFEA_files/Rubin/'
 
 #Specify whether you want to run a single motif or a database. By default, TFEA runs on the latest version of HOCMOCO obtained through MEME.
 #Default:False. Change to a motif name if you want to run TFEA on a single motif (make sure your single motif is in the specified database).
