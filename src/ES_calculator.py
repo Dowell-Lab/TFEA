@@ -80,12 +80,27 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
     if actualES < 0:
         simESsubset = [x for x in simES if x < 0]
         mu = np.mean(simESsubset)
-        sigma = np.std(simESsubset)
         NES = -(actualES/mu)
     else:
         simESsubset = [x for x in simES if x > 0]
         mu = np.mean(simESsubset)
         NES = actualES/mu
+
+    #This part calculates a NES for each simulation to be used later in FDR calculation
+    simNESlist = list()
+    for singlesimES in simES:
+        if singlesimES < 0:
+            simESsubset = [x for x in simES if x < 0]
+            mu = np.mean(simESsubset)
+            simNESlist.append(singlesimES/mu)
+        else:
+            simESsubset = [x for x in simES if x > 0]
+            mu = np.mean(simESsubset)
+            simNESlist.append(singlesimES/mu)
+    
+    simNESmu = np.mean(simNESlist)
+    simNESsigma = np.std(simNESlist)
+
 
     #This section calculates the theoretical p-value based on the mean and standard deviation of the 1000 simulations
     #The p-value is then the CDF where x = actualES. Test is two tailed, hence: min(p,1-p)
@@ -201,7 +216,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
 
 
 
-    return [MOTIF_FILE.split('.bed')[0],actualES,NES,p]
+    return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,(simNESmu,simNESsigma)]
 
 def simulate(H,distances,distance_sum,neg,N=1000):
     #Simulate 1000 permuations of region ranks
@@ -227,16 +242,33 @@ def simulate(H,distances,distance_sum,neg,N=1000):
 
     return simES
 
-def FDR(TFresults,figuredir):
+def FDR(TFresults,NESlist,figuredir):
     #This function iterates through the results and calculates an FDR for each TF motif. Also creates a moustache plot.
     FDRlist = list()
     newNESlist = list()
-    LABELS = list()
     sigx = list()
     sigy = list()
     for i in range(len(TFresults)):
         NES = TFresults[i][2]
         PVAL = TFresults[i][3]
+        mu,sigma = TFresults[i][4]
+        # if NES > 0:
+        #     F = 1-norm.cdf(NES,mu,sigma)
+        #     NESsubset = [x for x in NESlist if x > 0]
+        #     N = len(NESsubset)
+        #     Nmu = np.mean(NESsubset)
+        #     Nsigma = np.std(NESsubset)
+        #     D = 1-norm.cdf(NES,Nmu,Nsigma)
+        #     q = (F*N)/D
+        # else:
+        #     F = norm.cdf(NES,mu,sigma)
+        #     NESsubset = [x for x in NESlist if x < 0]
+        #     N = len(NESsubset)
+        #     Nmu = np.mean(NESsubset)
+        #     Nsigma = np.std(NESsubset)
+        #     D = norm.cdf(NES,Nmu,Nsigma)
+        #     q = (F*N)/D
+
 
         #Using classical FDR calculation ((pvalue*(# hypotheses tested))/rank of p-value)
         FDR = (PVAL*len(TFresults))/float(i+1.0)

@@ -23,17 +23,17 @@ FDRCUTOFF = 0.05
 PVALCUTOFF = 0.01
 DRAWPVALCUTOFF = False
 
-CONDITION = False
+CONDITION = True
 
 if CONDITION:
     CONDITIONS='/scratch/Users/joru1876/TFEA_files/conditions_short_20161103_tentative.txt_20161107-165140.csv'
-    SPECIFICCELLTYPE = 'MCF7'
-    LABEL1='vehicle'
-    LABEL2='E2_40min'
+    SPECIFICCELLTYPE = 'HCT116'
+    LABEL1='DMSO_1hr'
+    LABEL2='Nutlin_1hr'
     BAMDIR='/scratch/Users/joru1876/TFEA_files/bams/'
     BEDDIR='/scratch/Users/joru1876/TFEA_files/tfit_beds/'
-    KEYWORD='Hah2013'
-    OUTPUT='/scratch/Users/joru1876/TFEA_files/Hah2013/'
+    KEYWORD='Allen2014'
+    OUTPUT='/scratch/Users/joru1876/TFEA_files/Allen2014/'
     BAM1,BAM2,BEDS = read_conditions.run(CONDITIONS,KEYWORD,SPECIFICCELLTYPE,LABEL1,LABEL2,BAMDIR,BEDDIR)
 else:
     # #Input a list of bed files with regions of interest to be analyzed. Ideally, these are meant to be Tfit output files corresponding to each bam file submitted. 

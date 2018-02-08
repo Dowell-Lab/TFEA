@@ -126,10 +126,11 @@ def run():
                 #the HOCOMOCO database.
                 results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figuredir,logos)
                 TFresults.append(results)
+                NESlist.append(results[2])
                 CALCULATEtime += time.time()-a
                 print MOTIF_FILE + " calculation done in: " + str(CALCULATEtime) + "s"
-            TFresults = sorted(TFresults, key=lambda x: x[3])
-            TFresults = ES_calculator.FDR(TFresults,figuredir)
+            # TFresults = sorted(TFresults, key=lambda x: x[3])
+            TFresults = ES_calculator.FDR(TFresults,NESlist,figuredir)
             create_html.run(TFresults,output,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime)
 
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
