@@ -5,7 +5,7 @@ import datetime
 
 def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     #Creates results.txt which is a tab-delimited text file with the results    
-    TFresults = sorted(TFresults, key=lambda x: x[2])
+    TFresults = sorted(TFresults, key=lambda x: x[3])
     outfile = open(outputdir + 'results.txt', 'w')
     outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
     for val in TFresults:
@@ -32,8 +32,8 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </body>""")
 
     #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
-    for MOTIF_FILE,ES,NES,PVAL,NESdistribution,FDR in TFresults:
-        if FDR < FDRCUTOFF:
+    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
+        if PVAL < FDRCUTOFF:
             outfile = open(outputdir + 'plots/' + MOTIF_FILE + '.results.html','w')
             outfile.write("""<!DOCTYPE html>
             <html>
@@ -172,9 +172,9 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 </tr>
                 """)
 
-    for MOTIF_FILE,ES,NES,PVAL,NESdistribution,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
         if NES > 0:
-            if FDR < FDRCUTOFF:
+            if PVAL < FDRCUTOFF:
                 outfile.write("""                <tr>
                         <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.3f" % ES)+"""</td>
@@ -209,9 +209,9 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 </tr>
                 """)
 
-    for MOTIF_FILE,ES,NES,PVAL,NESdistribution,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
         if NES < 0:
-            if FDR < FDRCUTOFF:
+            if PVAL < FDRCUTOFF:
                 outfile.write("""                <tr>
                         <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.3f" % ES)+"""</td>

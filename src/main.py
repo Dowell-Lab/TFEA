@@ -62,6 +62,7 @@ def run():
         print output,filedir,figuredir,e_and_o
     else:
         output,filedir,figuredir,e_and_o = directories
+        print "python src/ ",output,filedir,figuredir,e_and_o
 
     #Directory where all temp files will be stored
     # filedir = parent_dir(homedir) + '/files/'
@@ -84,7 +85,10 @@ def run():
     ranked_center_distance_file = filedir + "ranked_file.center.sorted.distance.bed"
 
     #Path to a directory full of motif logos for all TFs in the HOCOMOCO database (v10)
-    logos = parent_dir(homedir) + '/logo/'
+    # logos = parent_dir(homedir) + '/logo/'
+
+    #Path to mouse directory with motif logos in HOCOMOCO v10
+    logos = parent_dir(homedir) + '/mouse_logo/'
 
     #This module takes the input list of BED files, concatenates them, and then merges them via bedtools.
     COMBINEtime = time.time()
@@ -125,10 +129,13 @@ def run():
                 #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                 #the HOCOMOCO database.
                 results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figuredir,logos)
-                TFresults.append(results)
-                NESlist.append(results[2])
-                CALCULATEtime += time.time()-a
-                print MOTIF_FILE + " calculation done in: " + str(CALCULATEtime) + "s"
+                if results != "no hits":
+                    TFresults.append(results)
+                    NESlist.append(results[2])
+                    CALCULATEtime += time.time()-a
+                    print MOTIF_FILE + " calculation done in: " + str(CALCULATEtime) + "s"
+                else:
+                    print "No motifs within specified window for: ", MOTIF_FILE
             # TFresults = sorted(TFresults, key=lambda x: x[3])
             TFresults = ES_calculator.FDR(TFresults,NESlist,figuredir)
             create_html.run(TFresults,output,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime)

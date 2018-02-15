@@ -22,12 +22,14 @@ def parent_dir(directory):
 def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figuredir,logos):
     #Initiate some variables
     H = 1500.0
+    h = 150.0
     ES = list()
     Eval = 0.0
     distances = list()
     ind = list()
     negatives = 0.0
     distance_sum = 0.0
+    realdistance = list()
 
     #First parse file containing motif distance and region rank. Also count total negatives to be used later
     with open(ranked_center_distance_file) as F:
@@ -37,17 +39,20 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
             pval = float(line[3])
             rank = int(line[5])
             fc = float(line[4])
-            if 0 < distance < H:
+            if 0 <= distance <= h:
+                realdistance.append(distance)
                 value = math.exp(-distance)
                 distances.append(value)
                 ind.append(rank)
                 distance_sum += value
-            else:
+            elif h < distance <= H:
+                realdistance.append(distance)
                 distances.append(-1)
                 ind.append(rank)
                 negatives += 1.0
-                
-
+    
+    if len(distances) == 0:
+        return "no hits"        
 
     #actualES calculation:
     try:
@@ -57,6 +62,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
     #1. Replace negatives values in distances with -1.0/negatives
     distances = [neg if x==-1 else x for x in distances]
 
+    realdistance = [x for _,x in sorted(zip(ind,realdistance))]
     #2. Reorder list of motif distances based on rank
     distances = [x for _,x in sorted(zip(ind,distances))]
 
@@ -68,6 +74,11 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
         else:
             Eval += distance
             ES.append(Eval)
+
+    print "realdistances: ", realdistance[:10]
+    print "distances: ", distances[:10]
+    # print "real distance: ", [math.log(-x) for x in distances[:10]]
+    print "ES: ", ES[:10]
 
     #4. The enrichment score is the maximum deviation from 0
     actualES = max(ES,key=abs)
@@ -111,13 +122,20 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
 
     #Plot results for significant hits while list of simulated ES scores is in memory
     if p < FDRCUTOFF or SINGLEMOTIF != False:
-        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
-        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
+        #For human:
+        # os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
+        # os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
+
+        #For mouse:
+        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0] + "_direct.png " + figuredir)
+        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + figuredir)
+
         scatterx = list()
         sigscatterx = list()
         scattery = list()
         sigscattery = list()
         logpval = list()
+        ind = list()
 
         #First parse file containing motif distance and region rank.
         with open(ranked_center_distance_file) as F:
@@ -128,24 +146,24 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
                 pval = float(line[3])
                 rank = int(line[5])
                 fc = float(line[4])
-                if fc > 1:
-                    try:
-                        logpval.append(-math.log(pval,10))
-                    except ValueError:
-                        logpval.append(500.0)
-                else:
-                    try:
-                        logpval.append(math.log(pval,10))
-                    except ValueError:
-                        logpval.append(-500.0)
-                if 0 < distance < H:
+                if 0 <= distance <= H:
+                    if fc > 1:
+                        try:
+                            logpval.append(-math.log(pval,10))
+                        except ValueError:
+                            logpval.append(500.0)
+                    else:
+                        try:
+                            logpval.append(math.log(pval,10))
+                        except ValueError:
+                            logpval.append(-500.0)
                     scatterx.append(rank)
                     scattery.append(distance)
                     if pval < PVALCUTOFF:
                         sigscatterx.append(rank)
                         sigscattery.append(distance)
 
-        logpval = [x for _,x in sorted(zip(ind,logpval))]
+        logpval = [x for _,x in sorted(zip(scatterx,logpval))]
 
         #Plots the enrichment plot which contains three subplots:
         #   1. Typical ES vs. region rank (GSEA-style)
@@ -169,6 +187,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
         ax0.set_xlim(limits)
         ax1 = plt.subplot(gs[1])
         ax1.scatter(scatterx,scattery,edgecolor="",color="black",s=10,alpha=0.25)
+        ax1.axhline(h, color='black',linestyle='dashed',alpha=0.1)
         if DRAWPVALCUTOFF != False:
             ax1.scatter(sigscatterx,sigscattery,edgecolor="",color="red",s=10)
             ax1.axvline(PVALCUTOFF,linestyle='dashed')
@@ -191,6 +210,7 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
         ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
         ax2.set_ylabel('Rank Metric',fontsize=10)
         plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.svg',bbox_inches='tight')
+        plt.cla()
         plt.close()
 
         #Plots the distribution of simulated ESs and in a red bar plots the observed ES
@@ -210,13 +230,15 @@ def run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figured
         ax2.set_ylabel('Number of Simulations',fontsize=14)
         ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
         plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.svg',bbox_inches='tight')
+        plt.cla()
         plt.close()
 
 
 
 
 
-    return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,(simNESmu,simNESsigma)]
+    # return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,(simNESmu,simNESsigma)]
+    return [MOTIF_FILE.split('.bed')[0],actualES,NES,p]
 
 def simulate(H,distances,distance_sum,neg,N=1000):
     #Simulate 1000 permuations of region ranks
@@ -251,7 +273,7 @@ def FDR(TFresults,NESlist,figuredir):
     for i in range(len(TFresults)):
         NES = TFresults[i][2]
         PVAL = TFresults[i][3]
-        mu,sigma = TFresults[i][4]
+        # mu,sigma = TFresults[i][4]
         # if NES > 0:
         #     F = 1-norm.cdf(NES,mu,sigma)
         #     NESsubset = [x for x in NESlist if x > 0]
@@ -291,6 +313,8 @@ def FDR(TFresults,NESlist,figuredir):
     plt.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     plt.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     plt.savefig(figuredir + 'TFEA_Results_Moustache_Plot.svg')
+    plt.cla()
+
     return TFresults
 
 
