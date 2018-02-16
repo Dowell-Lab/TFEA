@@ -86,9 +86,9 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                         </tr>
                     </table>
                     <p>Forward:</p>
-                    <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
+                    <img src="./"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
                     <p>Reverse:</p>
-                    <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
+                    <img src="./"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
 
                 </div>
             </div>
@@ -291,9 +291,9 @@ def single_motif(results,outputdir):
                 </tr>
             </table>
             <p>Forward:</p>
-            <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
+            <img src="./plots/"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
             <p>Reverse:</p>
-            <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
+            <img src="./plots/"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
         </div>
     </div>
     </body>
