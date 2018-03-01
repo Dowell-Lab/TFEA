@@ -56,4 +56,14 @@ def deseqfile(DESEQFILE,filedir):
     outfile.close()
 
 
+    os.system("sort -k1,1 -k2,2n " + filedir+"ranked_file.center.bed" + " > " + filedir + "ranked_file.center.sorted.bed")
+    os.system("rm " + filedir + "combined_input.bed")
+    os.system("rm " + filedir + "combined_input.merge.bed")
+    os.system("rm " + filedir + "combined_input.sorted.bed")
+    os.system("rm " + filedir + "count_file.bed")
+    os.system("rm " + filedir + "count_file.header.bed")
+    os.system("rm " + filedir + "ranked_file.bed")
+    os.system("rm " + filedir + "ranked_file.center.bed")
+
+
 

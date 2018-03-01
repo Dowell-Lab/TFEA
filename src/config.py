@@ -17,10 +17,13 @@ DESEQ = True
 #This module performs the bulk of the calculation of TFEA and will most likely take the longest. Unless you just want to generate files, this should usually be set to True
 CALCULATE = True
 
+#Determines whether ES calculations will be run in parallel. Still working on this (2/26/18)
+POOL=True
+
 #Define the FDR cutoff to be used for calling significant hits
 # FDRCUTOFF = pow(10,-6)
-FDRCUTOFF = 0.05
-PVALCUTOFF = 0.01
+FDRCUTOFF = 0.1
+PVALCUTOFF = 0.1
 DRAWPVALCUTOFF = False
 
 CONDITION = False
@@ -40,18 +43,18 @@ else:
     #These files will be concatenated and merged (bedtools) to produce detected regions in all samples. If you only have one bed file with regions of interest
     #submit it as a single item in the BEDS list and set COMBINE to False.
     BEDDIR = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/genomecoveragebed/fortdf/Tfit/REP_MERGE/'
-    BEDS = [BEDDIR+'JDR_Tfit-5_bidir_predictions.bed',BEDDIR+'JDR_Tfit-9_bidir_predictions.bed',BEDDIR+'JDR_Tfit-7_bidir_predictions.bed',BEDDIR+'JDR_Tfit-11_bidir_predictions.bed']
+    BEDS = [BEDDIR+'JDR_Tfit-11_bidir_predictions.bed',BEDDIR+'JDR_Tfit-12_bidir_predictions.bed',BEDDIR+'JDR_Tfit-7_bidir_predictions.bed',BEDDIR+'JDR_Tfit-8_bidir_predictions.bed']
 
     #Input bam files as a list containing transcription data. Must specify at least two bam files. 
     #If multiple replicates, specify each as a full path in the appropriate list.
     BAMDIR1 = '/scratch/Users/joru1876/Taatjes/161220_K00262_0062_BHH7CHBBXX_IRISREP1/trimmed/flipped/bowtie2_first_run/sortedbam/'
     BAMDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/'
-    BAM1 = [BAMDIR2+'0_2_S1_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'0-1_S11_L006_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
-    BAM2 = [BAMDIR2+'30_2_S3_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-1_S15_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+    BAM1 = [BAMDIR2+'30_2_S3_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-1_S15_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+    BAM2 = [BAMDIR2+'30_CA_2_S4_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-CA-1_S16_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
 
     #Specify conditions for bam files
-    LABEL1 = '0_IFN'
-    LABEL2 = '30_IFN'
+    LABEL1 = '30'
+    LABEL2 = '30_CA'
 
     OUTPUT = '/scratch/Users/joru1876/TFEA_files/IRIS/'
 
@@ -89,3 +92,10 @@ SINGLEMOTIF=False
 MOTIF_HITS = '/scratch/Shares/dowell/older_md_score_paper_with_diff/supplements/ENCODE/HOCOMOCODatabaseFIMO/FIMO_OUT_MOUSE_v10_BEDS/'
 # MOTIF_HITS = '/scratch/Shares/dowell/md_score_paper/PSSM_hits_genome_wide/pval6_mouse/'
 # MOTIF_HITS = '/scratch/Shares/dowell/md_score_paper/PSSM_hits_genome_wide/pval-6/'
+
+
+
+#============================================================================================================================================================
+#Only change these settings if you know what you're doing.
+H = 1500.0
+h = 150.0

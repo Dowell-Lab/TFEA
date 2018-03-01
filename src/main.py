@@ -11,6 +11,8 @@ import motif_distance
 import ES_calculator
 import create_html
 import config
+from multiprocessing import Pool
+import multiprocessing as mp
 
 def make_out_directories(dirs):
     #Output directory
@@ -64,22 +66,17 @@ def run():
         output,filedir,figuredir,e_and_o = directories
         print "python src/ ",output,filedir,figuredir,e_and_o
 
-    #Directory where all temp files will be stored
-    # filedir = parent_dir(homedir) + '/files/'
-
     #Path to count file. Can be changed if using your own count file. Generated in count_reads module
     count_file = filedir + "count_file.header.bed"
 
     #Path to DESeq file. Can be changed if using your own DESeq file. Generated in DESeq module
-    deseq_file = output + "DESeq.res.txt"
+    deseq_file = filedir + "DESeq.res.txt"
 
     #Path to ranked file. Can be changed if using your own ranked file. Generated in rank_regions module
     ranked_file = filedir + "ranked_file.bed"
 
     #Path to ranked centered file. Just a bed file with single basepair coordinates for the exact middle of each bed region
     ranked_center_file = filedir + "ranked_file.center.bed"
-
-    ranked_center_sorted_file = filedir + "ranked_file.center.sorted.bed"
 
     #Path to the centered ranked file with measures of distance to the motif
     ranked_center_distance_file = filedir + "ranked_file.center.sorted.distance.bed"
@@ -89,6 +86,7 @@ def run():
 
     #Path to mouse directory with motif logos in HOCOMOCO v10
     logos = parent_dir(homedir) + '/mouse_logo/'
+
 
     #This module takes the input list of BED files, concatenates them, and then merges them via bedtools.
     COMBINEtime = time.time()
@@ -110,7 +108,7 @@ def run():
     DESEQtime = time.time()
     if config.DESEQ:
         print "Running DESeq..."
-        DESeq.run(config.LABEL1,config.LABEL2,config.BAM1,config.BAM2,output,count_file)
+        DESeq.run(config.LABEL1,config.LABEL2,config.BAM1,config.BAM2,filedir,count_file)
         rank_regions.deseqfile(deseq_file,filedir)
         print "done"
     DESEQtime = time.time()-DESEQtime
@@ -122,28 +120,34 @@ def run():
             TFresults = list()
             NESlist = list()
             CALCULATEtime = 0.0
-            for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
-                a = time.time()
-                motif_distance.run(ranked_center_file,config.MOTIF_HITS+MOTIF_FILE)
+            if config.POOL:
+                args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,logos) for x in os.listdir(config.MOTIF_HITS)]
+                p = Pool(mp.cpu_count())
+                TFresults = p.map(ES_calculator.run,args)
+            else:
+                for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
+                    a = time.time()
+                    # motif_distance.run(ranked_center_file,config.MOTIF_HITS+MOTIF_FILE)
 
-                #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
-                #the HOCOMOCO database.
-                results = ES_calculator.run(MOTIF_FILE,ranked_center_distance_file,ranked_center_sorted_file,figuredir,logos)
-                if results != "no hits":
-                    TFresults.append(results)
-                    NESlist.append(results[2])
-                    CALCULATEtime += time.time()-a
-                    print MOTIF_FILE + " calculation done in: " + str(CALCULATEtime) + "s"
-                else:
-                    print "No motifs within specified window for: ", MOTIF_FILE
-            # TFresults = sorted(TFresults, key=lambda x: x[3])
+                    #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
+                    #the HOCOMOCO database.
+                    results = ES_calculator.run((MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,logos))
+                    if results != "no hits":
+                        TFresults.append(results)
+                        NESlist.append(results[2])
+                        CALCULATEtime += time.time()-a
+                        print MOTIF_FILE + " calculation done in: " + str(CALCULATEtime) + "s"
+                    else:
+                        print "No motifs within specified window for: ", MOTIF_FILE
+            TFresults = [x for x in TFresults if x != "no hits"]
+            TFresults = sorted(TFresults, key=lambda x: x[3])
             TFresults = ES_calculator.FDR(TFresults,NESlist,figuredir)
             create_html.run(TFresults,output,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime)
 
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
         else:
             motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
-            results = ES_calculator.run(config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_sorted_file,figuredir,logos)
+            results = ES_calculator.run(config.SINGLEMOTIF)
             create_html.single_motif(results,output)
         print "done"
 

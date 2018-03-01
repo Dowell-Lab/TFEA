@@ -32,69 +32,120 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </body>""")
 
     #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
-    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
-        if PVAL < FDRCUTOFF:
-            outfile = open(outputdir + 'plots/' + MOTIF_FILE + '.results.html','w')
-            outfile.write("""<!DOCTYPE html>
-            <html>
-            <head>
-            <title>"""+MOTIF_FILE+""" Results</title>
-            <style>
-            table {
-                font-family: arial, sans-serif;
-                border-collapse: collapse;
-                width: 100%;
-            }
+    for i in range(len(TFresults)):
+        MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR = TFresults[i]
+        positivelist = [x[0] for x in TFresults if x[2] > 0]
+        negativelist = [x[0] for x in TFresults if x[2] < 0]
+        
+        if NES > 0:
+            try:
+                NEXT_MOTIF = positivelist[positivelist.index(MOTIF_FILE)+1]
+            except IndexError:
+                NEXT_MOTIF = positivelist[0]
+            try:
+                PREV_MOTIF = positivelist[positivelist.index(MOTIF_FILE)-1]
+            except IndexError:
+                PREV_MOTIF = positivelist[len(positivelist)]
+        else:
+            try:
+                NEXT_MOTIF = negativelist[negativelist.index(MOTIF_FILE)+1]
+            except IndexError:
+                NEXT_MOTIF = negativelist[0]
+            try:
+                PREV_MOTIF = negativelist[negativelist.index(MOTIF_FILE)-1]
+            except IndexError:
+                PREV_MOTIF = negativelist[len(negativelist)]
+        # if PVAL < FDRCUTOFF:
+        outfile = open(outputdir + 'plots/' + MOTIF_FILE + '.results.html','w')
+        outfile.write("""<!DOCTYPE html>
+        <html>
+        <head>
+        <title>"""+MOTIF_FILE+""" Results</title>
+        <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
 
-            td, th {
-                border: 1px solid #dddddd;
-                text-align: left;
-                padding: 8px;
-            }
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
 
-            tr:nth-child(even) {
-                background-color: #dddddd;
-            }
-            </style>
-            </head>
-            <body style="width: 1300px; overflow:scroll">
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        </style>
+        </head>
+        <body style="width: 1300px; overflow:scroll">
+        <div style="float:left">
+            <a href="./"""+PREV_MOTIF+""".results.html">PREV</a>
+        </div>
+        <div style="float:right">
+            <a href="./"""+NEXT_MOTIF+""".results.html">NEXT</a>
+        </div>
+        <div style="text-align:center">
+            <a href="../results.html">ALL</a>
+        </div>
             <h1>"""+MOTIF_FILE+""" Results</h1>
-            <div>
-                <div style="float: left; width 1250px; padding-bottom:50px">
-                    <img src="./"""+MOTIF_FILE+"""_enrichment_plot.svg" alt="Enrichment Plot">
-                </div>
+        <div>
+            <div style="float: middle; width: 1300px; overflow:scroll; padding-bottom:25px; padding-top:25px">
+                <table> 
+                    <tr>
+                        <th>TF Motif</th>
+                        <th>ES</th> 
+                        <th>NES</th>
+                        <th>P-value</th>
+                        <th>FDR</th>
+                        <th>Total Hits</th>
+                        <th>Positive Hits</th> 
+                        <th>Negative Hits</th>
+                    </tr>
+                    <tr>
+                        <td>"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.3f" % ES)+"""</td>
+                        <td>"""+str("%.3f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % FDR)+"""</td>
+                        <td>"""+str(int(POS+NEG))+"""</td>
+                        <td>"""+str(int(POS))+"""</td>
+                        <td>"""+str(int(NEG))+"""</td>
+                    </tr>
+                </table>
             </div>
-            <div>
-                <div style="float:left; overflow:scroll">
-                    <img src="./"""+MOTIF_FILE+"""_simulation_plot.svg" alt="Simulation Plot">
-                </div>
-                <div style="float: right; width: 650px; overflow:scroll">
-                    <table> 
-                        <tr>
-                            <th>TF Motif</th>
-                            <th>ES</th> 
-                            <th>NES</th>
-                            <th>P-value</th>
-                            <th>FDR</th>
-                        </tr>
-                        <tr>
-                            <td>"""+MOTIF_FILE+"""</td>
-                            <td>"""+str("%.3f" % ES)+"""</td>
-                            <td>"""+str("%.3f" % NES)+"""</td>
-                            <td>"""+str("%.4g" % PVAL)+"""</td>
-                            <td>"""+str("%.4g" % FDR)+"""</td>
-                        </tr>
-                    </table>
-                    <p>Forward:</p>
-                    <img src="./"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
-                    <p>Reverse:</p>
-                    <img src="./"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
-
-                </div>
+            <div style="float: left; width: 600px; overflow: scroll">
+                <p>Forward:</p>
+                <img src="./"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
             </div>
-            </body>
-            </html>""")
-            outfile.close()
+            <div style="float: right; width: 600px; overflow: scroll">
+                <p>Reverse:</p>
+                <img src="./"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
+            </div>
+        </div>
+        <div>
+            <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
+                <img src="./"""+MOTIF_FILE+"""_enrichment_plot.png" alt="Enrichment Plot">
+            </div>
+        </div>
+        <div>
+            <div style="float:left; width: 600px overflow:scroll">
+                <img src="./"""+MOTIF_FILE+"""_simulation_plot.png" alt="Simulation Plot">
+            </div>
+            <div style="float:right; width: 600px overflow:scroll">
+                <img src="./"""+MOTIF_FILE+"""_distance_distribution.png" alt="Distance Distribution Plot">
+            </div>
+        </div>
+        <div>
+            <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
+                <img src="./"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
+            </div>
+        </div>
+        </body>
+        </html>""")
+        outfile.close()
+        PREV_MOTIF = MOTIF_FILE
 
     outfile = open(outputdir+'results.html','w')
     outfile.write("""<!DOCTYPE html>
@@ -119,14 +170,17 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     }
     </style>
     </head>
-    <body style="width: 1250px; overflow:scroll">
+    <body style="width: 1300px; overflow:scroll">
 
     <h1>TFEA Results """ +LABEL1+ """ vs. """ +LABEL2+ """</h1>
-    <div>
-        <div style="float: left">
-            <img src="./plots/TFEA_Results_Moustache_Plot.svg" alt="Moustache Plot (FDR vs. NES)">
+    <div style="width: 1300px">
+        <div style="float: left; width: 600px; padding-bottom: 50px">
+            <img src="./plots/TFEA_NES_MA_Plot.png" alt="NES MA-Plot">
         </div>
-        <div id="Summary of Variables Used" style="float: right; width: 400px; padding-top:50px">
+        <div style="float: right; width:650px; padding-bottom: 50px">
+            <img src="./plots/TFEA_Results_Moustache_Plot.png" alt="Moustache Plot (FDR vs. NES)">
+        </div>
+        <div id="Summary of Variables Used" style="float: right; width: 600px; padding-bottom: 315px">
             <p><a href="./Summary.html">Full Summary of Variables Used</a></p>
             <p><b>FDR < """ + str(FDRCUTOFF) + """</b></p>
             <table>
@@ -155,8 +209,12 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <td>"""+str(CALCULATE)+"""</td>
                     <td>"""+str(datetime.timedelta(seconds=int(CALCULATEtime)))+"""</td>
                 </tr>
-            </table>
-                
+            </table>   
+        </div>
+    </div>
+    <div style="width: 1300px">
+        <div style="float: left; width: 650px; overflow: scroll">
+            <img src="./plots/TFEA_Pval_Histogram.png" alt="P-value Histogram">
         </div>
     </div>
     <div>
@@ -169,27 +227,30 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <th>NES</th>
                     <th>P-value</th>
                     <th>FDR</th>
+                    <th>Hits</th>
                 </tr>
                 """)
 
-    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR in TFresults:
         if NES > 0:
-            if PVAL < FDRCUTOFF:
-                outfile.write("""                <tr>
+            if PVAL < FDR:
+                outfile.write("""                <tr style="color: red;">
                         <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.3f" % ES)+"""</td>
                         <td>"""+str("%.3f" % NES)+"""</td>
-                        <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str("%.4g" % FDR)+"""</td>
+                        <td>"""+str("%.3g" % PVAL)+"""</td>
+                        <td>"""+str("%.3g" % FDR)+"""</td>
+                        <td>"""+str(int(POS+NEG))+"""</td>
                     </tr>
                     """)
             else:
                 outfile.write("""                <tr>
-                        <td>"""+MOTIF_FILE+"""</td>
+                        <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.3f" % ES)+"""</td>
                         <td>"""+str("%.3f" % NES)+"""</td>
-                        <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str("%.4g" % FDR)+"""</td>
+                        <td>"""+str("%.3g" % PVAL)+"""</td>
+                        <td>"""+str("%.3g" % FDR)+"""</td>
+                        <td>"""+str(int(POS+NEG))+"""</td>
                     </tr>
                     """)
 
@@ -206,27 +267,30 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <th>NES</th>
                     <th>P-value</th>
                     <th>FDR</th>
+                    <th>Hits</th>
                 </tr>
                 """)
 
-    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR in TFresults:
         if NES < 0:
-            if PVAL < FDRCUTOFF:
-                outfile.write("""                <tr>
+            if PVAL < FDR:
+                outfile.write("""                <tr style="color: red;">
                         <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.3f" % ES)+"""</td>
                         <td>"""+str("%.3f" % NES)+"""</td>
-                        <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str("%.4g" % FDR)+"""</td>
+                        <td>"""+str("%.3g" % PVAL)+"""</td>
+                        <td>"""+str("%.3g" % FDR)+"""</td>
+                        <td>"""+str(int(POS+NEG))+"""</td>
                     </tr>
                     """)
             else:
                 outfile.write("""                <tr>
-                        <td>"""+MOTIF_FILE+"""</td>
+                        <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.3f" % ES)+"""</td>
                         <td>"""+str("%.3f" % NES)+"""</td>
-                        <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str("%.4g" % FDR)+"""</td>
+                        <td>"""+str("%.3g" % PVAL)+"""</td>
+                        <td>"""+str("%.3g" % FDR)+"""</td>
+                        <td>"""+str(int(POS+NEG))+"""</td>
                     </tr>
                     """)
 
@@ -240,64 +304,85 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     outfile.close()
 
 def single_motif(results,outputdir):
-    MOTIF_FILE,ES,NES,PVAL = results
+    MOTIF_FILE,ES,NES,PVAL,POS,NEG = results
     outfile = open(outputdir + MOTIF_FILE + '.results.html','w')
     outfile.write("""<!DOCTYPE html>
-    <html>
-    <head>
-    <title>"""+MOTIF_FILE+""" Results</title>
-    <style>
-    table {
-        font-family: arial, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
-    }
+        <html>
+        <head>
+        <title>"""+MOTIF_FILE+""" Results</title>
+        <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
 
-    td, th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
-    }
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
 
-    tr:nth-child(even) {
-        background-color: #dddddd;
-    }
-    </style>
-    </head>
-    <body style="width: 1300px; overflow:scroll">
-    <h1>"""+MOTIF_FILE+""" Results</h1>
-    <div>
-        <div style="float: left; width 1250px; padding-bottom:50px">
-            <img src="./plots/"""+MOTIF_FILE+"""_enrichment_plot.svg" alt="Enrichment Plot">
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        </style>
+        </head>
+        <body style="width: 1300px; overflow:scroll">
+        <h1>"""+MOTIF_FILE+""" Results</h1>
+        <div>
+            <div style="float: left; width: 600px; overflow:scroll">
+                <table style="padding-bottom:25px"> 
+                    <tr>
+                        <th>TF Motif</th>
+                        <th>ES</th> 
+                        <th>NES</th>
+                        <th>P-value</th>
+                        <th>FDR</th>
+                    </tr>
+                    <tr>
+                        <td>"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.3f" % ES)+"""</td>
+                        <td>"""+str("%.3f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % FDR)+"""</td>
+                    </tr>
+                </table>
+                <table>
+                    <tr>
+                        <th>Total Hits</th>
+                        <th>Positive Hits</th> 
+                        <th>Negative Hits</th>
+                    </tr>
+                    <tr>
+                        <td>"""+str(int(POS+NEG))+"""</td>
+                        <td>"""+str(int(POS))+"""</td>
+                        <td>"""+str(int(NEG))+"""</td>
+                    </tr>
+                </table>
+            </div>
+            <div style="float: right; width: 600px; overflow:scroll">
+                <p>Forward:</p>
+                <img src="./"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
+                <p>Reverse:</p>
+                <img src="./"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
+            </div>
         </div>
-    </div>
-    <div>
-        <div style="float:left; overflow:scroll">
-            <img src="./plots/"""+MOTIF_FILE+"""_simulation_plot.svg" alt="Simulation Plot">
+        <div>
+            <div style="float: left; width 1250px; padding-bottom:50px">
+                <img src="./"""+MOTIF_FILE+"""_enrichment_plot.png" alt="Enrichment Plot">
+            </div>
         </div>
-        <div style="float: right; width: 650px; overflow:scroll">
-            <table> 
-                <tr>
-                    <th>TF Motif</th>
-                    <th>ES</th> 
-                    <th>NES</th>
-                    <th>P-value</th>
-                </tr>
-                <tr>
-                    <td>"""+MOTIF_FILE+"""</td>
-                    <td>"""+str("%.3f" % ES)+"""</td>
-                    <td>"""+str("%.3f" % NES)+"""</td>
-                    <td>"""+str("%.4g" % PVAL)+"""</td>
-                </tr>
-            </table>
-            <p>Forward:</p>
-            <img src="./plots/"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
-            <p>Reverse:</p>
-            <img src="./plots/"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
+        <div>
+            <div style="float:left; width: 600px overflow:scroll">
+                <img src="./"""+MOTIF_FILE+"""_simulation_plot.png" alt="Simulation Plot">
+            </div>
+            <div style="float:right; width: 600px overflow:scroll">
+                <img src="./"""+MOTIF_FILE+"""_distance_distribution.png" alt="Distance Distribution Plot">
+            </div>
         </div>
-    </div>
-    </body>
-    </html>""")
+        </body>
+        </html>""")
     outfile.close()
 
 
