@@ -121,9 +121,11 @@ def run():
             NESlist = list()
             CALCULATEtime = 0.0
             if config.POOL:
+                a = time.time()
                 args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,logos) for x in os.listdir(config.MOTIF_HITS)]
                 p = Pool(mp.cpu_count())
                 TFresults = p.map(ES_calculator.run,args)
+                CALCULATEtime += time.time() - a
             else:
                 for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
                     a = time.time()
