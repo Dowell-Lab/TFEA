@@ -17,8 +17,11 @@ DESEQ = True
 #This module performs the bulk of the calculation of TFEA and will most likely take the longest. Unless you just want to generate files, this should usually be set to True
 CALCULATE = True
 
-#Determines whether ES calculations will be run in parallel. Still working on this (2/26/18)
+#Determines whether ES calculations will be run in parallel.
 POOL=True
+
+#Determines whether you want TFEA to automatically make an output directory (within your specified output). If set to false, make sure your output directory has folders called temp_files, e_and_o, and plots
+MAKE_DIRS = True
 
 #Define the FDR cutoff to be used for calling significant hits
 # FDRCUTOFF = pow(10,-6)
@@ -43,20 +46,20 @@ else:
     #These files will be concatenated and merged (bedtools) to produce detected regions in all samples. If you only have one bed file with regions of interest
     #submit it as a single item in the BEDS list and set COMBINE to False.
     BEDDIR = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/genomecoveragebed/fortdf/Tfit/REP_MERGE/'
-    BEDS = [BEDDIR+'JDR_Tfit-11_bidir_predictions.bed',BEDDIR+'JDR_Tfit-12_bidir_predictions.bed',BEDDIR+'JDR_Tfit-7_bidir_predictions.bed',BEDDIR+'JDR_Tfit-8_bidir_predictions.bed']
+    BEDS = [BEDDIR+'JDR_Tfit-8_bidir_predictions.bed',BEDDIR+'JDR_Tfit-12_bidir_predictions.bed',BEDDIR+'JDR_Tfit-7_bidir_predictions.bed',BEDDIR+'JDR_Tfit-11_bidir_predictions.bed']
 
     #Input bam files as a list containing transcription data. Must specify at least two bam files. 
     #If multiple replicates, specify each as a full path in the appropriate list.
     BAMDIR1 = '/scratch/Users/joru1876/Taatjes/161220_K00262_0062_BHH7CHBBXX_IRISREP1/trimmed/flipped/bowtie2_first_run/sortedbam/'
     BAMDIR2 = '/scratch/Users/joru1876/Taatjes/171026_NB501447_0180_fastq_IRISREP2/Demux/Taatjes-374/trimmed/flipped/bowtie2/sortedbam/'
     BAM1 = [BAMDIR2+'30_2_S3_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-1_S15_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
-    BAM2 = [BAMDIR2+'30_CA_2_S4_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam',BAMDIR1+'30-CA-1_S16_L007_R1_001_trimmed.flip.fastq.bowtie2.sorted.bam']
+    BAM2 = [BAMDIR2+'',BAMDIR1+'']
 
     #Specify conditions for bam files
-    LABEL1 = '30'
-    LABEL2 = '30_CA'
+    LABEL1 = '0'
+    LABEL2 = '0_CA'
 
-    OUTPUT = '/scratch/Users/joru1876/TFEA_files/IRIS/'
+    OUTPUT = '/scratch/Users/joru1876/TFEA_files/IRIS/20180307_final_results/'
 
     # #Input a list of bed files with regions of interest to be analyzed. Ideally, these are meant to be Tfit output files corresponding to each bam file submitted. 
     # #These files will be concatenated and merged (bedtools) to produce detected regions in all samples. If you only have one bed file with regions of interest

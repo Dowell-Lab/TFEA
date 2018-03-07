@@ -5,7 +5,6 @@ import os
 
 def deseqfile(DESEQFILE,filedir):
     #Parse a deseq file and obtain the exact middle of each region (for motif distance calc later) and pvalue (to rank)
-    # ranked = list()
     up = list()
     down = list()
     with open(DESEQFILE) as F:
@@ -29,14 +28,9 @@ def deseqfile(DESEQFILE,filedir):
                     down.append((chrom,start,stop,pval,str(fc)))
                 else:
                     up.append((chrom,start,stop,pval,str(fc)))
-            # ranked.append((chrom,start,stop,pval))
 
     #Save ranked regions in a bed file (pvalue included)
     outfile = open(filedir + "ranked_file.bed",'w')
-    # r=1
-    # for region in sorted(ranked, key=lambda x: x[3]):
-    #     outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
-    #     r += 1
     r=1
     for region in sorted(up, key=lambda x: x[3]):
         outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
@@ -58,13 +52,13 @@ def deseqfile(DESEQFILE,filedir):
 
 
     os.system("sort -k1,1 -k2,2n " + filedir+"ranked_file.center.bed" + " > " + filedir + "ranked_file.center.sorted.bed")
-    # os.system("rm " + filedir + "combined_input.bed")
-    # os.system("rm " + filedir + "combined_input.merge.bed")
-    # os.system("rm " + filedir + "combined_input.sorted.bed")
-    # os.system("rm " + filedir + "count_file.bed")
-    # os.system("rm " + filedir + "count_file.header.bed")
-    # os.system("rm " + filedir + "ranked_file.bed")
-    # os.system("rm " + filedir + "ranked_file.center.bed")
+    os.system("rm " + filedir + "combined_input.bed")
+    os.system("rm " + filedir + "combined_input.merge.bed")
+    os.system("rm " + filedir + "combined_input.sorted.bed")
+    os.system("rm " + filedir + "count_file.bed")
+    os.system("rm " + filedir + "count_file.header.bed")
+    os.system("rm " + filedir + "ranked_file.bed")
+    os.system("rm " + filedir + "ranked_file.center.bed")
 
 
 

@@ -11,23 +11,23 @@ import motif_distance
 import ES_calculator
 import create_html
 import config
+import meta_eRNA
 from multiprocessing import Pool
 import multiprocessing as mp
 
 def make_out_directories(dirs):
     #Output directory
     output = config.OUTPUT
-    if not os.path.isdir(output + 'TFEA_output-0/'):
-        output = output + 'TFEA_output-0/'
-        if dirs:
+    if dirs:
+        if not os.path.isdir(output + 'TFEA_output-0/'):
+            output = output + 'TFEA_output-0/'
             os.makedirs(output)
-    else:
-        outputfolders = list()
-        for folder in os.listdir(output):
-            if 'TFEA_output' in folder:
-                outputfolders.append(int(folder.split('-')[1]))
-        output = output + 'TFEA_output-' + str(max(outputfolders)+1) + '/'
-        if dirs:
+        else:
+            outputfolders = list()
+            for folder in os.listdir(output):
+                if 'TFEA_output' in folder:
+                    outputfolders.append(int(folder.split('-')[1]))
+            output = output + 'TFEA_output-' + str(max(outputfolders)+1) + '/'
             os.makedirs(output)
 
 
@@ -115,6 +115,19 @@ def run():
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
     if config.CALCULATE:
+        # p = Pool(mp.cpu_count())
+        # millions_mapped = p.map(meta_eRNA.get_millions_mapped_pool,config.BAM1+config.BAM2)
+        # millions_mapped = meta_eRNA.get_millions_mapped(config.BAM1+config.BAM2)
+
+        p = Pool(mp.cpu_count())
+        args = [(x,filedir) for x in config.BAM1+config.BAM2]
+        millions_mapped = p.map(meta_eRNA.samtools_flagstat,args)
+
+        # millions_mapped = list()
+        # for bam in config.BAM1+config.BAM2:
+        #     millions_mapped.append(meta_eRNA.samtools_flagstat(bam,filedir))
+
+        print millions_mapped
         print "Finding motif hits in regions..."
         if config.SINGLEMOTIF == False:
             TFresults = list()
@@ -122,7 +135,7 @@ def run():
             CALCULATEtime = 0.0
             if config.POOL:
                 a = time.time()
-                args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,logos) for x in os.listdir(config.MOTIF_HITS)]
+                args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,logos,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
                 p = Pool(mp.cpu_count())
                 TFresults = p.map(ES_calculator.run,args)
                 CALCULATEtime += time.time() - a

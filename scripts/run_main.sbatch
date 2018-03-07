@@ -7,11 +7,11 @@
 #SBATCH -p long
 
 ###Specify WallTime
-#SBATCH --time=10:00:00
+#SBATCH --time=24:00:00
 
 ### Specify the number of nodes/cores
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --ntasks=16
 
 ### Allocate the amount of memory needed
 #SBATCH --mem=64gb
@@ -31,6 +31,7 @@ module load bedtools/2.25.0
 module load python/2.7.14/matplotlib/1.5.1
 module load python/2.7.14/scipy/0.17.1
 module load python/2.7.14/htseq
+module load samtools/1.3.1
 
 ### now call your program
 

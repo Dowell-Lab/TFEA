@@ -11,7 +11,37 @@ from matplotlib import gridspec
 import time
 import HTSeq as hts
 import numpy as np
+from multiprocessing import Pool
+import multiprocessing as mp
 from config import *
+
+def get_millions_mapped(bams):
+    millions_mapped = list()
+    for bam in bams:
+        hts_bam = hts.BAM_Reader(bam)
+        mil_map = 0.0
+        for almnt in hts_bam:
+            mil_map += 1.0
+        millions_mapped.append(mil_map)
+
+    return millions_mapped
+
+def get_millions_mapped_pool(bam):
+    hts_bam = hts.BAM_Reader(bam)
+    millions_mapped = 0.0
+    for almnt in hts_bam:
+        millions_mapped += 1.0
+
+    return millions_mapped/1000000.0
+
+def samtools_flagstat(args):
+    bam,filedir = args
+    filename = bam.split('/')[-1]
+    os.system("samtools flagstat " + bam + " > " + filedir + filename + ".flagstat")
+    with open(filedir+filename+".flagstat") as F:
+        lines = F.readlines()
+        return float(lines[4].strip('\n').split(' ')[0])/1000000.0
+
 
 def run(ranked_center_distance_file):
     H=1500
@@ -62,7 +92,9 @@ def run(ranked_center_distance_file):
     ax1.plot(xvals,profile2,color='red')
     plt.savefig('/scratch/Users/joru1876/TFEA_files/Allen2014/TFEA_output-0/meta_eRNA_test.png')
 
-def run2(ranked_center_distance_file):
+
+#3/5/18: This is the function that will give meta_eRNA profiles
+def run2(ranked_center_distance_file,millions_mapped):
 
     regions=list()
     with open(ranked_center_distance_file) as F:
@@ -81,14 +113,20 @@ def run2(ranked_center_distance_file):
     for bam in BAM2:
         hts_bam2.append(hts.BAM_Reader(bam))
 
-    posprofile1 = np.zeros(2*int(H))   
+
+    posprofile1 = np.zeros(2*int(H))  
     negprofile1 = np.zeros(2*int(H))
     posprofile2 = np.zeros(2*int(H))   
     negprofile2 = np.zeros(2*int(H))
+    rep1number = len(hts_bam1)
+    rep2number = len(hts_bam2)
     for window in regions:
         avgposprofile1 = np.zeros(2*int(H))
         avgnegprofile1 = np.zeros(2*int(H))
+        i = 0
         for sortedbamfile in hts_bam1:
+            mil_map = millions_mapped[i]
+            i += 1
             tempposprofile = np.zeros(2*int(H))
             tempnegprofile = np.zeros(2*int(H))
             for almnt in sortedbamfile[ window ]:
@@ -112,15 +150,17 @@ def run2(ranked_center_distance_file):
                 tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile1 = [x+y for x,y in zip(avgposprofile1,tempposprofile)]
             avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
-        repnumber = len(hts_bam1)
-        avgposprofile1 = [x/repnumber for x in avgposprofile1]
-        avgnegprofile1 = [x/repnumber for x in avgnegprofile1]
+        avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
+        avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
         posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
         negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
 
         avgposprofile2 = np.zeros(2*int(H))
         avgnegprofile2 = np.zeros(2*int(H))
+        i = len(hts_bam1)
         for sortedbamfile in hts_bam2:
+            mil_map = millions_mapped[i]
+            i += 1
             tempposprofile = np.zeros(2*int(H))
             tempnegprofile = np.zeros(2*int(H))
             for almnt in sortedbamfile[ window ]:
@@ -144,9 +184,8 @@ def run2(ranked_center_distance_file):
                 tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
             avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
-        repnumber = len(hts_bam2)
-        avgposprofile2 = [x/repnumber for x in avgposprofile2]
-        avgnegprofile2 = [x/repnumber for x in avgnegprofile2]
+        avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
+        avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
         posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
         negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
 

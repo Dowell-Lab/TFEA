@@ -22,19 +22,8 @@ def parent_dir(directory):
     
     return newdir
 
-# def pool(MOTIF_HITS,ranked_center_distance_file,figuredir,logos):
-#     global ranked_center_distance_file
-#     ranked_center_distance_file = ranked_center_distance_file
-#     global figuredir
-#     figuredir = figuredir
-#     global logos
-#     logos=logos
-#     p = Pool(32)
-#     TFresults = p.map(ES_calculator.run,os.listdir(config.MOTIF_HITS))
-#     return TFresults
-
 def run(args):
-    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,logos = args
+    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,logos,millions_mapped = args
     ranked_center_distance_file = motif_distance.run(ranked_center_file,MOTIF_HITS+MOTIF_FILE)
     #Initiate some variables
     H = 1500.0
@@ -66,25 +55,26 @@ def run(args):
             fc = float(line[4])
             if 0 <= distance <= h:
                 positives += 1.0
-                value = math.exp(-distance)
+                # value = math.exp(-distance)
+                value = 1
                 distances.append(value)
                 ind.append(rank)
                 distance_sum += value
                 scatterx.append(rank)
                 scattery.append(distance)
                 if fc > 1:
-                    if pval < PVALCUTOFF:
-                        updistancehist.append(distance)
-                        upsigscatterx.append(rank)
+                    # if pval < PVALCUTOFF:
+                    updistancehist.append(distance)
+                    upsigscatterx.append(rank)
                     try:
                         logpval.append(-math.log(pval,10))
                     except ValueError:
                         logpval.append(500.0)
                     
                 else:
-                    if pval < PVALCUTOFF:
-                        downdistancehist.append(distance)
-                        downsigscatterx.append(rank)
+                    # if pval < PVALCUTOFF:
+                    downdistancehist.append(distance)
+                    downsigscatterx.append(rank)
                     try:
                         logpval.append(math.log(pval,10))
                     except ValueError:
@@ -98,18 +88,18 @@ def run(args):
                 scatterx.append(rank)
                 scattery.append(distance)
                 if fc > 1:
-                    if pval < PVALCUTOFF:
-                        updistancehist.append(distance)
-                        upsigscatterx.append(rank)
+                    # if pval < PVALCUTOFF:
+                    updistancehist.append(distance)
+                    upsigscatterx.append(rank)
                     try:
                         logpval.append(-math.log(pval,10))
                     except ValueError:
                         logpval.append(500.0)
                     
                 else:
-                    if pval < PVALCUTOFF:
-                        downdistancehist.append(distance)
-                        downsigscatterx.append(rank)
+                    # if pval < PVALCUTOFF:
+                    downdistancehist.append(distance)
+                    downsigscatterx.append(rank)
                     try:
                         logpval.append(math.log(pval,10))
                     except ValueError:
@@ -253,12 +243,12 @@ def run(args):
     plt.cla()
 
     #Plots the distribution of motif distances with a red line at h
-    F = plt.figure(figsize=(7,6))
+    F = plt.figure(figsize=(6.5,6))
     gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1])
     ax0 = plt.subplot(gs[0])
     binwidth = H/100.0
     ax0.hist(updistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='green')
-    ax0.set_title('Distribution of Motif Distance for: fc > 1, pval < ' + str(PVALCUTOFF),fontsize=14)
+    ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
     ax0.axvline(h,color='red',alpha=0.5)
     ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
@@ -268,7 +258,7 @@ def run(args):
     ax1 = plt.subplot(gs[1])
     ax1.hist(downdistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='purple')
     ax1.axvline(h,color='red',alpha=0.5)
-    ax1.set_title('Distribution of Motif Distance for: fc < 1, pval < ' + str(PVALCUTOFF),fontsize=14)
+    ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     ax1.set_xlim([0,H])
@@ -279,7 +269,7 @@ def run(args):
     plt.cla()
 
     #Plots a meta_eRNA
-    posprofile1, negprofile1, posprofile2, negprofile2 = meta_eRNA.run2(ranked_center_distance_file)
+    posprofile1, negprofile1, posprofile2, negprofile2 = meta_eRNA.run2(ranked_center_distance_file,millions_mapped)
     F = plt.figure(figsize=(15.5,6))
     ax0 = plt.subplot(111)
     xvals = range(-int(H),int(H))
