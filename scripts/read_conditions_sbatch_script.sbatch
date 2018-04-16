@@ -22,7 +22,7 @@
 
 ### Set your email address
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=joru1876@colorado.edu
+#SBATCH --mail-user=rutendo.sigauke@ucdenver.edu
 
 ### Load required modules
 module load python/2.7.14
@@ -35,7 +35,7 @@ module load python/2.7.14/scipy/0.17.1
 
 ### now call your program
 
-src=/scratch/Users/joru1876/TFEA/src/read_conditions.py
+src=/scratch/Users/rusi2317/projects/rotation/bin/TFEA/src/read_conditions.py
 
 python $src
 

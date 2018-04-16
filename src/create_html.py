@@ -3,9 +3,18 @@ __author__ = 'Jonathan Rubin'
 from config import *
 import datetime
 
+def createTFtext(TFresults,outputdir):
+    TFresults = sorted(TFresults, key=lambda x: x[3])
+    outfile = open(outputdir + 'results.txt', 'w')
+    outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
+    for val in TFresults:
+        outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
+    outfile.close()
+
+
 def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     #Creates results.txt which is a tab-delimited text file with the results    
-    TFresults = sorted(TFresults, key=lambda x: x[3])
+    ##TFresults = sorted(TFresults, key=lambda x: x[3])
     outfile = open(outputdir + 'results.txt', 'w')
     outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
     for val in TFresults:
@@ -117,11 +126,11 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </div>
             <div style="float: left; width: 600px; overflow: scroll">
                 <p>Forward:</p>
-                <img src="./"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
+                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
             </div>
             <div style="float: right; width: 600px; overflow: scroll">
                 <p>Reverse:</p>
-                <img src="./"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
+                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
             </div>
         </div>
         <div>

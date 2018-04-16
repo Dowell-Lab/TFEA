@@ -12,9 +12,11 @@ from scipy.stats import norm
 import time
 from multiprocessing import Pool
 # import HTSeq as hts
+#import config
 from config import *
 import motif_distance
 import meta_eRNA
+import create_html
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -23,7 +25,7 @@ def parent_dir(directory):
     return newdir
 
 def run(args):
-    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,logos,millions_mapped = args
+    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped = args
     ranked_center_distance_file = motif_distance.run(ranked_center_file,MOTIF_HITS+MOTIF_FILE)
     #Initiate some variables
     H = 1500.0
@@ -44,6 +46,7 @@ def run(args):
     logpval = list()
     updistancehist = list()
     downdistancehist = list()
+    middledistancehist = list()
 
     #First parse file containing motif distance and region rank. Also count total negatives to be used later
     with open(ranked_center_distance_file) as F:
@@ -55,33 +58,38 @@ def run(args):
             fc = float(line[4])
             if 0 <= distance <= h:
                 positives += 1.0
-                # value = math.exp(-distance)
-                value = 1
+                value = math.exp(-distance)
+                ##value = 1
                 distances.append(value)
                 ind.append(rank)
                 distance_sum += value
                 scatterx.append(rank)
                 scattery.append(distance)
                 if fc > 1:
-                    # if pval < PVALCUTOFF:
-                    updistancehist.append(distance)
-                    upsigscatterx.append(rank)
+                    if pval < PVALCUTOFF:
+                    	updistancehist.append(distance)
+                    	upsigscatterx.append(rank)
+		    else:
+			middledistancehist.append(distance)
                     try:
                         logpval.append(-math.log(pval,10))
                     except ValueError:
                         logpval.append(500.0)
                     
                 else:
-                    # if pval < PVALCUTOFF:
-                    downdistancehist.append(distance)
-                    downsigscatterx.append(rank)
+                    if pval < PVALCUTOFF:
+                    	downdistancehist.append(distance)
+                    	downsigscatterx.append(rank)
+		    else:
+			middledistancehist.append(distance)
                     try:
                         logpval.append(math.log(pval,10))
                     except ValueError:
                         logpval.append(-500.0)
                     
 
-            elif h < distance <= H:
+            #elif h < distance <= H:
+            elif distance > h:
                 distances.append(-1)
                 ind.append(rank)
                 negatives += 1.0
@@ -107,7 +115,7 @@ def run(args):
                     
                     
     
-    if len(distances) == 0:
+    if len(distances) == 0 or positives < 10 or negatives < 10:
         return "no hits"        
 
     #actualES calculation:
@@ -159,8 +167,14 @@ def run(args):
     # os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
 
     #For mouse:
-    os.system("scp " + logos + MOTIF_FILE.split('.bed')[0] + "_direct.png " + figuredir)
-    os.system("scp " + logos + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + figuredir)
+    #logos = main.LOGOS
+    logos = LOGOS ##since LOGOS is in config?
+    if 'HO_' in logos:
+        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
+        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
+    else:
+        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0] + "_direct.png " + figuredir)
+        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + figuredir)
 
     logpval = [x for _,x in sorted(zip(scatterx,logpval))]
     scattery = [x for _,x in sorted(zip(scatterx,scattery))]
@@ -244,7 +258,7 @@ def run(args):
 
     #Plots the distribution of motif distances with a red line at h
     F = plt.figure(figsize=(6.5,6))
-    gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1])
+    gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
     ax0 = plt.subplot(gs[0])
     binwidth = H/100.0
     ax0.hist(updistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='green')
@@ -255,7 +269,7 @@ def run(args):
     ax0.set_xlim([0,H])
     ax0.set_xlabel('Distance (bp)',fontsize=14)
     ax0.set_ylabel('Hits',fontsize=14)
-    ax1 = plt.subplot(gs[1])
+    ax1 = plt.subplot(gs[2])
     ax1.hist(downdistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='purple')
     ax1.axvline(h,color='red',alpha=0.5)
     ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
@@ -264,6 +278,15 @@ def run(args):
     ax1.set_xlim([0,H])
     ax1.set_ylabel('Hits',fontsize=14)
     ax1.set_xlabel('Distance (bp)',fontsize=14)
+    ax2 = plt.subplot(gs[1])
+    ax2.hist(middledistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='blue')
+    ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
+    ax2.axvline(h,color='red',alpha=0.5)
+    ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax2.set_xlim([0,H])
+    ax2.set_xlabel('Distance (bp)',fontsize=14)
+    ax2.set_ylabel('Hits',fontsize=14)
     plt.tight_layout()
     plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')
     plt.cla()
@@ -324,6 +347,7 @@ def FDR(TFresults,NESlist,figuredir):
     sigx = list()
     sigy = list()
     pvals = list()
+    ##pvalsNA = [1 if str(x) == 'nan' else x for x in pvals]
     totals = list()
     sigtotals = list()
 
@@ -365,6 +389,9 @@ def FDR(TFresults,NESlist,figuredir):
             sigy.append(FDR)
             sigtotals.append(math.log(float(total)))
 
+    ##pvalsNA = [1 if str(x) == 'nan' else x for x in pvals]
+        
+    create_html.createTFtext(TFresults,figuredir)
 
     #Creates a scatter plot of NES vs. number of motif hits within H
     F = plt.figure(figsize=(7,6))
@@ -398,7 +425,11 @@ def FDR(TFresults,NESlist,figuredir):
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     binwidth = 1.0/100.0
+    ##print pvalsNA
+    ##print pvals
+    print np.arange(0,1.0+binwidth,binwidth)
     ax.hist(pvals,bins=np.arange(0,1.0+binwidth,binwidth),color='green')
+    ##ax.hist(pvalsNA,bins=np.arange(0,1.0+binwidth,binwidth),color='green')
     ax.set_title("TFEA P-value Histogram",fontsize=14)
     ax.set_xlabel("P-value",fontsize=14)
     ax.set_ylabel("Count",fontsize=14)

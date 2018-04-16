@@ -33,14 +33,24 @@ def run(conditions,keyword,specificcelltype,untreated,treated,bamdir,beddir):
     return bam1,bam2,beds
 
 if __name__ == "__main__":
-    CONDITIONS='/scratch/Users/joru1876/TFEA_files/conditions_short_20161103_tentative.txt_20161107-165140.csv'
-    SPECIFICCELLTYPE = 'HCT116'
-    LABEL1='DMSO_1hr'
-    LABEL2='Nutlin_1hr'
-    BAMDIR='/scratch/Users/joru1876/TFEA_files/bams/'
-    BEDDIR='/scratch/Users/joru1876/TFEA_files/tfit_beds/'
-    KEYWORD='Allen2014'
-    FILEDIR='/scratch/Users/joru1876/TFEA_files/Allen2014/'
+    CONDITIONS='/scratch/Shares/dowell/pubgro/conditions_short_20161103_tentative.txt_20161107-165140.csv'
+    ##SPECIFICCELLTYPE = 'HCT116'
+    SPECIFICCELLTYPE = 'MCF7'
+    ##SPECIFICCELLTYPE = 'AC16'
+    ##LABEL1='DMSO_1hr'
+    LABEL1='vehicle'
+    ##LABEL1='control_notvechicle'
+    ##LABEL2='Nutlin_1hr'
+    LABEL2='E2_40min'
+    ##LABEL2='TNFa_30min'
+    BAMDIR='/scratch/Shares/dowell/pubgro_sortedbams/'
+    BEDDIR='/scratch/Shares/dowell/md_score_paper/tfit_bed_files/human/recent/'
+    ##KEYWORD='Allen2014'
+    KEYWORD='Hah2013'
+    ##KEYWORD='Luo2014'
+    ##FILEDIR='/scratch/Users/rusi2317/projects/rotation/output/TFEA/Allen2014/'
+    FILEDIR='/scratch/Users/rusi2317/projects/rotation/output/TFEA/Hah2013/'
+    ##FILEDIR='/scratch/Users/rusi2317/projects/rotation/output/TFEA/Luo2014'
     BAM1,BAM2,BEDS = run(CONDITIONS,KEYWORD,SPECIFICCELLTYPE,LABEL1,LABEL2,BAMDIR,BEDDIR)
     BED = combine_bed.run(BEDS,FILEDIR)
     count_reads.run(BED,BAM1,BAM2,LABEL1,LABEL2,FILEDIR)

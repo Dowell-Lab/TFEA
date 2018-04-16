@@ -22,7 +22,7 @@
 
 ### Set your email address
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=joru1876@colorado.edu
+#SBATCH --mail-user=rutendo.sigauke@ucdenver.edu
 
 ### Load required modules
 module load python/2.7.14
@@ -36,7 +36,7 @@ module unload R/3.3.0
 
 ### now call your program
 
-src=/scratch/Users/joru1876/TFEA/src/meta_eRNA.py
+src=/scratch/Users/rusi2317/projects/rotation/bin/TFEA/src/meta_eRNA.py
 
 python $src
 

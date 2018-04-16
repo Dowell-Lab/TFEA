@@ -15,7 +15,7 @@
 
 ### Set your email address
 #PBS -m ae
-#PBS -M joru1876@colorado.edu
+#PBS -M rutendo.sigauke@ucdenver.edu
 
 
 
@@ -28,7 +28,7 @@ module load meme_4.10.1_4
 
 ### now call your program
 
-src=/Users/joru1876/scratch_backup/TFEA/src/
+src=/scratch/Users/rusi2317/projects/rotation/bin/TFEA/src/
 
 python $src
 

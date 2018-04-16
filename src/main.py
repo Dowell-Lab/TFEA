@@ -82,10 +82,10 @@ def run():
     ranked_center_distance_file = filedir + "ranked_file.center.sorted.distance.bed"
 
     #Path to a directory full of motif logos for all TFs in the HOCOMOCO database (v10)
-    # logos = parent_dir(homedir) + '/logo/'
+    logos = parent_dir(homedir) + '/human_logo/'
 
     #Path to mouse directory with motif logos in HOCOMOCO v10
-    logos = parent_dir(homedir) + '/mouse_logo/'
+    ##logos = parent_dir(homedir) + '/mouse_logo/'
 
 
     #This module takes the input list of BED files, concatenates them, and then merges them via bedtools.
@@ -135,10 +135,11 @@ def run():
             CALCULATEtime = 0.0
             if config.POOL:
                 a = time.time()
-                args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,logos,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
+                args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
                 p = Pool(mp.cpu_count())
                 TFresults = p.map(ES_calculator.run,args)
                 CALCULATEtime += time.time() - a
+                create_html.createTFtext(TFresults,output)
             else:
                 for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
                     a = time.time()
@@ -146,7 +147,7 @@ def run():
 
                     #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                     #the HOCOMOCO database.
-                    results = ES_calculator.run((MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,logos))
+                    results = ES_calculator.run((MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped))
                     if results != "no hits":
                         TFresults.append(results)
                         NESlist.append(results[2])
@@ -162,7 +163,7 @@ def run():
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
         else:
             motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
-            results = ES_calculator.run(config.SINGLEMOTIF)
+            results = ES_calculator.run(config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped)
             create_html.single_motif(results,output)
         print "done"
 

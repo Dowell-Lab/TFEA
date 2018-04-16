@@ -22,7 +22,7 @@
 
 ### Set your email address
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=joru1876@colorado.edu
+#SBATCH --mail-user=rutendo.sigauke@ucdenver.edu
 
 ### Load required modules
 module purge
@@ -35,6 +35,6 @@ module load samtools/1.3.1
 
 ### now call your program
 
-src=/scratch/Users/joru1876/TFEA/src/
+src=/scratch/Users/rusi2317/projects/rotation/bin/TFEA/src/
 
 python $src ${output} ${filedir} ${figuredir} ${e_and_o}

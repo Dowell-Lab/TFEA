@@ -12,9 +12,11 @@ def write_script(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file):
     outfile.write('conds <- c(' + ', '.join(['"'+LABEL1+'"']*len(BAM1)) + ', ' + ', '.join(['"'+LABEL2+'"']*len(BAM2)) + ')\n')
     outfile.write('cds <- newCountDataSet( countsTable, conds )\n')
     outfile.write('cds <- estimateSizeFactors( cds )\n')
-    outfile.write('sizeFactors(cds)\n')
-    outfile.write('cds <- estimateDispersions( cds )\n')
+    outfile.write('sizeFactors(cds)\n') 
+    outfile.write('cds <- estimateDispersions( cds )\n') ##with replicates
+    ##outfile.write('cds <- estimateDispersions( cds ,method="blind", sharingMode="fit-only")\n') ##without replicates
     outfile.write('res <- nbinomTest( cds, "'+LABEL1+'", "'+LABEL2+'" )\n')
+    outfile.write('res <- subset(res, baseMean > 4)\n') ##filter eRNAs with average normalized counts greater than 4
     outfile.write('write.table(res, file = "'+filedir+'DESeq.res.txt", append = FALSE, sep= "\t" )\n')
     outfile.write('sink()')
 
