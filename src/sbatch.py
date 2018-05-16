@@ -9,7 +9,6 @@ def run(script):
     os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --export=output="+output+",filedir=" +filedir+",figuredir="
                 +figuredir+",e_and_o=" + e_and_o + " " + script)
 
-
 #Return parent directory
 def parent_dir(directory):
     pathlist = directory.split('/')

@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from scipy.stats import norm
+from scipy.stats import poisson
 import time
 from multiprocessing import Pool
 # import HTSeq as hts
@@ -48,6 +49,12 @@ def run(args):
     downdistancehist = list()
     middledistancehist = list()
 
+    ##RFS addition
+    ranks = list()
+    updistancehist2 = list()
+    downdistancehist2 = list()
+    middledistancehist2 = list()
+
     #First parse file containing motif distance and region rank. Also count total negatives to be used later
     with open(ranked_center_distance_file) as F:
         for line in F:
@@ -56,6 +63,19 @@ def run(args):
             pval = float(line[3])
             rank = int(line[5])
             fc = float(line[4])
+
+            ##get distances based on quantile ranks
+            ##added by RFS
+            ranks.append(rank) 
+
+            if rank < np.percentile(ranks,25):
+                updistancehist2.append(distance)
+            elif rank > np.percentile(ranks,75):
+                downdistancehist2.append(distance)
+            else:
+                middledistancehist2.append(distance)
+
+
             if 0 <= distance <= h:
                 positives += 1.0
                 value = math.exp(-distance)
@@ -67,10 +87,10 @@ def run(args):
                 scattery.append(distance)
                 if fc > 1:
                     if pval < PVALCUTOFF:
-                    	updistancehist.append(distance)
+                    	##updistancehist.append(distance)
                     	upsigscatterx.append(rank)
-		    else:
-			middledistancehist.append(distance)
+		    ##else:
+			##middledistancehist.append(distance)
                     try:
                         logpval.append(-math.log(pval,10))
                     except ValueError:
@@ -78,10 +98,10 @@ def run(args):
                     
                 else:
                     if pval < PVALCUTOFF:
-                    	downdistancehist.append(distance)
+                    	##downdistancehist.append(distance)
                     	downsigscatterx.append(rank)
-		    else:
-			middledistancehist.append(distance)
+		    ##else:
+			##middledistancehist.append(distance)
                     try:
                         logpval.append(math.log(pval,10))
                     except ValueError:
@@ -96,18 +116,21 @@ def run(args):
                 scatterx.append(rank)
                 scattery.append(distance)
                 if fc > 1:
-                    # if pval < PVALCUTOFF:
-                    updistancehist.append(distance)
-                    upsigscatterx.append(rank)
+                    if pval < PVALCUTOFF:
+                        ##updistancehist.append(distance)
+                        upsigscatterx.append(rank)
+                    ##else:
+			##middledistancehist.append(distance)
                     try:
                         logpval.append(-math.log(pval,10))
                     except ValueError:
                         logpval.append(500.0)
-                    
                 else:
-                    # if pval < PVALCUTOFF:
-                    downdistancehist.append(distance)
-                    downsigscatterx.append(rank)
+                    if pval < PVALCUTOFF:
+                        ##downdistancehist.append(distance)
+                        downsigscatterx.append(rank)
+                    ##else:
+			##middledistancehist.append(distance)
                     try:
                         logpval.append(math.log(pval,10))
                     except ValueError:
@@ -153,12 +176,14 @@ def run(args):
         NES = -(actualES/mu)
         sigma = np.std(simESsubset)
         p = norm.cdf(actualES,mu,sigma)
+        ##p = poisson.cdf(actualES,mu)##argument takes actual value and the mean
     else:
         simESsubset = [x for x in simES if x > 0]
         mu = np.mean(simESsubset)
         NES = actualES/mu
         sigma = np.std(simESsubset)
         p = 1-norm.cdf(actualES,mu,sigma)
+        ##p = 1-poisson.cdf(actualES,mu)
 
     #Plot results for significant hits while list of simulated ES scores is in memory
     # if p < FDRCUTOFF or SINGLEMOTIF != False:
@@ -169,7 +194,8 @@ def run(args):
     #For mouse:
     #logos = main.LOGOS
     logos = LOGOS ##since LOGOS is in config?
-    if 'HO_' in logos:
+    ##if 'HO_' in logos: ##in MOTIF_FILE:
+    if 'HO_' in MOTIF_FILE:
         os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
         os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
     else:
@@ -203,8 +229,8 @@ def run(args):
     ax1.scatter(xvals,scattery,edgecolor="",color="black",s=10,alpha=0.25)
     ax1.axhline(h, color='red',alpha=0.25)
     if DRAWPVALCUTOFF != False:
-        ax1.scatter(upsigscatterx,updistancehist,edgecolor="",color="green",s=10,alpha=0.5)
-        ax1.scatter(downsigscatterx,downdistancehist,edgecolor="",color="blue",s=10,alpha=0.5)
+        ax1.scatter(upsigscatterx,updistancehist2,edgecolor="",color="green",s=10,alpha=0.5)
+        ax1.scatter(downsigscatterx,downdistancehist2,edgecolor="",color="blue",s=10,alpha=0.5)
         # ax1.axvline(PVALCUTOFF,linestyle='dashed')
         # ax1.text(PVALCUTOFF,H+H/10,str(PVALCUTOFF),ha='center',va='bottom')
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
@@ -225,11 +251,13 @@ def run(args):
     ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
     ax2.set_ylabel('Rank Metric',fontsize=10)
     try:
-        ax2.axvline(len(upsigscatterx)+1,color='green',alpha=0.25)
+        ##ax2.axvline(len(upsigscatterx)+1,color='green',alpha=0.25)
+        ax2.axvline(len(updistancehist2)+1,color='green',alpha=0.25)
     except ValueError:
         pass
     try:
-        ax2.axvline(len(xvals) - len(downsigscatterx),color='purple',alpha=0.25)
+        ##ax2.axvline(len(xvals) - len(downsigscatterx),color='purple',alpha=0.25)
+        ax2.axvline(len(xvals) - len(downdistancehist2), color='purple', alpha=0.25)
     except ValueError:
         pass
 
@@ -261,7 +289,7 @@ def run(args):
     gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
     ax0 = plt.subplot(gs[0])
     binwidth = H/100.0
-    ax0.hist(updistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='green')
+    ax0.hist(updistancehist2,bins=np.arange(0,int(H)+binwidth,binwidth),color='green')
     ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
     ax0.axvline(h,color='red',alpha=0.5)
     ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
@@ -270,7 +298,7 @@ def run(args):
     ax0.set_xlabel('Distance (bp)',fontsize=14)
     ax0.set_ylabel('Hits',fontsize=14)
     ax1 = plt.subplot(gs[2])
-    ax1.hist(downdistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='purple')
+    ax1.hist(downdistancehist2,bins=np.arange(0,int(H)+binwidth,binwidth),color='purple')
     ax1.axvline(h,color='red',alpha=0.5)
     ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
@@ -279,7 +307,7 @@ def run(args):
     ax1.set_ylabel('Hits',fontsize=14)
     ax1.set_xlabel('Distance (bp)',fontsize=14)
     ax2 = plt.subplot(gs[1])
-    ax2.hist(middledistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='blue')
+    ax2.hist(middledistancehist2,bins=np.arange(0,int(H)+binwidth,binwidth),color='blue')
     ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
     ax2.axvline(h,color='red',alpha=0.5)
     ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')

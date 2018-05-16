@@ -119,7 +119,7 @@ def run():
         # millions_mapped = p.map(meta_eRNA.get_millions_mapped_pool,config.BAM1+config.BAM2)
         # millions_mapped = meta_eRNA.get_millions_mapped(config.BAM1+config.BAM2)
 
-        p = Pool(mp.cpu_count())
+        p = Pool(64)
         args = [(x,filedir) for x in config.BAM1+config.BAM2]
         millions_mapped = p.map(meta_eRNA.samtools_flagstat,args)
 
@@ -136,7 +136,8 @@ def run():
             if config.POOL:
                 a = time.time()
                 args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
-                p = Pool(mp.cpu_count())
+                p = Pool(64)
+                
                 TFresults = p.map(ES_calculator.run,args)
                 CALCULATEtime += time.time() - a
                 create_html.createTFtext(TFresults,output)

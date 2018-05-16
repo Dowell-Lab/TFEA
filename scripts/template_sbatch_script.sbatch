@@ -11,14 +11,14 @@
 
 ### Specify the number of nodes/cores
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --ntasks=64
 
 ### Allocate the amount of memory needed
 #SBATCH --mem=100gb
 
 ### Setting to mail when the job is complete
-#SBATCH --error /scratch/Users/joru1876/e_and_o/%x.err
-#SBATCH --output /scratch/Users/joru1876/e_and_o/%x.out
+#SBATCH --error /scratch/Users/rusi2317/projects/rotation/bin/TFEA/src/%x.err
+#SBATCH --output /scratch/Users/rusi2317/projects/rotation/bin/TFEA/src/%x.out
 
 ### Set your email address
 #SBATCH --mail-type=ALL
@@ -36,7 +36,7 @@ module unload R/3.3.0
 
 ### now call your program
 
-src=/scratch/Users/rusi2317/projects/rotation/bin/TFEA/src
+src=/scratch/Users/rusi2317/projects/rotation/bin/TFEA/src/cpu_test.py
 
 python $src
 

@@ -16,7 +16,8 @@ def deseqfile(DESEQFILE,filedir):
                     pval = format(float(line[-2]),'.12f')
                 except ValueError:
                     pval = format(1.0,'.12f')
-                region = line[1].split(':')
+                #region = line[1].split(':')
+                region = line[0].split(':')
                 chrom = region[0]
                 coordinates = region[1].split('-')
                 start = coordinates[0]

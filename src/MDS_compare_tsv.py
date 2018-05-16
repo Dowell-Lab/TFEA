@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
 import pandas as pd
 
+
 def parent_dir(directory):
     pathlist = directory.split('/')
     newdir = '/'.join(pathlist[0:len(pathlist)-1])
@@ -55,10 +56,15 @@ def run(MDS1,MDS2,savedir):
         ps = list()
         zs = list()
         for key in d:
-            mdj=d[key][1][i]
-            mdk=d[key][3][i]
+            mdj=float(d[key][1][i])
+            mdk=float(d[key][3][i])
+            Nj=float(d[key][0][i])
+            Nk=float(d[key][2][i])
             diff.append(float(mdj)-float(mdk))
+            if 'PPARA' in key:
+                    print key,mdj-mdk,math.log((Nj+Nk)/2.0,10)
         mean = sum(diff)/len(diff)
+        print mean
         for key in d:
             mdj=float(d[key][1][i])
             mdk=float(d[key][3][i])
@@ -95,13 +101,15 @@ def run(MDS1,MDS2,savedir):
                         siglist2.append(key.split('.')[0].split('_')[1])
                         # print 'down', key.split('.')[0].split('_')[0], math.log((Nj+Nk)/2.0,10), mdj-mdk-mean
                         ##print 'down', key.split('.')[0].split('_')[0], "%.4f" % p
-    
+                if 'PPARA' in key:
+                    print key,mdj-mdk,math.log((Nj+Nk)/2.0,10)
         if name == 'NON':
-            MDSsum = zip(genelist, X, Y, ps, tf_motifs)
-            MDSsummary = pd.DataFrame(MDSsum,columns=['TF','X','Y','pval','TF_motif'])
-            MDSsummary.to_csv(savedir+name1+name2 +'_MDSout2.tsv',sep='\t')
-            ##print MDSsummary
+            MDSsum = zip(genelist,diff ,X, Y, ps, zs,tf_motifs)
+            MDSsummary = pd.DataFrame(MDSsum,columns=['TF','DeltaMDS','log_meanHits_X','Y','pval','ztest','TF_motif'])
+            ##MDSsummary.to_csv(savedir+name1+'_'+name2 +'_MDSout_04232018.tsv',sep='\t')
+            MDSsummary.to_csv(savedir+name1+'_'+name2 +'_MDSout_04302018.tsv',sep='\t')
 
+            #print MDSsummary                                                                                                                                                     
 
 if __name__ == "__main__":
     #Home directory
@@ -113,15 +121,17 @@ if __name__ == "__main__":
     ##MDSdir = '/scratch/Shares/dowell/md_score_paper/mdscore_tsv_files/human/recent/'
     MDSdir = '/scratch/Shares/dowell/md_score_paper/mdscore_tsv_files/human/archive/150/'
 
-    ##MDS1 = MDSdir + 'SRR1105737_MDS.tsv'
+    #MDS1 = MDSdir + 'SRR1105737_MDS.tsv'
     #MDS1 = MDSdir + 'SRR1105736_MDS.tsv'
-    MDS1 = MDSdir + 'SRR1015583_MDS.tsv'
+    #MDS1 = MDSdir + 'SRR1015583_MDS.tsv'
+    MDS1 = MDSdir + 'SRR653421_MDS.tsv'
     # MDS1 = MDSdir + 'SRR1015584_MDS.tsv'
     ##MDS2 = parent_dir(homedir) + '/MDS_files/J32_MDS.tsv'
-    ##MDS2 = MDSdir + 'SRR1105739_MDS.csv'
-    ##MDS2 = MDSdir + 'SRR1105739_MDS.tsv'
+    #MDS2 = MDSdir + 'SRR1105739_MDS.csv'
+    #MDS2 = MDSdir + 'SRR1105739_MDS.tsv'
     #MDS2 = MDSdir + 'SRR1105738_MDS.tsv'
-    MDS2 = MDSdir + 'SRR1015587_MDS.tsv'
+    #MDS2 = MDSdir + 'SRR1015587_MDS.tsv'
+    MDS2 = MDSdir + 'SRR653425_MDS.tsv'
     # MDS2 = MDSdir + 'SRR1015588_MDS.tsv'
     ##savedir = parent_dir(homedir) + '/figures/'
     savedir = '/scratch/Users/rusi2317/projects/rotation/output/MDS_compare/'
