@@ -3,7 +3,7 @@ TFEA
 # Transcription Factor Enrichment Analysis
   
 ```
-python src/ -h
+python src/ --help
 usage: python src/ --config CONFIG.ini [--sbatch email@address.com]
 
 Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration
