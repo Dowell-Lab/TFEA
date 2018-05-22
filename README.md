@@ -177,8 +177,8 @@ Node configuration can be changed within scripts/run_main.sbatch. See here the s
   #SBATCH --mem=500gb
 
   ### Set error and output locations. These will be automatically updated to the output directory.
-  #SBATCH --error /scratch/Users/rusi2317/e_and_o/%x.err
-  #SBATCH --output /scratch/Users/rusi2317/e_and_o/%x.out
+  #SBATCH --error /scratch/Users/user/e_and_o/%x.err
+  #SBATCH --output /scratch/Users/user/e_and_o/%x.out
 
   ### Set your email address. This is changed automatically
   #SBATCH --mail-type=ALL
