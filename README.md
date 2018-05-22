@@ -2,7 +2,7 @@ TFEA
 ====
 # Transcription Factor Enrichment Analysis
   
-```bash
+```
 python src/ -h
 usage: python src/ --config CONFIG.ini [--sbatch email@address.com]
 
