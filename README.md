@@ -1,6 +1,6 @@
 TFEA
 ====
-## Transcription Factor Enrichment Analysis
+# Transcription Factor Enrichment Analysis
   
 
 usage: python src/ --config CONFIG.ini [--sbatch email@address.com]
@@ -9,24 +9,46 @@ Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration
 file (.ini) and outputs a folder containing TFEA results.
 
 optional arguments:
+
   -h, --help       show this help message and exit
+  
   --config CONFIG  REQUIRED. A configuration file containing .ini suffix (ex.
                    config.ini). See example in the examples folder.
+                   
   --sbatch SBATCH  OPTIONAL. Submits an sbatch job. If specified, input an
                    e-mail address.
+ 
+ 
+## Requirements
+Before running TFEA, make sure you have the following installed on your machine:
+
+### configparser
+TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
+
+```bash
+pip install configparser
+```
+
+If you're on FIJI (CU Boulder), pip can be used to install packages to your home directory:
+
+```bash
+pip install --user configparser
+```
+*Note:* Here 'user' is an argument and does not mean you should replace that with your specific user ID (i.e. just copy paste this command to your terminal and don't edit anything)
 
 
-### This repo has the following requirements:
-  module load python/2.7.14
-  module load bedtools/2.25.0
-  module load python/2.7.14/matplotlib/1.5.1
-  module load python/2.7.14/scipy/0.17.1
-  module load python/2.7.14/htseq
-  module load samtools/1.3.1
-  module load meme/4.12.0
-  
+### DESeq2
+Make sure DESeq2 is installed on your system R, in your terminal:
+```bash
+R
+```
+```R
+source("https://bioconductor.org/biocLite.R")
+biocLite("DESeq2")
+```
 
-### The CONFIG.ini file
+
+## The CONFIG.ini file
 Below is a brief description of each variable required in the config.ini file. These variables can be in any order under any headings but they are organized in this way for clarity. This file and a simple version without comments is also available within the examples folder.
 
 ```bash
@@ -95,6 +117,24 @@ LARGEWINDOW = 1500.0
 #Corresponds to the threshold in which a positive or negative hit is called. Changing this parameter will change your results, only change if you have a good reason to do so. (float)
 SMALLWINDOW = 150.0
 ```
+
+## Running on local machine
+If you desire to run TFEA on your local machine, make sure you have the following programs installed:
+
+  module load python/2.7.14
+  
+  module load bedtools/2.25.0
+  
+  module load python/2.7.14/matplotlib/1.5.1
+  
+  module load python/2.7.14/scipy/0.17.1
+  
+  module load python/2.7.14/htseq
+  
+  module load samtools/1.3.1
+  
+  module load meme/4.12.0
+
 
 ## Using SBATCH
 Submitting jobs through the slurm scheduler is supported. To use this module specify --sbatch when running python TFEA/src/. Be sure to include your e-mail address to receive job notifications. Node configuration can be changed within scripts/run_main.sbatch. See here an example of sbatch code:
