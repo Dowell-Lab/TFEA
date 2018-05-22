@@ -39,9 +39,11 @@ Before running TFEA, make sure you have the following installed on your machine:
 
   ### DESeq2
   Make sure DESeq2 is installed on your system R, in your terminal:
+    
     ```bash
     R
     ```
+    
     ```R
     >source("https://bioconductor.org/biocLite.R")
     >biocLite("DESeq2")
