@@ -3,68 +3,45 @@ __author__ = 'Jonathan Rubin'
 import os
 import time
 import sys
-import combine_bed
-import count_reads
-import rank_regions
-import DESeq
-import motif_distance
-import ES_calculator
-import create_html
-import config
-import meta_eRNA
+import argparse
+import configparser
+import config_parser
 from multiprocessing import Pool
 import multiprocessing as mp
-
-def make_out_directories(dirs):
-    #Output directory
-    output = config.OUTPUT
-    if dirs:
-        if not os.path.isdir(output + 'TFEA_output-0/'):
-            output = output + 'TFEA_output-0/'
-            os.makedirs(output)
-        else:
-            outputfolders = list()
-            for folder in os.listdir(output):
-                if 'TFEA_output' in folder:
-                    outputfolders.append(int(folder.split('-')[1]))
-            output = output + 'TFEA_output-' + str(max(outputfolders)+1) + '/'
-            os.makedirs(output)
-
-
-    #Temporary files will go in this directory
-    filedir = output + 'temp_files/'
-    if dirs:
-        if not os.path.isdir(filedir):
-            os.makedirs(filedir)
-
-    #Error and out files will go in this directory
-    e_and_o = output + 'e_and_o/'
-    if dirs:
-        if not os.path.isdir(e_and_o):
-            os.makedirs(e_and_o)
-
-
-    #Directory where plots used in html file will be stored.
-    figuredir = output + 'plots/'
-    if dirs:
-        if not os.path.isdir(figuredir):
-            os.makedirs(figuredir)
-
-    return output,filedir,figuredir,e_and_o
 
 def run():
     #Home directory
     homedir = os.path.dirname(os.path.realpath(__file__))
 
-    directories = sys.argv[1:]
-    if len(directories) == 0:
+    parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.')
+    parser.add_argument('--config',help='REQUIRED. A configuration file containing .ini suffix (ex. config.ini). See example in the examples folder.')
+    parser.add_argument('--sbatch',default=False,help='OPTIONAL. Submits an sbatch job. If specified, input an e-mail address.')
+    sbatch = parser.parse_args().sbatch
+    configfile = parser.parse_args().config
+    config_parser.run(homedir+'/',str(configfile))
+
+    if sbatch == False:
         output,filedir,figuredir,e_and_o = make_out_directories(True)
-        print "No preexisting directories specified, creating appropriate output directories. If you would like to specify output directories, use the command: python src/ output filedir figuredir e_and_o"
-        print "Made the following directories: output filedir figuredir e_and_o"
-        print output,filedir,figuredir,e_and_o
+    elif str(sbatch) == 'SUBMITTED':
+        output,filedir,figuredir,e_and_o = make_out_directories(False)
     else:
-        output,filedir,figuredir,e_and_o = directories
-        print "python src/ ",output,filedir,figuredir,e_and_o
+        output,filedir,figuredir,e_and_o = make_out_directories(True)
+        scriptdir = parent_dir(homedir) + '/scripts/'
+        script = scriptdir + 'run_main.sbatch'
+        email = str(sbatch)
+        os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=src="+homedir+",config=" +configfile+ " " + script)
+        sys.exit("TFEA has been submitted using an sbatch script, use qstat to check its progress.")
+
+
+    import combine_bed
+    import count_reads
+    import rank_regions
+    import DESeq
+    import motif_distance
+    import ES_calculator
+    import create_html
+    import config
+    import meta_eRNA
 
     #Path to count file. Can be changed if using your own count file. Generated in count_reads module
     count_file = filedir + "count_file.header.bed"
@@ -166,8 +143,52 @@ def run():
             motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
             results = ES_calculator.run(config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped)
             create_html.single_motif(results,output)
-        print "done"
+    print "done"
 
+
+def make_out_directories(dirs):
+    import config
+    #Output directory
+    output = config.OUTPUT
+    if dirs:
+        if not os.path.isdir(output + 'TFEA_output-0/'):
+            output = output + 'TFEA_output-0/'
+            os.makedirs(output)
+        else:
+            outputfolders = list()
+            for folder in os.listdir(output):
+                if 'TFEA_output' in folder:
+                    outputfolders.append(int(folder.split('-')[1]))
+            output = output + 'TFEA_output-' + str(max(outputfolders)+1) + '/'
+            os.makedirs(output)
+    else:
+        outputfolders = list()
+        for folder in os.listdir(output):
+            if 'TFEA_output' in folder:
+                outputfolders.append(int(folder.split('-')[1]))
+        output = output + 'TFEA_output-' + str(max(outputfolders)) + '/'
+
+
+    #Temporary files will go in this directory
+    filedir = output + 'temp_files/'
+    if dirs:
+        if not os.path.isdir(filedir):
+            os.makedirs(filedir)
+
+    #Error and out files will go in this directory
+    e_and_o = output + 'e_and_o/'
+    if dirs:
+        if not os.path.isdir(e_and_o):
+            os.makedirs(e_and_o)
+
+
+    #Directory where plots used in html file will be stored.
+    figuredir = output + 'plots/'
+    if dirs:
+        if not os.path.isdir(figuredir):
+            os.makedirs(figuredir)
+
+    return output,filedir,figuredir,e_and_o
 
 #Return parent directory
 def parent_dir(directory):

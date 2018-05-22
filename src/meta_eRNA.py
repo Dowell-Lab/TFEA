@@ -191,6 +191,98 @@ def run2(ranked_center_distance_file,millions_mapped):
 
     return posprofile1, negprofile1, posprofile2, negprofile2
 
+#5/21/18: This is the function that will give meta_eRNA profiles using a list of regions instead of a file
+def run3(regionlist,millions_mapped):
+
+    regions=list()
+    for chrom,start,stop in regionlist:
+        regions.append(hts.GenomicInterval(chrom,int(start)-int(H),int(start)+int(H),'.'))
+
+    hts_bam1 = list()
+    hts_bam2 = list()
+    for bam in BAM1:
+        hts_bam1.append(hts.BAM_Reader(bam))
+    for bam in BAM2:
+        hts_bam2.append(hts.BAM_Reader(bam))
+
+
+    posprofile1 = np.zeros(2*int(H))  
+    negprofile1 = np.zeros(2*int(H))
+    posprofile2 = np.zeros(2*int(H))   
+    negprofile2 = np.zeros(2*int(H))
+    rep1number = float(len(hts_bam1))
+    rep2number = float(len(hts_bam2))
+    for window in regions:
+        avgposprofile1 = np.zeros(2*int(H))
+        avgnegprofile1 = np.zeros(2*int(H))
+        i = 0
+        for sortedbamfile in hts_bam1:
+            mil_map = millions_mapped[i]
+            i += 1
+            tempposprofile = np.zeros(2*int(H))
+            tempnegprofile = np.zeros(2*int(H))
+            for almnt in sortedbamfile[ window ]:
+                if almnt.iv.strand == '+':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(H) )
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                if almnt.iv.strand == '-':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(H) )
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+            pos_sum = np.sum(tempposprofile)
+            neg_sum = np.sum(tempnegprofile)
+            if pos_sum != 0:
+                tempposprofile = [x/pos_sum for x in tempposprofile]
+            if neg_sum != 0:
+                tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
+            avgposprofile1 = [x+y for x,y in zip(avgposprofile1,tempposprofile)]
+            avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
+        avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
+        avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
+        posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
+        negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
+
+        avgposprofile2 = np.zeros(2*int(H))
+        avgnegprofile2 = np.zeros(2*int(H))
+        i = len(hts_bam1)
+        for sortedbamfile in hts_bam2:
+            mil_map = millions_mapped[i]
+            i += 1
+            tempposprofile = np.zeros(2*int(H))
+            tempnegprofile = np.zeros(2*int(H))
+            for almnt in sortedbamfile[ window ]:
+                if almnt.iv.strand == '+':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(H) )
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                if almnt.iv.strand == '-':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(H) )
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+            pos_sum = np.sum(tempposprofile)
+            neg_sum = np.sum(tempnegprofile)
+            if pos_sum != 0:
+                tempposprofile = [x/pos_sum for x in tempposprofile]
+            if neg_sum != 0:
+                tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
+            avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
+            avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
+        avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
+        avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
+        posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
+        negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
+
+    return posprofile1, negprofile1, posprofile2, negprofile2
+
 
 if __name__ == "__main__":
     posprofile1, negprofile1, posprofile2, negprofile2 = run2('/scratch/Users/joru1876/TFEA_files/IRIS/TFEA_output-0/temp_files/ranked_file.center.sorted.distance.bed')

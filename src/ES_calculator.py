@@ -7,6 +7,7 @@ import math
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from matplotlib import gridspec
 from scipy.stats import norm
 from scipy.stats import poisson
@@ -66,14 +67,21 @@ def run(args):
 
             ##get distances based on quantile ranks
             ##added by RFS
+            #5/22/18: Added negative distances, added lists for regions to plot meta_eRNA later
             ranks.append(rank) 
 
             if rank < np.percentile(ranks,25):
                 updistancehist2.append(distance)
+                upregions.append(line[:3])
             elif rank > np.percentile(ranks,75):
                 downdistancehist2.append(distance)
+                downregions.append(line[:3])
             else:
                 middledistancehist2.append(distance)
+                middleregions.append(line[:3])
+
+            #Get absolute value of distance to be used by later plots
+            distance = math.fabs(distance)
 
 
             if 0 <= distance <= h:
@@ -236,9 +244,9 @@ def run(args):
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax1.set_xlim(limits)
-    ax1.set_ylim([0,H])
+    ax1.set_ylim([0,LARGEWINDOW])
     # ax1.yaxis.set_ticks([0,H])
-    plt.yticks([0,H],['0',str(float(H)/1000.0)])
+    plt.yticks([0,LARGEWINDOW],['0',str(float(LARGEWINDOW)/1000.0)])
     ax1.set_ylabel('Distance (kb)', fontsize=10)
     ax2 = plt.subplot(gs[2])
     ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
@@ -288,8 +296,8 @@ def run(args):
     F = plt.figure(figsize=(6.5,6))
     gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
     ax0 = plt.subplot(gs[0])
-    binwidth = H/100.0
-    ax0.hist(updistancehist2,bins=np.arange(0,int(H)+binwidth,binwidth),color='green')
+    binwidth = LARGEWINDOW/100.0
+    ax0.hist(updistancehist2,bins=np.arange(0,int(LARGEWINDOW)+binwidth,binwidth),color='green')
     ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
     ax0.axvline(h,color='red',alpha=0.5)
     ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
@@ -298,12 +306,12 @@ def run(args):
     ax0.set_xlabel('Distance (bp)',fontsize=14)
     ax0.set_ylabel('Hits',fontsize=14)
     ax1 = plt.subplot(gs[2])
-    ax1.hist(downdistancehist2,bins=np.arange(0,int(H)+binwidth,binwidth),color='purple')
+    ax1.hist(downdistancehist2,bins=np.arange(0,int(LARGEWINDOW)+binwidth,binwidth),color='purple')
     ax1.axvline(h,color='red',alpha=0.5)
     ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax1.set_xlim([0,H])
+    ax1.set_xlim([0,LARGEWINDOW])
     ax1.set_ylabel('Hits',fontsize=14)
     ax1.set_xlabel('Distance (bp)',fontsize=14)
     ax2 = plt.subplot(gs[1])
@@ -320,26 +328,106 @@ def run(args):
     plt.cla()
 
     #Plots a meta_eRNA
-    posprofile1, negprofile1, posprofile2, negprofile2 = meta_eRNA.run2(ranked_center_distance_file,millions_mapped)
+    #5/22/18: Major changes, now three meta_eRNA plots are created with associated heatmaps underneath
+    posprofile_up1, negprofile_up1, posprofile_up2, negprofile_up2 = meta_eRNA.run3(upregions,millions_mapped)
+    posprofile_middle1, negprofile_middle1, posprofile_middle2, negprofile_middle2 = meta_eRNA.run3(middleregions,millions_mapped)
+    posprofile_down1, negprofile_down1, posprofile_down2, negprofile_down2 = meta_eRNA.run3(downregions,millions_mapped)
     F = plt.figure(figsize=(15.5,6))
-    ax0 = plt.subplot(111)
-    xvals = range(-int(H),int(H))
-    line1, = ax0.plot(xvals,posprofile1,color='blue',label=LABEL1)
-    ax0.plot(xvals,negprofile1,color='blue')
-    line2, = ax0.plot(xvals,posprofile2,color='red',label=LABEL2)
-    ax0.plot(xvals,negprofile2,color='red')
-    ax0.legend(loc=1)
+    gs = gridspec.GridSpec(2, 3, height_ratios=[3, 1])
+    xvals = range(-int(LARGEWINDOW),int(LARGEWINDOW))
+
+    #Plot meta_eRNA for up regions
+    ax0 = plt.subplot(gs[0,0])
+    line1, = ax0.plot(xvals,posprofile_up1,color='blue',label=LABEL1)
+    ax0.plot(xvals,negprofile_up1,color='blue')
+    line2, = ax0.plot(xvals,posprofile_up2,color='red',label=LABEL2)
+    ax0.plot(xvals,negprofile_up2,color='red')
     ax0.axvline(0,color='black',alpha=0.25)
     ax0.axhline(0,color='black',linestyle='dashed')
-    ax0.set_title('Meta Plot of eRNA Signal',fontsize=14)
     ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax0.legend(loc=1)
+    ax0.set_title('Meta Plot of eRNA Signal (upper quartile)',fontsize=14,color='green')
+    ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax0.set_xlabel('Distance to eRNA Origin (bp)')
+
+    #Plot heatmap underneath meta_eRNA for up regions
+    ax1 = plt.subplot(gs[1,0])
+    yvals,edges = np.histogram(updistancehist2,bins=len(xvals))
+    edges = (edges[1:]+edges[:-1])/2. #bascially np.histogram gives you a list of start and stops of the bins, so we are just taking the center of the bins, so it matches the number of counts
+    maximum = float(max(yvals))
+    yvals = [float(y)/maximum for y in yvals]
+    norm = mpl.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
+    cmap = cm.YlOrRd
+    m = cm.ScalarMappable(norm=norm, cmap=cmap)
+    colors = [m.to_rgba(c) for c in yvals] 
+    ax1.bar(edges,[1 for i in range(len(xvals))], c=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+
+    #Plot meta_eRNA for middle regions
+    ax3 = plt.subplot(gs[0,1])
+    line1, = ax0.plot(xvals,posprofile_middle1,color='blue',label=LABEL1)
+    ax3.plot(xvals,negprofile_middle1,color='blue')
+    line2, = ax0.plot(xvals,posprofile_middle2,color='red',label=LABEL2)
+    ax3.plot(xvals,negprofile_middle2,color='red')
+    ax3.axvline(0,color='black',alpha=0.25)
+    ax3.axhline(0,color='black',linestyle='dashed')
+    ax3.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax3.legend(loc=1)
+    ax3.set_title('Meta Plot of eRNA Signal (middle quartiles)',fontsize=14,color='blue')
+    ax3.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax3.set_xlabel('Distance to eRNA Origin (bp)')
+
+    #Plot heatmap underneath meta_eRNA for middle regions
+    ax4 = plt.subplot(gs[1,1])
+    yvals,edges = np.histogram(middledistancehist2,bins=len(xvals))
+    edges = (edges[1:]+edges[:-1])/2. #bascially np.histogram gives you a list of start and stops of the bins, so we are just taking the center of the bins, so it matches the number of counts
+    maximum = float(max(yvals))
+    yvals = [float(y)/maximum for y in yvals]
+    norm = mpl.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
+    cmap = cm.YlOrRd
+    m = cm.ScalarMappable(norm=norm, cmap=cmap)
+    colors = [m.to_rgba(c) for c in yvals] 
+    ax4.bar(edges,[1 for i in range(len(xvals))], c=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+
+    #Plot meta_eRNA for down regions
+    ax5 = plt.subplot(gs[0,2])
+    line1, = ax0.plot(xvals,posprofile_down1,color='blue',label=LABEL1)
+    ax5.plot(xvals,negprofile_down1,color='blue')
+    line2, = ax0.plot(xvals,posprofile_down2,color='red',label=LABEL2)
+    ax5.plot(xvals,negprofile_down2,color='red')
+    ax5.axvline(0,color='black',alpha=0.25)
+    ax5.axhline(0,color='black',linestyle='dashed')
+    ax5.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    ax5.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax5.legend(loc=1)
+    ax5.set_title('Meta Plot of eRNA Signal (lower quartiles)',fontsize=14,color='purple')
+    ax5.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax5.set_xlabel('Distance to eRNA Origin (bp)')
+
+    #Plot heatmap underneath meta_eRNA for down regions
+    ax6 = plt.subplot(gs[1,2])
+    yvals,edges = np.histogram(downdistancehist2,bins=len(xvals))
+    edges = (edges[1:]+edges[:-1])/2. #bascially np.histogram gives you a list of start and stops of the bins, so we are just taking the center of the bins, so it matches the number of counts
+    maximum = float(max(yvals))
+    yvals = [float(y)/maximum for y in yvals]
+    norm = mpl.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
+    cmap = cm.YlOrRd
+    m = cm.ScalarMappable(norm=norm, cmap=cmap)
+    colors = [m.to_rgba(c) for c in yvals] 
+    ax6.bar(edges,[1 for i in range(len(xvals))], c=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+
+
+
+    ax0.legend(loc=1)
+    ax0.set_title('Meta Plot of eRNA Signal',fontsize=14)
     ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
     ax0.set_xlabel('Distance to eRNA Origin (bp)')
     plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_meta_eRNA.png',bbox_inches='tight')
     plt.cla()
 
-    os.system("rm " + ranked_center_distance_file)
+    #5/22/18: commented this out for now
+    # os.system("rm " + ranked_center_distance_file)
 
     # return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,(simNESmu,simNESsigma)]
     return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,positives,negatives]
@@ -378,6 +466,7 @@ def FDR(TFresults,NESlist,figuredir):
     ##pvalsNA = [1 if str(x) == 'nan' else x for x in pvals]
     totals = list()
     sigtotals = list()
+    positives = list()
 
     for i in range(len(TFresults)):
         NES = TFresults[i][2]
@@ -393,6 +482,7 @@ def FDR(TFresults,NESlist,figuredir):
         FDRlist.append(FDR)
         newNESlist.append(NES)
         totals.append(math.log(float(total)))
+        positives.append(math.log(float(POS)))
 
         # mu,sigma = TFresults[i][4]
         # if NES > 0:
@@ -424,7 +514,8 @@ def FDR(TFresults,NESlist,figuredir):
     #Creates a scatter plot of NES vs. number of motif hits within H
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    ax.scatter(newNESlist,totals,color='blue',edgecolor='')
+    #5/22/18: Using positive values only instead of total
+    ax.scatter(newNESlist,positives,color='blue',edgecolor='')
     ax.scatter(sigx,sigtotals,color='red',edgecolor='')
     ax.set_title("TFEA NES MA-Plot",fontsize=14)
     ax.set_xlabel("Normalized Enrichment Score (NES)",fontsize=14)

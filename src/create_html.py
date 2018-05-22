@@ -124,14 +124,6 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     </tr>
                 </table>
             </div>
-            <div style="float: left; width: 600px; overflow: scroll">
-                <p>Forward:</p>
-                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
-            </div>
-            <div style="float: right; width: 600px; overflow: scroll">
-                <p>Reverse:</p>
-                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
-            </div>
         </div>
         <div>
             <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
@@ -139,18 +131,23 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </div>
         </div>
         <div>
-            <div style="float:left; width: 600px overflow:scroll">
-                <img src="./"""+MOTIF_FILE+"""_simulation_plot.png" alt="Simulation Plot">
-            </div>
-            <div style="float:right; width: 600px overflow:scroll">
-                <img src="./"""+MOTIF_FILE+"""_distance_distribution.png" alt="Distance Distribution Plot">
-            </div>
-        </div>
-        <div>
             <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
                 <img src="./"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
             </div>
         </div>
+        <div>
+            <div style="float: right; width: 600px; overflow: scroll">
+                <p>Forward:</p>
+                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
+                <p></p>
+                <p>Reverse:</p>
+                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
+            </div>
+            <div style="float:left; width: 600px overflow:scroll">
+                <img src="./"""+MOTIF_FILE+"""_simulation_plot.png" alt="Simulation Plot">
+            </div>
+        </div>
+        
         </body>
         </html>""")
         outfile.close()
@@ -338,58 +335,54 @@ def single_motif(results,outputdir):
         </style>
         </head>
         <body style="width: 1300px; overflow:scroll">
-        <h1>"""+MOTIF_FILE+""" Results</h1>
+            <h1>"""+MOTIF_FILE+""" Results</h1>
         <div>
-            <div style="float: left; width: 600px; overflow:scroll">
-                <table style="padding-bottom:25px"> 
+            <div style="float: middle; width: 1300px; overflow:scroll; padding-bottom:25px; padding-top:25px">
+                <table> 
                     <tr>
                         <th>TF Motif</th>
                         <th>ES</th> 
                         <th>NES</th>
                         <th>P-value</th>
-                        <th>FDR</th>
+                        <th>Total Hits</th>
+                        <th>Positive Hits</th> 
+                        <th>Negative Hits</th>
                     </tr>
                     <tr>
                         <td>"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.3f" % ES)+"""</td>
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str("%.4g" % FDR)+"""</td>
-                    </tr>
-                </table>
-                <table>
-                    <tr>
-                        <th>Total Hits</th>
-                        <th>Positive Hits</th> 
-                        <th>Negative Hits</th>
-                    </tr>
-                    <tr>
                         <td>"""+str(int(POS+NEG))+"""</td>
                         <td>"""+str(int(POS))+"""</td>
                         <td>"""+str(int(NEG))+"""</td>
                     </tr>
                 </table>
             </div>
-            <div style="float: right; width: 600px; overflow:scroll">
-                <p>Forward:</p>
-                <img src="./"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
-                <p>Reverse:</p>
-                <img src="./"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
-            </div>
         </div>
         <div>
-            <div style="float: left; width 1250px; padding-bottom:50px">
+            <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
                 <img src="./"""+MOTIF_FILE+"""_enrichment_plot.png" alt="Enrichment Plot">
             </div>
         </div>
         <div>
+            <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
+                <img src="./"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
+            </div>
+        </div>
+        <div>
+            <div style="float: right; width: 600px; overflow: scroll">
+                <p>Forward:</p>
+                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
+                <p></p>
+                <p>Reverse:</p>
+                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
+            </div>
             <div style="float:left; width: 600px overflow:scroll">
                 <img src="./"""+MOTIF_FILE+"""_simulation_plot.png" alt="Simulation Plot">
             </div>
-            <div style="float:right; width: 600px overflow:scroll">
-                <img src="./"""+MOTIF_FILE+"""_distance_distribution.png" alt="Distance Distribution Plot">
-            </div>
         </div>
+        
         </body>
         </html>""")
     outfile.close()
