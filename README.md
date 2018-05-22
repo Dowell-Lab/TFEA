@@ -25,15 +25,15 @@ Before running TFEA, make sure you have the following installed on your machine:
   ### configparser
   TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
 
-    ```bash
-    pip install configparser
-    ```
+  ```
+  pip install configparser
+  ```
 
   If you're on FIJI (CU Boulder), pip can be used to install packages to your home directory:
 
-    ```bash
-    pip install --user configparser
-    ```
+  ```
+  pip install --user configparser
+  ```
   *Note:* Here 'user' is an argument and does not mean you should replace that with your specific user ID (i.e. just copy paste this command to your terminal and don't edit anything)
 
 
