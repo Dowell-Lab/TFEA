@@ -2,22 +2,20 @@ TFEA
 ====
 # Transcription Factor Enrichment Analysis
   
-
+```bash
+python src/ -h
 usage: python src/ --config CONFIG.ini [--sbatch email@address.com]
 
 Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration
 file (.ini) and outputs a folder containing TFEA results.
 
-arguments:
-
+optional arguments:
   -h, --help       show this help message and exit
-  
-  --config CONFIG  [REQUIRED]. A configuration file containing .ini suffix (ex.
+  --config CONFIG  REQUIRED. A configuration file containing .ini suffix (ex.
                    config.ini). See example in the examples folder.
-                   
-  --sbatch SBATCH  [OPTIONAL]. Submits an sbatch job. If specified, input an
+  --sbatch SBATCH  OPTIONAL. Submits an sbatch job. If specified, input an
                    e-mail address.
- 
+ ```
  
  
  
