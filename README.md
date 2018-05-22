@@ -8,7 +8,7 @@ usage: python src/ --config CONFIG.ini [--sbatch email@address.com]
 Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration
 file (.ini) and outputs a folder containing TFEA results.
 
-optional arguments:
+arguments:
 
   -h, --help       show this help message and exit
   
