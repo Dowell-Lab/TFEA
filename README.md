@@ -43,8 +43,8 @@ Make sure DESeq2 is installed on your system R, in your terminal:
 R
 ```
 ```R
-source("https://bioconductor.org/biocLite.R")
-biocLite("DESeq2")
+>source("https://bioconductor.org/biocLite.R")
+>biocLite("DESeq2")
 ```
 
 
@@ -137,7 +137,7 @@ If you desire to run TFEA on your local machine, make sure you have the followin
 
 
 ## Using SBATCH
-Submitting jobs through the slurm scheduler is supported. To use this module specify --sbatch when running python TFEA/src/. Be sure to include your e-mail address to receive job notifications. Node configuration can be changed within scripts/run_main.sbatch. See here an example of sbatch code:
+Submitting jobs through the slurm scheduler is supported. To use this module specify --sbatch when running python TFEA/src/. Be sure to include your e-mail address to receive job notifications. Node configuration can be changed within scripts/run_main.sbatch. See here the sbatch code used:
 ```qsub
 #!/bin/bash
 
