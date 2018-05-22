@@ -13,7 +13,7 @@ def run():
     #Home directory
     homedir = os.path.dirname(os.path.realpath(__file__))
 
-    parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.')
+    parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.',usage='python src/ --config CONFIG.ini [--sbatch email@address.com]')
     parser.add_argument('--config',help='REQUIRED. A configuration file containing .ini suffix (ex. config.ini). See example in the examples folder.')
     parser.add_argument('--sbatch',default=False,help='OPTIONAL. Submits an sbatch job. If specified, input an e-mail address.')
     sbatch = parser.parse_args().sbatch
