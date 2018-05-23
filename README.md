@@ -52,7 +52,7 @@ Before running TFEA, make sure you have the following installed on your machine:
   > biocLite("DESeq2")
   ```
 
-
+<br></br>
 
 <H2 id="ConfigurationFile">Configuration File</H3>
 Below is a brief description of each variable required in the config.ini file. These variables can be in any order under any headings but they are organized in this way for clarity. This file and a simple version without comments is also available within the examples folder.
@@ -124,6 +124,8 @@ Below is a brief description of each variable required in the config.ini file. T
   SMALLWINDOW = 150.0
   ```
 
+<br></br>
+
 <H2 id="Runningonlocalmachine">Running on local machine</H2>
 If you desire to run TFEA on your local machine, make sure you have the following programs installed:
 
@@ -149,7 +151,7 @@ Once these packages are installed, TFEA can be run using:
   python src/ --config CONFIG.ini
   ```
 
-
+<br></br>
 
 <H2 id="UsingSBATCH">Using SBATCH</H2>
 Submitting jobs through the slurm scheduler is supported. To use this module:
