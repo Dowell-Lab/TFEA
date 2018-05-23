@@ -20,6 +20,10 @@ optional arguments:
 # Table of Contents
 1. <A href="#Requirements">Requirements</A>
    - <A href="#configparser">confipgarser</A>
+   - <A href="#DESeq2">DESeq2</A>
+2. <A href="#ConfigurationFile">Configuration File</A>
+3. <A href="#Runningonlocalmachine">Running on local machine</A>
+4. <A href="#UsingSBATCH">Using SBATCH</A>
 
  
 <H2 id="Requirements">Requirements</H1>
@@ -41,7 +45,7 @@ Before running TFEA, make sure you have the following installed on your machine:
   *Note:* Here 'user' is an argument and does not mean you should replace that with your specific user ID (i.e. just copy paste this command to your terminal and don't edit anything)
 </div>
 
-  ### DESeq2
+  <H3 id="DESeq2">DESeq2</H3>
   Make sure DESeq2 is installed on your system R, in your terminal:
     
   ```
@@ -52,7 +56,7 @@ Before running TFEA, make sure you have the following installed on your machine:
 
 
 
-## The CONFIG.ini file
+<H2 id="ConfigurationFile">Configuration File</H3>
 Below is a brief description of each variable required in the config.ini file. These variables can be in any order under any headings but they are organized in this way for clarity. This file and a simple version without comments is also available within the examples folder.
 
   ```bash
@@ -122,9 +126,7 @@ Below is a brief description of each variable required in the config.ini file. T
   SMALLWINDOW = 150.0
   ```
 
-
-
-## Running on local machine
+<H3 id="Runningonlocalmachine">Running on local machine</H3>
 If you desire to run TFEA on your local machine, make sure you have the following programs installed:
 
   python/2.7.14
@@ -151,7 +153,7 @@ Once these packages are installed, TFEA can be run using:
 
 
 
-## Using SBATCH
+<H3 id="UsingSBATCH">Using SBATCH</H3>
 Submitting jobs through the slurm scheduler is supported. To use this module:
 
   ```bash
