@@ -1,6 +1,5 @@
-TFEA
+Transcription Factor Enrichment Analysis (TFEA)
 ====
-# Transcription Factor Enrichment Analysis
   
 ```
 python src/ --help
@@ -26,7 +25,7 @@ optional arguments:
 4. <A href="#UsingSBATCH">Using SBATCH</A>
 
  
-<H2 id="Requirements">Requirements</H1>
+<H2 id="Requirements">Requirements</H2>
 
 Before running TFEA, make sure you have the following installed on your machine:
 <div style="padding-left:100px">
@@ -126,7 +125,7 @@ Below is a brief description of each variable required in the config.ini file. T
   SMALLWINDOW = 150.0
   ```
 
-<H3 id="Runningonlocalmachine">Running on local machine</H3>
+<H2 id="Runningonlocalmachine">Running on local machine</H2>
 If you desire to run TFEA on your local machine, make sure you have the following programs installed:
 
   python/2.7.14
@@ -153,7 +152,7 @@ Once these packages are installed, TFEA can be run using:
 
 
 
-<H3 id="UsingSBATCH">Using SBATCH</H3>
+<H2 id="UsingSBATCH">Using SBATCH</H2>
 Submitting jobs through the slurm scheduler is supported. To use this module:
 
   ```bash
