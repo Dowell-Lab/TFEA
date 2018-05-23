@@ -18,10 +18,8 @@ optional arguments:
  ```
  
 # Table of Contents
-<A href="#Requirements">Requirements</A>
-<div style="text-indent: 100px">
-  <A href="#configparser">confipgarser</A>
-</div>
+1. <A href="#Requirements">Requirements</A>
+   - <A href="#configparser">confipgarser</A>
 
  
 <H2 id="Requirements">Requirements</H1>
