@@ -196,7 +196,7 @@ Below is a brief description of each variable required in the config.ini file. T
 
 <H2 id="RunningLocally">Running Locally</H2>
 If you desire to run TFEA on your local machine, make sure you have the required programs installed. In general, Python packages can be installed using pip, others may require additional installation steps.
-
+<br></br>
 Once all dependencies are installed, TFEA can be run using:
 
   ```bash
