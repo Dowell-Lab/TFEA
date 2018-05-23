@@ -15,7 +15,7 @@ optional arguments:
   --sbatch SBATCH  OPTIONAL. Submits an sbatch job. If specified, input an
                    e-mail address.
  ```
- 
+ <br></br>
 # Table of Contents
 1. <A href="#Requirements">Requirements</A>
    - <A href="#configparser">confipgarser</A>
@@ -24,7 +24,8 @@ optional arguments:
 3. <A href="#Runningonlocalmachine">Running on local machine</A>
 4. <A href="#UsingSBATCH">Using SBATCH</A>
 
- 
+<br></br>
+
 <H2 id="Requirements">Requirements</H2>
 
 Before running TFEA, make sure you have the following installed on your machine:
