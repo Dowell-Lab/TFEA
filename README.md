@@ -24,6 +24,7 @@ optional arguments:
    - <A href="#Bedtools">Bedtools</A>
    - <A href="#Samtools">Samtools</A>
    - <A href="#MEMESuite">MEME Suite</A>
+   - <A href="#FIJIModules">FIJI Modules</A>
 2. <A href="#ConfigurationFile">Configuration File</A>
 3. <A href="#RunningLocally">Running Locally</A>
 4. <A href="#UsingSBATCH">Using SBATCH</A>
@@ -106,6 +107,23 @@ Before running TFEA, make sure you have the following installed on your machine 
   module load meme
   ```
   
+  <H3 id="FIJIModules">FIJI Modules</H3>
+  Below is a summary of all FIJI modules needed. Configparser will need to be installed using pip.
+  <br></br>
+  module load python/2.7.14
+  <br></br>
+  module load bedtools/2.25.0
+  <br></br>
+  module load python/2.7.14/matplotlib/1.5.1
+  <br></br>
+  module load python/2.7.14/scipy/0.17.1
+  <br></br>
+  module load python/2.7.14/htseq
+  <br></br>
+  module load samtools/1.3.1
+  <br></br>
+  module load meme/4.12.0
+
 
 <br></br>
 
