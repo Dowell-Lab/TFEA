@@ -172,25 +172,9 @@ Below is a brief description of each variable required in the config.ini file. T
 <br></br>
 
 <H2 id="RunningLocally">Running Locally</H2>
-If you desire to run TFEA on your local machine, make sure you have the following programs installed:
-  <br></br>
-  python - 2.7.14
-  <br></br>
-  bedtools - 2.25.0
-  <br></br>
-  python/2.7.14/matplotlib/1.5.1
-  <br></br>
-  python/2.7.14/scipy/0.17.1
-  <br></br>
-  python/2.7.14/htseq/0.9.1
-  <br></br>
-  samtools/1.3.1
-  <br></br>
-  meme/4.12.0
+If you desire to run TFEA on your local machine, make sure you have the required programs installed. In general, Python packages can be installed using pip, others may require additional installation steps.
 
-Python packages can be installed using pip, others may require additional installation steps.
-
-Once these packages are installed, TFEA can be run using:
+Once all dependencies are installed, TFEA can be run using:
 
   ```bash
   python src/ --config CONFIG.ini
@@ -254,12 +238,13 @@ Node configuration can be changed within scripts/run_main.sbatch. See here the s
 
 **MUST NOT BE CHANGED**
 
+<br></br>
 
 <H2 id="ExampleOutput">Example Output</H2>
-
 This part is still under construction.
 
-<H2 id="ContactInformation">Contact Information</A>
+<br></br>
 
+<H2 id="ContactInformation">Contact Information</H2>
 Jonathan.Rubin@colorado.edu
 
