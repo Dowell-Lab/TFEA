@@ -17,9 +17,10 @@ optional arguments:
                    e-mail address.
  ```
  
+# README Table of Contents
+
  
- 
-## Requirements
+<H2 id="Requirements>Requirements</H1>
 Before running TFEA, make sure you have the following installed on your machine:
 
   ### configparser
