@@ -128,8 +128,7 @@ Below is a brief description of each variable required in the config.ini file. T
 
 <H2 id="RunningLocally">Running Locally</H2>
 If you desire to run TFEA on your local machine, make sure you have the following programs installed:
-  
-  
+  <br></br>
   python/2.7.14
   
   bedtools/2.25.0
