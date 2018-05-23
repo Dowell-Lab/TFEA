@@ -26,7 +26,7 @@ optional arguments:
 <H2 id="Requirements">Requirements</H1>
 
 Before running TFEA, make sure you have the following installed on your machine:
-<div style="padding-left: 50px">
+<div style="padding-left: 100px">
   <H3 id="configparser">configparser</H3>
   TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
 
@@ -47,8 +47,8 @@ Before running TFEA, make sure you have the following installed on your machine:
     
   ```
   R
-  >source("https://bioconductor.org/biocLite.R")
-  >biocLite("DESeq2")
+  > source("https://bioconductor.org/biocLite.R")
+  > biocLite("DESeq2")
   ```
 
 
