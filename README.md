@@ -28,7 +28,7 @@ optional arguments:
 <H2 id="Requirements">Requirements</H2>
 
 Before running TFEA, make sure you have the following installed on your machine:
-  &ensp;<H3 id="configparser">configparser</H3>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<H3 id="configparser">configparser</H3>
   TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
 
   ```
