@@ -40,14 +40,13 @@ Before running TFEA, make sure you have the following installed on your machine 
   `pip install --user <packagename`
   
   The following python packages must be installed (note some of these may come pre-installed with Python):
-  
-  -matplotlib
-  -numpy
-  -scipy
-  -htseq
-  -argparse
-  -configparser
-  -multiprocessing
+  - matplotlib
+  - numpy
+  - scipy
+  - htseq
+  - argparse
+  - configparser
+  - multiprocessing
   
   
 
