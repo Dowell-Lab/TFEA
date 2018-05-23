@@ -18,13 +18,14 @@ optional arguments:
  ```
  
 # Table of Contents
+<A href="#Requirements">Requirements</A>
 
  
 <H2 id="Requirements">Requirements</H1>
 
 Before running TFEA, make sure you have the following installed on your machine:
 
-  ### configparser
+  <H3 id="configparser">configparser</H3>
   TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
 
   ```
