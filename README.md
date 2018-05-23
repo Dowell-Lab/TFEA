@@ -109,21 +109,16 @@ Before running TFEA, make sure you have the following installed on your machine 
   
   <H3 id="FIJIModules">FIJI Modules</H3>
   Below is a summary of all FIJI modules needed. Configparser will need to be installed using pip.
-  <br></br>
+  
+  ```
   module load python/2.7.14
-  <br></br>
   module load bedtools/2.25.0
-  <br></br>
   module load python/2.7.14/matplotlib/1.5.1
-  <br></br>
   module load python/2.7.14/scipy/0.17.1
-  <br></br>
   module load python/2.7.14/htseq
-  <br></br>
   module load samtools/1.3.1
-  <br></br>
   module load meme/4.12.0
-
+  ```
 
 <br></br>
 
