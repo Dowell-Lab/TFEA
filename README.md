@@ -35,7 +35,9 @@ optional arguments:
 
 <H2 id="Requirements">Requirements</H2>
 
-Before running TFEA, make sure you have the following installed on your machine (if using sbatch, you may need to install configparser and DESeq2 but nothing else):
+Before running TFEA, make sure you have the following installed on your machine
+
+*Note:* If using the --sbatch module on FIJI, you may need to install configparser, DESeq, and DESeq2 but you should not need to install anything else
 
   <H3 id="HTSeq">HTSeq</H3>
   TFEA uses HTSeq to draw meta plots of coverage (from BAM inputs) over inputted BED files.
