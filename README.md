@@ -73,7 +73,7 @@ Before running TFEA, make sure you have the following installed on your machine 
   TFEA uses Bedtools to do several genomic computations. Instructions for installing bedtools can be found here:
   <br></br>
   <a href="http://bedtools.readthedocs.io/en/latest/content/installation.html">Bedtools Installation</a>
-  
+  <br></br>
   If you are on FIJI compute cluster, bedtools is available as a module:
   
   `module load bedtools`
@@ -82,7 +82,7 @@ Before running TFEA, make sure you have the following installed on your machine 
   TFEA uses samtools to calculate millions mapped reads of your BAM files. Instructions for downloading and installing samtools can be found here:
   <br></br>
   <a href="http://www.htslib.org/download/">Samtools Download and Installation</a>
-  
+  <br></br>
   If you are on FIJI compute cluster, bedtools is available as a module:
   
   `module load samtools`
@@ -91,7 +91,7 @@ Before running TFEA, make sure you have the following installed on your machine 
   TFEA uses the MEME suite to scan sequences from inputted bed files for motif hits using the background atcg distribution form inputted bed file regions. TFEA also uses the MEME suite to generate motif logos for html display. Instructions for downloading and installing the MEME suite can be found here:
   <br></br>
   <a href="http://meme-suite.org/doc/install.html?man_type=web">MEME Download and Installation</a>
-  
+  <br></br>
   If you are on FIJI compute cluster, the meme suite is available as a module:
   
   `module load meme`
