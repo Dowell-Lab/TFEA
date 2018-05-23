@@ -21,7 +21,7 @@ optional arguments:
    - <A href="#configparser">confipgarser</A>
    - <A href="#DESeq2">DESeq2</A>
 2. <A href="#ConfigurationFile">Configuration File</A>
-3. <A href="#Runningonlocalmachine">Running on local machine</A>
+3. <A href="#RunningLocally">Running Locallye</A>
 4. <A href="#UsingSBATCH">Using SBATCH</A>
 
 <br></br>
@@ -126,9 +126,10 @@ Below is a brief description of each variable required in the config.ini file. T
 
 <br></br>
 
-<H2 id="Runningonlocalmachine">Running on local machine</H2>
+<H2 id="RunningLocally">Running Locally</H2>
 If you desire to run TFEA on your local machine, make sure you have the following programs installed:
-
+  
+  
   python/2.7.14
   
   bedtools/2.25.0
