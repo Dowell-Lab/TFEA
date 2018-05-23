@@ -18,11 +18,17 @@ optional arguments:
  <br></br>
 # Table of Contents
 1. <A href="#Requirements">Requirements</A>
+   - <A href="#HTSeq">HTSeq</A>
    - <A href="#configparser">confipgarser</A>
    - <A href="#DESeq2">DESeq2</A>
+   - <A href="#Bedtools">Bedtools</A>
+   - <A href="#Samtools">Samtools</A>
+   - <A href="#MEMESuite">MEME Suite</A>
 2. <A href="#ConfigurationFile">Configuration File</A>
 3. <A href="#RunningLocally">Running Locallye</A>
 4. <A href="#UsingSBATCH">Using SBATCH</A>
+5. <A href="#ExampleOutput">Example Output</A>
+6. <A href="#ContactInformation">Contact Information</A>
 
 <br></br>
 
@@ -30,25 +36,15 @@ optional arguments:
 
 Before running TFEA, make sure you have the following installed on your machine (if using sbatch, you may need to install configparser and DESeq2 but nothing else):
 
-  <H3 id="PythonPackages">Python Packages</H3>
-  Python packages can be installed using:
+  <H3 id="HTSeq">HTSeq</H3>
+  TFEA uses HTSeq to draw meta plots of coverage (from BAM inputs) over inputted BED files.
   
-  `pip install <packagename>`
+  `pip install htseq`
   
-  or if you are on a compute cluster (such as FIJI):
+  If you are on FIJI compute cluster, htseq is available as a module:
   
-  `pip install --user <packagename`
-  
-  The following python packages must be installed (note some of these may come pre-installed with Python):
-  - matplotlib
-  - numpy
-  - scipy
-  - htseq
-  - argparse
-  - configparser
-  - multiprocessing
-  
-  
+  `module load python/2.7.14/htseq`
+
 
   <H3 id="configparser">configparser</H3>
   TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
@@ -72,6 +68,34 @@ Before running TFEA, make sure you have the following installed on your machine 
   > source("https://bioconductor.org/biocLite.R")
   > biocLite("DESeq2")
   ```
+  
+  <H3 id="Bedtools">Bedtools</H3>
+  TFEA uses Bedtools to do several genomic computations. Instructions for installing bedtools can be found here:
+  
+  <a href="http://bedtools.readthedocs.io/en/latest/content/installation.html">Bedtools Installation</a>
+  
+  If you are on FIJI compute cluster, bedtools is available as a module:
+  
+  `module load bedtools`
+  
+  <H3 id="Samtools">Samtools</H3>
+  TFEA uses samtools to calculate millions mapped reads of your BAM files. Instructions for downloading and installing samtools can be found here:
+  
+  <a href="http://www.htslib.org/download/">Samtools Download and Installation</a>
+  
+  If you are on FIJI compute cluster, bedtools is available as a module:
+  
+  `module load samtools`
+  
+  <H3 id="MEMESuite">MEME Suite</H3>
+  TFEA uses the MEME suite to scan sequences from inputted bed files for motif hits using the background atcg distribution form inputted bed file regions. TFEA also uses the MEME suite to generate motif logos for html display. Instructions for downloading and installing the MEME suite can be found here:
+  
+  <a href="http://meme-suite.org/doc/install.html?man_type=web">MEME Download and Installation</a>
+  
+  If you are on FIJI compute cluster, the meme suite is available as a module:
+  
+  `module load meme`
+  
 
 <br></br>
 
@@ -229,3 +253,13 @@ Node configuration can be changed within scripts/run_main.sbatch. See here the s
 >python ${src} --config ${config} --sbatch SUBMITTED
 
 **MUST NOT BE CHANGED**
+
+
+<H2 id="ExampleOutput">Example Output</H2>
+
+This part is still under construction.
+
+<H2 id="ContactInformation">Contact Information</A>
+
+Jonathan.Rubin@colorado.edu
+
