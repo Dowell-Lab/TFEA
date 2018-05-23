@@ -28,7 +28,24 @@ optional arguments:
 
 <H2 id="Requirements">Requirements</H2>
 
-Before running TFEA, make sure you have the following installed on your machine:
+Before running TFEA, make sure you have the following installed on your machine (if using sbatch, you may need to install configparser and DESeq2 but nothing else):
+
+  <H3 id="PythonPackages">Python Packages</H3>
+  Python packages can be installed using:
+  `pip install <packagename>`
+  or if you are on a compute cluster (such as FIJI):
+  `pip install --user <packagename`
+  The following python packages must be installed (note some of these may come pre-installed with Python):
+  -matplotlib
+  -numpy
+  -scipy
+  -htseq
+  -argparse
+  -configparser
+  -multiprocessing
+  
+  
+
   <H3 id="configparser">configparser</H3>
   TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
 
@@ -129,18 +146,18 @@ Below is a brief description of each variable required in the config.ini file. T
 <H2 id="RunningLocally">Running Locally</H2>
 If you desire to run TFEA on your local machine, make sure you have the following programs installed:
   <br></br>
-  python/2.7.14
-  
-  bedtools/2.25.0
-  
+  python - 2.7.14
+  <br></br>
+  bedtools - 2.25.0
+  <br></br>
   python/2.7.14/matplotlib/1.5.1
-  
+  <br></br>
   python/2.7.14/scipy/0.17.1
-  
+  <br></br>
   python/2.7.14/htseq/0.9.1
-  
+  <br></br>
   samtools/1.3.1
-  
+  <br></br>
   meme/4.12.0
 
 Python packages can be installed using pip, others may require additional installation steps.
