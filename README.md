@@ -32,10 +32,15 @@ Before running TFEA, make sure you have the following installed on your machine 
 
   <H3 id="PythonPackages">Python Packages</H3>
   Python packages can be installed using:
+  
   `pip install <packagename>`
+  
   or if you are on a compute cluster (such as FIJI):
+  
   `pip install --user <packagename`
+  
   The following python packages must be installed (note some of these may come pre-installed with Python):
+  
   -matplotlib
   -numpy
   -scipy
