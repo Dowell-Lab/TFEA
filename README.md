@@ -25,7 +25,7 @@ optional arguments:
    - <A href="#Samtools">Samtools</A>
    - <A href="#MEMESuite">MEME Suite</A>
 2. <A href="#ConfigurationFile">Configuration File</A>
-3. <A href="#RunningLocally">Running Locallye</A>
+3. <A href="#RunningLocally">Running Locally</A>
 4. <A href="#UsingSBATCH">Using SBATCH</A>
 5. <A href="#ExampleOutput">Example Output</A>
 6. <A href="#ContactInformation">Contact Information</A>
