@@ -39,11 +39,15 @@ Before running TFEA, make sure you have the following installed on your machine 
   <H3 id="HTSeq">HTSeq</H3>
   TFEA uses HTSeq to draw meta plots of coverage (from BAM inputs) over inputted BED files.
   
-  `pip install htseq`
+  ```
+  pip install htseq
+  ```
   
   If you are on FIJI compute cluster, htseq is available as a module:
   
-  `module load python/2.7.14/htseq`
+  ```
+  module load python/2.7.14/htseq
+  ```
 
 
   <H3 id="configparser">configparser</H3>
@@ -76,7 +80,9 @@ Before running TFEA, make sure you have the following installed on your machine 
   <br></br>
   If you are on FIJI compute cluster, bedtools is available as a module:
   
-  `module load bedtools`
+  ```
+  module load bedtools
+  ```
   
   <H3 id="Samtools">Samtools</H3>
   TFEA uses samtools to calculate millions mapped reads of your BAM files. Instructions for downloading and installing samtools can be found here:
@@ -85,7 +91,9 @@ Before running TFEA, make sure you have the following installed on your machine 
   <br></br>
   If you are on FIJI compute cluster, bedtools is available as a module:
   
-  `module load samtools`
+  ```
+  module load samtools
+  ```
   
   <H3 id="MEMESuite">MEME Suite</H3>
   TFEA uses the MEME suite to scan sequences from inputted bed files for motif hits using the background atcg distribution form inputted bed file regions. TFEA also uses the MEME suite to generate motif logos for html display. Instructions for downloading and installing the MEME suite can be found here:
@@ -94,7 +102,9 @@ Before running TFEA, make sure you have the following installed on your machine 
   <br></br>
   If you are on FIJI compute cluster, the meme suite is available as a module:
   
-  `module load meme`
+  ```
+  module load meme
+  ```
   
 
 <br></br>
