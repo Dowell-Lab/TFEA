@@ -28,19 +28,19 @@ optional arguments:
 <H2 id="Requirements">Requirements</H2>
 
 Before running TFEA, make sure you have the following installed on your machine:
-  <H3 id="configparser">>configparser</H3>
-  >TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
+  <H3 id="configparser">configparser</H3>
+  TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
 
   ```
   pip install configparser
   ```
 
-  >If you're on FIJI (CU Boulder), pip can be used to install packages to your home directory:
+  If you're on FIJI (CU Boulder), pip can be used to install packages to your home directory:
 
   ```
   pip install --user configparser
   ```
-  >*Note:* Here 'user' is an argument and does not mean you should replace that with your specific user ID (i.e. just copy paste this command to your terminal and don't edit anything)
+  *Note:* Here 'user' is an argument and does not mean you should replace that with your specific user ID (i.e. just copy paste this command to your terminal and don't edit anything)
 
   <H3 id="DESeq2">DESeq2</H3>
   Make sure DESeq2 is installed on your system R, in your terminal:
