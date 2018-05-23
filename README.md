@@ -20,7 +20,7 @@ optional arguments:
 1. <A href="#Requirements">Requirements</A>
    - <A href="#HTSeq">HTSeq</A>
    - <A href="#configparser">confipgarser</A>
-   - <A href="#DESeq2">DESeq2</A>
+   - <A href="#DESeq">DESeq</A>
    - <A href="#Bedtools">Bedtools</A>
    - <A href="#Samtools">Samtools</A>
    - <A href="#MEMESuite">MEME Suite</A>
@@ -65,16 +65,17 @@ Before running TFEA, make sure you have the following installed on your machine 
   ```
   *Note:* Here 'user' is an argument and does not mean you should replace that with your specific user ID (i.e. just copy paste this command to your terminal and don't edit anything)
 
-  <H3 id="DESeq2">DESeq2</H3>
-  Make sure DESeq2 is installed on your system R, in your terminal:
+  <H3 id="DESeq">DESeq</H3>
+  TFEA uses DESeq or DESeq2 (depending on replicate number) to rank inputted bed files based on fold change significance. Make sure DESeq and DESeq2 are both installed on your system R, in your terminal:
     
   ```
   R
   > source("https://bioconductor.org/biocLite.R")
+  > biocLite("DESeq")
   > biocLite("DESeq2")
   ```
   
-  If on FIJI, make sure all gcc modules are unloaded. This can be accomplished with:
+  If on FIJI, make sure all gcc modules are unloaded before installing DESeq or DESeq2. This can be accomplished with:
   
   ```
   module unload gcc
