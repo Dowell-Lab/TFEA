@@ -19,7 +19,7 @@ optional arguments:
  
 # Table of Contents
 <A href="#Requirements">Requirements</A>
-<p style="padding-left: 1000px"><A href="#configparser">	confipgarser</A></p>
+<p style="padding-left:1000px"><A href="#configparser">	confipgarser</A></p>
 
  
 <H2 id="Requirements">Requirements</H1>
