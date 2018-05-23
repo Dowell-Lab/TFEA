@@ -74,6 +74,18 @@ Before running TFEA, make sure you have the following installed on your machine 
   > biocLite("DESeq2")
   ```
   
+  If on FIJI, make sure all gcc modules are unloaded. This can be accomplished with:
+  
+  ```
+  module unload gcc
+  ```
+  
+  or
+  
+  ```
+  module purge
+  ```
+  
   <H3 id="Bedtools">Bedtools</H3>
   TFEA uses Bedtools to do several genomic computations. Instructions for installing bedtools can be found here:
   <br></br>
