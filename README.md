@@ -42,9 +42,9 @@ Before running TFEA, make sure you have the following installed on your machine
   <H3 id="HTSeq">HTSeq</H3>
   TFEA uses HTSeq to draw meta plots of coverage (from BAM inputs) over inputted BED files.
   
-  
-  $ pip install htseq
-  
+  ```
+  pip install htseq
+  ```
   
   If you are on FIJI compute cluster, htseq is available as a module:
   
