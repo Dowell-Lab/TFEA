@@ -2,8 +2,10 @@ Transcription Factor Enrichment Analysis (TFEA)
 ====
   
 ```
-python src/ --help
-usage: python src/ --config CONFIG.ini [--sbatch email@address.com]
+TFEA --help
+python TFEA/ --help
+
+usage: TFEA --config CONFIG.ini [--sbatch email@address.com]
 
 Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration
 file (.ini) and outputs a folder containing TFEA results.
@@ -17,7 +19,8 @@ optional arguments:
  ```
  <br></br>
 # Table of Contents
-1. <A href="#Requirements">Requirements</A>
+1. <A href="#Installation">Installation</A>
+2. <A href="#Requirements">Requirements</A>
    - <A href="#HTSeq">HTSeq</A>
    - <A href="#configparser">confipgarser</A>
    - <A href="#DESeq">DESeq</A>
@@ -25,11 +28,38 @@ optional arguments:
    - <A href="#Samtools">Samtools</A>
    - <A href="#MEMESuite">MEME Suite</A>
    - <A href="#FIJIModules">FIJI Modules</A>
-2. <A href="#ConfigurationFile">Configuration File</A>
-3. <A href="#RunningLocally">Running Locally</A>
-4. <A href="#UsingSBATCH">Using SBATCH</A>
-5. <A href="#ExampleOutput">Example Output</A>
-6. <A href="#ContactInformation">Contact Information</A>
+3. <A href="#ConfigurationFile">Configuration File</A>
+4. <A href="#RunningLocally">Running Locally</A>
+5. <A href="#UsingSBATCH">Using SBATCH</A>
+6. <A href="#ExampleOutput">Example Output</A>
+7. <A href="#ContactInformation">Contact Information</A>
+
+<br></br>
+
+<H2 id="Installation">Installation</H2>
+
+To install, this package:
+
+```
+git clone 
+cd /full/path/to/TFEA/
+pip install .
+```
+
+TFEA can then be run from anywhere, try:
+
+```
+TFEA --help
+```
+
+to display the help message
+
+Alternatively, TFEA can be run without installation using:
+
+```
+cd /full/path/to/TFEA/
+python TFEA/ --help
+```
 
 <br></br>
 
