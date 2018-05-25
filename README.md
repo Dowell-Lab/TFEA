@@ -41,7 +41,7 @@ optional arguments:
 To install, this package:
 
 ```
-git clone 
+git clone https://github.com/jdrubin91/TFEA.git
 cd /full/path/to/TFEA/
 pip install .
 ```
@@ -51,8 +51,6 @@ TFEA can then be run from anywhere, try:
 ```
 TFEA --help
 ```
-
-to display the help message
 
 Alternatively, TFEA can be run without installation using:
 
