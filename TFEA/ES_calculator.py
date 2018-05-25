@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib import gridspec
-from scipy.stats import norm
+from scipy.stats import norm as normal
 from scipy.stats import poisson
 import time
 from multiprocessing import Pool
@@ -19,6 +19,7 @@ from config import *
 import motif_distance
 import meta_eRNA
 import create_html
+import __init__
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -27,7 +28,7 @@ def parent_dir(directory):
     return newdir
 
 def run(args):
-    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped = args
+    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos = args
     ranked_center_distance_file = motif_distance.run(ranked_center_file,MOTIF_HITS+MOTIF_FILE)
     #Initiate some variables
     H = 1500.0
@@ -55,6 +56,9 @@ def run(args):
     updistancehist2 = list()
     downdistancehist2 = list()
     middledistancehist2 = list()
+    upregions = list()
+    downregions = list()
+    middleregions = list()
 
     #First parse file containing motif distance and region rank. Also count total negatives to be used later
     with open(ranked_center_distance_file) as F:
@@ -183,14 +187,14 @@ def run(args):
         mu = np.mean(simESsubset)
         NES = -(actualES/mu)
         sigma = np.std(simESsubset)
-        p = norm.cdf(actualES,mu,sigma)
+        p = normal.cdf(actualES,mu,sigma)
         ##p = poisson.cdf(actualES,mu)##argument takes actual value and the mean
     else:
         simESsubset = [x for x in simES if x > 0]
         mu = np.mean(simESsubset)
         NES = actualES/mu
         sigma = np.std(simESsubset)
-        p = 1-norm.cdf(actualES,mu,sigma)
+        p = 1-normal.cdf(actualES,mu,sigma)
         ##p = 1-poisson.cdf(actualES,mu)
 
     #Plot results for significant hits while list of simulated ES scores is in memory
@@ -201,7 +205,7 @@ def run(args):
 
     #For mouse:
     #logos = main.LOGOS
-    logos = LOGOS ##since LOGOS is in config?
+    # logos = __init__.logos ##since LOGOS is in config?
     ##if 'HO_' in logos: ##in MOTIF_FILE:
     if 'HO_' in MOTIF_FILE:
         os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
@@ -357,11 +361,11 @@ def run(args):
     edges = (edges[1:]+edges[:-1])/2. #bascially np.histogram gives you a list of start and stops of the bins, so we are just taking the center of the bins, so it matches the number of counts
     maximum = float(max(yvals))
     yvals = [float(y)/maximum for y in yvals]
-    norm = mpl.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
+    norm = matplotlib.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
     cmap = cm.YlOrRd
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
-    ax1.bar(edges,[1 for i in range(len(xvals))], c=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+    ax1.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
 
     #Plot meta_eRNA for middle regions
     ax3 = plt.subplot(gs[0,1])
@@ -384,11 +388,11 @@ def run(args):
     edges = (edges[1:]+edges[:-1])/2. #bascially np.histogram gives you a list of start and stops of the bins, so we are just taking the center of the bins, so it matches the number of counts
     maximum = float(max(yvals))
     yvals = [float(y)/maximum for y in yvals]
-    norm = mpl.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
+    norm = matplotlib.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
     cmap = cm.YlOrRd
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
-    ax4.bar(edges,[1 for i in range(len(xvals))], c=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+    ax4.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
 
     #Plot meta_eRNA for down regions
     ax5 = plt.subplot(gs[0,2])
@@ -411,11 +415,11 @@ def run(args):
     edges = (edges[1:]+edges[:-1])/2. #bascially np.histogram gives you a list of start and stops of the bins, so we are just taking the center of the bins, so it matches the number of counts
     maximum = float(max(yvals))
     yvals = [float(y)/maximum for y in yvals]
-    norm = mpl.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
+    norm = matplotlib.colors.Normalize(vmin=min(yvals), vmax=max(yvals))
     cmap = cm.YlOrRd
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
-    ax6.bar(edges,[1 for i in range(len(xvals))], c=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+    ax6.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
 
 
 

@@ -44,7 +44,6 @@ def samtools_flagstat(args):
 
 
 def run(ranked_center_distance_file):
-    H=1500
     #This section of the code is new (2/5/18) and will draw a metagene plot with a motif heatmap underneath
     #As of 2/6/18 this section has been moved to a new file and is incomplete
     regions=list()
@@ -53,8 +52,8 @@ def run(ranked_center_distance_file):
                 line = line.strip('\n').split('\t')
                 chrom,start,stop = line[:3]
                 distance = float(line[-1])
-                if 0 < distance < H:
-                    regions.append(hts.GenomicInterval(chrom,int(start)-int(H),int(start)+int(H),'.'))
+                if 0 < distance < LARGEWINDOW:
+                    regions.append(hts.GenomicInterval(chrom,int(start)-int(LARGEWINDOW),int(start)+int(LARGEWINDOW),'.'))
     #This section populates HTSeq variables that will read bed and bam files
     hts_bam1 = list()
     hts_bam2 = list()
@@ -64,8 +63,8 @@ def run(ranked_center_distance_file):
         hts_bam2.append(hts.BAM_Reader(bam))
 
     #This section creates two profile variables (one for each condition tested) that stores normalized coverage data
-    profile1 = np.zeros(2*int(H), dtype='float64')
-    profile2 = np.zeros(2*int(H), dtype='float64')
+    profile1 = np.zeros(2*int(LARGEWINDOW), dtype='float64')
+    profile2 = np.zeros(2*int(LARGEWINDOW), dtype='float64')
     for region in regions:
         window = hts.GenomicInterval(region.chrom, region.start, region.end, ".")
         for bam1 in hts_bam1:
@@ -73,18 +72,18 @@ def run(ranked_center_distance_file):
             for almnt in bam1:
                 if almnt.aligned:
                     coverage1[almnt.iv] += 1
-            wincvg1 = np.fromiter(coverage1[window], dtype='float64', count=2*H)
+            wincvg1 = np.fromiter(coverage1[window], dtype='float64', count=2*LARGEWINDOW)
             profile1 += [x/sum(wincvg1) for x in wincvg1]
         for bam2 in hts_bam2:
             coverage2 = hts.GenomicArray( "auto", stranded=False, typecode="d" )
             for almnt in bam2:
                 if almnt.aligned:
                     coverage2[almnt.iv] += 1
-            wincvg2 = np.fromiter(coverage2[window], dtype='float64', count=2*H)
+            wincvg2 = np.fromiter(coverage2[window], dtype='float64', count=2*LARGEWINDOW)
             profile2 += [x/sum(wincvg2) for x in wincvg2]
 
     F = plt.figure(figsize=(16.5,6))
-    xvals = range(-H,H)
+    xvals = range(-LARGEWINDOW,LARGEWINDOW)
     gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1])
     ax0 = plt.subplot(gs[0])
     ax0.plot(xvals,profile1,color='green')
@@ -102,8 +101,8 @@ def run2(ranked_center_distance_file,millions_mapped):
                 line = line.strip('\n').split('\t')
                 chrom,start,stop = line[:3]
                 distance = float(line[-1])
-                if 0 <= distance <= H:
-                    regions.append(hts.GenomicInterval(chrom,int(start)-int(H),int(start)+int(H),'.'))
+                if 0 <= distance <= LARGEWINDOW:
+                    regions.append(hts.GenomicInterval(chrom,int(start)-int(LARGEWINDOW),int(start)+int(LARGEWINDOW),'.'))
 
 
     hts_bam1 = list()
@@ -114,33 +113,33 @@ def run2(ranked_center_distance_file,millions_mapped):
         hts_bam2.append(hts.BAM_Reader(bam))
 
 
-    posprofile1 = np.zeros(2*int(H))  
-    negprofile1 = np.zeros(2*int(H))
-    posprofile2 = np.zeros(2*int(H))   
-    negprofile2 = np.zeros(2*int(H))
+    posprofile1 = np.zeros(2*int(LARGEWINDOW))  
+    negprofile1 = np.zeros(2*int(LARGEWINDOW))
+    posprofile2 = np.zeros(2*int(LARGEWINDOW))   
+    negprofile2 = np.zeros(2*int(LARGEWINDOW))
     rep1number = len(hts_bam1)
     rep2number = len(hts_bam2)
     for window in regions:
-        avgposprofile1 = np.zeros(2*int(H))
-        avgnegprofile1 = np.zeros(2*int(H))
+        avgposprofile1 = np.zeros(2*int(LARGEWINDOW))
+        avgnegprofile1 = np.zeros(2*int(LARGEWINDOW))
         i = 0
         for sortedbamfile in hts_bam1:
             mil_map = millions_mapped[i]
             i += 1
-            tempposprofile = np.zeros(2*int(H))
-            tempnegprofile = np.zeros(2*int(H))
+            tempposprofile = np.zeros(2*int(LARGEWINDOW))
+            tempnegprofile = np.zeros(2*int(LARGEWINDOW))
             for almnt in sortedbamfile[ window ]:
                 if almnt.iv.strand == '+':
                     start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    end_in_window   = almnt.iv.end - window.end + 2*int(LARGEWINDOW)
                     start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(H) )
+                    end_in_window = min( end_in_window, 2*int(LARGEWINDOW) )
                     tempposprofile[ start_in_window : end_in_window ] += 1.0
                 if almnt.iv.strand == '-':
                     start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    end_in_window   = almnt.iv.end - window.end + 2*int(LARGEWINDOW)
                     start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(H) )
+                    end_in_window = min( end_in_window, 2*int(LARGEWINDOW) )
                     tempnegprofile[ start_in_window : end_in_window ] += -1.0
             pos_sum = np.sum(tempposprofile)
             neg_sum = np.sum(tempnegprofile)
@@ -155,26 +154,26 @@ def run2(ranked_center_distance_file,millions_mapped):
         posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
         negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
 
-        avgposprofile2 = np.zeros(2*int(H))
-        avgnegprofile2 = np.zeros(2*int(H))
+        avgposprofile2 = np.zeros(2*int(LARGEWINDOW))
+        avgnegprofile2 = np.zeros(2*int(LARGEWINDOW))
         i = len(hts_bam1)
         for sortedbamfile in hts_bam2:
             mil_map = millions_mapped[i]
             i += 1
-            tempposprofile = np.zeros(2*int(H))
-            tempnegprofile = np.zeros(2*int(H))
+            tempposprofile = np.zeros(2*int(LARGEWINDOW))
+            tempnegprofile = np.zeros(2*int(LARGEWINDOW))
             for almnt in sortedbamfile[ window ]:
                 if almnt.iv.strand == '+':
                     start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    end_in_window   = almnt.iv.end - window.end + 2*int(LARGEWINDOW)
                     start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(H) )
+                    end_in_window = min( end_in_window, 2*int(LARGEWINDOW) )
                     tempposprofile[ start_in_window : end_in_window ] += 1.0
                 if almnt.iv.strand == '-':
                     start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    end_in_window   = almnt.iv.end - window.end + 2*int(LARGEWINDOW)
                     start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(H) )
+                    end_in_window = min( end_in_window, 2*int(LARGEWINDOW) )
                     tempnegprofile[ start_in_window : end_in_window ] += -1.0
             pos_sum = np.sum(tempposprofile)
             neg_sum = np.sum(tempnegprofile)
@@ -196,7 +195,7 @@ def run3(regionlist,millions_mapped):
 
     regions=list()
     for chrom,start,stop in regionlist:
-        regions.append(hts.GenomicInterval(chrom,int(start)-int(H),int(start)+int(H),'.'))
+        regions.append(hts.GenomicInterval(chrom,int(start)-int(LARGEWINDOW),int(start)+int(LARGEWINDOW),'.'))
 
     hts_bam1 = list()
     hts_bam2 = list()
@@ -206,33 +205,33 @@ def run3(regionlist,millions_mapped):
         hts_bam2.append(hts.BAM_Reader(bam))
 
 
-    posprofile1 = np.zeros(2*int(H))  
-    negprofile1 = np.zeros(2*int(H))
-    posprofile2 = np.zeros(2*int(H))   
-    negprofile2 = np.zeros(2*int(H))
+    posprofile1 = np.zeros(2*int(LARGEWINDOW))  
+    negprofile1 = np.zeros(2*int(LARGEWINDOW))
+    posprofile2 = np.zeros(2*int(LARGEWINDOW))   
+    negprofile2 = np.zeros(2*int(LARGEWINDOW))
     rep1number = float(len(hts_bam1))
     rep2number = float(len(hts_bam2))
     for window in regions:
-        avgposprofile1 = np.zeros(2*int(H))
-        avgnegprofile1 = np.zeros(2*int(H))
+        avgposprofile1 = np.zeros(2*int(LARGEWINDOW))
+        avgnegprofile1 = np.zeros(2*int(LARGEWINDOW))
         i = 0
         for sortedbamfile in hts_bam1:
             mil_map = millions_mapped[i]
             i += 1
-            tempposprofile = np.zeros(2*int(H))
-            tempnegprofile = np.zeros(2*int(H))
+            tempposprofile = np.zeros(2*int(LARGEWINDOW))
+            tempnegprofile = np.zeros(2*int(LARGEWINDOW))
             for almnt in sortedbamfile[ window ]:
                 if almnt.iv.strand == '+':
                     start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    end_in_window   = almnt.iv.end - window.end + 2*int(LARGEWINDOW)
                     start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(H) )
+                    end_in_window = min( end_in_window, 2*int(LARGEWINDOW) )
                     tempposprofile[ start_in_window : end_in_window ] += 1.0
                 if almnt.iv.strand == '-':
                     start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    end_in_window   = almnt.iv.end - window.end + 2*int(LARGEWINDOW)
                     start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(H) )
+                    end_in_window = min( end_in_window, 2*int(LARGEWINDOW) )
                     tempnegprofile[ start_in_window : end_in_window ] += -1.0
             pos_sum = np.sum(tempposprofile)
             neg_sum = np.sum(tempnegprofile)
@@ -247,26 +246,26 @@ def run3(regionlist,millions_mapped):
         posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
         negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
 
-        avgposprofile2 = np.zeros(2*int(H))
-        avgnegprofile2 = np.zeros(2*int(H))
+        avgposprofile2 = np.zeros(2*int(LARGEWINDOW))
+        avgnegprofile2 = np.zeros(2*int(LARGEWINDOW))
         i = len(hts_bam1)
         for sortedbamfile in hts_bam2:
             mil_map = millions_mapped[i]
             i += 1
-            tempposprofile = np.zeros(2*int(H))
-            tempnegprofile = np.zeros(2*int(H))
+            tempposprofile = np.zeros(2*int(LARGEWINDOW))
+            tempnegprofile = np.zeros(2*int(LARGEWINDOW))
             for almnt in sortedbamfile[ window ]:
                 if almnt.iv.strand == '+':
                     start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    end_in_window   = almnt.iv.end - window.end + 2*int(LARGEWINDOW)
                     start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(H) )
+                    end_in_window = min( end_in_window, 2*int(LARGEWINDOW) )
                     tempposprofile[ start_in_window : end_in_window ] += 1.0
                 if almnt.iv.strand == '-':
                     start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end + 2*int(H)
+                    end_in_window   = almnt.iv.end - window.end + 2*int(LARGEWINDOW)
                     start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(H) )
+                    end_in_window = min( end_in_window, 2*int(LARGEWINDOW) )
                     tempnegprofile[ start_in_window : end_in_window ] += -1.0
             pos_sum = np.sum(tempposprofile)
             neg_sum = np.sum(tempnegprofile)
@@ -290,7 +289,7 @@ if __name__ == "__main__":
 
     F = plt.figure(figsize=(15.5,6))
     ax0 = plt.subplot(111)
-    xvals = range(-int(H),int(H))
+    xvals = range(-int(LARGEWINDOW),int(LARGEWINDOW))
     line1, = ax0.plot(xvals,posprofile1,color='blue',label=LABEL1)
     ax0.plot(xvals,negprofile1,color='blue')
     line2, = ax0.plot(xvals,posprofile2,color='red',label=LABEL2)

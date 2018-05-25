@@ -10,6 +10,20 @@ def run(BEDS,filedir):
     ## os.system("rm " + filedir + "combined_input.bed")
     return filedir + "combined_input.merge.bed"
 
+#5/23/18: This function returns a fasta file from a bed input
+def getfasta(genomefasta,bedfile,filedir):
+    os.system("bedtools getfasta -fi "+genomefasta+" -bed "+bedfile+" > combined_input.merge.fa")
+
+    return filedir + "combined_input.merge.fa"
+
+#5/23/18: This function outputs a zero order markov background model file (is text file right?) for use with fimo later on
+def get_bgfile(fastafile,filedir):
+    os.system("fasta-get-markov "+fastafile+" "+filedir+"markov_background.txt")
+
+    return filedir + "markov_background.txt"
+
+
+
 ##def run(BEDS,filedir):
 ##    os.system("sort -k1,1 -k2,2n " + BEDS[0] + " > " + filedir + "bed1_sort.bed")
 ##    os.system("sort -k1,1 -k2,2n " + BEDS[1] + " > " + filedir + "bed2_sort.bed")

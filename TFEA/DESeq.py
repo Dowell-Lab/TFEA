@@ -3,7 +3,7 @@ __author__ = 'Jonathan Rubin'
 import os
 
 def write_script(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file):
-    if len(BAM1) > 1 and len(BAM2) > 1:
+    if (len(BAM1) > 1 and len(BAM2) > 1):
         outfile = open(filedir + 'DESeq.R','w')
         outfile.write('sink("'+filedir+'DESeq.Rout")\n')
         outfile.write('library("DESeq2")\n')

@@ -1,3 +1,0 @@
-import main
-
-main.run()
