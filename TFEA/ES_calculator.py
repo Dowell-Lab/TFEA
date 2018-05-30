@@ -19,6 +19,8 @@ from config import *
 import motif_distance
 import meta_eRNA
 import create_html
+import combine_bed
+import meme
 import __init__
 
 def parent_dir(directory):
@@ -30,6 +32,12 @@ def parent_dir(directory):
 def run(args):
     MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos = args
     ranked_center_distance_file = motif_distance.run(ranked_center_file,MOTIF_HITS+MOTIF_FILE)
+    if FIMO:
+        ranked_fullregions_file = combine_bed.get_regions(ranked_center_file,__init__.filedir)
+        ranked_fasta_file = combine_bed.getfasta(GENOMEFASTA,ranked_fullregions_file,__init__.filedir)
+        background_file = combine_bed.get_bgfile(ranked_fasta_file,__init__.filedir)
+        meme.fimo(background_file,SINGLEMOTIF,MOTIFDATABASE,ranked_fasta_file,__init__.filedir)
+
     #Initiate some variables
     H = 1500.0
     h = 150.0
@@ -296,40 +304,41 @@ def run(args):
     plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.png',bbox_inches='tight')
     plt.cla()
 
+    #5/29/18: Commented this out in favor of heatmaps with meta_eRNA plotss
     #Plots the distribution of motif distances with a red line at h
-    F = plt.figure(figsize=(6.5,6))
-    gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
-    ax0 = plt.subplot(gs[0])
-    binwidth = LARGEWINDOW/100.0
-    ax0.hist(updistancehist2,bins=np.arange(0,int(LARGEWINDOW)+binwidth,binwidth),color='green')
-    ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
-    ax0.axvline(h,color='red',alpha=0.5)
-    ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax0.set_xlim([0,H])
-    ax0.set_xlabel('Distance (bp)',fontsize=14)
-    ax0.set_ylabel('Hits',fontsize=14)
-    ax1 = plt.subplot(gs[2])
-    ax1.hist(downdistancehist2,bins=np.arange(0,int(LARGEWINDOW)+binwidth,binwidth),color='purple')
-    ax1.axvline(h,color='red',alpha=0.5)
-    ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
-    ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax1.set_xlim([0,LARGEWINDOW])
-    ax1.set_ylabel('Hits',fontsize=14)
-    ax1.set_xlabel('Distance (bp)',fontsize=14)
-    ax2 = plt.subplot(gs[1])
-    ax2.hist(middledistancehist2,bins=np.arange(0,int(H)+binwidth,binwidth),color='blue')
-    ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
-    ax2.axvline(h,color='red',alpha=0.5)
-    ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax2.set_xlim([0,H])
-    ax2.set_xlabel('Distance (bp)',fontsize=14)
-    ax2.set_ylabel('Hits',fontsize=14)
-    plt.tight_layout()
-    plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')
-    plt.cla()
+    # F = plt.figure(figsize=(6.5,6))
+    # gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
+    # ax0 = plt.subplot(gs[0])
+    # binwidth = LARGEWINDOW/100.0
+    # ax0.hist(updistancehist2,bins=np.arange(0,int(LARGEWINDOW)+binwidth,binwidth),color='green')
+    # ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
+    # ax0.axvline(h,color='red',alpha=0.5)
+    # ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    # ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    # ax0.set_xlim([0,H])
+    # ax0.set_xlabel('Distance (bp)',fontsize=14)
+    # ax0.set_ylabel('Hits',fontsize=14)
+    # ax1 = plt.subplot(gs[2])
+    # ax1.hist(downdistancehist2,bins=np.arange(0,int(LARGEWINDOW)+binwidth,binwidth),color='purple')
+    # ax1.axvline(h,color='red',alpha=0.5)
+    # ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
+    # ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    # ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    # ax1.set_xlim([0,LARGEWINDOW])
+    # ax1.set_ylabel('Hits',fontsize=14)
+    # ax1.set_xlabel('Distance (bp)',fontsize=14)
+    # ax2 = plt.subplot(gs[1])
+    # ax2.hist(middledistancehist2,bins=np.arange(0,int(H)+binwidth,binwidth),color='blue')
+    # ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
+    # ax2.axvline(h,color='red',alpha=0.5)
+    # ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    # ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    # ax2.set_xlim([0,H])
+    # ax2.set_xlabel('Distance (bp)',fontsize=14)
+    # ax2.set_ylabel('Hits',fontsize=14)
+    # plt.tight_layout()
+    # plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')
+    # plt.cla()
 
     #Plots a meta_eRNA
     #5/22/18: Major changes, now three meta_eRNA plots are created with associated heatmaps underneath
@@ -349,11 +358,10 @@ def run(args):
     ax0.axvline(0,color='black',alpha=0.25)
     ax0.axhline(0,color='black',linestyle='dashed')
     ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax0.legend(loc=1)
     ax0.set_title('Meta Plot of eRNA Signal (upper quartile)',fontsize=14,color='green')
     ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
-    ax0.set_xlabel('Distance to eRNA Origin (bp)')
 
     #Plot heatmap underneath meta_eRNA for up regions
     ax1 = plt.subplot(gs[1,0])
@@ -366,21 +374,24 @@ def run(args):
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
     ax1.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+    ax1.set_xlim(xvals)
+    ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
+    ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax1.set_xlabel('Distance to eRNA Origin (bp)')
 
     #Plot meta_eRNA for middle regions
     ax3 = plt.subplot(gs[0,1])
-    line1, = ax0.plot(xvals,posprofile_middle1,color='blue',label=LABEL1)
+    line1, = ax3.plot(xvals,posprofile_middle1,color='blue',label=LABEL1)
     ax3.plot(xvals,negprofile_middle1,color='blue')
-    line2, = ax0.plot(xvals,posprofile_middle2,color='red',label=LABEL2)
+    line2, = ax3.plot(xvals,posprofile_middle2,color='red',label=LABEL2)
     ax3.plot(xvals,negprofile_middle2,color='red')
     ax3.axvline(0,color='black',alpha=0.25)
     ax3.axhline(0,color='black',linestyle='dashed')
     ax3.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax3.legend(loc=1)
+    ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+    # ax3.legend(loc=1)
     ax3.set_title('Meta Plot of eRNA Signal (middle quartiles)',fontsize=14,color='blue')
     ax3.set_ylabel('Normalized Read Coverage',fontsize=14)
-    ax3.set_xlabel('Distance to eRNA Origin (bp)')
 
     #Plot heatmap underneath meta_eRNA for middle regions
     ax4 = plt.subplot(gs[1,1])
@@ -393,18 +404,22 @@ def run(args):
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
     ax4.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+    ax4.set_xlim(xvals)
+    ax4.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
+    ax4.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax4.set_xlabel('Distance to eRNA Origin (bp)')
 
     #Plot meta_eRNA for down regions
     ax5 = plt.subplot(gs[0,2])
-    line1, = ax0.plot(xvals,posprofile_down1,color='blue',label=LABEL1)
+    line1, = ax5.plot(xvals,posprofile_down1,color='blue',label=LABEL1)
     ax5.plot(xvals,negprofile_down1,color='blue')
-    line2, = ax0.plot(xvals,posprofile_down2,color='red',label=LABEL2)
+    line2, = ax5.plot(xvals,posprofile_down2,color='red',label=LABEL2)
     ax5.plot(xvals,negprofile_down2,color='red')
     ax5.axvline(0,color='black',alpha=0.25)
     ax5.axhline(0,color='black',linestyle='dashed')
     ax5.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax5.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax5.legend(loc=1)
+    # ax5.legend(loc=1)
     ax5.set_title('Meta Plot of eRNA Signal (lower quartiles)',fontsize=14,color='purple')
     ax5.set_ylabel('Normalized Read Coverage',fontsize=14)
     ax5.set_xlabel('Distance to eRNA Origin (bp)')
@@ -420,13 +435,17 @@ def run(args):
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
     ax6.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+    ax6.set_xlim(xvals)
+    ax6.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
+    ax6.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax6.set_xlabel('Distance to eRNA Origin (bp)')
 
 
 
-    ax0.legend(loc=1)
-    ax0.set_title('Meta Plot of eRNA Signal',fontsize=14)
-    ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
-    ax0.set_xlabel('Distance to eRNA Origin (bp)')
+    # # ax0.legend(loc=1)
+    # ax0.set_title('Meta Plot of eRNA Signal',fontsize=14)
+    # ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
+    # ax0.set_xlabel('Distance to eRNA Origin (bp)')
     plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_meta_eRNA.png',bbox_inches='tight')
     plt.cla()
 

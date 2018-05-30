@@ -146,8 +146,8 @@ def main():
 
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
         else:
-            motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
-            results = ES_calculator.run(config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped)
+            # motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
+            results = ES_calculator.run((config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos))
             create_html.single_motif(results,output)
     print "done"
 

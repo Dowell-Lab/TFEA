@@ -1,6 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
+from config import LARGEWINDOW
 
 def run(BEDS,filedir):
     os.system("cat " + " ".join(BEDS) + " > " + filedir + "combined_input.bed")
@@ -12,7 +13,7 @@ def run(BEDS,filedir):
 
 #5/23/18: This function returns a fasta file from a bed input
 def getfasta(genomefasta,bedfile,filedir):
-    os.system("bedtools getfasta -fi "+genomefasta+" -bed "+bedfile+" > combined_input.merge.fa")
+    os.system("bedtools getfasta -name -fi "+genomefasta+" -bed "+bedfile+" > combined_input.merge.fa")
 
     return filedir + "combined_input.merge.fa"
 
@@ -21,6 +22,21 @@ def get_bgfile(fastafile,filedir):
     os.system("fasta-get-markov "+fastafile+" "+filedir+"markov_background.txt")
 
     return filedir + "markov_background.txt"
+
+def get_regions(ranked_center_file,filedir):
+    outfile = open(filedir+'ranked_file.fullregions.bed','w')
+    with open(ranked_center_file) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            chrom,start,stop = line[:3]
+            start = str(int(start)-LARGEWINDOW)
+            stop = str(int(stop)+LARGEWINDOW)
+            pval,fc,rank = line[3:]
+            name = ','.join([pval,fc,rank])
+            outfile.write('\t'.join([chrom,start,stop,name]) + '\n')
+
+    return filedir + 'ranked_file.fullregions.bed'
+
 
 
 

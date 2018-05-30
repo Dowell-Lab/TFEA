@@ -1,6 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
+import meme
 
 #Takes a single ranked_file and returns bed file with the centers for each region and a bed file with the distance to the closest motif for each centered region
 def run(ranked_center_file,MOTIF_PATH):

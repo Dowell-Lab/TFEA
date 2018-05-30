@@ -10,3 +10,7 @@ def fimo(bgfile,motif,motifdatabase,fastafile,filedir):
 #5/23/18: This function creates meme logos for use in the output html
 def meme2images(outputdir,motif,motifdatabase):
     os.system("meme2images -png -rc --motif "+motif+" "+motifdatabase+" "+outputdir)
+
+#5/29/18: This function runs meme's fasta-get-markov function that generates a background markov file (for use with fimo) from a fasta file. This function is also within combine_bed.py
+def fasta_markov(order='0',fastafile,filedir):
+    os.system("fasta-get-markov -m " + order + " " + fastafile + " > " + fildir + "Markov_Background.txt")

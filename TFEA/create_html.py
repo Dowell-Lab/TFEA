@@ -362,24 +362,24 @@ def single_motif(results,outputdir):
         </div>
         <div>
             <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
-                <img src="./"""+MOTIF_FILE+"""_enrichment_plot.png" alt="Enrichment Plot">
+                <img src="./plots/"""+MOTIF_FILE+"""_enrichment_plot.png" alt="Enrichment Plot">
             </div>
         </div>
         <div>
             <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
-                <img src="./"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
+                <img src="./plots/"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
             </div>
         </div>
         <div>
             <div style="float: right; width: 600px; overflow: scroll">
                 <p>Forward:</p>
-                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
+                <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_direct.png" alt="Forward Logo">
                 <p></p>
                 <p>Reverse:</p>
-                <img src="./"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
+                <img src="./plots/"""+MOTIF_FILE.split('HO_')[1]+"""_revcomp.png" alt="Reverse Logo">
             </div>
             <div style="float:left; width: 600px overflow:scroll">
-                <img src="./"""+MOTIF_FILE+"""_simulation_plot.png" alt="Simulation Plot">
+                <img src="./plots/"""+MOTIF_FILE+"""_simulation_plot.png" alt="Simulation Plot">
             </div>
         </div>
         
