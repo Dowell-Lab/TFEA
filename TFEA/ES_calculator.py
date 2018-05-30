@@ -37,8 +37,6 @@ def run(args):
         meme.fimo(background_file,config.SINGLEMOTIF,config.MOTIFDATABASE,ranked_fasta_file,filedir)
 
     #Initiate some variables
-    H = 1500.0
-    h = 150.0
     ES = list()
     Eval = 0.0
     distances = list()
@@ -93,11 +91,10 @@ def run(args):
             #Get absolute value of distance to be used by later plots
             distance = math.fabs(distance)
 
-
+            #If a motif is within a SMALLWINDOW, then it is counted as a 'positive' hit
             if 0 <= distance <= config.SMALLWINDOW:
                 positives += 1.0
                 value = math.exp(-distance)
-                ##value = 1
                 distances.append(value)
                 ind.append(rank)
                 distance_sum += value
@@ -119,8 +116,7 @@ def run(args):
                     except ValueError:
                         logpval.append(-500.0)
                     
-
-            #elif h < distance <= H:
+            #If a motif is not within a SMALLWINDOW, it is counted as a 'negative' hit
             elif distance > config.SMALLWINDOW:
                 distances.append(-1)
                 ind.append(rank)
