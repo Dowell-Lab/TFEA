@@ -1,3 +1,3 @@
-import __init__
+import main
 
-__init__.main()
+main.run()

@@ -10,12 +10,16 @@ from multiprocessing import Pool
 import multiprocessing as mp
 
 def run():
-    #Home directory
+    #Home directory, gets the full path (no '/' at the end) to the folder containing this script
     homedir = os.path.dirname(os.path.realpath(__file__))
 
-    parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.',usage='python src/ --config CONFIG.ini [--sbatch email@address.com]')
+    parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.',usage='TFEA --config CONFIG.ini [--sbatch email@address.com]')
     parser.add_argument('--config',help='REQUIRED. A configuration file containing .ini suffix (ex. config.ini). See example in the examples folder.')
     parser.add_argument('--sbatch',default=False,help='OPTIONAL. Submits an sbatch job. If specified, input an e-mail address.')
+    if len(sys.argv)==1:
+        # display help message when no args are passed.
+        parser.print_help()
+        sys.exit(1)
     sbatch = parser.parse_args().sbatch
     configfile = parser.parse_args().config
     config_parser.run(homedir+'/',str(configfile))
@@ -112,9 +116,11 @@ def run():
             CALCULATEtime = 0.0
             if config.POOL:
                 a = time.time()
-                args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
-                p = Pool(64)
-                
+                args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos) for x in os.listdir(config.MOTIF_HITS)]
+                cpus = mp.cpu_count()
+                if cpus > 64:
+                    cpus = 64
+                p = Pool(cpus)
                 TFresults = p.map(ES_calculator.run,args)
                 CALCULATEtime += time.time() - a
                 create_html.createTFtext(TFresults,output)
@@ -125,7 +131,7 @@ def run():
 
                     #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                     #the HOCOMOCO database.
-                    results = ES_calculator.run((MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped))
+                    results = ES_calculator.run((MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos))
                     if results != "no hits":
                         TFresults.append(results)
                         NESlist.append(results[2])
@@ -140,8 +146,8 @@ def run():
 
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
         else:
-            motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
-            results = ES_calculator.run(config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped)
+            # motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
+            results = ES_calculator.run((config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos))
             create_html.single_motif(results,output)
     print "done"
 
