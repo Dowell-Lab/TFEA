@@ -13,8 +13,6 @@ from scipy.stats import norm as normal
 from scipy.stats import poisson
 import time
 from multiprocessing import Pool
-# import HTSeq as hts
-#import config
 import config
 import motif_distance
 import meta_eRNA
@@ -96,7 +94,7 @@ def run(args):
             distance = math.fabs(distance)
 
 
-            if 0 <= distance <= h:
+            if 0 <= distance <= config.SMALLWINDOW:
                 positives += 1.0
                 value = math.exp(-distance)
                 ##value = 1
@@ -107,10 +105,7 @@ def run(args):
                 scattery.append(distance)
                 if fc > 1:
                     if pval < config.PVALCUTOFF:
-                    	##updistancehist.append(distance)
                     	upsigscatterx.append(rank)
-		    ##else:
-			##middledistancehist.append(distance)
                     try:
                         logpval.append(-math.log(pval,10))
                     except ValueError:
@@ -118,10 +113,7 @@ def run(args):
                     
                 else:
                     if pval < config.PVALCUTOFF:
-                    	##downdistancehist.append(distance)
                     	downsigscatterx.append(rank)
-		    ##else:
-			##middledistancehist.append(distance)
                     try:
                         logpval.append(math.log(pval,10))
                     except ValueError:
@@ -129,7 +121,7 @@ def run(args):
                     
 
             #elif h < distance <= H:
-            elif distance > h:
+            elif distance > config.SMALLWINDOW:
                 distances.append(-1)
                 ind.append(rank)
                 negatives += 1.0
@@ -137,20 +129,14 @@ def run(args):
                 scattery.append(distance)
                 if fc > 1:
                     if pval < config.PVALCUTOFF:
-                        ##updistancehist.append(distance)
                         upsigscatterx.append(rank)
-                    ##else:
-			##middledistancehist.append(distance)
                     try:
                         logpval.append(-math.log(pval,10))
                     except ValueError:
                         logpval.append(500.0)
                 else:
                     if pval < config.PVALCUTOFF:
-                        ##downdistancehist.append(distance)
                         downsigscatterx.append(rank)
-                    ##else:
-			##middledistancehist.append(distance)
                     try:
                         logpval.append(math.log(pval,10))
                     except ValueError:
@@ -189,32 +175,21 @@ def run(args):
     simES = simulate(H,distances,distance_sum,neg)
 
     #NES is the actualES divided by the mean ES of all permutations with the same sign as actualES
-    #p-value is caluclated empirically (i.e. (# of simulated ES scores larger than actualES)/(rest of simulated ES scores))
+    #p-value is caluclated with the theoretical normal distribution
     if actualES < 0:
         simESsubset = [x for x in simES if x < 0]
         mu = np.mean(simESsubset)
         NES = -(actualES/mu)
         sigma = np.std(simESsubset)
         p = normal.cdf(actualES,mu,sigma)
-        ##p = poisson.cdf(actualES,mu)##argument takes actual value and the mean
     else:
         simESsubset = [x for x in simES if x > 0]
         mu = np.mean(simESsubset)
         NES = actualES/mu
         sigma = np.std(simESsubset)
         p = 1-normal.cdf(actualES,mu,sigma)
-        ##p = 1-poisson.cdf(actualES,mu)
 
     #Plot results for significant hits while list of simulated ES scores is in memory
-    # if p < FDRCUTOFF or SINGLEMOTIF != False:
-    #For human:
-    # os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
-    # os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
-
-    #For mouse:
-    #logos = main.LOGOS
-    # logos = __init__.logos ##since LOGOS is in config?
-    ##if 'HO_' in logos: ##in MOTIF_FILE:
     if 'HO_' in MOTIF_FILE:
         os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
         os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
@@ -251,13 +226,10 @@ def run(args):
     if config.DRAWPVALCUTOFF != False:
         ax1.scatter(upsigscatterx,updistancehist2,edgecolor="",color="green",s=10,alpha=0.5)
         ax1.scatter(downsigscatterx,downdistancehist2,edgecolor="",color="blue",s=10,alpha=0.5)
-        # ax1.axvline(PVALCUTOFF,linestyle='dashed')
-        # ax1.text(PVALCUTOFF,H+H/10,str(PVALCUTOFF),ha='center',va='bottom')
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax1.set_xlim(limits)
     ax1.set_ylim([0,config.LARGEWINDOW])
-    # ax1.yaxis.set_ticks([0,H])
     plt.yticks([0,config.LARGEWINDOW],['0',str(float(config.LARGEWINDOW)/1000.0)])
     ax1.set_ylabel('Distance (kb)', fontsize=10)
     ax2 = plt.subplot(gs[2])
@@ -271,12 +243,10 @@ def run(args):
     ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
     ax2.set_ylabel('Rank Metric',fontsize=10)
     try:
-        ##ax2.axvline(len(upsigscatterx)+1,color='green',alpha=0.25)
         ax2.axvline(len(updistancehist2)+1,color='green',alpha=0.25)
     except ValueError:
         pass
     try:
-        ##ax2.axvline(len(xvals) - len(downsigscatterx),color='purple',alpha=0.25)
         ax2.axvline(len(xvals) - len(downdistancehist2), color='purple', alpha=0.25)
     except ValueError:
         pass
