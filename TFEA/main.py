@@ -40,7 +40,7 @@ def run():
 
 
     #Run the config_parser script which will create variables for all folders and paths to use throughout TFEA
-    config_parser.run(homedir+'/',str(configfile),config,output,filedir,figuredir)
+    config_parser.run(homedir+'/',config,output,filedir,figuredir)
 
 
     #Import scripts from this package
@@ -94,44 +94,40 @@ def run():
         print "Finding motif hits in regions..."
         if config.SINGLEMOTIF == False:
             TFresults = list()
-            NESlist = list()
             CALCULATEtime = 0.0
             if config.POOL:
                 a = time.time()
-                args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos) for x in os.listdir(config.MOTIF_HITS)]
+                args = [(x,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
                 p = Pool(cpus)
                 TFresults = p.map(ES_calculator.run,args)
                 CALCULATEtime += time.time() - a
-                create_html.createTFtext(TFresults,output)
+                create_html.createTFtext(TFresults)
             else:
                 for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
                     a = time.time()
 
                     #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                     #the HOCOMOCO database.
-                    results = ES_calculator.run((MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos,filedir))
+                    results = ES_calculator.run((MOTIF_FILE,millions_mapped))
                     if results != "no hits":
                         TFresults.append(results)
-                        NESlist.append(results[2])
                         CALCULATEtime += time.time()-a
                         print MOTIF_FILE + " calculation done in: " + str(CALCULATEtime) + "s"
                     else:
                         print "No motifs within specified window for: ", MOTIF_FILE
-            TFresults = [x for x in TFresults if x != "no hits"]
-            TFresults = sorted(TFresults, key=lambda x: x[3])
-            TFresults = ES_calculator.FDR(TFresults,NESlist,figuredir)
-            create_html.run(TFresults,output,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime)
+            TFresults = ES_calculator.FDR(TFresults)
+            create_html.run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime)
 
-        #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
+        #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to determine an FDR for the given motif.
         else:
-            results = ES_calculator.run((config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos,filedir))
-            create_html.single_motif(results,output)
+            results = ES_calculator.run((config.SINGLEMOTIF,millions_mapped))
+            create_html.single_motif(results)
     print "done"
 
 
 def make_out_directories(dirs,config):
     #Output directory
-    output = config['DATA']['OUTPUT']
+    output = config['DATA']['OUTPUT'].strip("'")
     if dirs:
         if not os.path.isdir(output + 'TFEA_output-0/'):
             output = output + 'TFEA_output-0/'

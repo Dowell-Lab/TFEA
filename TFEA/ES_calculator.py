@@ -28,8 +28,8 @@ def parent_dir(directory):
     return newdir
 
 def run(args):
-    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos,filedir = args
-    ranked_center_distance_file = motif_distance.run(ranked_center_file,config.MOTIF_HITS+MOTIF_FILE)
+    MOTIF_FILE,millions_mapped = args
+    ranked_center_distance_file = motif_distance.run(config.RANKED_CENTER_FILE,config.MOTIF_HITS+MOTIF_FILE)
     if config.FIMO:
         ranked_fullregions_file = combine_bed.get_regions()
         ranked_fasta_file = combine_bed.getfasta(ranked_fullregions_file)
@@ -188,11 +188,11 @@ def run(args):
 
     #Plot results for significant hits while list of simulated ES scores is in memory
     if 'HO_' in MOTIF_FILE:
-        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + figuredir)
-        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + figuredir)
+        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + config.FIGUREDIR)
+        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + config.FIGUREDIR)
     else:
-        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0] + "_direct.png " + figuredir)
-        os.system("scp " + logos + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + figuredir)
+        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
+        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
 
     logpval = [x for _,x in sorted(zip(scatterx,logpval))]
     scattery = [x for _,x in sorted(zip(scatterx,scattery))]
@@ -248,7 +248,7 @@ def run(args):
     except ValueError:
         pass
 
-    plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
+    plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
     plt.cla()
 
     #Plots the distribution of simulated ESs and in a red bar plots the observed ES
@@ -268,7 +268,7 @@ def run(args):
     plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
     ax2.set_ylabel('Number of Simulations',fontsize=14)
     ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
-    plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.png',bbox_inches='tight')
+    plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.png',bbox_inches='tight')
     plt.cla()
 
     #5/29/18: Commented this out in favor of heatmaps with meta_eRNA plotss
@@ -304,7 +304,7 @@ def run(args):
     # ax2.set_xlabel('Distance (bp)',fontsize=14)
     # ax2.set_ylabel('Hits',fontsize=14)
     # plt.tight_layout()
-    # plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')
+    # plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')
     # plt.cla()
 
     #Plots a meta_eRNA
@@ -408,18 +408,12 @@ def run(args):
     ax6.set_xlabel('Distance to eRNA Origin (bp)')
 
 
-
-    # # ax0.legend(loc=1)
-    # ax0.set_title('Meta Plot of eRNA Signal',fontsize=14)
-    # ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
-    # ax0.set_xlabel('Distance to eRNA Origin (bp)')
-    plt.savefig(figuredir + MOTIF_FILE.split('.bed')[0] + '_meta_eRNA.png',bbox_inches='tight')
+    plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_meta_eRNA.png',bbox_inches='tight')
     plt.cla()
 
     #5/22/18: commented this out for now
     # os.system("rm " + ranked_center_distance_file)
 
-    # return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,(simNESmu,simNESsigma)]
     return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,positives,negatives]
 
 def simulate(H,distances,distance_sum,neg,N=1000):
@@ -446,10 +440,10 @@ def simulate(H,distances,distance_sum,neg,N=1000):
 
     return simES
 
-def FDR(TFresults,NESlist,figuredir):
+def FDR(TFresults):
     #This function iterates through the results and calculates an FDR for each TF motif. Also creates a moustache plot.
     FDRlist = list()
-    newNESlist = list()
+    NESlist = list()
     sigx = list()
     sigy = list()
     pvals = list()
@@ -458,6 +452,8 @@ def FDR(TFresults,NESlist,figuredir):
     sigtotals = list()
     positives = list()
 
+    TFresults = [x for x in TFresults if x != "no hits"]
+    TFresults = sorted(TFresults, key=lambda x: x[3])
     for i in range(len(TFresults)):
         NES = TFresults[i][2]
         PVAL = TFresults[i][3]
@@ -470,7 +466,7 @@ def FDR(TFresults,NESlist,figuredir):
         # FDR = (PVAL*len(TFresults))/float(i+1.0)
         TFresults[i].append(FDR)
         FDRlist.append(FDR)
-        newNESlist.append(NES)
+        NESlist.append(NES)
         totals.append(math.log(float(total)))
         positives.append(math.log(float(POS)))
 
@@ -499,26 +495,26 @@ def FDR(TFresults,NESlist,figuredir):
 
     ##pvalsNA = [1 if str(x) == 'nan' else x for x in pvals]
         
-    create_html.createTFtext(TFresults,figuredir)
+    create_html.createTFtext(TFresults,config.FIGUREDIR)
 
     #Creates a scatter plot of NES vs. number of motif hits within H
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     #5/22/18: Using positive values only instead of total
-    ax.scatter(newNESlist,positives,color='blue',edgecolor='')
+    ax.scatter(NESlist,positives,color='blue',edgecolor='')
     ax.scatter(sigx,sigtotals,color='red',edgecolor='')
     ax.set_title("TFEA NES MA-Plot",fontsize=14)
     ax.set_xlabel("Normalized Enrichment Score (NES)",fontsize=14)
     ax.set_ylabel("Number of Motif Hits within " + str(int(H)) + "bp (log10)",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    plt.savefig(figuredir + 'TFEA_NES_MA_Plot.png',bbox_inches='tight')
+    plt.savefig(config.FIGUREDIR + 'TFEA_NES_MA_Plot.png',bbox_inches='tight')
     plt.cla()
 
     #Creates a moustache plot of the global FDRs vs. NESs
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    ax.scatter(newNESlist,FDRlist,color='black',edgecolor='')
+    ax.scatter(NESlist,FDRlist,color='black',edgecolor='')
     ax.scatter(sigx,sigy,color='red',edgecolor='')
     ax.set_title("TFEA Moustache Plot",fontsize=14)
     ax.set_xlabel("Normalized Enrichment Score (NES)",fontsize=14)
@@ -527,24 +523,21 @@ def FDR(TFresults,NESlist,figuredir):
     ax.set_xlim([-limit,limit])
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    plt.savefig(figuredir + 'TFEA_Results_Moustache_Plot.png',bbox_inches='tight')
+    plt.savefig(config.FIGUREDIR + 'TFEA_Results_Moustache_Plot.png',bbox_inches='tight')
     plt.cla()
 
     #Creates a histogram of p-values
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     binwidth = 1.0/100.0
-    ##print pvalsNA
-    ##print pvals
     print np.arange(0,1.0+binwidth,binwidth)
     ax.hist(pvals,bins=np.arange(0,1.0+binwidth,binwidth),color='green')
-    ##ax.hist(pvalsNA,bins=np.arange(0,1.0+binwidth,binwidth),color='green')
     ax.set_title("TFEA P-value Histogram",fontsize=14)
     ax.set_xlabel("P-value",fontsize=14)
     ax.set_ylabel("Count",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    plt.savefig(figuredir + 'TFEA_Pval_Histogram.png',bbox_inches='tight')
+    plt.savefig(config.FIGUREDIR + 'TFEA_Pval_Histogram.png',bbox_inches='tight')
     plt.cla()
 
     return TFresults

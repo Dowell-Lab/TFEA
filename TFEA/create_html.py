@@ -1,28 +1,28 @@
 __author__ = 'Jonathan Rubin'
 
-from config import *
+import config
 import datetime
 
-def createTFtext(TFresults,outputdir):
+def createTFtext(TFresults):
     TFresults = sorted(TFresults, key=lambda x: x[3])
-    outfile = open(outputdir + 'results.txt', 'w')
+    outfile = open(config.OUTPUTDIR + 'results.txt', 'w')
     outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
     for val in TFresults:
         outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
     outfile.close()
 
 
-def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
+def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     #Creates results.txt which is a tab-delimited text file with the results    
     ##TFresults = sorted(TFresults, key=lambda x: x[3])
-    outfile = open(outputdir + 'results.txt', 'w')
+    outfile = open(config.OUTPUTDIR + 'results.txt', 'w')
     outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
     for val in TFresults:
         outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
     outfile.close()
 
     #summary.html contains all user-defined variables, and also information about module used
-    outfile = open(outputdir+'summary.html','w')
+    outfile = open(config.OUTPUTDIR+'summary.html','w')
     outfile.write("""<!DOCTYPE html>
             <html>
             <head>
@@ -30,14 +30,14 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </head>
             <body>
                 <h1>Variables Used</h1>
-                <p>BEDS = """+str(BEDS)+"""</p>
-                <p>LABEL1 = """+LABEL1+"""</p>
-                <p>LABEL2 = """+LABEL2+"""</p>
-                <p>BAM1 = """+str(BAM1)+"""</p>
-                <p>BAM2 = """+str(BAM2)+"""</p>
-                <p>SINGLEMOTIF = """+str(SINGLEMOTIF)+"""</p>
-                <p>MOTIF_HITS = """+str(MOTIF_HITS)+"""</p>
-                <p>OUTPUT = """+OUTPUT+"""
+                <p>BEDS = """+str(config.BEDS)+"""</p>
+                <p>LABEL1 = """+config.LABEL1+"""</p>
+                <p>LABEL2 = """+config.LABEL2+"""</p>
+                <p>BAM1 = """+str(config.BAM1)+"""</p>
+                <p>BAM2 = """+str(config.BAM2)+"""</p>
+                <p>SINGLEMOTIF = """+str(config.SINGLEMOTIF)+"""</p>
+                <p>MOTIF_HITS = """+str(confgi.MOTIF_HITS)+"""</p>
+                <p>OUTPUT = """+config.OUTPUT+"""
             </body>""")
 
     #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
@@ -65,7 +65,7 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             except IndexError:
                 PREV_MOTIF = negativelist[len(negativelist)]
         # if PVAL < FDRCUTOFF:
-        outfile = open(outputdir + 'plots/' + MOTIF_FILE + '.results.html','w')
+        outfile = open(config.OUTPUTDIR + 'plots/' + MOTIF_FILE + '.results.html','w')
         outfile.write("""<!DOCTYPE html>
         <html>
         <head>
@@ -153,7 +153,7 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
         outfile.close()
         PREV_MOTIF = MOTIF_FILE
 
-    outfile = open(outputdir+'results.html','w')
+    outfile = open(config.OUTPUTDIR+'results.html','w')
     outfile.write("""<!DOCTYPE html>
     <html>
     <head>
@@ -178,7 +178,7 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     </head>
     <body style="width: 1300px; overflow:scroll">
 
-    <h1>TFEA Results """ +LABEL1+ """ vs. """ +LABEL2+ """</h1>
+    <h1>TFEA Results """ +config.LABEL1+ """ vs. """ +config.LABEL2+ """</h1>
     <div style="width: 1300px">
         <div style="float: left; width: 600px; padding-bottom: 50px">
             <img src="./plots/TFEA_NES_MA_Plot.png" alt="NES MA-Plot">
@@ -188,7 +188,7 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
         </div>
         <div id="Summary of Variables Used" style="float: right; width: 600px; padding-bottom: 315px">
             <p><a href="./Summary.html">Full Summary of Variables Used</a></p>
-            <p><b>FDR < """ + str(FDRCUTOFF) + """</b></p>
+            <p><b>FDR < """ + str(config.FDRCUTOFF) + """</b></p>
             <table>
                 <tr>
                     <th>Module</th>
@@ -197,22 +197,22 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 </tr>
                 <tr>
                     <td>COMBINE</td>
-                    <td>"""+str(COMBINE)+"""</td>
+                    <td>"""+str(config.COMBINE)+"""</td>
                     <td>"""+str(datetime.timedelta(seconds=int(COMBINEtime)))+"""</td>
                 </tr>
                 <tr>
                     <td>COUNT</td>
-                    <td>"""+str(COUNT)+"""</td>
+                    <td>"""+str(config.COUNT)+"""</td>
                     <td>"""+str(datetime.timedelta(seconds=int(COUNTtime)))+"""</td>
                 </tr>
                 <tr>
                     <td>DESEQ</td>
-                    <td>"""+str(DESEQ)+"""</td>
+                    <td>"""+str(config.DESEQ)+"""</td>
                     <td>"""+str(datetime.timedelta(seconds=int(DESEQtime)))+"""</td>
                 </tr>
                 <tr>
                     <td>CALCULATE</td>
-                    <td>"""+str(CALCULATE)+"""</td>
+                    <td>"""+str(config.CALCULATE)+"""</td>
                     <td>"""+str(datetime.timedelta(seconds=int(CALCULATEtime)))+"""</td>
                 </tr>
             </table>   
@@ -309,9 +309,9 @@ def run(TFresults,outputdir,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 
     outfile.close()
 
-def single_motif(results,outputdir):
+def single_motif(results):
     MOTIF_FILE,ES,NES,PVAL,POS,NEG = results
-    outfile = open(outputdir + MOTIF_FILE + '.results.html','w')
+    outfile = open(config.OUTPUTDIR + MOTIF_FILE + '.results.html','w')
     outfile.write("""<!DOCTYPE html>
         <html>
         <head>
@@ -386,10 +386,3 @@ def single_motif(results,outputdir):
         </body>
         </html>""")
     outfile.close()
-
-
-if __name__ == "__main__":
-    TFresults = [['HO_P53_HUMAN.H10MO.B.bed',0.182143716966,6.22622338072,7.43595407471e-10,0.0]]
-    filedir = './'
-    figuredir = './'
-    run(filedir,TFresults,figuredir)
