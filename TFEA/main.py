@@ -24,11 +24,11 @@ def run():
     configfile = parser.parse_args().config
 
     if sbatch == False:
-        output,filedir,figuredir,e_and_o = make_out_directories(True)
+        output,filedir,figuredir,e_and_o = make_out_directories(True,configfile)
     elif str(sbatch) == 'SUBMITTED':
-        output,filedir,figuredir,e_and_o = make_out_directories(False)
+        output,filedir,figuredir,e_and_o = make_out_directories(False,configfile)
     else:
-        output,filedir,figuredir,e_and_o = make_out_directories(True)
+        output,filedir,figuredir,e_and_o = make_out_directories(True,configfile)
         scriptdir = parent_dir(homedir) + '/scripts/'
         script = scriptdir + 'run_main.sbatch'
         email = str(sbatch)
@@ -127,10 +127,9 @@ def run():
     print "done"
 
 
-def make_out_directories(dirs):
-    import config
+def make_out_directories(dirs,configfile):
     #Output directory
-    output = config.OUTPUT
+    output = configfile['DATA']['OUTPUT']
     if dirs:
         if not os.path.isdir(output + 'TFEA_output-0/'):
             output = output + 'TFEA_output-0/'
