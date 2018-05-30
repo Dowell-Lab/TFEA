@@ -13,7 +13,7 @@ import HTSeq as hts
 import numpy as np
 from multiprocessing import Pool
 import multiprocessing as mp
-from config import *
+import config
 
 def get_millions_mapped(bams):
     millions_mapped = list()
@@ -35,10 +35,10 @@ def get_millions_mapped_pool(bam):
     return millions_mapped/1000000.0
 
 def samtools_flagstat(args):
-    bam,filedir = args
+    bam = args
     filename = bam.split('/')[-1]
-    os.system("samtools flagstat " + bam + " > " + filedir + filename + ".flagstat")
-    with open(filedir+filename+".flagstat") as F:
+    os.system("samtools flagstat " + bam + " > " + config.FILEDIR + filename + ".flagstat")
+    with open(config.FILEDIR+filename+".flagstat") as F:
         lines = F.readlines()
         return float(lines[4].strip('\n').split(' ')[0])/1000000.0
 

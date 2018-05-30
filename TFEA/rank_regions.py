@@ -2,12 +2,13 @@ __author__ = 'Jonathan Rubin'
 
 import math
 import os
+from config import FILEDIR,DESEQ_FILE
 
-def deseqfile(DESEQFILE,filedir):
+def deseqfile():
     #Parse a deseq file and obtain the exact middle of each region (for motif distance calc later) and pvalue (to rank)
     up = list()
     down = list()
-    with open(DESEQFILE) as F:
+    with open(DESEQ_FILE) as F:
         F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
@@ -31,7 +32,7 @@ def deseqfile(DESEQFILE,filedir):
                     up.append((chrom,start,stop,pval,str(fc)))
 
     #Save ranked regions in a bed file (pvalue included)
-    outfile = open(filedir + "ranked_file.bed",'w')
+    outfile = open(FILEDIR + "ranked_file.bed",'w')
     r=1
     for region in sorted(up, key=lambda x: x[3]):
         outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
@@ -42,8 +43,8 @@ def deseqfile(DESEQFILE,filedir):
     outfile.close()
 
     #Get center base for each region
-    outfile = open(filedir+"ranked_file.center.bed",'w')
-    with open(filedir + "ranked_file.bed") as F:
+    outfile = open(FILEDIR+"ranked_file.center.bed",'w')
+    with open(FILEDIR + "ranked_file.bed") as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
@@ -52,7 +53,7 @@ def deseqfile(DESEQFILE,filedir):
     outfile.close()
 
 
-    os.system("sort -k1,1 -k2,2n " + filedir+"ranked_file.center.bed" + " > " + filedir + "ranked_file.center.sorted.bed")
+    os.system("sort -k1,1 -k2,2n " + FILEDIR+"ranked_file.center.bed" + " > " + FILEDIR + "ranked_file.center.sorted.bed")
     # os.system("rm " + filedir + "combined_input.bed")
     # os.system("rm " + filedir + "combined_input.merge.bed")
     # os.system("rm " + filedir + "combined_input.sorted.bed")

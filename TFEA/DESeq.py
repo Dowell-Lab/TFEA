@@ -1,13 +1,14 @@
 __author__ = 'Jonathan Rubin'
 
 import os
+from config import LABEL1, LABEL2, BAM1, BAM2, FILEDIR, COUNT_FILE
 
-def write_script(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file):
+def write_script():
     if (len(BAM1) > 1 and len(BAM2) > 1):
-        outfile = open(filedir + 'DESeq.R','w')
-        outfile.write('sink("'+filedir+'DESeq.Rout")\n')
+        outfile = open(FILEDIR + 'DESeq.R','w')
+        outfile.write('sink("'+FILEDIR+'DESeq.Rout")\n')
         outfile.write('library("DESeq2")\n')
-        outfile.write('data <- read.delim("'+count_file+'", sep="\t", header=TRUE)\n')
+        outfile.write('data <- read.delim("'+COUNT_FILE+'", sep="\t", header=TRUE)\n')
         outfile.write('countsTable <- subset(data, select=c('+', '.join([str(i) for i in range(5,5+len(BAM1)+len(BAM2))])+'))\n')
         outfile.write('rownames(countsTable) <- data$region\n')
         outfile.write('conds <- as.data.frame(c(' + ', '.join(['"'+LABEL1+'"']*len(BAM1)) + ', ' + ', '.join(['"'+LABEL2+'"']*len(BAM2)) + '))\n')
@@ -18,13 +19,13 @@ def write_script(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file):
         outfile.write('resShrink <- lfcShrink(dds, res = res1, contrast = c("treatment","'+LABEL2+'","'+LABEL1+'"))\n')
         outfile.write('resShrink$fc <- 2^(resShrink$log2FoldChange)\n')
         outfile.write('res <- resShrink[c(1:3,7,4:6)]\n')
-        outfile.write('write.table(res, file = "'+filedir+'DESeq.res.txt", append = FALSE, sep= "\t" )\n')
+        outfile.write('write.table(res, file = "'+FILEDIR+'DESeq.res.txt", append = FALSE, sep= "\t" )\n')
         outfile.write('sink()')
     else:
-        outfile = open(filedir + 'DESeq.R','w')
-        outfile.write('sink("'+filedir+'DESeq.Rout")\n')
+        outfile = open(FILEDIR + 'DESeq.R','w')
+        outfile.write('sink("'+FILEDIR+'DESeq.Rout")\n')
         outfile.write('library("DESeq")\n')
-        outfile.write('data <- read.delim("'+count_file+'", sep="\t", header=TRUE)\n')
+        outfile.write('data <- read.delim("'+COUNT_FILE+'", sep="\t", header=TRUE)\n')
         outfile.write('countsTable <- subset(data, select=c('+', '.join([str(i) for i in range(5,5+len(BAM1)+len(BAM2))])+'))\n')
         outfile.write('rownames(countsTable) <- data$region\n')
         outfile.write('conds <- c(' + ', '.join(['"'+LABEL1+'"']*len(BAM1)) + ', ' + ', '.join(['"'+LABEL2+'"']*len(BAM2)) + ')\n')
@@ -34,10 +35,10 @@ def write_script(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file):
         outfile.write('cds <- estimateDispersions( cds ,method="blind", sharingMode="fit-only")\n') ##without replicates                        
         outfile.write('res <- nbinomTest( cds, "'+LABEL1+'", "'+LABEL2+'" )\n')
         outfile.write('rownames(res) <- res$id\n')                      
-        outfile.write('write.table(res, file = "'+filedir+'DESeq.res.txt", append = FALSE, sep= "\t" )\n')
+        outfile.write('write.table(res, file = "'+FILEDIR+'DESeq.res.txt", append = FALSE, sep= "\t" )\n')
         outfile.write('sink()')
 
-def run(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file):
-    write_script(LABEL1,LABEL2,BAM1,BAM2,filedir,count_file)
-    os.system("R < " + filedir + "DESeq.R --no-save")
+def run():
+    write_script()
+    os.system("R < " + FILEDIR + "DESeq.R --no-save")
 

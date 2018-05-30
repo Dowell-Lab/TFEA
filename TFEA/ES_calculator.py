@@ -30,11 +30,12 @@ def parent_dir(directory):
 def run(args):
     MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos,filedir = args
     ranked_center_distance_file = motif_distance.run(ranked_center_file,config.MOTIF_HITS+MOTIF_FILE)
-    if FIMO:
-        ranked_fullregions_file = combine_bed.get_regions(ranked_center_file,filedir)
-        ranked_fasta_file = combine_bed.getfasta(config.GENOMEFASTA,ranked_fullregions_file,filedir)
-        background_file = combine_bed.get_bgfile(ranked_fasta_file,filedir)
-        meme.fimo(background_file,config.SINGLEMOTIF,config.MOTIFDATABASE,ranked_fasta_file,filedir)
+    if config.FIMO:
+        ranked_fullregions_file = combine_bed.get_regions()
+        ranked_fasta_file = combine_bed.getfasta(ranked_fullregions_file)
+        background_file = combine_bed.get_bgfile(ranked_fasta_file)
+        meme.fimo(background_file,config.SINGLEMOTIF,ranked_fasta_file)
+        combine_bed.meme2images(config.SINGLEMOTIF)
 
     #Initiate some variables
     ES = list()

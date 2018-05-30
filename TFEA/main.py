@@ -22,7 +22,6 @@ def run():
         sys.exit(1)
     sbatch = parser.parse_args().sbatch
     configfile = parser.parse_args().config
-    config_parser.run(homedir+'/',str(configfile))
 
     if sbatch == False:
         output,filedir,figuredir,e_and_o = make_out_directories(True)
@@ -37,6 +36,12 @@ def run():
         sys.exit("TFEA has been submitted using an sbatch script, use qstat to check its progress.")
 
 
+
+    #Run the config_parser script which will create variables for all folders and paths to use throughout TFEA
+    config_parser.run(homedir+'/',str(configfile),output,filedir,figuredir)
+
+
+    #Import scripts from this package
     import combine_bed
     import count_reads
     import rank_regions
@@ -47,32 +52,12 @@ def run():
     import config
     import meta_eRNA
 
-    #Path to count file. Can be changed if using your own count file. Generated in count_reads module
-    count_file = filedir + "count_file.header.bed"
-
-    #Path to DESeq file. Can be changed if using your own DESeq file. Generated in DESeq module
-    deseq_file = filedir + "DESeq.res.txt"
-
-    #Path to ranked file. Can be changed if using your own ranked file. Generated in rank_regions module
-    ranked_file = filedir + "ranked_file.bed"
-
-    #Path to ranked centered file. Just a bed file with single basepair coordinates for the exact middle of each bed region
-    ranked_center_file = filedir + "ranked_file.center.bed"
-
-    #Path to the centered ranked file with measures of distance to the motif
-    ranked_center_distance_file = filedir + "ranked_file.center.sorted.distance.bed"
-
-    #Path to a directory full of motif logos for all TFs in the HOCOMOCO database (v10)
-    logos = parent_dir(homedir) + '/human_logo/'
-
-    #Path to mouse directory with motif logos in HOCOMOCO v10
-    ##logos = parent_dir(homedir) + '/mouse_logo/'
 
 
     #This module takes the input list of BED files, concatenates them, and then merges them via bedtools.
     COMBINEtime = time.time()
     if config.COMBINE:
-        BED = combine_bed.run(config.BEDS,filedir)
+        BED = combine_bed.run()
     else:
         BED = config.BEDS[0]
     COMBINEtime = time.time()-COMBINEtime 
@@ -81,7 +66,7 @@ def run():
     COUNTtime = time.time()
     if config.COUNT:
         print "Counting reads in regions..."
-        count_reads.run(BED,config.BAM1,config.BAM2,config.LABEL1,config.LABEL2,filedir)
+        count_reads.run(BED)
         print "done"
     COUNTtime = time.time()-COUNTtime
 
@@ -89,26 +74,21 @@ def run():
     DESEQtime = time.time()
     if config.DESEQ:
         print "Running DESeq..."
-        DESeq.run(config.LABEL1,config.LABEL2,config.BAM1,config.BAM2,filedir,count_file)
-        rank_regions.deseqfile(deseq_file,filedir)
+        DESeq.run()
+        rank_regions.deseqfile()
         print "done"
     DESEQtime = time.time()-DESEQtime
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
     if config.CALCULATE:
-        # p = Pool(mp.cpu_count())
-        # millions_mapped = p.map(meta_eRNA.get_millions_mapped_pool,config.BAM1+config.BAM2)
-        # millions_mapped = meta_eRNA.get_millions_mapped(config.BAM1+config.BAM2)
+        cpus = mp.cpu_count()
+        if cpus > 64:
+            cpus = 64
 
-        p = Pool(64)
-        args = [(x,filedir) for x in config.BAM1+config.BAM2]
+        p = Pool(cpus)
+        args = [(x) for x in config.BAM1+config.BAM2]
         millions_mapped = p.map(meta_eRNA.samtools_flagstat,args)
 
-        # millions_mapped = list()
-        # for bam in config.BAM1+config.BAM2:
-        #     millions_mapped.append(meta_eRNA.samtools_flagstat(bam,filedir))
-
-        print millions_mapped
         print "Finding motif hits in regions..."
         if config.SINGLEMOTIF == False:
             TFresults = list()
@@ -117,9 +97,6 @@ def run():
             if config.POOL:
                 a = time.time()
                 args = [(x,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos) for x in os.listdir(config.MOTIF_HITS)]
-                cpus = mp.cpu_count()
-                if cpus > 64:
-                    cpus = 64
                 p = Pool(cpus)
                 TFresults = p.map(ES_calculator.run,args)
                 CALCULATEtime += time.time() - a
@@ -127,7 +104,6 @@ def run():
             else:
                 for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
                     a = time.time()
-                    # motif_distance.run(ranked_center_file,config.MOTIF_HITS+MOTIF_FILE)
 
                     #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                     #the HOCOMOCO database.
@@ -146,7 +122,6 @@ def run():
 
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
         else:
-            # motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
             results = ES_calculator.run((config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos,filedir))
             create_html.single_motif(results,output)
     print "done"
