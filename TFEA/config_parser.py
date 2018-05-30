@@ -2,14 +2,12 @@ __author__ = 'Jonathan Rubin'
 
 import configparser
 
-def run(srcdirectory,configfile,output,filedir,figuredir):
-    config = configparser.ConfigParser(interpolation = configparser.ExtendedInterpolation())
-    # print config.BasicInterpolation()
-    config.read(configfile)
+def run(srcdirectory,config,configfile,output,filedir,figuredir):
     outfile = open(srcdirectory+'config.py','w')
     for key in config:
         for item in config[key]:
             outfile.write(item.upper()+'='+config[key][item]+'\n')
+
     outfile.write('OUTPUT='+output+'\n')
     outfile.write('FILEDIR='+filedir+'\n')
     outfile.write('FIGUREDIR='+figuredir+'\n')

@@ -22,13 +22,15 @@ def run():
         sys.exit(1)
     sbatch = parser.parse_args().sbatch
     configfile = parser.parse_args().config
+    config = configparser.ConfigParser(interpolation = configparser.ExtendedInterpolation())
+    config.read(configfile)
 
     if sbatch == False:
-        output,filedir,figuredir,e_and_o = make_out_directories(True,configfile)
+        output,filedir,figuredir,e_and_o = make_out_directories(True,config)
     elif str(sbatch) == 'SUBMITTED':
-        output,filedir,figuredir,e_and_o = make_out_directories(False,configfile)
+        output,filedir,figuredir,e_and_o = make_out_directories(False,config)
     else:
-        output,filedir,figuredir,e_and_o = make_out_directories(True,configfile)
+        output,filedir,figuredir,e_and_o = make_out_directories(True,config)
         scriptdir = parent_dir(homedir) + '/scripts/'
         script = scriptdir + 'run_main.sbatch'
         email = str(sbatch)
@@ -38,7 +40,7 @@ def run():
 
 
     #Run the config_parser script which will create variables for all folders and paths to use throughout TFEA
-    config_parser.run(homedir+'/',str(configfile),output,filedir,figuredir)
+    config_parser.run(homedir+'/',str(configfile),config,output,filedir,figuredir)
 
 
     #Import scripts from this package
@@ -127,9 +129,9 @@ def run():
     print "done"
 
 
-def make_out_directories(dirs,configfile):
+def make_out_directories(dirs,config):
     #Output directory
-    output = configfile['DATA']['OUTPUT']
+    output = config['DATA']['OUTPUT']
     if dirs:
         if not os.path.isdir(output + 'TFEA_output-0/'):
             output = output + 'TFEA_output-0/'
