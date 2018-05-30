@@ -15,13 +15,13 @@ import time
 from multiprocessing import Pool
 # import HTSeq as hts
 #import config
-from config import *
+import config
 import motif_distance
 import meta_eRNA
 import create_html
 import combine_bed
 import meme
-import __init__
+import main
 
 def parent_dir(directory):
     pathlist = directory.split('/')
@@ -30,13 +30,13 @@ def parent_dir(directory):
     return newdir
 
 def run(args):
-    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos = args
-    ranked_center_distance_file = motif_distance.run(ranked_center_file,MOTIF_HITS+MOTIF_FILE)
+    MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos,filedir = args
+    ranked_center_distance_file = motif_distance.run(ranked_center_file,config.MOTIF_HITS+MOTIF_FILE)
     if FIMO:
-        ranked_fullregions_file = combine_bed.get_regions(ranked_center_file,__init__.filedir)
-        ranked_fasta_file = combine_bed.getfasta(GENOMEFASTA,ranked_fullregions_file,__init__.filedir)
-        background_file = combine_bed.get_bgfile(ranked_fasta_file,__init__.filedir)
-        meme.fimo(background_file,SINGLEMOTIF,MOTIFDATABASE,ranked_fasta_file,__init__.filedir)
+        ranked_fullregions_file = combine_bed.get_regions(ranked_center_file,filedir)
+        ranked_fasta_file = combine_bed.getfasta(config.GENOMEFASTA,ranked_fullregions_file,filedir)
+        background_file = combine_bed.get_bgfile(ranked_fasta_file,filedir)
+        meme.fimo(background_file,config.SINGLEMOTIF,config.MOTIFDATABASE,ranked_fasta_file,filedir)
 
     #Initiate some variables
     H = 1500.0
@@ -106,7 +106,7 @@ def run(args):
                 scatterx.append(rank)
                 scattery.append(distance)
                 if fc > 1:
-                    if pval < PVALCUTOFF:
+                    if pval < config.PVALCUTOFF:
                     	##updistancehist.append(distance)
                     	upsigscatterx.append(rank)
 		    ##else:
@@ -117,7 +117,7 @@ def run(args):
                         logpval.append(500.0)
                     
                 else:
-                    if pval < PVALCUTOFF:
+                    if pval < config.PVALCUTOFF:
                     	##downdistancehist.append(distance)
                     	downsigscatterx.append(rank)
 		    ##else:
@@ -136,7 +136,7 @@ def run(args):
                 scatterx.append(rank)
                 scattery.append(distance)
                 if fc > 1:
-                    if pval < PVALCUTOFF:
+                    if pval < config.PVALCUTOFF:
                         ##updistancehist.append(distance)
                         upsigscatterx.append(rank)
                     ##else:
@@ -146,7 +146,7 @@ def run(args):
                     except ValueError:
                         logpval.append(500.0)
                 else:
-                    if pval < PVALCUTOFF:
+                    if pval < config.PVALCUTOFF:
                         ##downdistancehist.append(distance)
                         downsigscatterx.append(rank)
                     ##else:
@@ -248,7 +248,7 @@ def run(args):
     ax1 = plt.subplot(gs[1])
     ax1.scatter(xvals,scattery,edgecolor="",color="black",s=10,alpha=0.25)
     ax1.axhline(h, color='red',alpha=0.25)
-    if DRAWPVALCUTOFF != False:
+    if config.DRAWPVALCUTOFF != False:
         ax1.scatter(upsigscatterx,updistancehist2,edgecolor="",color="green",s=10,alpha=0.5)
         ax1.scatter(downsigscatterx,downdistancehist2,edgecolor="",color="blue",s=10,alpha=0.5)
         # ax1.axvline(PVALCUTOFF,linestyle='dashed')
@@ -256,9 +256,9 @@ def run(args):
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax1.set_xlim(limits)
-    ax1.set_ylim([0,LARGEWINDOW])
+    ax1.set_ylim([0,config.LARGEWINDOW])
     # ax1.yaxis.set_ticks([0,H])
-    plt.yticks([0,LARGEWINDOW],['0',str(float(LARGEWINDOW)/1000.0)])
+    plt.yticks([0,config.LARGEWINDOW],['0',str(float(config.LARGEWINDOW)/1000.0)])
     ax1.set_ylabel('Distance (kb)', fontsize=10)
     ax2 = plt.subplot(gs[2])
     ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
@@ -347,13 +347,13 @@ def run(args):
     posprofile_down1, negprofile_down1, posprofile_down2, negprofile_down2 = meta_eRNA.run3(downregions,millions_mapped)
     F = plt.figure(figsize=(15.5,6))
     gs = gridspec.GridSpec(2, 3, height_ratios=[3, 1])
-    xvals = range(-int(LARGEWINDOW),int(LARGEWINDOW))
+    xvals = range(-int(config.LARGEWINDOW),int(config.LARGEWINDOW))
 
     #Plot meta_eRNA for up regions
     ax0 = plt.subplot(gs[0,0])
-    line1, = ax0.plot(xvals,posprofile_up1,color='blue',label=LABEL1)
+    line1, = ax0.plot(xvals,posprofile_up1,color='blue',label=config.LABEL1)
     ax0.plot(xvals,negprofile_up1,color='blue')
-    line2, = ax0.plot(xvals,posprofile_up2,color='red',label=LABEL2)
+    line2, = ax0.plot(xvals,posprofile_up2,color='red',label=config.LABEL2)
     ax0.plot(xvals,negprofile_up2,color='red')
     ax0.axvline(0,color='black',alpha=0.25)
     ax0.axhline(0,color='black',linestyle='dashed')
@@ -381,9 +381,9 @@ def run(args):
 
     #Plot meta_eRNA for middle regions
     ax3 = plt.subplot(gs[0,1])
-    line1, = ax3.plot(xvals,posprofile_middle1,color='blue',label=LABEL1)
+    line1, = ax3.plot(xvals,posprofile_middle1,color='blue',label=config.LABEL1)
     ax3.plot(xvals,negprofile_middle1,color='blue')
-    line2, = ax3.plot(xvals,posprofile_middle2,color='red',label=LABEL2)
+    line2, = ax3.plot(xvals,posprofile_middle2,color='red',label=config.LABEL2)
     ax3.plot(xvals,negprofile_middle2,color='red')
     ax3.axvline(0,color='black',alpha=0.25)
     ax3.axhline(0,color='black',linestyle='dashed')
@@ -411,9 +411,9 @@ def run(args):
 
     #Plot meta_eRNA for down regions
     ax5 = plt.subplot(gs[0,2])
-    line1, = ax5.plot(xvals,posprofile_down1,color='blue',label=LABEL1)
+    line1, = ax5.plot(xvals,posprofile_down1,color='blue',label=config.LABEL1)
     ax5.plot(xvals,negprofile_down1,color='blue')
-    line2, = ax5.plot(xvals,posprofile_down2,color='red',label=LABEL2)
+    line2, = ax5.plot(xvals,posprofile_down2,color='red',label=config.LABEL2)
     ax5.plot(xvals,negprofile_down2,color='red')
     ax5.axvline(0,color='black',alpha=0.25)
     ax5.axhline(0,color='black',linestyle='dashed')
@@ -499,7 +499,7 @@ def FDR(TFresults,NESlist,figuredir):
         pvals.append(PVAL)
         total = POS+NEG
         #Using classical FDR calculation ((pvalue*(# hypotheses tested))/rank of p-value)
-        FDR = ((float(i)+1.0)/float(len(TFresults)))*FDRCUTOFF
+        FDR = ((float(i)+1.0)/float(len(TFresults)))*config.FDRCUTOFF
         # FDR = (PVAL*len(TFresults))/float(i+1.0)
         TFresults[i].append(FDR)
         FDRlist.append(FDR)

@@ -131,7 +131,7 @@ def run():
 
                     #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                     #the HOCOMOCO database.
-                    results = ES_calculator.run((MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos))
+                    results = ES_calculator.run((MOTIF_FILE,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos,filedir))
                     if results != "no hits":
                         TFresults.append(results)
                         NESlist.append(results[2])
@@ -147,7 +147,7 @@ def run():
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to accurately determine an FDR for the given motif.
         else:
             # motif_distance.run(ranked_center_file,config.MOTIF_HITS+config.SINGLEMOTIF)
-            results = ES_calculator.run((config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos))
+            results = ES_calculator.run((config.SINGLEMOTIF,ranked_center_distance_file,ranked_center_file,figuredir,millions_mapped,logos,filedir))
             create_html.single_motif(results,output)
     print "done"
 
