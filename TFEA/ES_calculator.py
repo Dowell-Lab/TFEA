@@ -34,8 +34,8 @@ def run(args):
         ranked_fullregions_file = combine_bed.get_regions()
         ranked_fasta_file = combine_bed.getfasta(ranked_fullregions_file)
         background_file = combine_bed.get_bgfile(ranked_fasta_file)
-        meme.fimo(background_file,config.SINGLEMOTIF,ranked_fasta_file)
-        combine_bed.meme2images(config.SINGLEMOTIF)
+        meme.fimo(background_file,config.SINGLEMOTIF.strip('.bed'),ranked_fasta_file)
+        meme.meme2images(config.SINGLEMOTIF)
 
     #Initiate some variables
     ES = list()
@@ -169,7 +169,7 @@ def run(args):
     actualES = max(ES,key=abs)
 
     #To get NES, first simulate 1000 permuations of region ranks
-    simES = simulate(H,distances,distance_sum,neg)
+    simES = simulate(distances,distance_sum,neg)
 
     #NES is the actualES divided by the mean ES of all permutations with the same sign as actualES
     #p-value is caluclated with the theoretical normal distribution
@@ -219,7 +219,7 @@ def run(args):
     ax0.set_xlim(limits)
     ax1 = plt.subplot(gs[1])
     ax1.scatter(xvals,scattery,edgecolor="",color="black",s=10,alpha=0.25)
-    ax1.axhline(h, color='red',alpha=0.25)
+    ax1.axhline(config.SMALLWINDOW, color='red',alpha=0.25)
     if config.DRAWPVALCUTOFF != False:
         ax1.scatter(upsigscatterx,updistancehist2,edgecolor="",color="green",s=10,alpha=0.5)
         ax1.scatter(downsigscatterx,downdistancehist2,edgecolor="",color="blue",s=10,alpha=0.5)
@@ -416,7 +416,7 @@ def run(args):
 
     return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,positives,negatives]
 
-def simulate(H,distances,distance_sum,neg,N=1000):
+def simulate(distances,distance_sum,neg,N=1000):
     #Simulate 1000 permuations of region ranks
     simES = list()
     for i in range(N):
@@ -530,7 +530,6 @@ def FDR(TFresults):
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     binwidth = 1.0/100.0
-    print np.arange(0,1.0+binwidth,binwidth)
     ax.hist(pvals,bins=np.arange(0,1.0+binwidth,binwidth),color='green')
     ax.set_title("TFEA P-value Histogram",fontsize=14)
     ax.set_xlabel("P-value",fontsize=14)

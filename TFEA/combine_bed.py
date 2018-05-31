@@ -13,7 +13,7 @@ def run():
 
 #5/23/18: This function returns a fasta file from a bed input
 def getfasta(bedfile):
-    os.system("bedtools getfasta -name -fi "+GENOMEFASTA+" -bed "+bedfile+" > combined_input.merge.fa")
+    os.system("bedtools getfasta -name -fi "+GENOMEFASTA+" -bed "+bedfile+" -fo " + FILEDIR + "combined_input.merge.fa")
 
     return FILEDIR + "combined_input.merge.fa"
 
@@ -29,8 +29,8 @@ def get_regions():
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
-            start = str(int(start)-LARGEWINDOW)
-            stop = str(int(stop)+LARGEWINDOW)
+            start = str(int(start)-int(LARGEWINDOW))
+            stop = str(int(stop)+int(LARGEWINDOW))
             pval,fc,rank = line[3:]
             name = ','.join([pval,fc,rank])
             outfile.write('\t'.join([chrom,start,stop,name]) + '\n')
