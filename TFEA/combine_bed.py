@@ -13,9 +13,9 @@ def run():
 
 #5/23/18: This function returns a fasta file from a bed input
 def getfasta(bedfile):
-    os.system("bedtools getfasta -name -fi "+GENOMEFASTA+" -bed "+bedfile+" -fo " + FILEDIR + "combined_input.merge.fa")
+    os.system("bedtools getfasta -name -fi "+GENOMEFASTA+" -bed "+bedfile+" -fo " + FILEDIR + "ranked_file.fullregions.fa")
 
-    return FILEDIR + "combined_input.merge.fa"
+    return FILEDIR + "ranked_file.fullregions.fa"
 
 #5/23/18: This function outputs a zero order markov background model file (is text file right?) for use with fimo later on
 def get_bgfile(fastafile):
@@ -32,7 +32,7 @@ def get_regions():
             start = str(int(start)-int(LARGEWINDOW))
             stop = str(int(stop)+int(LARGEWINDOW))
             pval,fc,rank = line[3:]
-            name = ','.join([pval,fc,rank])
+            name = ','.join([rank,pval,fc])
             outfile.write('\t'.join([chrom,start,stop,name]) + '\n')
 
     return FILEDIR + 'ranked_file.fullregions.bed'

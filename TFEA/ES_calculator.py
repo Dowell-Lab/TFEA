@@ -29,13 +29,15 @@ def parent_dir(directory):
 
 def run(args):
     MOTIF_FILE,millions_mapped = args
-    ranked_center_distance_file = motif_distance.run(config.RANKED_CENTER_FILE,config.MOTIF_HITS+MOTIF_FILE)
     if config.FIMO:
         ranked_fullregions_file = combine_bed.get_regions()
         ranked_fasta_file = combine_bed.getfasta(ranked_fullregions_file)
         background_file = combine_bed.get_bgfile(ranked_fasta_file)
-        meme.fimo(background_file,config.SINGLEMOTIF.strip('.bed'),ranked_fasta_file)
-        meme.meme2images(config.SINGLEMOTIF)
+        fimo_file = meme.fimo(background_file,MOTIF_FILE,ranked_fasta_file)
+        meme.meme2images(MOTIF_FILE)
+        ranked_center_distance_file = motif_distance.fimo_distance(fimo_file,MOTIF_FILE)
+    else:
+        ranked_center_distance_file = motif_distance.run(config.RANKED_CENTER_FILE,config.MOTIF_HITS+MOTIF_FILE)
 
     #Initiate some variables
     ES = list()
@@ -101,7 +103,7 @@ def run(args):
                 distance_sum += value
                 scatterx.append(rank)
                 scattery.append(distance)
-                if fc > 1:
+                if fc > 0:
                     if pval < config.PVALCUTOFF:
                     	upsigscatterx.append(rank)
                     try:
@@ -124,7 +126,7 @@ def run(args):
                 negatives += 1.0
                 scatterx.append(rank)
                 scattery.append(distance)
-                if fc > 1:
+                if fc > 0:
                     if pval < config.PVALCUTOFF:
                         upsigscatterx.append(rank)
                     try:
@@ -341,7 +343,7 @@ def run(args):
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
     ax1.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
-    ax1.set_xlim(xvals)
+    ax1.set_xlim(-config.LARGEWINDOW,config.LARGEWINDOW)
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     ax1.set_xlabel('Distance to eRNA Origin (bp)')
@@ -371,7 +373,7 @@ def run(args):
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
     ax4.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
-    ax4.set_xlim(xvals)
+    ax4.set_xlim(-config.LARGEWINDOW,config.LARGEWINDOW)
     ax4.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
     ax4.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     ax4.set_xlabel('Distance to eRNA Origin (bp)')
@@ -402,7 +404,7 @@ def run(args):
     m = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors = [m.to_rgba(c) for c in yvals] 
     ax6.bar(edges,[1 for i in range(len(xvals))], color=colors, width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
-    ax6.set_xlim(xvals)
+    ax6.set_xlim(-config.LARGEWINDOW,config.LARGEWINDOW)
     ax6.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
     ax6.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     ax6.set_xlabel('Distance to eRNA Origin (bp)')
