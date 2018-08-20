@@ -141,14 +141,14 @@ def make_out_directories(dirs,config):
             outputfolders = list()
             for folder in os.listdir(output):
                 if outfoldername in folder:
-                    outputfolders.append(int(folder.split('-')[1]))
+                    outputfolders.append(int(folder.split('_')[-1]))
             output = output + outfoldername + str(max(outputfolders)+1) + '/'
             os.makedirs(output)
     else:
         outputfolders = list()
         for folder in os.listdir(output):
             if outfoldername in folder:
-                outputfolders.append(int(folder.split('-')[1]))
+                outputfolders.append(int(folder.split('_')[-1]))
         output = output + outfoldername + str(max(outputfolders)) + '/' 
 
 
