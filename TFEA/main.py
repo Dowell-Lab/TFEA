@@ -130,23 +130,26 @@ def run():
 def make_out_directories(dirs,config):
     #Output directory
     output = config['DATA']['OUTPUT'].strip("'")
+    label1 = config['DATA']['LABEL1'].strip("'")
+    label2 = config['DATA']['LABEL2'].strip("'")
+    outfoldername = 'TFEA_'+label1+'-'+label2+'_'
     if dirs:
-        if not os.path.isdir(output + 'TFEA_output-0/'):
-            output = output + 'TFEA_output-0/'
+        if not os.path.isdir(output + outfoldername + '0/'):
+            output = output + outfoldername + '0/'
             os.makedirs(output)
         else:
             outputfolders = list()
             for folder in os.listdir(output):
-                if 'TFEA_output' in folder:
+                if outfoldername in folder:
                     outputfolders.append(int(folder.split('-')[1]))
-            output = output + 'TFEA_output-' + str(max(outputfolders)+1) + '/'
+            output = output + outfoldername + str(max(outputfolders)+1) + '/'
             os.makedirs(output)
     else:
         outputfolders = list()
         for folder in os.listdir(output):
-            if 'TFEA_output' in folder:
+            if outfoldername in folder:
                 outputfolders.append(int(folder.split('-')[1]))
-        output = output + 'TFEA_output-' + str(max(outputfolders)) + '/' 
+        output = output + outfoldername + str(max(outputfolders)) + '/' 
 
 
     #Temporary files will go in this directory

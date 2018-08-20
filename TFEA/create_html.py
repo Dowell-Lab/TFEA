@@ -89,6 +89,17 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
         width: 100%;
     }
 
+    .row {
+      display: flex; /* equal height of the children */
+      width: 100%;
+      padding-bottom: 50px
+    }
+
+    img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+
     td, th {
         border: 1px solid #dddddd;
         text-align: left;
@@ -100,15 +111,17 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     }
 </style>
 </head>
-<body style="width: 1300px">
-    <div style="float:left">
-        <a href="./"""+PREV_MOTIF+""".results.html">PREV</a>
-    </div>
-    <div style="float:right">
-        <a href="./"""+NEXT_MOTIF+""".results.html">NEXT</a>
-    </div>
-    <div style="text-align:center">
-        <a href="../results.html">ALL</a>
+<body style="width:1300px; margin:0 auto;">
+    <div class="row">
+        <div style="float:left">
+            <a href="./"""+PREV_MOTIF+""".results.html">PREV</a>
+        </div>
+        <div style="float:right">
+            <a href="./"""+NEXT_MOTIF+""".results.html">NEXT</a>
+        </div>
+        <div style="text-align:center">
+            <a href="../results.html">ALL</a>
+    <div class="row">
     </div>
         <h1>"""+MOTIF_FILE+""" Results</h1>
     <div>
@@ -136,18 +149,18 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             <img src="./"""+MOTIF_FILE+"""_enrichment_plot.png" alt="Enrichment Plot">
         </div>
     </div>
-    <div>
+    <!--<div class="row">
         <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
             <img src="./"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
         </div>
-    </div>
-    <div>
+    </div>-->
+    <div class="row">
         <div style="float: right; width: 600px">
             <p>Forward:</p>
-            <img src="./"""+MOTIF_FILE+"""_direct.png" alt="Forward Logo">
+            <img src="./"""+MOTIF_FILE.split('HO_')[-1]+"""_direct.png" alt="Forward Logo">
             <p></p>
             <p>Reverse:</p>
-            <img src="./"""+MOTIF_FILE+"""_revcomp.png" alt="Reverse Logo">
+            <img src="./"""+MOTIF_FILE.split('HO_')[-1]+"""_revcomp.png" alt="Reverse Logo">
         </div>
         <div style="float:left; width: 600px">
             <img src="./"""+MOTIF_FILE+"""_simulation_plot.png" alt="Simulation Plot">
@@ -177,6 +190,11 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
       padding-bottom: 50px
     }
 
+    img {
+        max-width: 100%;
+        max-height: 100%;
+    }
+
     td, th {
         border: 1px solid #dddddd;
         text-align: left;
@@ -188,7 +206,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     }
 </style>
 </head>
-<body style="width: 1300px">
+<body style="width:1300px; margin:0 auto;">
 
     <h1>TFEA Results """ +config.LABEL1+ """ vs. """ +config.LABEL2+ """</h1>
     <div class="row">
@@ -345,7 +363,7 @@ def single_motif(results):
         }
         </style>
         </head>
-        <body style="width: 1300px; overflow:scroll">
+        <body style="width:1300px; margin:0 auto;">
             <h1>"""+MOTIF_FILE+""" Results</h1>
         <div>
             <div style="float: middle; width: 1300px; overflow:scroll; padding-bottom:25px; padding-top:25px">
@@ -373,11 +391,11 @@ def single_motif(results):
                 <img src="./plots/"""+MOTIF_FILE+"""_enrichment_plot.png" alt="Enrichment Plot">
             </div>
         </div>
-        <div>
+        <!--<div>
             <div style="float: left; width 1250px; padding-bottom:50px; padding-top:50px">
                 <img src="./plots/"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
             </div>
-        </div>
+        </div>-->
         <div>
             <div style="float: right; width: 600px; overflow: scroll">
                 <p>Forward:</p>

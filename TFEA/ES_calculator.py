@@ -97,6 +97,7 @@ def run(args):
     distances = []
     ranks = []
     pval = []
+    pos = 0
     fc = []
     H = 1500.0
     h = 150.0
@@ -110,6 +111,8 @@ def run(args):
             fc.append(float(line[4]))
             ranks.append(rank)
             distances.append(distance)
+            if distance < H:
+                pos+=1
 
     #sort distances based on the ranks from TF bed file
     #and calculate the absolute distance
@@ -157,13 +160,13 @@ def run(args):
     except ValueError:
         logpval = sorted_pval
 
-    #Plot results for significant hits while list of simulated ES scores is in memory                              
-    if 'HO_' in MOTIF_FILE:
-        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + config.FIGUREDIR)
-        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + config.FIGUREDIR)
-    else:
-        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
-        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
+    # #Plot results for significant hits while list of simulated ES scores is in memory                              
+    # if 'HO_' in MOTIF_FILE:
+    #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + config.FIGUREDIR)
+    #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + config.FIGUREDIR)
+    # else:
+    #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
+    #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
 
     F = plt.figure(figsize=(15.5,6))
 
@@ -268,7 +271,7 @@ def run(args):
     plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')                                                                                                             
     plt.cla()
 
-    return [MOTIF_FILE.split('.bed')[0],actualES,NES,p]
+    return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,pos]
 
 def FDR(TFresults):
     #This function iterates through the results and calculates an FDR for each TF motif. Also creates a moustache plot.                                                                                                                         
@@ -278,6 +281,8 @@ def FDR(TFresults):
     sigx = list()
     sigy = list()
     pvals = list()
+    MAy = list()
+    MAx = list()
     ##pvalsNA = [1 if str(x) == 'nan' else x for x in pvals]                                                                                                                                                                                    
     totals = list()
     sigtotals = list()
@@ -291,7 +296,7 @@ def FDR(TFresults):
         ES = TFresults[i][1]
         NES = TFresults[i][2]
         PVAL = TFresults[i][3]
-        # POS = TFresults[i][4]
+        POS = TFresults[i][4]
         # NEG = TFresults[i][5]
         pvals.append(PVAL)
         # total = POS+NEG
@@ -303,11 +308,13 @@ def FDR(TFresults):
         NESlist.append(NES)
         ESlist.append(ES)
         # totals.append(math.log(float(total)))
-        # positives.append(math.log(float(POS)))
+        positives.append(math.log(float(POS)))
 
         if PVAL < FDR:
             sigx.append(ES)
             sigy.append(FDR)
+            MAy.append(NES)
+            MAx.append(POS)
             #sigtotals.append(math.log(float(total)))
 
     create_html.createTFtext(TFresults,config.FIGUREDIR)
@@ -339,6 +346,22 @@ def FDR(TFresults):
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     plt.savefig(config.FIGUREDIR + 'TFEA_Pval_Histogram.png',bbox_inches='tight')
     plt.cla()
+
+    #Creates an MA-plot with NES on Y-axis and positive hits on X-axis                                                                                                                                                                                                      
+    F = plt.figure(figsize=(7,6))
+    ax = plt.subplot(111)
+    ax.scatter(positives,NESlist,color='black',edgecolor='')
+    ax.scatter(MAx,MAy,color='red',edgecolor='')
+    ax.set_title("TFEA Moustache Plot",fontsize=14)
+    ax.set_xlabel("Normalized Enrichment Score (NES)",fontsize=14)
+    ax.set_ylabel("Hits < " + str(H),fontsize=14)
+    limit = math.fabs(max(ESlist,key=abs))
+    ax.set_xlim([-limit,limit])
+    ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    plt.savefig(config.FIGUREDIR + 'TFEA_NES_MA_Plot.png',bbox_inches='tight')
+    plt.cla()
+
 
     return TFresults
 
