@@ -8,6 +8,7 @@ import configparser
 import config_parser
 from multiprocessing import Pool
 import multiprocessing as mp
+#import pandas as pd
 
 def run():
     #Home directory, gets the full path (no '/' at the end) to the folder containing this script
@@ -99,9 +100,10 @@ def run():
                 a = time.time()
                 args = [(x,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
                 p = Pool(cpus)
-                TFresults = p.map(ES_calculator.run,args)
+                TFresults = p.map(ES_calculator.run, args)
+                ##print TFresults
                 CALCULATEtime += time.time() - a
-                create_html.createTFtext(TFresults)
+                create_html.createTFtext(TFresults, output)
             else:
                 for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
                     a = time.time()
@@ -144,7 +146,7 @@ def make_out_directories(dirs,config):
         for folder in os.listdir(output):
             if 'TFEA_output' in folder:
                 outputfolders.append(int(folder.split('-')[1]))
-        output = output + 'TFEA_output-' + str(max(outputfolders)) + '/'
+        output = output + 'TFEA_output-' + str(max(outputfolders)) + '/' 
 
 
     #Temporary files will go in this directory

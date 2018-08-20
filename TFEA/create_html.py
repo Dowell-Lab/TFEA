@@ -3,9 +3,9 @@ __author__ = 'Jonathan Rubin'
 import config
 import datetime
 
-def createTFtext(TFresults):
+def createTFtext(TFresults,outputdir):
     TFresults = sorted(TFresults, key=lambda x: x[3])
-    outfile = open(config.OUTPUTDIR + 'results.txt', 'w')
+    outfile = open(outputdir + 'results.txt', 'w')
     outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
     for val in TFresults:
         outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
@@ -36,13 +36,14 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <p>BAM1 = """+str(config.BAM1)+"""</p>
                 <p>BAM2 = """+str(config.BAM2)+"""</p>
                 <p>SINGLEMOTIF = """+str(config.SINGLEMOTIF)+"""</p>
-                <p>MOTIF_HITS = """+str(confgi.MOTIF_HITS)+"""</p>
+                <p>MOTIF_HITS = """+str(config.MOTIF_HITS)+"""</p>
                 <p>OUTPUT = """+config.OUTPUT+"""
             </body>""")
 
     #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
     for i in range(len(TFresults)):
-        MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR = TFresults[i]
+        #MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR = TFresults[i]
+        MOTIF_FILE,ES,NES,PVAL,FDR = TFresults[i] 
         positivelist = [x[0] for x in TFresults if x[2] > 0]
         negativelist = [x[0] for x in TFresults if x[2] < 0]
         
@@ -108,9 +109,6 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                         <th>NES</th>
                         <th>P-value</th>
                         <th>FDR</th>
-                        <th>Total Hits</th>
-                        <th>Positive Hits</th> 
-                        <th>Negative Hits</th>
                     </tr>
                     <tr>
                         <td>"""+MOTIF_FILE+"""</td>
@@ -118,9 +116,6 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.4g" % PVAL)+"""</td>
                         <td>"""+str("%.4g" % FDR)+"""</td>
-                        <td>"""+str(int(POS+NEG))+"""</td>
-                        <td>"""+str(int(POS))+"""</td>
-                        <td>"""+str(int(NEG))+"""</td>
                     </tr>
                 </table>
             </div>
@@ -233,11 +228,10 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <th>NES</th>
                     <th>P-value</th>
                     <th>FDR</th>
-                    <th>Hits</th>
                 </tr>
                 """)
 
-    for MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
         if NES > 0:
             if PVAL < FDR:
                 outfile.write("""                <tr style="color: red;">
@@ -246,7 +240,6 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.3g" % PVAL)+"""</td>
                         <td>"""+str("%.3g" % FDR)+"""</td>
-                        <td>"""+str(int(POS+NEG))+"""</td>
                     </tr>
                     """)
             else:
@@ -256,7 +249,6 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.3g" % PVAL)+"""</td>
                         <td>"""+str("%.3g" % FDR)+"""</td>
-                        <td>"""+str(int(POS+NEG))+"""</td>
                     </tr>
                     """)
 
@@ -273,11 +265,10 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <th>NES</th>
                     <th>P-value</th>
                     <th>FDR</th>
-                    <th>Hits</th>
                 </tr>
                 """)
 
-    for MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
         if NES < 0:
             if PVAL < FDR:
                 outfile.write("""                <tr style="color: red;">
@@ -286,7 +277,6 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.3g" % PVAL)+"""</td>
                         <td>"""+str("%.3g" % FDR)+"""</td>
-                        <td>"""+str(int(POS+NEG))+"""</td>
                     </tr>
                     """)
             else:
@@ -296,7 +286,6 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.3g" % PVAL)+"""</td>
                         <td>"""+str("%.3g" % FDR)+"""</td>
-                        <td>"""+str(int(POS+NEG))+"""</td>
                     </tr>
                     """)
 
@@ -310,7 +299,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     outfile.close()
 
 def single_motif(results):
-    MOTIF_FILE,ES,NES,PVAL,POS,NEG = results
+    MOTIF_FILE,ES,NES,PVAL = results
     outfile = open(config.OUTPUTDIR + MOTIF_FILE + '.results.html','w')
     outfile.write("""<!DOCTYPE html>
         <html>
@@ -345,17 +334,14 @@ def single_motif(results):
                         <th>NES</th>
                         <th>P-value</th>
                         <th>Total Hits</th>
-                        <th>Positive Hits</th> 
-                        <th>Negative Hits</th>
+                       
                     </tr>
                     <tr>
                         <td>"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.3f" % ES)+"""</td>
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str(int(POS+NEG))+"""</td>
-                        <td>"""+str(int(POS))+"""</td>
-                        <td>"""+str(int(NEG))+"""</td>
+                       
                     </tr>
                 </table>
             </div>

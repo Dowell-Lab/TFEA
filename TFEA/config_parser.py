@@ -1,12 +1,22 @@
 __author__ = 'Jonathan Rubin'
 
 import configparser
+import os
+
+def parent_dir(directory):
+    pathlist = directory.split('/')
+    newdir = '/'.join(pathlist[0:len(pathlist)-1])
+
+    return newdir
+
 
 def run(srcdirectory,config,output,filedir,figuredir):
     outfile = open(srcdirectory+'config.py','w')
     for key in config:
         for item in config[key]:
             outfile.write(item.upper()+'='+config[key][item]+'\n')
+
+    homedir = os.path.dirname(os.path.realpath(__file__))
 
     outfile.write('OUTPUTDIR="'+output+'"\n')
     outfile.write('FILEDIR="'+filedir+'"\n')
@@ -33,7 +43,8 @@ def run(srcdirectory,config,output,filedir,figuredir):
     outfile.write('RANKED_CENTER_DISTANCE_FILE="'+ranked_center_distance_file+'"\n')
 
     #Path to a directory full of motif logos for all TFs in the HOCOMOCO database (v10)
-    logos = srcdirectory + 'human_logo/'
+    logos = parent_dir(homedir) + '/human_logo/'
+    #logos = srcdirectory + 'human_logo/'
     outfile.write('LOGOS="'+logos+'"\n')
 
     #Path to mouse directory with motif logos in HOCOMOCO v10
