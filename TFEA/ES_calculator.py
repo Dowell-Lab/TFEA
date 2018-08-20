@@ -92,6 +92,7 @@ def run(args):
         ranked_center_distance_file = motif_distance.fimo_distance(fimo_file,MOTIF_FILE)
     else:
         ranked_center_distance_file = motif_distance.run(config.RANKED_CENTER_FILE,config.MOTIF_HITS+MOTIF_FILE)
+        meme.meme2images(MOTIF_FILE)
 
     distances = []
     ranks = []
