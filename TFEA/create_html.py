@@ -54,7 +54,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
     for i in range(len(TFresults)):
         #MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR = TFresults[i]
-        MOTIF_FILE,ES,NES,PVAL,FDR = TFresults[i] 
+        MOTIF_FILE,ES,NES,PVAL,POS,FDR = TFresults[i] 
         positivelist = [x[0] for x in TFresults if x[2] > 0]
         negativelist = [x[0] for x in TFresults if x[2] < 0]
         
@@ -279,13 +279,14 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </tr>
                     """)
             else:
-                outfile.write("""                <tr>
-                        <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
-                        <td>"""+str("%.3f" % ES)+"""</td>
-                        <td>"""+str("%.3f" % NES)+"""</td>
-                        <td>"""+str("%.3g" % PVAL)+"""</td>
-                        <td>"""+str("%.3g" % FDR)+"""</td>
-                    </tr>
+                outfile.write("""
+            <tr>
+                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
+                <td>"""+str("%.3f" % ES)+"""</td>
+                <td>"""+str("%.3f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % FDR)+"""</td>
+            </tr>
                     """)
 
 
@@ -293,7 +294,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
         </table>
     </div>
 
-    <div id="Negative Enrichment Score" style="float: right; width: 600px; overflow:scroll">
+    <div id="Negative Enrichment Score" style="float: right; width: 45%">
         <h1>Negative Enrichment Score</h1>
         <table> 
             <tr>
