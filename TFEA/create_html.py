@@ -52,11 +52,11 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </body>""")
 
     #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
+    positivelist = [x[0] for x in TFresults if x[2] > 0]
+    negativelist = [x[0] for x in TFresults if x[2] < 0]
     for i in range(len(TFresults)):
         #MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR = TFresults[i]
         MOTIF_FILE,ES,NES,PVAL,POS,FDR = TFresults[i] 
-        positivelist = [x[0] for x in TFresults if x[2] > 0]
-        negativelist = [x[0] for x in TFresults if x[2] < 0]
         
         if NES > 0:
             try:
@@ -266,7 +266,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 </tr>
             """)
 
-    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,POS,FDR in TFresults:
         if NES > 0:
             if PVAL < FDR:
                 outfile.write("""
@@ -306,7 +306,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </tr>
                 """)
 
-    for MOTIF_FILE,ES,NES,PVAL,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,POS,FDR in TFresults:
         if NES < 0:
             if PVAL < FDR:
                 outfile.write("""
