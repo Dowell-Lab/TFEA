@@ -112,7 +112,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 </style>
 </head>
 <body style="width:1300px; margin:0 auto;">
-    <div class="row">
+    <div>
         <div style="float:left">
             <a href="./"""+PREV_MOTIF+""".results.html">PREV</a>
         </div>
@@ -121,6 +121,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
         </div>
         <div style="text-align:center">
             <a href="../results.html">ALL</a>
+    </div>
     <div class="row">
     </div>
         <h1>"""+MOTIF_FILE+""" Results</h1>
