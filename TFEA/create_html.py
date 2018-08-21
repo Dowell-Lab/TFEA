@@ -25,7 +25,7 @@ def createTFtext(TFresults,outputdir):
 
 def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     #Creates results.txt which is a tab-delimited text file with the results    
-    ##TFresults = sorted(TFresults, key=lambda x: x[3])
+    TFresults = sorted(TFresults, key=lambda x: x[5])
     # outfile = open(config.OUTPUTDIR + 'results.txt', 'w')
     # outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
     # for val in TFresults:

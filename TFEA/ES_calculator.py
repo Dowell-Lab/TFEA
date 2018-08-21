@@ -311,7 +311,7 @@ def FDR(TFresults):
         NESlist.append(NES)
         ESlist.append(ES)
         # totals.append(math.log(float(total)))
-        positives.append(math.log(float(POS)))
+        positives.append(POS)
 
         if PVAL < FDR:
             sigx.append(ES)
@@ -320,7 +320,7 @@ def FDR(TFresults):
             MAx.append(POS)
             #sigtotals.append(math.log(float(total)))
 
-    create_html.createTFtext(TFresults,config.FIGUREDIR)
+    create_html.createTFtext(TFresults,config.OUTPUT)
 
     #Creates a moustache plot of the global FDRs vs. ESs                                                                                                                                                                                       
     F = plt.figure(figsize=(7,6))
