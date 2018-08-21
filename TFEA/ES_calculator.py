@@ -296,7 +296,10 @@ def FDR(TFresults):
         ES = TFresults[i][1]
         NES = TFresults[i][2]
         PVAL = TFresults[i][3]
-        POS = TFresults[i][4]
+        try:
+            POS = math.log(TFresults[i][4],10)
+        except:
+            POS = 0.0
         # NEG = TFresults[i][5]
         pvals.append(PVAL)
         # total = POS+NEG
@@ -352,9 +355,9 @@ def FDR(TFresults):
     ax = plt.subplot(111)
     ax.scatter(positives,ESlist,color='black',edgecolor='')
     ax.scatter(MAx,MAy,color='red',edgecolor='')
-    ax.set_title("TFEA Moustache Plot",fontsize=14)
+    ax.set_title("TFEA MA-Plot",fontsize=14)
     ax.set_ylabel("Normalized Enrichment Score (NES)",fontsize=14)
-    ax.set_xlabel("Hits < " + str(H),fontsize=14)
+    ax.set_xlabel("Hits Log10",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     plt.savefig(config.FIGUREDIR + 'TFEA_NES_MA_Plot.png',bbox_inches='tight')
