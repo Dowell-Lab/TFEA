@@ -15,14 +15,16 @@ def run():
     homedir = os.path.dirname(os.path.realpath(__file__))
 
     parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.',usage='TFEA --config CONFIG.ini [--sbatch email@address.com]')
-    parser.add_argument('--config',help='REQUIRED. A configuration file containing .ini suffix (ex. config.ini). See example in the examples folder.')
-    parser.add_argument('--sbatch',default=False,help='OPTIONAL. Submits an sbatch job. If specified, input an e-mail address.')
+    parser.add_argument('--config','-c',help='REQUIRED. A configuration file containing .ini suffix (ex. config.ini). See example in the examples folder.')
+    parser.add_argument('--sbatch','-s',default=False,help='OPTIONAL. Submits an sbatch job. If specified, input an e-mail address.')
+    parser.add_argument('--temp','-t',default=False,help='OPTIONAL. Save temp files in a temp directory within output.')
     if len(sys.argv)==1:
         # display help message when no args are passed.
         parser.print_help()
         sys.exit(1)
     sbatch = parser.parse_args().sbatch
     configfile = parser.parse_args().config
+    temp = parser.parse_args().temp
     config = configparser.ConfigParser(interpolation = configparser.ExtendedInterpolation())
     config.read(configfile)
 
@@ -124,6 +126,10 @@ def run():
         else:
             results = ES_calculator.run((config.SINGLEMOTIF,millions_mapped))
             create_html.single_motif(results)
+
+    if not temp:
+        os.rmdir(filedir)
+
     print "done"
 
 
