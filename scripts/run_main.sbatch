@@ -31,10 +31,12 @@ module load bedtools/2.25.0
 module load python/2.7.14/matplotlib/1.5.1
 module load python/2.7.14/scipy/0.17.1
 module load python/2.7.14/htseq
+module load python/2.7.14/seaborn
 module load samtools/1.3.1
 module load meme/4.12.0
 module load python/2.7.14/pandas/0.18.1
 
 ### now call your program
 
-python ${src} --config ${config} --sbatch SUBMITTED
+### python ${src} --config ${config} --sbatch SUBMITTED
+python ${cmd}

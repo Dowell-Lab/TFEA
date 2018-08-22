@@ -20,6 +20,7 @@ import create_html
 import combine_bed
 import meme
 import main
+import seaborn as sns
 
 
 def parent_dir(directory):
@@ -82,7 +83,7 @@ def run(args):
 
     '''
 
-    MOTIF_FILE,millions_mapped = args
+    MOTIF_FILE,millions_mapped,gc_array = args
     if config.FIMO:
         ranked_fullregions_file = combine_bed.get_regions()
         ranked_fasta_file = combine_bed.getfasta(ranked_fullregions_file)
@@ -168,15 +169,16 @@ def run(args):
     #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
     #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
 
-    F = plt.figure(figsize=(15.5,6))
+    F = plt.figure(figsize=(15.5,8))
 
     xvals = range(1,len(cumscore)+1)
     limits = [1,len(cumscore)]
-    gs = gridspec.GridSpec(3, 1, height_ratios=[2, 2, 1])
+    gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
+
+    #This is the enrichment score plot (i.e. line plot)
     ax0 = plt.subplot(gs[0])
     ax0.plot(xvals,cumscore,color='green')
     ax0.plot([0, len(cumscore)],[0, 1], '--', alpha=0.75)
-    
     ax0.set_title('Enrichment Plot: ',fontsize=14)
     ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
     ax0.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
@@ -185,16 +187,19 @@ def run(args):
     ymax = math.fabs(max(ylims,key=abs))
     ax0.set_ylim([0,ymax])
     ax0.set_xlim(limits)
+
+    #This is the distance scatter plot right below the enrichment score plot
     ax1 = plt.subplot(gs[1])
     ax1.scatter(xvals,distances_abs,edgecolor="",color="black",s=10,alpha=0.25)
     ax1.axhline(150, color='red',alpha=0.25)
-
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax1.set_xlim(limits)
     ax1.set_ylim([0,1500])
     plt.yticks([0,1500],['0',str(float(1500)/1000.0)])
     ax1.set_ylabel('Distance (kb)', fontsize=10)
+
+    #This is the rank metric plot
     ax2 = plt.subplot(gs[2])
     ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
     ax2.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
@@ -203,7 +208,7 @@ def run(args):
     ax2.set_ylim([-ylim,ylim])
     ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
     ax2.set_xlim(limits)
-    ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+    # ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
     ax2.set_ylabel('Rank Metric',fontsize=10)
     try:
         ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
@@ -213,6 +218,15 @@ def run(args):
         ax2.axvline(len(xvals) - len(downdistancehist), color='purple', alpha=0.25)
     except ValueError:
         pass
+
+    #This is the GC content plot
+    ax3 = plt.subplot(gs[3])
+    ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
+    ax3.set_xlim(limits)
+    sns.heatmap(gc_array)
+    ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+    ax3.set_ylabel('GC content per base',fontsize=10)
+
 
     plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
     plt.cla()
@@ -308,15 +322,15 @@ def FDR(TFresults):
         # FDR = (PVAL*len(TFresults))/float(i+1.0)                                                                                                                                                                                              
         TFresults[i].append(FDR)
         FDRlist.append(FDR)
-        NESlist.append(NES)
+        NESlist.append(ES)
         ESlist.append(ES)
         # totals.append(math.log(float(total)))
         positives.append(POS)
 
-        if PVAL < FDR:
+        if FDR < config.FDRCUTOFF:
             sigx.append(ES)
             sigy.append(FDR)
-            MAy.append(NES)
+            MAy.append(ES)
             MAx.append(POS)
             #sigtotals.append(math.log(float(total)))
 

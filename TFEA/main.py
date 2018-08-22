@@ -13,7 +13,8 @@ def run():
     parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.',usage='TFEA --config CONFIG.ini [--sbatch email@address.com]')
     parser.add_argument('--config','-c',metavar='',help='REQUIRED. A configuration file containing .ini suffix (ex. config.ini). See example in the examples folder.')
     parser.add_argument('--sbatch','-s',default=False,metavar='',help='OPTIONAL. Submits an sbatch job. If specified, input an e-mail address.')
-    parser.add_argument('--temp','-t',default=False,metavar='',help='OPTIONAL. Save temp files in a temp directory within output.')
+    parser.add_argument('--temp','-t',default=False,metavar='',action='store_const',
+                    const=True,help='OPTIONAL. Save temp files in a temp directory within output.')
     if len(sys.argv)==1:
         # display help message when no args are passed.
         parser.print_help()
@@ -33,7 +34,11 @@ def run():
         scriptdir = parent_dir(homedir) + '/scripts/'
         script = scriptdir + 'run_main.sbatch'
         email = str(sbatch)
-        os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=src="+homedir+",config=" +configfile+ " " + script)
+        # os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=src="+homedir+",config=" +configfile+ " " + script)
+        if not temp:
+            os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ "' " + script)
+        elif temp:
+            os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ " --temp' " + script)
         sys.exit("TFEA has been submitted using an sbatch script, use qstat to check its progress.")
 
 
@@ -80,12 +85,19 @@ def run():
         print "done"
     DESEQtime = time.time()-DESEQtime
 
+    #GC STUFF GOES HERE!!!!
+
     #Scans ranked BED regions for motifs of interest and records them in distance file
     if config.CALCULATE:
+        #This line gets an array of GC values for all inputted regions
+        gc_array = motif_distance.get_gc(config.RANKED_FILE)
+
+        #Here we determine how many cpus to use for parallelization
         cpus = mp.cpu_count()
         if cpus > 64:
             cpus = 64
 
+        #Here we calculate millions mapped reads for use with the metaeRNA module
         p = Pool(cpus)
         args = [(x) for x in config.BAM1+config.BAM2]
         millions_mapped = p.map(meta_eRNA.samtools_flagstat,args)
@@ -96,7 +108,7 @@ def run():
             CALCULATEtime = 0.0
             if config.POOL:
                 a = time.time()
-                args = [(x,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
+                args = [(x,millions_mapped,gc_array) for x in os.listdir(config.MOTIF_HITS)]
                 p = Pool(cpus)
                 TFresults = p.map(ES_calculator.run, args)
                 ##print TFresults
