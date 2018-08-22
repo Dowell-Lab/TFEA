@@ -2,8 +2,7 @@ __author__ = 'Jonathan Rubin'
 
 import os
 import math
-import combine_bed
-from config import FILEDIR,LARGEWINDOW
+import combine_bed, config
 
 #Takes a single ranked_file and returns bed file with the centers for each region and a bed file with the distance to the closest motif for each centered region
 def run(ranked_center_file,MOTIF_PATH):
@@ -20,7 +19,7 @@ def fimo_distance(fimo_file,MOTIF_FILE):
             line = line.strip('\n').split('\t')
             pval,fc,rank = line[0].split(',')
             start,stop = line[1:2]
-            distance = ((int(start)+int(stop))/2)-LARGEWINDOW
+            distance = ((int(start)+int(stop))/2)-config.LARGEWINDOW
             score = line[5]
             if rank not in d:
                 d[rank] = [rank,pval,fc,score,distance]
@@ -29,7 +28,7 @@ def fimo_distance(fimo_file,MOTIF_FILE):
                 if prev_distance > math.fabs(distance):
                     d[rank] = [rank,pval,fc,score,distance]
 
-    outname = FILEDIR+MOTIF_FILE+'.sorted.distance.bed'
+    outname = config.FILEDIR+MOTIF_FILE+'.sorted.distance.bed'
     outfile = open(outname,'w')
     for i in range(len(d)):
         rank = str(i)
@@ -63,8 +62,8 @@ def get_gc(ranked_file,window=config.SMALLWINDOW):
 
     '''
 
-    outfile = open(FILEDIR+"ranked_file.windowed.bed",'w')
-    with open(FILEDIR + "ranked_file.bed") as F:
+    outfile = open(config.FILEDIR+"ranked_file.windowed.bed",'w')
+    with open(config.FILEDIR + "ranked_file.bed") as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
@@ -74,7 +73,7 @@ def get_gc(ranked_file,window=config.SMALLWINDOW):
             outfile.write(chrom + '\t' + str(newstart) + '\t' + str(newstop) + '\t' + '\t'.join(line[3:]) + '\n')
     outfile.close()
 
-    ranked_file_windowed_fasta = combine_bed.get_fasta(FILEDIR+"ranked_file.windowed.bed")
+    ranked_file_windowed_fasta = combine_bed.get_fasta(config.FILEDIR+"ranked_file.windowed.bed")
 
     gc_array = []
     with open(ranked_file_windowed_fasta) as F:
