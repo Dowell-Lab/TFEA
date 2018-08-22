@@ -120,7 +120,7 @@ def run():
 
                     #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                     #the HOCOMOCO database.
-                    results = ES_calculator.run((MOTIF_FILE,millions_mapped))
+                    results = ES_calculator.run((MOTIF_FILE,millions_mapped,gc_array))
                     if results != "no hits":
                         TFresults.append(results)
                         CALCULATEtime += time.time()-a
@@ -132,7 +132,7 @@ def run():
 
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to determine an FDR for the given motif.
         else:
-            results = ES_calculator.run((config.SINGLEMOTIF,millions_mapped))
+            results = ES_calculator.run((config.SINGLEMOTIF,millions_mapped,gc_array))
             create_html.single_motif(results)
 
     if not temp:

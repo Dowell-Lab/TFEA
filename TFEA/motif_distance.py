@@ -38,7 +38,7 @@ def fimo_distance(fimo_file,MOTIF_FILE):
     return outname
 
 #Function to calculate GC content for all regions - creates panel underneath enrichment score figure in html output
-def get_gc(ranked_file,window=config.SMALLWINDOW):
+def get_gc(ranked_file,window=int(config.SMALLWINDOW)):
 
     '''This function calculates gc content over all eRNAs. It uses the SMALLWINDOW variable within
     the config file instead of the whole region. It performs a running average of window size = total_regions/1000
