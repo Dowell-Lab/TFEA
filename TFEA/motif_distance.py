@@ -73,7 +73,7 @@ def get_gc(ranked_file,window=config.SMALLWINDOW):
             outfile.write(chrom + '\t' + str(newstart) + '\t' + str(newstop) + '\t' + '\t'.join(line[3:]) + '\n')
     outfile.close()
 
-    ranked_file_windowed_fasta = combine_bed.get_fasta(config.FILEDIR+"ranked_file.windowed.bed")
+    ranked_file_windowed_fasta = combine_bed.getfasta(config.FILEDIR+"ranked_file.windowed.bed")
 
     gc_array = []
     with open(ranked_file_windowed_fasta) as F:

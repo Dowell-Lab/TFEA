@@ -36,9 +36,9 @@ def run():
         email = str(sbatch)
         # os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=src="+homedir+",config=" +configfile+ " " + script)
         if not temp:
-            os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ "' " + script)
+            os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ " --sbatch SUBMITTED ' " + script)
         elif temp:
-            os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ " --temp' " + script)
+            os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ " --sbatch SUBMITTED --temp' " + script)
         sys.exit("TFEA has been submitted using an sbatch script, use qstat to check its progress.")
 
 
