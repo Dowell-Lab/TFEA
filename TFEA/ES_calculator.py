@@ -83,7 +83,7 @@ def run(args):
 
     '''
 
-    MOTIF_FILE,millions_mapped,gc_array = args
+    MOTIF_FILE,millions_mapped = args
     if config.FIMO:
         ranked_fullregions_file = combine_bed.get_regions()
         ranked_fasta_file = combine_bed.getfasta(ranked_fullregions_file)
@@ -223,7 +223,7 @@ def run(args):
     ax3 = plt.subplot(gs[3])
     ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
     ax3.set_xlim(limits)
-    sns.heatmap(gc_array)
+    sns.heatmap(config.GC_ARRAY)
     ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
     ax3.set_ylabel('GC content per base',fontsize=10)
 

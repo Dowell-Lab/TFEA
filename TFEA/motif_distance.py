@@ -75,12 +75,12 @@ def get_gc(ranked_file,window=int(config.SMALLWINDOW)):
 
     ranked_file_windowed_fasta = combine_bed.getfasta(config.FILEDIR+"ranked_file.windowed.bed")
 
-    gc_array = []
     with open(ranked_file_windowed_fasta) as F:
         for line in F:
             if '>' not in line:
                 line = line.strip('\n')
-                gc_array.append(convert_sequence_to_array(line))
+                config.GC_ARRAY.append(convert_sequence_to_array(line))
+
 
 
 

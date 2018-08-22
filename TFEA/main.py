@@ -90,7 +90,7 @@ def run():
     #Scans ranked BED regions for motifs of interest and records them in distance file
     if config.CALCULATE:
         #This line gets an array of GC values for all inputted regions
-        gc_array = motif_distance.get_gc(config.RANKED_FILE)
+        motif_distance.get_gc(config.RANKED_FILE)
 
         #Here we determine how many cpus to use for parallelization
         cpus = mp.cpu_count()
@@ -108,7 +108,7 @@ def run():
             CALCULATEtime = 0.0
             if config.POOL:
                 a = time.time()
-                args = [(x,millions_mapped,gc_array) for x in os.listdir(config.MOTIF_HITS)]
+                args = [(x,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
                 p = Pool(cpus)
                 TFresults = p.map(ES_calculator.run, args)
                 ##print TFresults
@@ -120,7 +120,7 @@ def run():
 
                     #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
                     #the HOCOMOCO database.
-                    results = ES_calculator.run((MOTIF_FILE,millions_mapped,gc_array))
+                    results = ES_calculator.run((MOTIF_FILE,millions_mapped))
                     if results != "no hits":
                         TFresults.append(results)
                         CALCULATEtime += time.time()-a
@@ -132,7 +132,7 @@ def run():
 
         #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to determine an FDR for the given motif.
         else:
-            results = ES_calculator.run((config.SINGLEMOTIF,millions_mapped,gc_array))
+            results = ES_calculator.run((config.SINGLEMOTIF,millions_mapped))
             create_html.single_motif(results)
 
     if not temp:

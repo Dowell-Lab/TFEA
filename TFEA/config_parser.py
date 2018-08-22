@@ -21,6 +21,7 @@ def run(srcdirectory,config,output,filedir,figuredir):
     outfile.write('OUTPUTDIR="'+output+'"\n')
     outfile.write('FILEDIR="'+filedir+'"\n')
     outfile.write('FIGUREDIR="'+figuredir+'"\n')
+    outfile.write('GC_ARRAY=list()')
 
     #Path to count file. Can be changed if using your own count file. Generated in count_reads module
     count_file = filedir + "count_file.header.bed"
