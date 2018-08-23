@@ -2,6 +2,7 @@ __author__ = 'Jonathan Rubin'
 
 import os
 import math
+import numpy as np
 import combine_bed, config
 
 #Takes a single ranked_file and returns bed file with the centers for each region and a bed file with the distance to the closest motif for each centered region
@@ -38,7 +39,7 @@ def fimo_distance(fimo_file,MOTIF_FILE):
     return outname
 
 #Function to calculate GC content for all regions - creates panel underneath enrichment score figure in html output
-def get_gc(ranked_file,window=int(config.SMALLWINDOW)):
+def get_gc(ranked_file,window=int(config.SMALLWINDOW),bins=1000):
 
     '''This function calculates gc content over all eRNAs. It uses the SMALLWINDOW variable within
     the config file instead of the whole region. It performs a running average of window size = total_regions/1000
@@ -75,11 +76,24 @@ def get_gc(ranked_file,window=int(config.SMALLWINDOW)):
 
     ranked_file_windowed_fasta = combine_bed.getfasta(config.FILEDIR+"ranked_file.windowed.bed")
 
+    gc_array = []
     with open(ranked_file_windowed_fasta) as F:
         for line in F:
             if '>' not in line:
                 line = line.strip('\n')
-                config.GC_ARRAY.append(convert_sequence_to_array(line))
+                gc_array.append(convert_sequence_to_array(line))
+
+    binwidth = len(gc_array)/bins
+
+    for i in range(0,len(gc_array),binwidth):
+        position_average = []
+        for k in range(window*2):
+            new_array = []
+            for j in range(i,i+binwidth):
+                new_array.append(gc_array[j][k])
+            position_average.append(np.mean(new_array))
+        config.GC_ARRAY.append(position_average)
+
 
 
 
