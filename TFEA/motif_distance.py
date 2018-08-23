@@ -89,8 +89,12 @@ def get_gc(ranked_file,window=int(config.SMALLWINDOW),bins=1000):
         position_average = []
         for k in range(window*2):
             new_array = []
-            for j in range(i,i+binwidth):
-                new_array.append(gc_array[j][k])
+            if i+binwidth < len(gc_array):
+                for j in range(i,i+binwidth):
+                    new_array.append(gc_array[j][k])
+            else:
+                for j in range(i,len(gc_array)):
+                    new_array.append(gc_array[j][k])
             position_average.append(np.mean(new_array))
         config.GC_ARRAY.append(position_average)
 
