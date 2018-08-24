@@ -214,11 +214,6 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
         <div style="float: left; width: 45%">
             <img src="./plots/TFEA_NES_MA_Plot.png" alt="NES MA-Plot">
         </div>
-        <div style="float: right; width:45%">
-            <img src="./plots/TFEA_Results_Moustache_Plot.png" alt="Moustache Plot (FDR vs. NES)">
-        </div>
-    </div>
-    <div class="row">
         <div id="Summary of Variables Used" style="float: right; width: 45%">
             <p><a href="./Summary.html">Full Summary of Variables Used</a></p>
             <p><b>FDR < """ + str(config.FDRCUTOFF) + """</b></p>
@@ -250,7 +245,12 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 </tr>
             </table>   
         </div>
-        <div style="float: left; width: 45%">
+    </div>
+    <div class="row">
+        <div style="float: left; width:45%">
+            <img src="./plots/TFEA_Results_Moustache_Plot.png" alt="Moustache Plot (FDR vs. NES)">
+        </div>
+        <div style="float: right; width: 45%">
             <img src="./plots/TFEA_Pval_Histogram.png" alt="P-value Histogram">
         </div>
     </div>
@@ -269,7 +269,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 
     for MOTIF_FILE,ES,NES,PVAL,POS,FDR in TFresults:
         if NES > 0:
-            if PVAL < FDR:
+            if FDR < config.FDRCUTOFF:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
@@ -309,7 +309,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 
     for MOTIF_FILE,ES,NES,PVAL,POS,FDR in TFresults:
         if NES < 0:
-            if PVAL < FDR:
+            if FDR < config.FDRCUTOFF:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
