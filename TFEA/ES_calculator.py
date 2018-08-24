@@ -223,7 +223,7 @@ def run(args):
     ax3 = plt.subplot(gs[3])
     ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
     ax3.set_xlim(limits)
-    sns.heatmap(config.GC_ARRAY, cbar_ax = fig.add_axes([1, 1, .03, .4]))
+    sns.heatmap(config.GC_ARRAY, cbar=False) #cbar_ax = F.add_axes([1, 1, .03, .4]))
     # plt.imshow(config.GC_ARRAY, cmap='hot', interpolation='nearest')
     ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
     ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
