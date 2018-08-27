@@ -141,6 +141,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <td>"""+str("%.3f" % NES)+"""</td>
                     <td>"""+str("%.4g" % PVAL)+"""</td>
                     <td>"""+str("%.4g" % FDR)+"""</td>
+                    <td>"""+str("%.4g" % POS)+"""</td>
                 </tr>
             </table>
         </div>
@@ -277,6 +278,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % FDR)+"""</td>
+                <td>"""+str("%.3g" % POS)+"""</td>
             </tr>
                     """)
             else:
@@ -287,6 +289,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % FDR)+"""</td>
+                <td>"""+str("%.3g" % POS)+"""</td>
             </tr>
                     """)
 
@@ -317,6 +320,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % FDR)+"""</td>
+                <td>"""+str("%.3g" % POS)+"""</td>
             </tr>
                     """)
             else:
@@ -327,6 +331,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % FDR)+"""</td>
+                <td>"""+str("%.3g" % POS)+"""</td>
             </tr>
                     """)
 
@@ -341,7 +346,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     outfile.close()
 
 def single_motif(results):
-    MOTIF_FILE,ES,NES,PVAL = results
+    MOTIF_FILE,ES,NES,PVAL,POS = results
     outfile = open(config.OUTPUTDIR + MOTIF_FILE + '.results.html','w')
     outfile.write("""<!DOCTYPE html>
         <html>
@@ -383,6 +388,7 @@ def single_motif(results):
                         <td>"""+str("%.3f" % ES)+"""</td>
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % POS)+"""</td>
                        
                     </tr>
                 </table>

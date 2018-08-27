@@ -93,7 +93,6 @@ def run(args):
         ranked_center_distance_file = motif_distance.fimo_distance(fimo_file,MOTIF_FILE)
     else:
         ranked_center_distance_file = motif_distance.run(config.RANKED_CENTER_FILE,config.MOTIF_HITS+MOTIF_FILE)
-        meme.meme2images(MOTIF_FILE)
 
     distances = []
     ranks = []
@@ -162,12 +161,12 @@ def run(args):
         logpval = sorted_pval
 
     # #Plot results for significant hits while list of simulated ES scores is in memory                              
-    # if 'HO_' in MOTIF_FILE:
-    #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + config.FIGUREDIR)
-    #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + config.FIGUREDIR)
-    # else:
-    #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
-    #     os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
+    if 'HO_' in MOTIF_FILE:
+        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + config.FIGUREDIR)
+        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + config.FIGUREDIR)
+    else:
+        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
+        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
 
     F = plt.figure(figsize=(15.5,8))
 
@@ -383,6 +382,8 @@ def FDR(TFresults):
 
 
     return TFresults
+
+if __name__ == "__main__":
 
 
 
