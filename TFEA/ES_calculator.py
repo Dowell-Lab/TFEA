@@ -220,14 +220,14 @@ def run(args):
 
     #This is the GC content plot
     ax3 = plt.subplot(gs[3])
-    ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
+    # ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
     ax3.set_xlim(limits)
     GC_ARRAY = np.array(config.GC_ARRAY).transpose()
-    sns.heatmap(GC_ARRAY, cbar=False) #cbar_ax = F.add_axes([1, 1, .03, .4]))
+    sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #cbar_ax = F.add_axes([1, 1, .03, .4]))
     # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
     ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
     ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
+    # ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
     ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
     ax3.set_ylabel('GC content per base',fontsize=10)
 
