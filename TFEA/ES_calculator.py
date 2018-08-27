@@ -384,8 +384,6 @@ def FDR(TFresults):
 
     return TFresults
 
-if __name__ == "__main__":
-
 
 
 
