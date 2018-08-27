@@ -4,7 +4,6 @@ import os,time,sys,argparse,configparser
 import config_parser
 from multiprocessing import Pool
 import multiprocessing as mp
-#import pandas as pd
 
 def run():
     #Home directory, gets the full path (no '/' at the end) to the folder containing this script
