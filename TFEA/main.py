@@ -48,16 +48,7 @@ def run():
 
 
     #Import scripts from this package
-    import combine_bed
-    import count_reads
-    import rank_regions
-    import DESeq
-    import motif_distance
-    import ES_calculator
-    import create_html
-    import config
-    import meta_eRNA
-
+    import config, combine_bed, count_reads, rank_regions, DESeq, motif_distance, ES_calculator, create_html, meta_eRNA
 
 
     #This module takes the input list of BED files, concatenates them, and then merges them via bedtools.
@@ -84,8 +75,6 @@ def run():
         rank_regions.deseqfile()
         print "done"
     DESEQtime = time.time()-DESEQtime
-
-    #GC STUFF GOES HERE!!!!
 
     #Scans ranked BED regions for motifs of interest and records them in distance file
     if config.CALCULATE:

@@ -47,7 +47,9 @@ def get_gc(ranked_file,window=int(config.SMALLWINDOW),bins=1000):
     Parameters                                                                                                                                                                           
     ----------                                                                                                                                                                           
     ranked_bed_file : tab delimited bedfile with regions ranked by some metric of 
-        differential transcription                                                                                                                                               
+        differential transcription
+    window : an int. The size of the window (in bp) that you wish to calculate gc content for
+    bins : an int. The number of equal sized bins to compute for the gc array                                                                                                                                           
                                                                                                                                        
     Returns                                                                                                                                                                             
     -------                                                                                                                                                                             
@@ -58,11 +60,11 @@ def get_gc(ranked_file,window=int(config.SMALLWINDOW),bins=1000):
                  
     Raises
     ------
-    ValueError
-        when tf does not have any hits
+    None
 
     '''
 
+    #First, create a bed file with the correct coordinates centered on the given regions with the specified window size on either side
     outfile = open(config.FILEDIR+"ranked_file.windowed.bed",'w')
     with open(config.FILEDIR + "ranked_file.bed") as F:
         for line in F:
@@ -74,8 +76,10 @@ def get_gc(ranked_file,window=int(config.SMALLWINDOW),bins=1000):
             outfile.write(chrom + '\t' + str(newstart) + '\t' + str(newstop) + '\t' + '\t'.join(line[3:]) + '\n')
     outfile.close()
 
+    #Convert the bed file created above into a fasta file using meme (contained within the combine_bed file for some reason)
     ranked_file_windowed_fasta = combine_bed.getfasta(config.FILEDIR+"ranked_file.windowed.bed")
 
+    #Create a gc_array which simply contains all sequences in fasta file collapsed into 1.0 for G/C and 0.0 for A/T
     gc_array = []
     with open(ranked_file_windowed_fasta) as F:
         for line in F:
@@ -83,19 +87,28 @@ def get_gc(ranked_file,window=int(config.SMALLWINDOW),bins=1000):
                 line = line.strip('\n')
                 gc_array.append(convert_sequence_to_array(line))
 
+    #The length of each bin is equal to the total positions over the number of desired bins
     binwidth = len(gc_array)/bins
 
+    #Collapse the gc_array into an array containing the correct number of bins (specified by user)
+    ##First, step through the gc_array with binwidth step size (i)
     for i in range(0,len(gc_array),binwidth):
+        ##Initialize a position_average list that will store the mean value for each position (along the window)
         position_average = []
+        ##Now we step through the total window size (window*2) position by position
         for k in range(window*2):
+            ##new_array stores for each position in the window, a binwidth amount of data points to be averaged
             new_array = []
+            ##Now, if we are not at the end of the gc_array, we will step through for each position, a binwidth amount of values and store them in new_array
             if i+binwidth < len(gc_array):
                 for j in range(i,i+binwidth):
                     new_array.append(gc_array[j][k])
             else:
                 for j in range(i,len(gc_array)):
                     new_array.append(gc_array[j][k])
+            ##Finally, we simply append the average of the new_array into the position_average list
             position_average.append(np.mean(new_array))
+        ##And this poition_average list is appended to the actual GC_ARRAY within the config file for later use
         config.GC_ARRAY.append(position_average)
 
 
@@ -137,8 +150,49 @@ def convert_sequence_to_array(sequence):
     return array 
 
 
+if __name__ == "__main__":
+    #=====================TEST=============================
+    # sequence = 'actgACTG'
+    # array = convert_sequence_to_array(sequence)
+    # print "Sequence to Array passed test: ",array == [0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
 
 
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import numpy as np
 
+
+    gc_array = [[0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0] for i in range(1009)]
+    gc_array.append([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
+    bins = 100
+    binwidth = len(gc_array)/bins
+    window = len(gc_array[0])/2
+    new_GC_array = []
+
+    #Collapse the gc_array into an array containing the correct number of bins (specified by user)
+    ##First, step through the gc_array with binwidth step size (i)
+    for i in range(0,len(gc_array),binwidth):
+        ##Initialize a position_average list that will store the mean value for each position (along the window)
+        position_average = []
+        ##Now we step through the total window size (window*2) position by position
+        for k in range(window*2):
+            ##new_array stores for each position in the window, a binwidth amount of data points to be averaged
+            new_array = []
+            ##Now, if we are not at the end of the gc_array, we will step through for each position, a binwidth amount of values and store them in new_array
+            if i+binwidth < len(gc_array):
+                for j in range(i,i+binwidth):
+                    new_array.append(gc_array[j][k])
+            else:
+                for j in range(i,len(gc_array)):
+                    new_array.append(gc_array[j][k])
+            ##Finally, we simply append the average of the new_array into the position_average list
+            position_average.append(np.mean(new_array))
+        ##And this poition_average list is appended to the actual GC_ARRAY within the config file for later use
+        new_GC_array.append(position_average)
+
+    new_GC_array = np.array(new_GC_array)
+    sns.heatmap(new_GC_array.transpose())
+    # plt.imshow(new_GC_array.transpose(), cmap='hot', interpolation='nearest')
+    plt.show()
 
 
