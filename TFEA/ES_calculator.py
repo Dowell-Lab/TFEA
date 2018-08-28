@@ -327,7 +327,7 @@ def PADJ(TFresults):
         #Using Bonferroni Correction
         PADJ = PVAL*len(TFresults)                                                                                                                                                                           
         TFresults[i].append(PADJ)
-        PADJRlist.append(PADJ)
+        PADJlist.append(PADJ)
         NESlist.append(ES)
         ESlist.append(ES)
         # totals.append(math.log(float(total)))
