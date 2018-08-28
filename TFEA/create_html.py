@@ -134,6 +134,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <th>NES</th>
                     <th>P-value</th>
                     <th>PADJ</th>
+                    <th>HITS</th>
                 </tr>
                 <tr>
                     <td>"""+MOTIF_FILE+"""</td>
@@ -141,7 +142,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <td>"""+str("%.3f" % NES)+"""</td>
                     <td>"""+str("%.4g" % PVAL)+"""</td>
                     <td>"""+str("%.4g" % PADJ)+"""</td>
-                    <td>"""+str("%.4g" % POS)+"""</td>
+                    <td>"""+str("%.3f" % POS)+"""</td>
                 </tr>
             </table>
         </div>
@@ -270,6 +271,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <th>NES</th>
                     <th>P-value</th>
                     <th>PADJ</th>
+                    <th>HITS</th>
                 </tr>
             """)
 
@@ -283,7 +285,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
-                <td>"""+str("%.3g" % POS)+"""</td>
+                <td>"""+str("%.3f" % POS)+"""</td>
             </tr>
                     """)
             else:
@@ -294,7 +296,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
-                <td>"""+str("%.3g" % POS)+"""</td>
+                <td>"""+str("%.3f" % POS)+"""</td>
             </tr>
                     """)
 
@@ -312,6 +314,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <th>NES</th>
                 <th>P-value</th>
                 <th>PADJ</th>
+                <th>HITS</th>
             </tr>
                 """)
 
@@ -325,7 +328,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
-                <td>"""+str("%.3g" % POS)+"""</td>
+                <td>"""+str("%.3f" % POS)+"""</td>
             </tr>
                     """)
             else:
@@ -336,7 +339,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
-                <td>"""+str("%.3g" % POS)+"""</td>
+                <td>"""+str("%.3f" % POS)+"""</td>
             </tr>
                     """)
 
@@ -393,7 +396,7 @@ def single_motif(results):
                         <td>"""+str("%.3f" % ES)+"""</td>
                         <td>"""+str("%.3f" % NES)+"""</td>
                         <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str("%.4g" % POS)+"""</td>
+                        <td>"""+str("%.3f" % POS)+"""</td>
                        
                     </tr>
                 </table>

@@ -40,13 +40,14 @@ def write_script():
 def run():
     write_script()
     os.system("R < " + config.FILEDIR + "DESeq.R --no-save")
+    plot_MA(config.FILEDIR+'DESeq.res.txt')
 
-
+def plot_MA(deseq_file):
     x = list()
     sigx = list()
     y = list()
     sigy = list()
-    with open(config.FILEDIR+'DESeq.res.txt','r') as F:
+    with open(deseq_file,'r') as F:
         F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
@@ -54,7 +55,7 @@ def run():
             try:
                 log2fc = float(line[6])
                 padj = float(line[-1])
-                if padj < config.PVALCUTOFF:
+                if padj < config.PADJCUTOFF:
                     sigx.append(basemean)
                     sigy.append(log2fc)
                 else:
@@ -63,16 +64,20 @@ def run():
             except:
                 pass
 
-
     #Creates an MA-Plot of the region expression
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    ax.scatter(x,y,color='black',edgecolor='')
-    ax.scatter(sigx,sigy,color='red',edgecolor='')
+    ax.scatter(x=x,y=y,color='black',edgecolor='')
+    ax.scatter(x=sigx,y=sigy,color='red',edgecolor='')
     ax.set_title("DE-Seq MA-Plot",fontsize=14)
     ax.set_ylabel("Log2 Fold-Change ("+config.LABEL1+"/"+config.LABEL2+")",fontsize=14)
     ax.set_xlabel("Average Expression",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    # plt.show()
     plt.savefig(config.FIGUREDIR + 'DESEQ_MA_Plot.png',bbox_inches='tight')
+
+if __name__ == "__main__":
+    deseq_file = '/Users/jonathanrubin/Google_Drive/Colorado University/Jonathan/TFEA_outputs/Allen2014/TFEA_DMSO1-DMSO2_3/temp_files/DESeq.res.txt'
+    plot_MA(deseq_file)
     plt.cla()
