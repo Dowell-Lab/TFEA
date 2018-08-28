@@ -106,7 +106,7 @@ def run():
                 for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
                     a = time.time()
 
-                    #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,FDR for each TF motif in
+                    #This module is where the bulk of the analysis is done. The functions below calculate ES,NES,p-value,PADJ for each TF motif in
                     #the HOCOMOCO database.
                     results = ES_calculator.run((MOTIF_FILE,millions_mapped))
                     if results != "no hits":
@@ -115,10 +115,10 @@ def run():
                         print MOTIF_FILE + " calculation done in: " + str(CALCULATEtime) + "s"
                     else:
                         print "No motifs within specified window for: ", MOTIF_FILE
-            TFresults = ES_calculator.FDR(TFresults)
+            TFresults = ES_calculator.PADJ(TFresults)
             create_html.run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime)
 
-        #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to determine an FDR for the given motif.
+        #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to determine an PADJ for the given motif.
         else:
             results = ES_calculator.run((config.SINGLEMOTIF,millions_mapped))
             create_html.single_motif(results)

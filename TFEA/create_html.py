@@ -17,7 +17,7 @@ def get_TFresults(results_file):
 def createTFtext(TFresults,outputdir):
     TFresults = sorted(TFresults, key=lambda x: x[3])
     outfile = open(outputdir + 'results.txt', 'w')
-    outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
+    outfile.write('TF-Motif\tES\tNES\tP-value\tPADJ\n')
     for val in TFresults:
         outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
     outfile.close()
@@ -27,7 +27,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     #Creates results.txt which is a tab-delimited text file with the results    
     TFresults = sorted(TFresults, key=lambda x: x[5])
     # outfile = open(config.OUTPUTDIR + 'results.txt', 'w')
-    # outfile.write('TF-Motif\tES\tNES\tP-value\tFDR\n')
+    # outfile.write('TF-Motif\tES\tNES\tP-value\tPADJ\n')
     # for val in TFresults:
     #     outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
     # outfile.close()
@@ -51,12 +51,12 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <p>OUTPUT = """+config.OUTPUT+"""
             </body>""")
 
-    #For each TF motif with an FDR value less than a cutoff, an html file is created to be used in results.html
+    #For each TF motif with an PADJ value less than a cutoff, an html file is created to be used in results.html
     positivelist = [x[0] for x in TFresults if x[2] > 0]
     negativelist = [x[0] for x in TFresults if x[2] < 0]
     for i in range(len(TFresults)):
-        #MOTIF_FILE,ES,NES,PVAL,POS,NEG,FDR = TFresults[i]
-        MOTIF_FILE,ES,NES,PVAL,POS,FDR = TFresults[i] 
+        #MOTIF_FILE,ES,NES,PVAL,POS,NEG,PADJ = TFresults[i]
+        MOTIF_FILE,ES,NES,PVAL,POS,PADJ = TFresults[i] 
         
         if NES > 0:
             try:
@@ -76,7 +76,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 PREV_MOTIF = negativelist[negativelist.index(MOTIF_FILE)-1]
             except IndexError:
                 PREV_MOTIF = negativelist[len(negativelist)]
-        # if PVAL < FDRCUTOFF:
+        # if PVAL < PADJCUTOFF:
         outfile = open(config.OUTPUTDIR + 'plots/' + MOTIF_FILE + '.results.html','w')
         outfile.write("""<!DOCTYPE html>
 <html>
@@ -133,14 +133,14 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <th>ES</th> 
                     <th>NES</th>
                     <th>P-value</th>
-                    <th>FDR</th>
+                    <th>PADJ</th>
                 </tr>
                 <tr>
                     <td>"""+MOTIF_FILE+"""</td>
                     <td>"""+str("%.3f" % ES)+"""</td>
                     <td>"""+str("%.3f" % NES)+"""</td>
                     <td>"""+str("%.4g" % PVAL)+"""</td>
-                    <td>"""+str("%.4g" % FDR)+"""</td>
+                    <td>"""+str("%.4g" % PADJ)+"""</td>
                     <td>"""+str("%.4g" % POS)+"""</td>
                 </tr>
             </table>
@@ -215,9 +215,17 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
         <div style="float: left; width: 45%">
             <img src="./plots/TFEA_NES_MA_Plot.png" alt="NES MA-Plot">
         </div>
+        <div style="float: left; width:45%">
+            <img src="./plots/TFEA_Results_Moustache_Plot.png" alt="Moustache Plot (PADJ vs. NES)">
+        </div>
+    </div>
+    <div class="row">
+        <div style="float: left; width: 45%">
+            <img src="./plots/DESEQ_MA_Plot.png" alt="DE-Seq MA-Plot">
+        </div>
         <div id="Summary of Variables Used" style="float: right; width: 45%">
             <p><a href="./Summary.html">Full Summary of Variables Used</a></p>
-            <p><b>FDR < """ + str(config.FDRCUTOFF) + """</b></p>
+            <p><b>PADJ < """ + str(config.PADJCUTOFF) + """</b></p>
             <table>
                 <tr>
                     <th>Module</th>
@@ -244,15 +252,12 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <td>"""+str(config.CALCULATE)+"""</td>
                     <td>"""+str(datetime.timedelta(seconds=int(CALCULATEtime)))+"""</td>
                 </tr>
+                <tr>
+                    <td><b>TOTAL</b></td>
+                    <td> </td>
+                    <td>"""+str(datetime.timedelta(seconds=int(COMBINEtime)+int(COUNTtime)+int(DESEQtime)+int(CALCULATEtime)))+"""</td>
+                </tr>
             </table>   
-        </div>
-    </div>
-    <div class="row">
-        <div style="float: left; width:45%">
-            <img src="./plots/TFEA_Results_Moustache_Plot.png" alt="Moustache Plot (FDR vs. NES)">
-        </div>
-        <div style="float: right; width: 45%">
-            <img src="./plots/TFEA_Pval_Histogram.png" alt="P-value Histogram">
         </div>
     </div>
     <div>
@@ -264,20 +269,20 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                     <th>ES</th> 
                     <th>NES</th>
                     <th>P-value</th>
-                    <th>FDR</th>
+                    <th>PADJ</th>
                 </tr>
             """)
 
-    for MOTIF_FILE,ES,NES,PVAL,POS,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,POS,PADJ in TFresults:
         if NES > 0:
-            if FDR < config.FDRCUTOFF:
+            if PADJ < config.PADJCUTOFF:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                 <td>"""+str("%.3f" % ES)+"""</td>
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
-                <td>"""+str("%.3g" % FDR)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str("%.3g" % POS)+"""</td>
             </tr>
                     """)
@@ -288,7 +293,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % ES)+"""</td>
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
-                <td>"""+str("%.3g" % FDR)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str("%.3g" % POS)+"""</td>
             </tr>
                     """)
@@ -306,20 +311,20 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <th>ES</th> 
                 <th>NES</th>
                 <th>P-value</th>
-                <th>FDR</th>
+                <th>PADJ</th>
             </tr>
                 """)
 
-    for MOTIF_FILE,ES,NES,PVAL,POS,FDR in TFresults:
+    for MOTIF_FILE,ES,NES,PVAL,POS,PADJ in TFresults:
         if NES < 0:
-            if FDR < config.FDRCUTOFF:
+            if PADJ < config.PADJCUTOFF:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                 <td>"""+str("%.3f" % ES)+"""</td>
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
-                <td>"""+str("%.3g" % FDR)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str("%.3g" % POS)+"""</td>
             </tr>
                     """)
@@ -330,7 +335,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str("%.3f" % ES)+"""</td>
                 <td>"""+str("%.3f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
-                <td>"""+str("%.3g" % FDR)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str("%.3g" % POS)+"""</td>
             </tr>
                     """)

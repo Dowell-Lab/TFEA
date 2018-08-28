@@ -199,15 +199,15 @@ def run(args):
     ax1.set_ylabel('Distance (kb)', fontsize=10)
 
     #This is the rank metric plot
-    ax2 = plt.subplot(gs[2])
+    ax2 = plt.subplot(gs[3])
     ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
     ax2.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
-    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
     ax2.set_ylim([-ylim,ylim])
     ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
     ax2.set_xlim(limits)
-    # ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+    ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
     ax2.set_ylabel('Rank Metric',fontsize=10)
     try:
         ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
@@ -219,17 +219,17 @@ def run(args):
         pass
 
     #This is the GC content plot
-    ax3 = plt.subplot(gs[3])
+    ax3 = plt.subplot(gs[2])
     # ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
     ax3.set_xlim(limits)
     GC_ARRAY = np.array(config.GC_ARRAY).transpose()
     sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #cbar_ax = F.add_axes([1, 1, .03, .4]))
     # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
     ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
-    ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     # ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
-    ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-    ax3.set_ylabel('GC content per base',fontsize=10)
+    # ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+    ax3.set_ylabel('Position (bp)',fontsize=10)
 
 
     plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
@@ -291,9 +291,9 @@ def run(args):
 
     return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,pos]
 
-def FDR(TFresults):
-    #This function iterates through the results and calculates an FDR for each TF motif. Also creates a moustache plot.                                                                                                                         
-    FDRlist = list()
+def PADJ(TFresults):
+    #This function iterates through the results and calculates a p-adj for each TF motif. Also creates a moustache plot.                                                                                                                         
+    PADJlist = list()
     NESlist = list()
     ESlist = list()
     sigx = list()
@@ -322,34 +322,38 @@ def FDR(TFresults):
         pvals.append(PVAL)
         # total = POS+NEG
         #Using classical FDR calculation ((pvalue*(# hypotheses tested))/rank of p-value)                                                                                                                                                       
-        FDR = ((float(i)+1.0)/float(len(TFresults)))*config.FDRCUTOFF
-        # FDR = (PVAL*len(TFresults))/float(i+1.0)                                                                                                                                                                                              
-        TFresults[i].append(FDR)
-        FDRlist.append(FDR)
+        # FDR = ((float(i)+1.0)/float(len(TFresults)))*config.FDRCUTOFF
+        # FDR = (PVAL*len(TFresults))/float(i+1.0)                   
+        #Using Bonferroni Correction
+        PADJ = PVAL*len(TFresults)                                                                                                                                                                           
+        TFresults[i].append(PADJ)
+        PADJRlist.append(PADJ)
         NESlist.append(ES)
         ESlist.append(ES)
         # totals.append(math.log(float(total)))
         positives.append(POS)
 
-        if FDR < config.FDRCUTOFF:
+        if PADJ < config.PADJCUTOFF:
             sigx.append(ES)
-            sigy.append(FDR)
+            sigy.append(PADJ)
             MAy.append(ES)
             MAx.append(POS)
             #sigtotals.append(math.log(float(total)))
 
     create_html.createTFtext(TFresults,config.OUTPUT)
 
-    #Creates a moustache plot of the global FDRs vs. ESs                                                                                                                                                                                       
+    #Creates a moustache plot of the global PADJs vs. ESs                                                                                                                                                                                       
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    ax.scatter(ESlist,FDRlist,color='black',edgecolor='')
+    ax.scatter(ESlist,PADJlist,color='black',edgecolor='')
     ax.scatter(sigx,sigy,color='red',edgecolor='')
     ax.set_title("TFEA Moustache Plot",fontsize=14)
     ax.set_xlabel("Enrichment Score (ES)",fontsize=14)
-    ax.set_ylabel("False Discovery Rate (FDR)",fontsize=14)
-    limit = math.fabs(max(ESlist,key=abs))
-    ax.set_xlim([-limit,limit])
+    ax.set_ylabel("Adjusted p-value (PADJ)",fontsize=14)
+    xlimit = math.fabs(max(ESlist,key=abs))
+    ylimit = math.fabs(max(PADJlist,key=abs))
+    ax.set_xlim([-xlimit,xlimit])
+    ax.set_ylim([0,ylimit])
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     plt.savefig(config.FIGUREDIR + 'TFEA_Results_Moustache_Plot.png',bbox_inches='tight')
@@ -359,7 +363,7 @@ def FDR(TFresults):
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     binwidth = 1.0/100.0
-    ax.hist(pvals,bins=np.arange(0,1.0+binwidth,binwidth),color='green')
+    ax.hist(pvals,bins=np.arange(0,0.5+binwidth,binwidth),color='green')
     ax.set_title("TFEA P-value Histogram",fontsize=14)
     ax.set_xlabel("P-value",fontsize=14)
     ax.set_ylabel("Count",fontsize=14)
