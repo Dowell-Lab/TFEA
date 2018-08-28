@@ -1,7 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os, matplotlib.pyplot as plt
-from config import LABEL1, LABEL2, BAM1, BAM2, FILEDIR, COUNT_FILE, FIGUREDIR
+from config
 
 def write_script():
     if (len(config.BAM1) > 1 and len(config.BAM2) > 1):
