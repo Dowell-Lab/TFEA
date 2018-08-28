@@ -1,7 +1,6 @@
 __author__ = 'Jonathan Rubin'
 
-import os, matplotlib.pyplot as plt
-from config
+import os, config, matplotlib.pyplot as plt
 
 def write_script():
     if (len(config.BAM1) > 1 and len(config.BAM2) > 1):
