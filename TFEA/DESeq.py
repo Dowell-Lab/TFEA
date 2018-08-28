@@ -46,7 +46,7 @@ def run():
     sigx = list()
     y = list()
     sigy = list()
-    with open(config.FILEDIR+'DESeq.res.txt','w') as F:
+    with open(config.FILEDIR+'DESeq.res.txt','r') as F:
         F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
