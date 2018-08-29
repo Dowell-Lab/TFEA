@@ -24,12 +24,6 @@ def run():
     config = configparser.ConfigParser(interpolation = configparser.ExtendedInterpolation())
     config.read(configfile)
 
-    #Run the config_parser script which will create variables for all folders and paths to use throughout TFEA
-    config_parser.run(homedir+'/',config,output,filedir,figuredir)
-
-    #Verify config file to make sure user has inputted all necessary variables
-    # config_parser.verify()
-
     #If user specifies the --sbatch flag, then we first create the output directories then run the sbatch script with the 'SUBMITTED' command submitted to the 
     #--sbatch flag so we know not to remake output directories. If --sbatch flag not specified, simply make output directories and continue.
     if sbatch == False:
@@ -46,9 +40,14 @@ def run():
         sys.exit("TFEA has been submitted using an sbatch script, use qstat to check its progress.")
 
 
+    #Run the config_parser script which will create variables for all folders and paths to use throughout TFEA
+    config_parser.run(homedir+'/',config,output,filedir,figuredir)
+
+    #Verify config file to make sure user has inputted all necessary variables
+    # config_parser.verify()
+
     #Import scripts from this package
     import config, combine_bed, count_reads, rank_regions, DESeq, motif_distance, ES_calculator, create_html, meta_eRNA
-
 
     #This module takes the input list of BED files, concatenates them, and then merges them via bedtools.
     COMBINEtime = time.time()
