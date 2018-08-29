@@ -196,7 +196,7 @@ def run(args):
 
         #This is the distance scatter plot right below the enrichment score plot
         ax1 = plt.subplot(gs[1])
-        ax1.scatter(xvals,distances,edgecolor="",color="black",s=10,alpha=0.25)
+        ax1.scatter(xvals,sorted_distances,edgecolor="",color="black",s=10,alpha=0.25)
         # ax1.axhline(config.SMALLWINDOW, color='red',alpha=0.25)
         # ax1.axhline(-config.SMALLWINDOW, color='red',alpha=0.25)
         ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
@@ -232,7 +232,7 @@ def run(args):
         ax3.set_xlim(limits)
         GC_ARRAY = np.array(config.GC_ARRAY).transpose()
         sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #, cbar_ax=F.add_axes([1, 1, .03, .4]))
-        ax3.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
+        # ax3.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
         plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
         # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
         ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
