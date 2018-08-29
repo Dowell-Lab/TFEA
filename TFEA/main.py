@@ -1,20 +1,35 @@
 __author__ = 'Jonathan Rubin'
+__version__ = '0.1'
 
-import os,time,sys,argparse,configparser, config_parser
+
+import os
+import sys
+import time
+import argparse
+import configparser
 from multiprocessing import Pool
 import multiprocessing as mp
+import config_parser
+
 
 def run():
     #Home directory, gets the full path (no '/' at the end) to the folder containing this script
     homedir = os.path.dirname(os.path.realpath(__file__))
 
     #argparse to add arguments to this python package
-    parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.',usage='TFEA --config CONFIG.ini [--sbatch email@address.com]')
-    parser.add_argument('--config','-c',metavar='',help='REQUIRED. A configuration file containing .ini suffix (ex. config.ini). See example in the examples folder.')
-    parser.add_argument('--sbatch','-s',default=False,metavar='',help='OPTIONAL. Submits an sbatch job. If specified, input an e-mail address.')
+    parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis \
+                                    (TFEA) takes as input a configuration file (.ini) and outputs \
+                                    a folder containing TFEA results.',
+                                    usage='TFEA --config CONFIG.ini [--sbatch email@address.com]')
+
+    parser.add_argument('--config','-c',metavar='',help='REQUIRED. A configuration file containing \
+                        .ini suffix (ex. config.ini). See example in the examples folder.')
+
+    parser.add_argument('--sbatch','-s',default=False,metavar='',help='OPTIONAL. Submits an sbatch job. \
+                        If specified, input an e-mail address.')
 
     #Display help message when no args are passed.
-    if len(sys.argv)==1:
+    if len(sys.argv) == 1:
         parser.print_help()
         sys.exit(1)
 

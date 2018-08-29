@@ -66,8 +66,8 @@ def run(args):
 
     Parameters                                                                                                                                                                           
     ----------                                                                                                                                                                           
-    bedfile : tab delimeted                                                                                                                                                            
-        tf bedfile with ranled distances                                                                                                                                                 
+    bedfile : tab delimited                                                                                                                                                            
+        tf bedfile with ranked distances                                                                                                                                                 
                                                                                                                                        
     Returns                                                                                                                                                                             
     -------                                                                                                                                                                             
@@ -161,7 +161,7 @@ def run(args):
         sorted_pval = [x for _,x in sorted(zip(ranks, pval))]
         sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
         try:
-            logpval = [math.log(x,10) if y > 1 else -math.log(x,10) for x,y in zip(sorted_pval,sorted_fc)]
+            logpval = [math.log(x,10) if y < 1 else -math.log(x,10) for x,y in zip(sorted_pval,sorted_fc)]
             # logpval = [math.log(x,10) for x in sorted_pval]
         except ValueError:
             logpval = sorted_pval
@@ -233,13 +233,13 @@ def run(args):
         GC_ARRAY = np.array(config.GC_ARRAY).transpose()
         sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #, cbar_ax=F.add_axes([1, 1, .03, .4]))
         # ax3.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
-        plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
+        plt.yticks([0,int(config.LARGEWINDOW),int(config.LARGEWINDOW*2)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
         # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
         ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
         ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
         # ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
         # ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-        ax3.set_ylabel('Position (kb)',fontsize=10)
+        ax3.set_ylabel('GC-heat per position (kb)',fontsize=10)
 
 
         plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
