@@ -12,10 +12,6 @@ def run():
     parser = argparse.ArgumentParser(description='Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration file (.ini) and outputs a folder containing TFEA results.',usage='TFEA --config CONFIG.ini [--sbatch email@address.com]')
     parser.add_argument('--config','-c',metavar='',help='REQUIRED. A configuration file containing .ini suffix (ex. config.ini). See example in the examples folder.')
     parser.add_argument('--sbatch','-s',default=False,metavar='',help='OPTIONAL. Submits an sbatch job. If specified, input an e-mail address.')
-    parser.add_argument('--temp','-t',default=False,metavar='',action='store_const',
-                    const=True,help='OPTIONAL. Save temp files in a temp directory within output.')
-    parser.add_argument('--plot','-p',default=False,metavar='',action='store_const',
-                    const=True,help='OPTIONAL. Plot extra (all) not just significant hits.')
 
     #Display help message when no args are passed.
     if len(sys.argv)==1:
@@ -30,6 +26,12 @@ def run():
     config = configparser.ConfigParser(interpolation = configparser.ExtendedInterpolation())
     config.read(configfile)
 
+    #Run the config_parser script which will create variables for all folders and paths to use throughout TFEA
+    config_parser.run(homedir+'/',config,output,filedir,figuredir)
+
+    #Verify config file to make sure user has inputted all necessary variables
+    # config_parser.verify()
+
     #If user specifies the --sbatch flag, then we first create the output directories then run the sbatch script with the 'SUBMITTED' command submitted to the 
     #--sbatch flag so we know not to remake output directories. If --sbatch flag not specified, simply make output directories and continue.
     if sbatch == False:
@@ -42,16 +44,8 @@ def run():
         script = scriptdir + 'run_main.sbatch'
         email = str(sbatch)
         # os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=src="+homedir+",config=" +configfile+ " " + script)
-        if not temp:
-            os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ " --sbatch SUBMITTED ' " + script)
-        elif temp:
-            os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ " --sbatch SUBMITTED --temp' " + script)
+        os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ " --sbatch SUBMITTED' " + script)
         sys.exit("TFEA has been submitted using an sbatch script, use qstat to check its progress.")
-
-
-
-    #Run the config_parser script which will create variables for all folders and paths to use throughout TFEA
-    config_parser.run(homedir+'/',config,output,filedir,figuredir)
 
 
     #Import scripts from this package
@@ -137,7 +131,7 @@ def run():
         print "done"
 
     #Here we simply remove large bed files that are produced within this package. This option can be turned off by specifying the --temp flag
-    if not temp:
+    if not config.TEMP:
         print "Removing temporary bed files..."
         os.system("rm " + filedir + '*.sorted.distance.bed')
         os.system("rm " + filedir + '*.fa')

@@ -25,7 +25,7 @@ def deseqfile():
                 stop = coordinates[1]
                 chrom = chrom.strip('"')
                 stop = stop.strip('"')
-                fc = float(line[fc_index])
+                fc = float(line[fc_index+1])
                 if fc < 1:
                     down.append((chrom,start,stop,pval,str(fc)))
                 else:

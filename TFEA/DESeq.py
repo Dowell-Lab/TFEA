@@ -54,8 +54,8 @@ def plot_MA(deseq_file):
         for line in F:
             line = line.strip('\n').split('\t')
             try:
-                log2fc = float(line[log2fc_index])
-                basemean = math.log(float(line[basemean_index]),10)
+                log2fc = float(line[log2fc_index+1])
+                basemean = math.log(float(line[basemean_index+1]),10)
                 padj = float(line[-1])
                 if padj < config.PADJCUTOFF:
                     sigx.append(basemean)

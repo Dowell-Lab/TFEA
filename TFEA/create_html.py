@@ -47,8 +47,8 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             </body>""")
 
     #For each TF motif with an PADJ value less than a cutoff, an html file is created to be used in results.html
-    positivelist = [x[0] for x in TFresults if x[2] > 0]
-    negativelist = [x[0] for x in TFresults if x[2] < 0]
+    positivelist = [x[0] for x in TFresults if x[2] > 0 and (config.PLOT or x[-1] < config.PADJCUTOFF)]
+    negativelist = [x[0] for x in TFresults if x[2] < 0 and (config.PLOT or x[-1] < config.PADJCUTOFF)]
     for i in range(len(TFresults)):
         MOTIF_FILE,ES,NES,PVAL,POS,PADJ = TFresults[i] 
         
@@ -70,9 +70,9 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 PREV_MOTIF = negativelist[negativelist.index(MOTIF_FILE)-1]
             except IndexError:
                 PREV_MOTIF = negativelist[len(negativelist)]
-        # if PADJ < config.PADJCUTOFF:
-        outfile = open(config.OUTPUTDIR + 'plots/' + MOTIF_FILE + '.results.html','w')
-        outfile.write("""<!DOCTYPE html>
+        if config.PLOT or PADJ < config.PADJCUTOFF:
+            outfile = open(config.OUTPUTDIR + 'plots/' + MOTIF_FILE + '.results.html','w')
+            outfile.write("""<!DOCTYPE html>
 <html>
 <head>
 <title>"""+MOTIF_FILE+""" Results</title>
@@ -166,8 +166,8 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 
 </body>
 </html>""")
-        outfile.close()
-        PREV_MOTIF = MOTIF_FILE
+            outfile.close()
+            PREV_MOTIF = MOTIF_FILE
 
     outfile = open(config.OUTPUTDIR+'results.html','w')
     outfile.write("""<!DOCTYPE html>
@@ -271,7 +271,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 
     for MOTIF_FILE,ES,NES,PVAL,POS,PADJ in TFresults:
         if NES > 0:
-            if PADJ < config.PADJCUTOFF:
+            if config.PLOT or PADJ < config.PADJCUTOFF:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
@@ -285,7 +285,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             else:
                 outfile.write("""
             <tr>
-                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
+                <td>"""+MOTIF_FILE+"""</td>
                 <td>"""+str("%.2f" % ES)+"""</td>
                 <td>"""+str("%.2f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
@@ -314,7 +314,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 
     for MOTIF_FILE,ES,NES,PVAL,POS,PADJ in TFresults:
         if NES < 0:
-            if PADJ < config.PADJCUTOFF:
+            if config.PLOT or PADJ < config.PADJCUTOFF:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
@@ -328,7 +328,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
             else:
                 outfile.write("""
             <tr>
-                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
+                <td>"""+MOTIF_FILE+"""</td>
                 <td>"""+str("%.2f" % ES)+"""</td>
                 <td>"""+str("%.2f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>

@@ -144,157 +144,160 @@ def run(args):
     if actualES > 0:
         p = 1-norm.cdf(actualES,mu,sigma)
     else:
-        p = norm.cdf(actualES,mu,sigma)   
+        p = norm.cdf(actualES,mu,sigma)
 
-    #Filter distances into quartiles for plotting purposes
-    q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
-    q3 = round(np.percentile(np.arange(1, len(distances_abs),1), 75))
-    updistancehist = distances_abs[0:int(q1)]
-    middledistancehist =  distances_abs[int(q1):int(q3)]
-    downdistancehist = distances_abs[int(q3):len(distances_abs)]
+    #Only plot things if user selects to plot all or if the pvalue is less than the cutoff
+    if config.PLOT or p < config.PADJCUTOFF:
 
-    
-    #Get log pval to plot for rank metric
-    sorted_pval = [x for _,x in sorted(zip(ranks, pval))]
-    sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
-    try:
-        # logpval = [math.log(x,10) if y > 1 else -math.log(x,10) for x,y in zip(sorted_pval,sorted_fc)]
-        logpval = [math.log(x,10) for x in sorted_pval]
-    except ValueError:
-        logpval = sorted_pval
+        #Filter distances into quartiles for plotting purposes
+        q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
+        q3 = round(np.percentile(np.arange(1, len(distances_abs),1), 75))
+        updistancehist = distances_abs[0:int(q1)]
+        middledistancehist =  distances_abs[int(q1):int(q3)]
+        downdistancehist = distances_abs[int(q3):len(distances_abs)]
 
-    # #Plot results for significant hits while list of simulated ES scores is in memory                              
-    if 'HO_' in MOTIF_FILE:
-        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + config.FIGUREDIR)
-        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + config.FIGUREDIR)
-    else:
-        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
-        os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
+        
+        #Get log pval to plot for rank metric
+        sorted_pval = [x for _,x in sorted(zip(ranks, pval))]
+        sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
+        try:
+            logpval = [math.log(x,10) if y > 1 else -math.log(x,10) for x,y in zip(sorted_pval,sorted_fc)]
+            # logpval = [math.log(x,10) for x in sorted_pval]
+        except ValueError:
+            logpval = sorted_pval
 
-
-    #Begin plotting section
-    F = plt.figure(figsize=(15.5,8))
-    xvals = range(1,len(cumscore)+1)
-    limits = [1,len(cumscore)]
-    gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
-
-    #This is the enrichment score plot (i.e. line plot)
-    ax0 = plt.subplot(gs[0])
-    ax0.plot(xvals,cumscore,color='green')
-    ax0.plot([0, len(cumscore)],[0, 1], '--', alpha=0.75)
-    ax0.set_title('Enrichment Plot: ',fontsize=14)
-    ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
-    ax0.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
-    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
-    ylims = ax0.get_ylim()
-    ymax = math.fabs(max(ylims,key=abs))
-    ax0.set_ylim([0,ymax])
-    ax0.set_xlim(limits)
-
-    #This is the distance scatter plot right below the enrichment score plot
-    ax1 = plt.subplot(gs[1])
-    ax1.scatter(xvals,distances,edgecolor="",color="black",s=10,alpha=0.25)
-    # ax1.axhline(config.SMALLWINDOW, color='red',alpha=0.25)
-    # ax1.axhline(-config.SMALLWINDOW, color='red',alpha=0.25)
-    ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
-    ax1.set_xlim(limits)
-    ax1.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
-    plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
-    ax1.set_ylabel('Distance (kb)', fontsize=10)
-
-    #This is the rank metric plot
-    ax2 = plt.subplot(gs[3])
-    ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
-    ax2.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
-    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
-    ax2.set_ylim([-ylim,ylim])
-    ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
-    ax2.set_xlim(limits)
-    ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-    ax2.set_ylabel('Rank Metric',fontsize=10)
-    try:
-        ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
-    except ValueError:
-        pass
-    try:
-        ax2.axvline(len(xvals) - len(downdistancehist), color='purple', alpha=0.25)
-    except ValueError:
-        pass
-
-    #This is the GC content plot
-    ax3 = plt.subplot(gs[2])
-    # ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
-    ax3.set_xlim(limits)
-    GC_ARRAY = np.array(config.GC_ARRAY).transpose()
-    sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #, cbar_ax=F.add_axes([1, 1, .03, .4]))
-    ax3.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
-    plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
-    # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
-    ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
-    ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
-    # ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
-    # ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-    ax3.set_ylabel('Position (kb)',fontsize=10)
+        # #Plot results for significant hits while list of simulated ES scores is in memory                              
+        if 'HO_' in MOTIF_FILE:
+            os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + config.FIGUREDIR)
+            os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + config.FIGUREDIR)
+        else:
+            os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
+            os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
 
 
-    plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
-    plt.cla()
+        #Begin plotting section
+        F = plt.figure(figsize=(15.5,8))
+        xvals = range(1,len(cumscore)+1)
+        limits = [1,len(cumscore)]
+        gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
 
-    F = plt.figure(figsize=(7,6))
-    ax2 = plt.subplot(111)
-    maximum = max(simES)
-    minimum = min(simES)
-    ax2.hist(simES,bins=100)
-    width = (maximum-minimum)/100.0
-    rect = ax2.bar(actualES,ax2.get_ylim()[1],color='red',width=width*2)[0]
-    height = rect.get_height()
-    ax2.text(rect.get_x() + rect.get_width()/2., 1.05*height, 'Observed ES', ha='center', va='bottom')
-    ax2.set_xlim([min(minimum,actualES)-(width*40),max(maximum,actualES)+(width*40)])
-    ax2.set_ylim([0,(1.05*height)+5])
-    ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
-    ax2.set_ylabel('Number of Simulations',fontsize=14)
-    ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
-    plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.png',bbox_inches='tight')
-    plt.cla()
+        #This is the enrichment score plot (i.e. line plot)
+        ax0 = plt.subplot(gs[0])
+        ax0.plot(xvals,cumscore,color='green')
+        ax0.plot([0, len(cumscore)],[0, 1], '--', alpha=0.75)
+        ax0.set_title('Enrichment Plot: ',fontsize=14)
+        ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
+        ax0.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
+        ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+        ylims = ax0.get_ylim()
+        ymax = math.fabs(max(ylims,key=abs))
+        ax0.set_ylim([0,ymax])
+        ax0.set_xlim(limits)
+
+        #This is the distance scatter plot right below the enrichment score plot
+        ax1 = plt.subplot(gs[1])
+        ax1.scatter(xvals,distances,edgecolor="",color="black",s=10,alpha=0.25)
+        # ax1.axhline(config.SMALLWINDOW, color='red',alpha=0.25)
+        # ax1.axhline(-config.SMALLWINDOW, color='red',alpha=0.25)
+        ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+        ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+        ax1.set_xlim(limits)
+        ax1.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
+        plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
+        ax1.set_ylabel('Distance (kb)', fontsize=10)
+
+        #This is the rank metric plot
+        ax2 = plt.subplot(gs[3])
+        ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
+        ax2.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
+        ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+        ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
+        ax2.set_ylim([-ylim,ylim])
+        ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
+        ax2.set_xlim(limits)
+        ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+        ax2.set_ylabel('Rank Metric',fontsize=10)
+        try:
+            ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
+        except ValueError:
+            pass
+        try:
+            ax2.axvline(len(xvals) - len(downdistancehist), color='purple', alpha=0.25)
+        except ValueError:
+            pass
+
+        #This is the GC content plot
+        ax3 = plt.subplot(gs[2])
+        # ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
+        ax3.set_xlim(limits)
+        GC_ARRAY = np.array(config.GC_ARRAY).transpose()
+        sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #, cbar_ax=F.add_axes([1, 1, .03, .4]))
+        ax3.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
+        plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
+        # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
+        ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
+        ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+        # ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
+        # ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+        ax3.set_ylabel('Position (kb)',fontsize=10)
 
 
-    #Plots the distribution of motif distances with a red line at h                                                                                                                                                                   
-    F = plt.figure(figsize=(6.5,6))
-    gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
-    ax0 = plt.subplot(gs[0])
-    binwidth = H/100.0
-    ax0.hist(updistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='green')
-    ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
-    ax0.axvline(h,color='red',alpha=0.5)
-    ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
-    ax0.set_xlim([0,H])
-    ##ax0.set_xlabel('Distance (bp)',fontsize=14)
-    ax0.set_ylabel('Hits',fontsize=14)
-    ax1 = plt.subplot(gs[2])
-    ax1.hist(downdistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='purple')
-    ax1.axvline(h,color='red',alpha=0.5)
-    ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
-    ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax1.set_xlim([0,H])
-    ax1.set_ylabel('Hits',fontsize=14)
-    ax1.set_xlabel('Distance (bp)',fontsize=14)
-    ax2 = plt.subplot(gs[1])
-    ax2.hist(middledistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='blue')
-    ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
-    ax2.axvline(h,color='red',alpha=0.5)
-    ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
-    ax2.set_xlim([0,H])
-    ##ax2.set_xlabel('Distance (bp)',fontsize=14)
-    ax2.set_ylabel('Hits',fontsize=14)
-    plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')                                                                                                             
-    plt.cla()
+        plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
+        plt.cla()
+
+        F = plt.figure(figsize=(7,6))
+        ax2 = plt.subplot(111)
+        maximum = max(simES)
+        minimum = min(simES)
+        ax2.hist(simES,bins=100)
+        width = (maximum-minimum)/100.0
+        rect = ax2.bar(actualES,ax2.get_ylim()[1],color='red',width=width*2)[0]
+        height = rect.get_height()
+        ax2.text(rect.get_x() + rect.get_width()/2., 1.05*height, 'Observed ES', ha='center', va='bottom')
+        ax2.set_xlim([min(minimum,actualES)-(width*40),max(maximum,actualES)+(width*40)])
+        ax2.set_ylim([0,(1.05*height)+5])
+        ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+        ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+        plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
+        ax2.set_ylabel('Number of Simulations',fontsize=14)
+        ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
+        plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.png',bbox_inches='tight')
+        plt.cla()
+
+
+        #Plots the distribution of motif distances with a red line at h                                                                                                                                                                   
+        F = plt.figure(figsize=(6.5,6))
+        gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
+        ax0 = plt.subplot(gs[0])
+        binwidth = H/100.0
+        ax0.hist(updistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='green')
+        ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
+        ax0.axvline(h,color='red',alpha=0.5)
+        ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+        ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+        ax0.set_xlim([0,H])
+        ##ax0.set_xlabel('Distance (bp)',fontsize=14)
+        ax0.set_ylabel('Hits',fontsize=14)
+        ax1 = plt.subplot(gs[2])
+        ax1.hist(downdistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='purple')
+        ax1.axvline(h,color='red',alpha=0.5)
+        ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
+        ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+        ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+        ax1.set_xlim([0,H])
+        ax1.set_ylabel('Hits',fontsize=14)
+        ax1.set_xlabel('Distance (bp)',fontsize=14)
+        ax2 = plt.subplot(gs[1])
+        ax2.hist(middledistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='blue')
+        ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
+        ax2.axvline(h,color='red',alpha=0.5)
+        ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+        ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+        ax2.set_xlim([0,H])
+        ##ax2.set_xlabel('Distance (bp)',fontsize=14)
+        ax2.set_ylabel('Hits',fontsize=14)
+        plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')                                                                                                             
+        plt.cla()
 
     return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,pos]
 
