@@ -21,8 +21,6 @@ def run():
     #If user provided arguments, then parse them
     sbatch = parser.parse_args().sbatch
     configfile = parser.parse_args().config
-    temp = parser.parse_args().temp
-    plot = parser.parse_args().plot
     config = configparser.ConfigParser(interpolation = configparser.ExtendedInterpolation())
     config.read(configfile)
 
