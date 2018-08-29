@@ -76,8 +76,8 @@ def plot_MA(deseq_file):
     ax.set_xlabel("Log10 Average Expression",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    plt.show()
-    # plt.savefig(config.FIGUREDIR + 'DESEQ_MA_Plot.png',bbox_inches='tight')
+    # plt.show()
+    plt.savefig(config.FIGUREDIR + 'DESEQ_MA_Plot.png',bbox_inches='tight')
 
 if __name__ == "__main__":
     deseq_file = '/Users/jonathanrubin/Google_Drive/Colorado University/Jonathan/TFEA_outputs/Allen2014/TFEA_DMSO-NUTLIN_2/temp_files/DESeq.res.txt'

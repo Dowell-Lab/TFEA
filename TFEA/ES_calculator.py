@@ -146,18 +146,20 @@ def run(args):
     else:
         p = norm.cdf(actualES,mu,sigma)   
 
-    #filter distances in to quartiles
+    #Filter distances into quartiles for plotting purposes
     q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
     q3 = round(np.percentile(np.arange(1, len(distances_abs),1), 75))
     updistancehist = distances_abs[0:int(q1)]
     middledistancehist =  distances_abs[int(q1):int(q3)]
     downdistancehist = distances_abs[int(q3):len(distances_abs)]
 
+    
+    #Get log pval to plot for rank metric
     sorted_pval = [x for _,x in sorted(zip(ranks, pval))]
     sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
-
     try:
-        logpval = [math.log(x,10) if y > 1 else -math.log(x,10) for x,y in zip(sorted_pval,sorted_fc)]
+        # logpval = [math.log(x,10) if y > 1 else -math.log(x,10) for x,y in zip(sorted_pval,sorted_fc)]
+        logpval = [math.log(x,10) for x in sorted_pval]
     except ValueError:
         logpval = sorted_pval
 
@@ -169,8 +171,9 @@ def run(args):
         os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
         os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
 
-    F = plt.figure(figsize=(15.5,8))
 
+    #Begin plotting section
+    F = plt.figure(figsize=(15.5,8))
     xvals = range(1,len(cumscore)+1)
     limits = [1,len(cumscore)]
     gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
@@ -191,8 +194,8 @@ def run(args):
     #This is the distance scatter plot right below the enrichment score plot
     ax1 = plt.subplot(gs[1])
     ax1.scatter(xvals,distances,edgecolor="",color="black",s=10,alpha=0.25)
-    ax1.axhline(config.SMALLWINDOW, color='red',alpha=0.25)
-    ax1.axhline(-config.SMALLWINDOW, color='red',alpha=0.25)
+    # ax1.axhline(config.SMALLWINDOW, color='red',alpha=0.25)
+    # ax1.axhline(-config.SMALLWINDOW, color='red',alpha=0.25)
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax1.set_xlim(limits)
@@ -225,7 +228,7 @@ def run(args):
     # ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
     ax3.set_xlim(limits)
     GC_ARRAY = np.array(config.GC_ARRAY).transpose()
-    sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto', cbar_ax=F.add_axes([1, 1, .03, .4]))
+    sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #, cbar_ax=F.add_axes([1, 1, .03, .4]))
     ax3.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
     plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
     # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
@@ -343,8 +346,6 @@ def PADJ(TFresults):
             MAy.append(ES)
             MAx.append(POS)
             #sigtotals.append(math.log(float(total)))
-
-    create_html.createTFtext(TFresults,config.OUTPUT)
 
     #Creates a moustache plot of the global PADJs vs. ESs                                                                                                                                                                                       
     F = plt.figure(figsize=(7,6))

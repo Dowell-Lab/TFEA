@@ -26,11 +26,6 @@ def createTFtext(TFresults,outputdir):
 def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     #Creates results.txt which is a tab-delimited text file with the results    
     TFresults = sorted(TFresults, key=lambda x: x[5])
-    # outfile = open(config.OUTPUTDIR + 'results.txt', 'w')
-    # outfile.write('TF-Motif\tES\tNES\tP-value\tPADJ\n')
-    # for val in TFresults:
-    #     outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
-    # outfile.close()
 
     #summary.html contains all user-defined variables, and also information about module used
     outfile = open(config.OUTPUTDIR+'summary.html','w')
@@ -55,7 +50,6 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
     positivelist = [x[0] for x in TFresults if x[2] > 0]
     negativelist = [x[0] for x in TFresults if x[2] < 0]
     for i in range(len(TFresults)):
-        #MOTIF_FILE,ES,NES,PVAL,POS,NEG,PADJ = TFresults[i]
         MOTIF_FILE,ES,NES,PVAL,POS,PADJ = TFresults[i] 
         
         if NES > 0:
@@ -76,7 +70,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 PREV_MOTIF = negativelist[negativelist.index(MOTIF_FILE)-1]
             except IndexError:
                 PREV_MOTIF = negativelist[len(negativelist)]
-        # if PVAL < PADJCUTOFF:
+        # if PADJ < config.PADJCUTOFF:
         outfile = open(config.OUTPUTDIR + 'plots/' + MOTIF_FILE + '.results.html','w')
         outfile.write("""<!DOCTYPE html>
 <html>
@@ -138,11 +132,11 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 </tr>
                 <tr>
                     <td>"""+MOTIF_FILE+"""</td>
-                    <td>"""+str("%.3f" % ES)+"""</td>
-                    <td>"""+str("%.3f" % NES)+"""</td>
+                    <td>"""+str("%.2f" % ES)+"""</td>
+                    <td>"""+str("%.2f" % NES)+"""</td>
                     <td>"""+str("%.4g" % PVAL)+"""</td>
                     <td>"""+str("%.4g" % PADJ)+"""</td>
-                    <td>"""+str("%.3f" % POS)+"""</td>
+                    <td>"""+str(POS)+"""</td>
                 </tr>
             </table>
         </div>
@@ -216,13 +210,13 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
         <div style="float: left; width: 45%">
             <img src="./plots/TFEA_NES_MA_Plot.png" alt="NES MA-Plot">
         </div>
-        <div style="float: left; width:45%">
-            <img src="./plots/TFEA_Results_Moustache_Plot.png" alt="TFEA Moustache Plot">
+        <div style="float: left; width: 45%">
+            <img src="./plots/DESEQ_MA_Plot.png" alt="DE-Seq MA-Plot">
         </div>
     </div>
     <div class="row">
-        <div style="float: left; width: 45%">
-            <img src="./plots/DESEQ_MA_Plot.png" alt="DE-Seq MA-Plot">
+        <div style="float: left; width:45%">
+            <img src="./plots/TFEA_Pval_Histogram.png" alt="TFEA P-Value Histogram">
         </div>
         <div id="Summary of Variables Used" style="float: right; width: 45%">
             <p><a href="./Summary.html">Full Summary of Variables Used</a></p>
@@ -281,22 +275,22 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
-                <td>"""+str("%.3f" % ES)+"""</td>
-                <td>"""+str("%.3f" % NES)+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
-                <td>"""+str("%.3f" % POS)+"""</td>
+                <td>"""+str(POS)+"""</td>
             </tr>
                     """)
             else:
                 outfile.write("""
             <tr>
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
-                <td>"""+str("%.3f" % ES)+"""</td>
-                <td>"""+str("%.3f" % NES)+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
-                <td>"""+str("%.3f" % POS)+"""</td>
+                <td>"""+str(POS)+"""</td>
             </tr>
                     """)
 
@@ -324,22 +318,22 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
-                <td>"""+str("%.3f" % ES)+"""</td>
-                <td>"""+str("%.3f" % NES)+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
-                <td>"""+str("%.3f" % POS)+"""</td>
+                <td>"""+str(POS)+"""</td>
             </tr>
                     """)
             else:
                 outfile.write("""
             <tr>
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
-                <td>"""+str("%.3f" % ES)+"""</td>
-                <td>"""+str("%.3f" % NES)+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
-                <td>"""+str("%.3f" % POS)+"""</td>
+                <td>"""+str(POS)+"""</td>
             </tr>
                     """)
 
@@ -393,10 +387,10 @@ def single_motif(results):
                     </tr>
                     <tr>
                         <td>"""+MOTIF_FILE+"""</td>
-                        <td>"""+str("%.3f" % ES)+"""</td>
-                        <td>"""+str("%.3f" % NES)+"""</td>
+                        <td>"""+str("%.2f" % ES)+"""</td>
+                        <td>"""+str("%.2f" % NES)+"""</td>
                         <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str("%.3f" % POS)+"""</td>
+                        <td>"""+str(POS)+"""</td>
                        
                     </tr>
                 </table>
