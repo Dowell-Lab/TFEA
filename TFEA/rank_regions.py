@@ -9,15 +9,15 @@ def deseqfile():
     up = list()
     down = list()
     with open(DESEQ_FILE) as F:
-        F.readline()
+        header = F.readline().strip('\n').split('\t')
+        fc_index = [i for i in range(len(header)) if header[i] == '"fc"' or header[i] == '"foldChange"'][0]
         for line in F:
             line = line.strip('\n').split('\t')
-            if line[5] != 'NA':
+            if line[fc_index] != 'NA':
                 try:
                     pval = format(float(line[-2]),'.12f')
                 except ValueError:
                     pval = format(1.0,'.12f')
-                #region = line[1].split(':')
                 region = line[0].split(':')
                 chrom = region[0]
                 coordinates = region[1].split('-')
@@ -25,7 +25,7 @@ def deseqfile():
                 stop = coordinates[1]
                 chrom = chrom.strip('"')
                 stop = stop.strip('"')
-                fc = float(line[5])
+                fc = float(line[fc_index])
                 if fc < 1:
                     down.append((chrom,start,stop,pval,str(fc)))
                 else:

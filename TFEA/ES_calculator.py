@@ -153,10 +153,11 @@ def run(args):
     middledistancehist =  distances_abs[int(q1):int(q3)]
     downdistancehist = distances_abs[int(q3):len(distances_abs)]
 
-    sorted_pval = [x for _,x in sorted(zip(ranks, pval))]   
+    sorted_pval = [x for _,x in sorted(zip(ranks, pval))]
+    sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
 
     try:
-        logpval = [math.log(x,10) for x in sorted_pval]
+        logpval = [math.log(x,10) if y > 1 else -math.log(x,10) for x,y in zip(sorted_pval,sorted_fc)]
     except ValueError:
         logpval = sorted_pval
 
@@ -189,13 +190,14 @@ def run(args):
 
     #This is the distance scatter plot right below the enrichment score plot
     ax1 = plt.subplot(gs[1])
-    ax1.scatter(xvals,distances_abs,edgecolor="",color="black",s=10,alpha=0.25)
-    ax1.axhline(150, color='red',alpha=0.25)
+    ax1.scatter(xvals,distances,edgecolor="",color="black",s=10,alpha=0.25)
+    ax1.axhline(config.SMALLWINDOW, color='red',alpha=0.25)
+    ax1.axhline(-config.SMALLWINDOW, color='red',alpha=0.25)
     ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax1.set_xlim(limits)
-    ax1.set_ylim([0,1500])
-    plt.yticks([0,1500],['0',str(float(1500)/1000.0)])
+    ax1.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
+    plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
     ax1.set_ylabel('Distance (kb)', fontsize=10)
 
     #This is the rank metric plot
@@ -223,13 +225,15 @@ def run(args):
     # ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
     ax3.set_xlim(limits)
     GC_ARRAY = np.array(config.GC_ARRAY).transpose()
-    sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #cbar_ax = F.add_axes([1, 1, .03, .4]))
+    sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto', cbar_ax=F.add_axes([1, 1, .03, .4]))
+    ax3.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
+    plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
     # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
     ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
     ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     # ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
     # ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-    ax3.set_ylabel('Position (bp)',fontsize=10)
+    ax3.set_ylabel('Position (kb)',fontsize=10)
 
 
     plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
@@ -325,7 +329,7 @@ def PADJ(TFresults):
         # FDR = ((float(i)+1.0)/float(len(TFresults)))*config.FDRCUTOFF
         # FDR = (PVAL*len(TFresults))/float(i+1.0)                   
         #Using Bonferroni Correction
-        PADJ = PVAL*len(TFresults)                                                                                                                                                                           
+        PADJ = 1 if PVAL*len(TFresults) > 1 else PVAL*len(TFresults)
         TFresults[i].append(PADJ)
         PADJlist.append(PADJ)
         NESlist.append(ES)
@@ -378,7 +382,7 @@ def PADJ(TFresults):
     ax.scatter(positives,ESlist,color='black',edgecolor='')
     ax.scatter(MAx,MAy,color='red',edgecolor='')
     ax.set_title("TFEA MA-Plot",fontsize=14)
-    ax.set_ylabel("Normalized Enrichment Score (NES)",fontsize=14)
+    ax.set_ylabel("Normalized Enrichment Score (NES) " + config.LABEL2 + "/" + config.LABEL1,fontsize=14)
     ax.set_xlabel("Hits Log10",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')

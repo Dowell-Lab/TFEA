@@ -124,7 +124,7 @@ def run():
             create_html.single_motif(results)
 
     if not temp:
-        os.system("rm -r " + filedir)
+        os.system("rm " + filedir + '*.bed')
 
     print "done"
 

@@ -1,6 +1,6 @@
 __author__ = 'Jonathan Rubin'
 
-import os, config, matplotlib.pyplot as plt
+import os, math, config, matplotlib.pyplot as plt
 
 def write_script():
     if (len(config.BAM1) > 1 and len(config.BAM2) > 1):
@@ -48,12 +48,14 @@ def plot_MA(deseq_file):
     y = list()
     sigy = list()
     with open(deseq_file,'r') as F:
-        F.readline()
+        header = F.readline().strip('\n').split('\t')
+        basemean_index = header.index('"baseMean"')
+        log2fc_index = header.index('"log2FoldChange"')
         for line in F:
             line = line.strip('\n').split('\t')
             try:
-                log2fc = float(line[6])
-                basemean = float(line[2])
+                log2fc = float(line[log2fc_index])
+                basemean = math.log(float(line[basemean_index]),10)
                 padj = float(line[-1])
                 if padj < config.PADJCUTOFF:
                     sigx.append(basemean)
@@ -70,14 +72,14 @@ def plot_MA(deseq_file):
     ax.scatter(x=x,y=y,color='black',edgecolor='')
     ax.scatter(x=sigx,y=sigy,color='red',edgecolor='')
     ax.set_title("DE-Seq MA-Plot",fontsize=14)
-    ax.set_ylabel("Log2 Fold-Change ("+config.LABEL1+"/"+config.LABEL2+")",fontsize=14)
-    ax.set_xlabel("Average Expression",fontsize=14)
+    ax.set_ylabel("Log2 Fold-Change ("+config.LABEL2+"/"+config.LABEL1+")",fontsize=14)
+    ax.set_xlabel("Log10 Average Expression",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    # plt.show()
-    plt.savefig(config.FIGUREDIR + 'DESEQ_MA_Plot.png',bbox_inches='tight')
+    plt.show()
+    # plt.savefig(config.FIGUREDIR + 'DESEQ_MA_Plot.png',bbox_inches='tight')
 
 if __name__ == "__main__":
-    deseq_file = '/Users/jonathanrubin/Google_Drive/Colorado University/Jonathan/TFEA_outputs/Allen2014/TFEA_DMSO1-DMSO2_3/temp_files/DESeq.res.txt'
+    deseq_file = '/Users/jonathanrubin/Google_Drive/Colorado University/Jonathan/TFEA_outputs/Allen2014/TFEA_DMSO-NUTLIN_2/temp_files/DESeq.res.txt'
     plot_MA(deseq_file)
     plt.cla()
