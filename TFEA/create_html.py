@@ -4,20 +4,34 @@ import config
 import datetime
 
 def get_TFresults(results_file):
+    '''This function parses a results_file into a TFresults array
+
+    Parameters                                                                                                                                                                           
+    ----------                                                                                                                                                                           
+    results_file : tab delimited file                                                                                                                                                           
+        file containing TFEA results                                                                                                                                                 
+                                                                                                                                       
+    Returns                                                                                                                                                                             
+    -------                                                                                                                                                                             
+    TFresults : array
+        Results for all motifs within the results_file
+                 
+    Raises
+    ------
+    None
+    '''
     TFresults = list()
     with open(results_file) as F:
         F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
             TFresults.append(line)
-
-
-
+    return TFresults
 
 def createTFtext(TFresults,outputdir):
     TFresults = sorted(TFresults, key=lambda x: x[3])
     outfile = open(outputdir + 'results.txt', 'w')
-    outfile.write('TF-Motif\tES\tNES\tP-value\tPADJ\n')
+    outfile.write('TF-Motif\tES\tNES\tP-value\tPADJ\tHITS\n')
     for val in TFresults:
         outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) +  '\n')
     outfile.close()
@@ -271,7 +285,7 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 
     for MOTIF_FILE,ES,NES,PVAL,POS,PADJ in TFresults:
         if NES > 0:
-            if config.PLOT or PADJ < config.PADJCUTOFF:
+            if PADJ < config.PADJCUTOFF:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
@@ -282,6 +296,18 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
                 <td>"""+str(POS)+"""</td>
             </tr>
                     """)
+            elif config.PLOT:
+                outfile.write("""
+            <tr>
+                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
+                <td>"""+str(POS)+"""</td>
+            </tr>
+                    """)
+
             else:
                 outfile.write("""
             <tr>
@@ -314,9 +340,20 @@ def run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime):
 
     for MOTIF_FILE,ES,NES,PVAL,POS,PADJ in TFresults:
         if NES < 0:
-            if config.PLOT or PADJ < config.PADJCUTOFF:
+            if PADJ < config.PADJCUTOFF:
                 outfile.write("""
             <tr style="color: red;">
+                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
+                <td>"""+str(POS)+"""</td>
+            </tr>
+                    """)
+            elif config.PLOT:
+                outfile.write("""
+            <tr>
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""+MOTIF_FILE+"""</td>
                 <td>"""+str("%.2f" % ES)+"""</td>
                 <td>"""+str("%.2f" % NES)+"""</td>

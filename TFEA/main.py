@@ -1,5 +1,5 @@
 __author__ = 'Jonathan Rubin'
-__version__ = '0.1'
+__version__ = '3.0'
 
 
 import os
@@ -39,8 +39,9 @@ def run():
     config = configparser.ConfigParser(interpolation = configparser.ExtendedInterpolation())
     config.read(configfile)
 
-    #If user specifies the --sbatch flag, then we first create the output directories then run the sbatch script with the 'SUBMITTED' command submitted to the 
-    #--sbatch flag so we know not to remake output directories. If --sbatch flag not specified, simply make output directories and continue.
+    #If user specifies the --sbatch flag, then we first create the output directories then run the 
+    #sbatch script with the 'SUBMITTED' command submitted to the --sbatch flag so we know not to 
+    #remake output directories. If --sbatch flag not specified, simply make output directories and continue.
     if sbatch == False:
         output,filedir,figuredir,e_and_o = make_out_directories(True,config)
     elif str(sbatch) == 'SUBMITTED':
@@ -50,8 +51,10 @@ def run():
         scriptdir = parent_dir(homedir) + '/scripts/'
         script = scriptdir + 'run_main.sbatch'
         email = str(sbatch)
-        # os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=src="+homedir+",config=" +configfile+ " " + script)
-        os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email+" --export=cmd='"+homedir+" --config " +configfile+ " --sbatch SUBMITTED' " + script)
+        # os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email \
+        #            +" --export=src="+homedir+",config=" +configfile+ " " + script)
+        os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o + "%x.out --mail-user="+email \
+                +" --export=cmd='"+homedir+" --config " +configfile+ " --sbatch SUBMITTED' " + script)
         sys.exit("TFEA has been submitted using an sbatch script, use qstat to check its progress.")
 
 
@@ -62,7 +65,15 @@ def run():
     # config_parser.verify()
 
     #Import scripts from this package
-    import config, combine_bed, count_reads, rank_regions, DESeq, motif_distance, ES_calculator, create_html, meta_eRNA
+    import config
+    import combine_bed
+    import count_reads
+    import rank_regions
+    import DESeq
+    import motif_distance
+    import ES_calculator
+    import create_html
+    import meta_eRNA
 
     #This module takes the input list of BED files, concatenates them, and then merges them via bedtools.
     COMBINEtime = time.time()
@@ -135,14 +146,16 @@ def run():
             TFresults = ES_calculator.PADJ(TFresults)
             create_html.run(TFresults,COMBINEtime,COUNTtime,DESEQtime,CALCULATEtime)
 
-        #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to determine an PADJ for the given motif.
+        #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to
+        #determine an PADJ for the given motif.
         else:
             results = ES_calculator.run((config.SINGLEMOTIF,millions_mapped))
             create_html.single_motif(results)
 
         print "done"
 
-    #Here we simply remove large bed files that are produced within this package. This option can be turned off by specifying the --temp flag
+    #Here we simply remove large bed files that are produced within this package. This option can
+    #be turned off by specifying the --temp flag
     if not config.TEMP:
         print "Removing temporary bed files..."
         os.system("rm " + filedir + '*.sorted.distance.bed')
@@ -150,8 +163,9 @@ def run():
 
     print "done"
 
-#This function detects whether there are existing output folders that match the current output folder and if so sequentially adds an integer to the end
-#of the output folder name so it doesn't overwrite
+#This function detects whether there are existing output folders that match the current output
+#folder and if so sequentially adds an integer to the end of the output folder name so it
+#doesn't overwrite
 def make_out_directories(dirs,config):
     #Output directory
     output = config['DATA']['OUTPUT'].strip("'")

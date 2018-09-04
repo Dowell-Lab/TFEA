@@ -74,7 +74,8 @@ def run(args):
     AUC : float                                                                                                                                                                   
         the AUC for a given tf
 
-    p-value : float                                                                                                                                                                              imperical p-value calcutaed from 1000 simulations
+    p-value : float                                                                                                                                                                              
+        imperical p-value calcutaed from 1000 simulations
                  
     Raises
     ------
@@ -239,7 +240,7 @@ def run(args):
         ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
         # ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
         # ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-        ax3.set_ylabel('GC-heat per position (kb)',fontsize=10)
+        ax3.set_ylabel('GC content per kb',fontsize=10)
 
 
         plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')

@@ -1,6 +1,6 @@
 __author__ = 'Jonathan Rubin'
 
-import os, math, config, matplotlib.pyplot as plt
+import os, math, config, matplotlib.pyplot as plt, numpy as np
 
 def write_script():
     if (len(config.BAM1) > 1 and len(config.BAM2) > 1):
@@ -43,10 +43,12 @@ def run():
     plot_MA(config.FILEDIR+'DESeq.res.txt')
 
 def plot_MA(deseq_file):
-    x = list()
-    sigx = list()
-    y = list()
-    sigy = list()
+    up_x = list()
+    up_y = list()
+    up_p = list()
+    dn_x = list()
+    dn_y = list()
+    dn_p = list()
     with open(deseq_file,'r') as F:
         header = F.readline().strip('\n').split('\t')
         basemean_index = header.index('"baseMean"')
@@ -56,30 +58,37 @@ def plot_MA(deseq_file):
             try:
                 log2fc = float(line[log2fc_index+1])
                 basemean = math.log(float(line[basemean_index+1]),10)
-                padj = float(line[-1])
-                if padj < config.PADJCUTOFF:
-                    sigx.append(basemean)
-                    sigy.append(log2fc)
+                pval = float(line[-2])
+                if log2fc > 0:
+                    up_x.append(basemean)
+                    up_y.append(log2fc)
+                    up_p.append(pval)
                 else:
-                    x.append(basemean)
-                    y.append(log2fc)
+                    dn_x.append(basemean)
+                    dn_y.append(log2fc)
+                    dn_p.append(pval)
             except:
                 pass
 
+    x = [x for _,x in sorted(zip(up_p,up_x))] + [x for _,x in sorted(zip(dn_p,dn_x), reverse=True)]
+    y = [y for _,y in sorted(zip(up_p,up_y))] + [y for _,y in sorted(zip(dn_p,dn_y), reverse=True)]
+    c = plt.cm.RdYlGn(np.linspace(0,1,len(x)))
+    # c =np.linspace(0,1,len(x))
+    # cm = plt.cm.get_cmap('RdYlGn')
     #Creates an MA-Plot of the region expression
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    ax.scatter(x=x,y=y,color='black',edgecolor='')
-    ax.scatter(x=sigx,y=sigy,color='red',edgecolor='')
+    plt.scatter(x=x,y=y,color=c,edgecolor='')
     ax.set_title("DE-Seq MA-Plot",fontsize=14)
     ax.set_ylabel("Log2 Fold-Change ("+config.LABEL2+"/"+config.LABEL1+")",fontsize=14)
     ax.set_xlabel("Log10 Average Expression",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    # plt.colorbar()
     # plt.show()
     plt.savefig(config.FIGUREDIR + 'DESEQ_MA_Plot.png',bbox_inches='tight')
 
 if __name__ == "__main__":
-    deseq_file = '/Users/jonathanrubin/Google_Drive/Colorado University/Jonathan/TFEA_outputs/Allen2014/TFEA_DMSO-NUTLIN_2/temp_files/DESeq.res.txt'
+    deseq_file = '/Users/jonathanrubin/Google_Drive/Colorado University/Jonathan/TFEA_outputs/Allen2014/TFEA_DMSO-NUTLIN_3/temp_files/DESeq.res.txt'
     plot_MA(deseq_file)
     plt.cla()
