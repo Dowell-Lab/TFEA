@@ -1,82 +1,77 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-__author__ = 'Jonathan Rubin and Rutendo Sigauke'
+__author__ = 'Jonathan D. Rubin and Rutendo Sigauke'
+__credits__ = ['Jonathan D. Rubin', 'Rutendo Sigauke', 'Jacob Stanley', 
+                'Robin Dowell']
+__maintainer__ = 'Jonathan D. Rubin'
+__email__ = 'Jonathan.Rubin@colorado.edu'
 
-global np
+'''This file contains a list of dependent functions that rely on other functions
+    to work properly
+'''
+
 import matplotlib
 matplotlib.use('Agg')
+import os
 import sys
 import math
-import os
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import matplotlib.cm as cm
 from matplotlib import gridspec
 from scipy.stats import norm 
 import time
-from multiprocessing import Pool
+
 import config
-import motif_distance
-import meta_eRNA
-import create_html
-import combine_bed
-import meme
-import main
-import seaborn as sns
+import independent_functions
 
-
-def parent_dir(directory):
-    pathlist = directory.split('/')
-    newdir = '/'.join(pathlist[0:len(pathlist)-1])
-    
-    return newdir
-
-def permutations(distances, permutations=1000):
-    '''generating permutations of the distances and calculating AUC.
+#===================================================================================
+def deseq_run(tempdir=config.TEMPDIR):
+    '''Writes the DE-Seq script, runs the DE-Seq script, and plots the DE-Seq MA plot
 
     Parameters
     ----------
-    distances : list or array
-        normalized distances 
-        
-    permutations : int
-        number of times to permute (default=1000)
-        
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    Returns
+    ----------
+    None
+    '''
+    independent_functions.write_deseq_script()
+    os.system("R < " + tempdir + "DESeq.R --no-save")
+    independent_functions.plot_deseq_MA(tempdir+'DESeq.res.txt')
+#===================================================================================
+
+#===================================================================================
+def calculate_es_auc(args, fimo=config.FIMO, 
+                        ranked_center_file=config.RANKED_CENTER_FILE,
+                        motif_hits=config.MOTIF_HITS, plot=config.PLOT,
+                        padj_cutoff=config.PADJCUTOFF, logos=config.LOGOS,
+                        figuredir=config.FIGUREDIR,largewindow=config.LARGEWINDOW,
+                        smallwindow=config.smallwindow, gc_array=config.GC_ARRAY):
+    '''This function calculates the AUC for any TF based on the TF motif hits 
+        relative to the bidirectionals. The calculated AUC is used as a proxy for 
+        the enrichemnt of the TFs.
+
+    Parameters
+    ----------
+    args : tuple 
+        contains two arguments that are unpacked within this function:
+            motif_file : string
+                the name of a motif bed file contained within MOTIF_HITS
+            millions_mapped : list or array
+                contiains a list of floats that corresponds to the millions mapped
+                reads for each bam file
+
     Returns
     -------
-    es_permute : list 
-        list of AUC calculated for permutations 
-       
-    '''
-
-    es_permute = []
-    triangle_area = 0.5*(len(distances))
-    for i in range(permutations):
-        random_distances = np.random.permutation(distances)
-        cum_distances = np.cumsum(random_distances)
-        es = np.trapz(cum_distances)
-        auc = es - triangle_area
-        es_permute.append(auc)
-    return es_permute
-
-
-
-def run(args):
-
-    '''This function calculates the AUC for any TF based on the TF motif hits relative to the bidirectionals.
-    The calculated AUC is used as a proxy for the enrichemnt of the TFs.
-
-    Parameters                                                                                                                                                                           
-    ----------                                                                                                                                                                           
-    bedfile : tab delimited                                                                                                                                                            
-        tf bedfile with ranked distances                                                                                                                                                 
-                                                                                                                                       
-    Returns                                                                                                                                                                             
-    -------                                                                                                                                                                             
-    AUC : float                                                                                                                                                                   
+    AUC : float
         the AUC for a given tf
 
-    p-value : float                                                                                                                                                                              
+    p-value : float
         imperical p-value calcutaed from 1000 simulations
                  
     Raises
@@ -85,25 +80,30 @@ def run(args):
         when tf does not have any hits
 
     '''
+    motif_file,millions_mapped = args
+    if fimo:
+        ranked_fullregions_file = independent_functions.get_regions()
+        ranked_fasta_file = independent_functions.getfasta(
+                                bedfile=ranked_fullregions_file)
 
-    MOTIF_FILE,millions_mapped = args
-    if config.FIMO:
-        ranked_fullregions_file = combine_bed.get_regions()
-        ranked_fasta_file = combine_bed.getfasta(ranked_fullregions_file)
-        background_file = combine_bed.get_bgfile(ranked_fasta_file)
-        fimo_file = meme.fimo(background_file,MOTIF_FILE,ranked_fasta_file)
-        meme.meme2images(MOTIF_FILE)
-        ranked_center_distance_file = motif_distance.fimo_distance(fimo_file,MOTIF_FILE)
+        background_file = independent_functions.get_bgfile(
+                                fastafile=ranked_fasta_file)
+
+        fimo_file = independent_functions.fimo(background_file,motif_file,
+                                                ranked_fasta_file)
+
+        independent_functions.meme2images(motif_file)
+        ranked_center_distance_file = independent_functions.fimo_distance(fimo_file,
+                                                                            motif_file)
     else:
-        ranked_center_distance_file = motif_distance.run(config.RANKED_CENTER_FILE,config.MOTIF_HITS+MOTIF_FILE)
+        ranked_center_distance_file = independent_functions.motif_distance_bedtools_closest(
+                                        ranked_center_file,motif_hits+motif_file)
 
     distances = []
     ranks = []
     pval = []
     pos = 0
     fc = []
-    H = 1500.0
-    h = 150.0
 
     with open(ranked_center_distance_file) as F:
         for line in F:
@@ -149,8 +149,21 @@ def run(args):
     else:
         p = norm.cdf(actualES,mu,sigma)
 
-    #Only plot things if user selects to plot all or if the pvalue is less than the cutoff
-    if config.PLOT or p < config.PADJCUTOFF:
+    plot_individual_graphs()
+
+    return [motif_file.split('.bed')[0],actualES,NES,p,pos]
+#===================================================================================
+
+#===================================================================================
+def plot_individual_graphs(plot=config.PLOT, padj_cutoff=config.PADJCUTOFF,
+                            distances_abs=list(),ranks=list(),pvals=list(), fc=list(),
+                            figuredir=config.FIGUREDIR,logos=config.LOGOS,
+                            cumscore=list(),gc_array=config.GC_ARRAY,
+                            largewindow=config.LARGEWINDOW):
+
+    #Only plot things if user selects to plot all or if the pvalue is less than the 
+    #cutoff
+    if plot or p < padj_cutoff:
 
         #Filter distances into quartiles for plotting purposes
         q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
@@ -164,18 +177,23 @@ def run(args):
         sorted_pval = [x for _,x in sorted(zip(ranks, pval))]
         sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
         try:
-            logpval = [math.log(x,10) if y < 1 else -math.log(x,10) for x,y in zip(sorted_pval,sorted_fc)]
-            # logpval = [math.log(x,10) for x in sorted_pval]
+            logpval = [math.log(x,10) if y < 1 else -math.log(x,10) \
+                        for x,y in zip(sorted_pval,sorted_fc)]
         except ValueError:
             logpval = sorted_pval
 
-        # #Plot results for significant hits while list of simulated ES scores is in memory                              
-        if 'HO_' in MOTIF_FILE:
-            os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_direct.png " + config.FIGUREDIR)
-            os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0].split('HO_')[1] + "_revcomp.png " + config.FIGUREDIR)
+        #Plot results for significant hits while list of simulated ES scores is in 
+        #memory                              
+        if 'HO_' in motif_file:
+            os.system("scp " + logos + motif_file.split('.bed')[0].split('HO_')[1] 
+                        + "_direct.png " + figuredir)
+            os.system("scp " + logos + motif_file.split('.bed')[0].split('HO_')[1] 
+                        + "_revcomp.png " + figuredir)
         else:
-            os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_direct.png " + config.FIGUREDIR)
-            os.system("scp " + config.LOGOS + MOTIF_FILE.split('.bed')[0] + "_revcomp.png " + config.FIGUREDIR)
+            os.system("scp " + logos + motif_file.split('.bed')[0] + "_direct.png " 
+                        + figuredir)
+            os.system("scp " + logos + motif_file.split('.bed')[0] + "_revcomp.png " 
+                        + figuredir)
 
 
         #Begin plotting section
@@ -190,8 +208,10 @@ def run(args):
         ax0.plot([0, len(cumscore)],[0, 1], '--', alpha=0.75)
         ax0.set_title('Enrichment Plot: ',fontsize=14)
         ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
-        ax0.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
-        ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+        ax0.tick_params(axis='y', which='both', left='on', right='off', 
+                        labelleft='on')
+        ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
         ylims = ax0.get_ylim()
         ymax = math.fabs(max(ylims,key=abs))
         ax0.set_ylim([0,ymax])
@@ -199,21 +219,26 @@ def run(args):
 
         #This is the distance scatter plot right below the enrichment score plot
         ax1 = plt.subplot(gs[1])
-        ax1.scatter(xvals,sorted_distances,edgecolor="",color="black",s=10,alpha=0.25)
-        # ax1.axhline(config.SMALLWINDOW, color='red',alpha=0.25)
-        # ax1.axhline(-config.SMALLWINDOW, color='red',alpha=0.25)
-        ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-        ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+        ax1.scatter(xvals,sorted_distances,edgecolor="",color="black",s=10,
+                    alpha=0.25)
+        ax1.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='on')
+        ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
         ax1.set_xlim(limits)
-        ax1.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
-        plt.yticks([-int(config.LARGEWINDOW),0,int(config.LARGEWINDOW)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
+        ax1.set_ylim([-int(largewindow),int(largewindow)])
+        plt.yticks([-int(largewindow),0,int(largewindow)],
+                    [str(-int(largewindow)/1000.0),'0',\
+                    str(int(largewindow)/1000.0)])
         ax1.set_ylabel('Distance (kb)', fontsize=10)
 
         #This is the rank metric plot
         ax2 = plt.subplot(gs[3])
         ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
-        ax2.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
-        ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+        ax2.tick_params(axis='y', which='both', left='on', right='off', 
+                        labelleft='on')
+        ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='on')
         ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
         ax2.set_ylim([-ylim,ylim])
         ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
@@ -225,27 +250,27 @@ def run(args):
         except ValueError:
             pass
         try:
-            ax2.axvline(len(xvals) - len(downdistancehist), color='purple', alpha=0.25)
+            ax2.axvline(len(xvals) - len(downdistancehist), color='purple', 
+                        alpha=0.25)
         except ValueError:
             pass
 
         #This is the GC content plot
         ax3 = plt.subplot(gs[2])
-        # ax3.set_ylim([-config.SMALLWINDOW,config.SMALLWINDOW])
         ax3.set_xlim(limits)
-        GC_ARRAY = np.array(config.GC_ARRAY).transpose()
-        sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto') #, cbar_ax=F.add_axes([1, 1, .03, .4]))
-        # ax3.set_ylim([-int(config.LARGEWINDOW),int(config.LARGEWINDOW)])
-        plt.yticks([0,int(config.LARGEWINDOW),int(config.LARGEWINDOW*2)],[str(-int(config.LARGEWINDOW)/1000.0),'0',str(int(config.LARGEWINDOW)/1000.0)])
-        # plt.imshow(GC_ARRAY, cmap='hot', interpolation='nearest')
-        ax3.tick_params(axis='y', which='both', left='on', right='off', labelleft='on')
-        ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
-        # ax3.yaxis.set_ticks([int(-config.SMALLWINDOW),0,int(config.SMALLWINDOW)])
-        # ax3.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+        GC_ARRAY = np.array(gc_array).transpose()
+        sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',yticklabels='auto')
+        plt.yticks([0,int(largewindow),int(largewindow*2)],
+                    [str(-int(largewindow)/1000.0),'0',\
+                    str(int(largewindow)/1000.0)])
+        ax3.tick_params(axis='y', which='both', left='on', right='off', 
+                        labelleft='on')
+        ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
         ax3.set_ylabel('GC content per kb',fontsize=10)
 
-
-        plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_enrichment_plot.png',bbox_inches='tight')
+        plt.savefig(figuredir + motif_file.split('.bed')[0] 
+                    + '_enrichment_plot.png',bbox_inches='tight')
         plt.cla()
 
         F = plt.figure(figsize=(7,6))
@@ -264,7 +289,7 @@ def run(args):
         plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
         ax2.set_ylabel('Number of Simulations',fontsize=14)
         ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
-        plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_simulation_plot.png',bbox_inches='tight')
+        plt.savefig(figuredir + motif_file.split('.bed')[0] + '_simulation_plot.png',bbox_inches='tight')
         plt.cla()
 
 
@@ -272,86 +297,63 @@ def run(args):
         F = plt.figure(figsize=(6.5,6))
         gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
         ax0 = plt.subplot(gs[0])
-        binwidth = H/100.0
+        binwidth = largewindow/100.0
         ax0.hist(updistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='green')
         ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
         ax0.axvline(h,color='red',alpha=0.5)
         ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
         ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
         ax0.set_xlim([0,H])
-        ##ax0.set_xlabel('Distance (bp)',fontsize=14)
         ax0.set_ylabel('Hits',fontsize=14)
         ax1 = plt.subplot(gs[2])
-        ax1.hist(downdistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='purple')
+        ax1.hist(downdistancehist,bins=np.arange(0,int(largewindow)+binwidth,binwidth),color='purple')
         ax1.axvline(h,color='red',alpha=0.5)
         ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
         ax1.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
         ax1.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-        ax1.set_xlim([0,H])
+        ax1.set_xlim([0,largewindow])
         ax1.set_ylabel('Hits',fontsize=14)
         ax1.set_xlabel('Distance (bp)',fontsize=14)
         ax2 = plt.subplot(gs[1])
-        ax2.hist(middledistancehist,bins=np.arange(0,int(H)+binwidth,binwidth),color='blue')
+        ax2.hist(middledistancehist,bins=np.arange(0,int(largewindow)+binwidth,binwidth),color='blue')
         ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
         ax2.axvline(h,color='red',alpha=0.5)
         ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
         ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
-        ax2.set_xlim([0,H])
-        ##ax2.set_xlabel('Distance (bp)',fontsize=14)
+        ax2.set_xlim([0,largewindow])
         ax2.set_ylabel('Hits',fontsize=14)
-        plt.savefig(config.FIGUREDIR + MOTIF_FILE.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')                                                                                                             
+        plt.savefig(figuredir + motif_file.split('.bed')[0] + '_distance_distribution.png',bbox_inches='tight')                                                                                                             
         plt.cla()
 
-    return [MOTIF_FILE.split('.bed')[0],actualES,NES,p,pos]
+#===================================================================================
 
-def PADJ(TFresults):
-    #This function iterates through the results and calculates a p-adj for each TF motif. Also creates a moustache plot.                                                                                                                         
-    PADJlist = list()
-    NESlist = list()
-    ESlist = list()
-    sigx = list()
-    sigy = list()
-    pvals = list()
-    MAy = list()
-    MAx = list()
-    ##pvalsNA = [1 if str(x) == 'nan' else x for x in pvals]                                                                                                                                                                                    
-    totals = list()
-    sigtotals = list()
-    positives = list()
-    h = 150.0
-    H = 1500.0
+#===================================================================================
+def plot_global_graphs(TFresults=TFresults):
+    '''This function plots graphs that are displayed on the main results.html file
+        that correspond to results relating to all analyzed TFs.
 
-    TFresults = [x for x in TFresults if x != "no hits"]
-    TFresults = sorted(TFresults, key=lambda x: x[3])
-    for i in range(len(TFresults)):
-        ES = TFresults[i][1]
-        NES = TFresults[i][2]
-        PVAL = TFresults[i][3]
-        try:
-            POS = math.log(TFresults[i][4],10)
-        except:
-            POS = 0.0
-        # NEG = TFresults[i][5]
-        pvals.append(PVAL)
-        # total = POS+NEG
-        #Using classical FDR calculation ((pvalue*(# hypotheses tested))/rank of p-value)                                                                                                                                                       
-        # FDR = ((float(i)+1.0)/float(len(TFresults)))*config.FDRCUTOFF
-        # FDR = (PVAL*len(TFresults))/float(i+1.0)                   
-        #Using Bonferroni Correction
-        PADJ = 1 if PVAL*len(TFresults) > 1 else PVAL*len(TFresults)
-        TFresults[i].append(PADJ)
-        PADJlist.append(PADJ)
-        NESlist.append(ES)
-        ESlist.append(ES)
-        # totals.append(math.log(float(total)))
-        positives.append(POS)
+    Parameters
+    ----------
+    TFresults : list of lists
+        contains calculated enrichment scores for all TFs of interest specified by
+        the user
+        
+    Returns
+    -------
+    TFresults : list of lists
+        same as input with an additional p-adjusted value appended to each TF
+    '''
+    TFresults = independent_functions.padj_bonferroni(TFresults=TFresults)
 
-        if PADJ < config.PADJCUTOFF:
-            sigx.append(ES)
-            sigy.append(PADJ)
-            MAy.append(ES)
-            MAx.append(POS)
-            #sigtotals.append(math.log(float(total)))
+    ESlist = [i[1] for i in TFresults]
+    NESlist = [i[2] for i in TFresults]
+    PVALlist = [i[3] for i in TFresults]
+    POSlist = [math.log(i[4],10) for i in TFresults if i[4] != 0]
+    PADJlist = [i[5] for i in TFresults]
+
+    sigx,sigy = map(list,zip(*[x,p for x,p in zip(ESlist,PADJlist) if p < config.PADJCUTOFF]))
+    MAx,MAy = map(list,zip(*[x,y for x,y,p in zip(ESlist,POSlist,PADJlist) if p < config.PADJCUTOFF]))
+
 
     #Creates a moustache plot of the global PADJs vs. ESs                                                                                                                                                                                       
     F = plt.figure(figsize=(7,6))
@@ -374,7 +376,7 @@ def PADJ(TFresults):
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     binwidth = 1.0/100.0
-    ax.hist(pvals,bins=np.arange(0,0.5+binwidth,binwidth),color='green')
+    ax.hist(PVALlist,bins=np.arange(0,0.5+binwidth,binwidth),color='green')
     ax.set_title("TFEA P-value Histogram",fontsize=14)
     ax.set_xlabel("P-value",fontsize=14)
     ax.set_ylabel("Count",fontsize=14)
@@ -386,7 +388,7 @@ def PADJ(TFresults):
     #Creates an MA-plot with NES on Y-axis and positive hits on X-axis                                                                                                                                                                                                      
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    ax.scatter(positives,ESlist,color='black',edgecolor='')
+    ax.scatter(POSlist,ESlist,color='black',edgecolor='')
     ax.scatter(MAx,MAy,color='red',edgecolor='')
     ax.set_title("TFEA MA-Plot",fontsize=14)
     ax.set_ylabel("Normalized Enrichment Score (NES) " + config.LABEL2 + "/" + config.LABEL1,fontsize=14)
@@ -395,11 +397,8 @@ def PADJ(TFresults):
     ax.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
     plt.savefig(config.FIGUREDIR + 'TFEA_NES_MA_Plot.png',bbox_inches='tight')
     plt.cla()
+#===================================================================================
 
-
-    return TFresults
-
-
-
+#===================================================================================
 
 
