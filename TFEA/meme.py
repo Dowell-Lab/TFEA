@@ -1,7 +1,7 @@
 __author__ = 'Jonathan Rubin'
 
 import os
-from config import FILEDIR, MOTIFDATABASE, FIGUREDIR
+from config import FILDEIR, MOTIFDATABASE, FIGUREDIR
 
 #5/23/18:This function runs fimo on a given fastafile for a single motif in a provided motif database. The output is cut and sorted to convert into a sorted bed file
 def fimo(bgfile,motif,fastafile):
