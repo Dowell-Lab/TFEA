@@ -225,7 +225,7 @@ def verify_config():
                             python.')
 
     try:
-        if type(config.SINGLEMOTIF) != bool or type(config.SINGLEMOTIF) != str:
+        if type(config.SINGLEMOTIF) != bool and type(config.SINGLEMOTIF) != str:
             raise TypeError('SINGLEMOTIF variable must be a boolean or \
                                 string. This switch determines whether TFEA \
                                 performs its analysis on a single motif or \

@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser(description='Transcription Factor Enrichment \
                                     Analysis (TFEA) takes as input a \
                                     configuration file (.ini) and outputs \
                                     a folder containing TFEA results.',
-                                    usage='TFEA --config CONFIG.ini [--sbatch \
+                                usage='TFEA --config CONFIG.ini [--sbatch \
                                     email@address.com]')
 
 parser.add_argument('--config','-c',metavar='',help='REQUIRED. A \
@@ -84,7 +84,7 @@ else:
                 + " --sbatch SUBMITTED' " + script)
 
     sys.exit("TFEA has been submitted using an sbatch script, use qstat to \
-                check its progress.")
+            check its progress.")
 
 
 #Run the config_parser script which will create variables for all folders and 
