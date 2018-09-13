@@ -103,7 +103,8 @@ import config
 #merges them via bedtools.
 COMBINEtime = time.time()
 if config.COMBINE:
-    bedfile = independent_functions.merge_bed()
+    bedfile = independent_functions.merge_bed(beds=config.BEDS, 
+                                                tempdir=config.TEMPDIR)
 else:
     bedfile = config.BEDS[0]
 COMBINEtime = time.time()-COMBINEtime 

@@ -416,7 +416,7 @@ def verify_config():
 #==============================================================================
 
 #==============================================================================
-def sbatch_submit(srcdirectory='',configpath='',script='',email='',
+def sbatch_submit(srcdirectory=str(),configpath=str(),script=str(),email=str(),
                     config=None):
     '''Submits an sbatch job using the configuration provided to the script 
         variable that runs TFEA with options specified within a give config 
@@ -444,8 +444,7 @@ def sbatch_submit(srcdirectory='',configpath='',script='',email='',
     None
     '''
     #First make output directories, only save path to the e_and_o folder
-    _, _, _, e_and_o = make_out_directories(dirs=True, 
-                                                                config=config)
+    _, _, _, e_and_o = make_out_directories(dirs=True, config=config)
 
     #Submit the sbatch job
     os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o 
@@ -454,7 +453,7 @@ def sbatch_submit(srcdirectory='',configpath='',script='',email='',
 #==============================================================================
 
 #==============================================================================
-def merge_bed(beds=config.BEDS,tempdir=config.TEMPDIR):
+def merge_bed(beds=list(),tempdir=str()):
     '''Concatenates, sorts, and merges (bedtools) a list of bed files. Outputs 
         into the tempdir directory created by TFEA
 
