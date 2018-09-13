@@ -14,7 +14,12 @@ import matplotlib
 matplotlib.use('Agg')
 import os
 import math
+import datetime
 import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib.cm as cm
+from matplotlib import gridspec
+from scipy.stats import norm 
 import numpy as np
 import config
 #==============================================================================
@@ -129,7 +134,13 @@ def parse_config(srcdirectory='',config='',output='',tempdir='',figuredir=''):
         outfile.write('TEMPDIR="'+tempdir+'"\n')
         outfile.write('FIGUREDIR="'+figuredir+'"\n')
 
-        #Path to a directory full of motif logos for all TFs in the HOCOMOCO database (v10)
+        #Path to count file. Can be changed if using your own count file.
+        #Generated in count_reads function
+        count_file = tempdir + "count_file.header.bed"
+        outfile.write('COUNT_FILE="'+count_file+'"\n')
+
+        #Path to a directory full of motif logos for all TFs in the HOCOMOCO
+        #database (v10)
         logos = os.path.join(os.path.dirname(srcdirectory),'human_logo')
         #logos = srcdirectory + 'human_logo/'
         outfile.write('LOGOS="'+logos+'"\n')
@@ -442,7 +453,7 @@ def sbatch_submit(srcdirectory='',configpath='',script='',email='',
 #==============================================================================
 
 #==============================================================================
-def combine_bed(beds=config.BEDS,tempdir=config.TEMPDIR):
+def merge_bed(beds=config.BEDS,tempdir=config.TEMPDIR):
     '''Concatenates, sorts, and merges (bedtools) a list of bed files. Outputs 
         into the tempdir directory created by TFEA
 
@@ -667,61 +678,76 @@ def write_deseq_script(bam1=config.BAM1, bam2=config.BAM2,
     '''
     #If more than 1 replicate, use DE-Seq2
     if (len(bam1) > 1 and len(bam2) > 1):
-        with open(tempdir + 'DESeq.R','w') as outfile:
-            outfile.write('''#!/usr/bin/env Rscript
-sink("'''+tempdir+'''DESeq.Rout")
-library("DESeq2")
-'data <- read.delim("'''+count_file+'''", sep="\t", header=TRUE)
-countsTable <- subset(data, \
-                select=c('''\
-                +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])\
-                +'''))
+        outfile = open(tempdir + 'DESeq.R','w')
+        outfile.write('sink("'+tempdir+'DESeq.Rout")\n')
+        outfile.write('library("DESeq2")\n')
+        outfile.write('data <- read.delim("'+config.COUNT_FILE+'", sep="\t", \
+                        header=TRUE)\n')
+        outfile.write('countsTable <- subset(data, select=c('
+                +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
+                +'))\n')
 
-rownames(countsTable) <- data$region
-conds <- as.data.frame(c(''' + ', '.join(['"'+label1+'"']*len(bam1)) \
-                        + ', ' + ', '.join(['"'+label2+'"']*len(bam2)) \
-                        + '''))
+        outfile.write('rownames(countsTable) <- data$region\n')
+        outfile.write('conds <- as.data.frame(c(' 
+                        + ', '.join(['"'+label1+'"']*len(bam1)) 
+                        + ', ' 
+                        + ', '.join(['"'+label2+'"']*len(bam2)) 
+                        + '))\n')
 
-colnames(conds) <- c("treatment")
-ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, \
-                                            colData = conds, \
-                                            design = ~ treatment)
+        outfile.write('colnames(conds) <- c("treatment")\n')
+        outfile.write('ddsFullCountTable <- DESeqDataSetFromMatrix(\
+                                                    countData = countsTable, \
+                                                    colData = conds, \
+                                                    design = ~ treatment)\n')
 
-dds <- DESeq(ddsFullCountTable)
-res1 <- results(dds,alpha = 0.05, contrast=c("treatment","'''+label2+'''",\
-                                            "'''+label1+'''"))
+        outfile.write('dds <- DESeq(ddsFullCountTable)\n')
+        outfile.write('res1 <- results(dds,alpha = 0.05, \
+                                        contrast=c("treatment",\
+                                                        "'+label2+'",\
+                                                        "'+label1+'"))\
+                                                        \n')
 
-resShrink <- lfcShrink(dds, res = res1, contrast = c("treatment","'''+label2\
-                                                    +'''","'''+label1+'''"))
+        outfile.write('resShrink <- lfcShrink(dds, res = res1, \
+                                                contrast = c("treatment",\
+                                                "'+label2+'",\
+                                                "'+label1+'"))\n')
 
-resShrink$fc <- 2^(resShrink$log2FoldChange)
-res <- resShrink[c(1:3,7,4:6)]
-write.table(res, file = "'''+tempdir+'''DESeq.res.txt", append = FALSE, \
-            sep= "\t" )
-sink()''')
-    #else, there must only be 1 repliceate, use DE-Seq
+        outfile.write('resShrink$fc <- 2^(resShrink$log2FoldChange)\n')
+        outfile.write('res <- resShrink[c(1:3,7,4:6)]\n')
+        outfile.write('write.table(res, file = "'
+                        +tempdir+'DESeq.res.txt", \
+                        append = FALSE, sep= "\t" )\n')
+        outfile.write('sink()')
     else:
-        with open(tempdir + 'DESeq.R','w') as outfile:
-            outfile.write('''#!/usr/bin/env Rscript
-sink("'''+tempdir+'''DESeq.Rout")
-library("DESeq")
-data <- read.delim("'''+count_file+'''", sep="\t", header=TRUE)
-countsTable <- subset(data, \
-                select=c('''\
-                +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])\
-                +'''))
+        outfile = open(tempdir + 'DESeq.R','w')
+        outfile.write('sink("'+tempdir+'DESeq.Rout")\n')
+        outfile.write('library("DESeq")\n')
+        outfile.write('data <- read.delim("'+count_file+'", sep="\t", \
+                        header=TRUE)\n')
 
-rownames(countsTable) <- data$region
-conds <- c(''' + ', '.join(['"'+label1+'"']*len(bam1)) + ', ' \
-                + ', '.join(['"'+label2+'"']*len(bam2)) + ''')
-cds <- newCountDataSet( countsTable, conds )
-cds <- estimateSizeFactors( cds )
-sizeFactors(cds)
-cds <- estimateDispersions( cds ,method="blind", sharingMode="fit-only")
-res <- nbinomTest( cds, "'''+label1+'''", "'''+label2+'''" )
-rownames(res) <- res$id
-write.table(res, file="'''+tempdir+'''DESeq.res.txt", append=FALSE, sep="\t" )
-sink()''')
+        outfile.write('countsTable <- subset(data, select=c('
+            +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
+            +'))\n')
+
+        outfile.write('rownames(countsTable) <- data$region\n')
+        outfile.write('conds <- c(' + ', '.join(['"'+label1+'"']*len(bam1)) 
+                        + ', ' 
+                        + ', '.join(['"'+label2+'"']*len(bam2)) 
+                        + ')\n')
+
+        outfile.write('cds <- newCountDataSet( countsTable, conds )\n')
+        outfile.write('cds <- estimateSizeFactors( cds )\n')
+        outfile.write('sizeFactors(cds)\n')                                                               
+        outfile.write('cds <- estimateDispersions( cds ,method="blind", \
+                        sharingMode="fit-only")\n')
+
+        outfile.write('res <- nbinomTest( cds, "'+label1+'", "'+label2+'" )\n')
+        outfile.write('rownames(res) <- res$id\n')                      
+        outfile.write('write.table(res, file = "'+tempdir+'DESeq.res.txt", \
+                        append = FALSE, sep= "\t" )\n')
+
+        outfile.write('sink()')
+    outfile.close()
 #==============================================================================
 
 #==============================================================================
@@ -1159,3 +1185,1041 @@ def samtools_flagstat(args, tempdir=config.TEMPDIR):
         millions_mapped = float(lines[4].strip('\n').split(' ')[0])/1000000.0
 
         return millions_mapped
+#==============================================================================
+
+#==============================================================================
+def enrichment_plot(largewindow=config.LARGEWINDOW,
+                    smallwindow=config.SMALLWINDOW, figuredir=config.FIGUREDIR,
+                    cumscore=list(), sorted_distances=list(), logpval=list(), 
+                    updistancehist=list(), downdistancehist=list(), 
+                    gc_array=list(), motif_file=''):
+    '''This function plots the TFEA enrichment plot.
+
+    Parameters
+    ----------
+    largewindow : float
+        a user specified larger window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    smallwindow : float
+        a user specified smaller window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    cumscore : list
+        the cumulative score of the running sum as we walk through the ranked
+        regions
+
+    sorted_distances : list or array
+        a sorted (based on rank) list of motif distances. Negative corresponds
+        to upstream of region
+
+    logpval : list or array
+        a way to visualize the ranking of the regions of interest. It is
+        the log10 of the p-value with the sign (positive or negative) based on
+        whether the fold change of the region is over 1 or less than 1.
+
+    updistancehist : list or array
+        the first quartile of ranked regions. These are presumably higher in
+        condition1
+
+    downdistancehist : list or array
+        the fourth quartile of ranked regions. These are presumably higher in
+        condition2
+
+    gc_array : list
+        an array of gc richness of regions of interest. It is recommended that
+        this array be no larger than 1000 bins.
+
+    motif_file : string
+        the name of the motif thats associated with all the input data. Used 
+        for figure naming purposes.
+
+    Returns
+    -------
+    None
+    '''
+    #Begin plotting section
+    plt.figure(figsize=(15.5,8))
+    xvals = range(1,len(cumscore)+1)
+    limits = [1,len(cumscore)]
+    gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
+
+    #This is the enrichment score plot (i.e. line plot)
+    ax0 = plt.subplot(gs[0])
+    ax0.plot(xvals,cumscore,color='green')
+    ax0.plot([0, len(cumscore)],[0, 1], '--', alpha=0.75)
+    ax0.set_title('Enrichment Plot: ',fontsize=14)
+    ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
+    ax0.tick_params(axis='y', which='both', left='on', right='off', 
+                    labelleft='on')
+    ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='off')
+    ylims = ax0.get_ylim()
+    ymax = math.fabs(max(ylims,key=abs))
+    ax0.set_ylim([0,ymax])
+    ax0.set_xlim(limits)
+
+    #This is the distance scatter plot right below the enrichment score 
+    #plot
+    ax1 = plt.subplot(gs[1])
+    ax1.scatter(xvals,sorted_distances,edgecolor="",color="black",s=10,
+                alpha=0.25)
+    ax1.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+    ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='off')
+    ax1.set_xlim(limits)
+    ax1.set_ylim([-int(largewindow),int(largewindow)])
+    plt.yticks([-int(largewindow),0,int(largewindow)],
+                [str(-int(largewindow)/1000.0),'0',\
+                str(int(largewindow)/1000.0)])
+    ax1.set_ylabel('Distance (kb)', fontsize=10)
+
+    #This is the rank metric plot
+    ax2 = plt.subplot(gs[3])
+    ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
+    ax2.tick_params(axis='y', which='both', left='on', right='off', 
+                    labelleft='on')
+    ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+    ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
+    ax2.set_ylim([-ylim,ylim])
+    ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
+    ax2.set_xlim(limits)
+    ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+    ax2.set_ylabel('Rank Metric',fontsize=10)
+    try:
+        ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
+    except ValueError:
+        pass
+    try:
+        ax2.axvline(len(xvals) - len(downdistancehist), color='purple', 
+                    alpha=0.25)
+    except ValueError:
+        pass
+
+    #This is the GC content plot
+    ax3 = plt.subplot(gs[2])
+    ax3.set_xlim(limits)
+    sns.heatmap(gc_array, cbar=False, xticklabels='auto',
+                yticklabels='auto')
+
+    plt.yticks([0,int(largewindow),int(largewindow*2)],
+                [str(-int(largewindow)/1000.0),'0',\
+                str(int(largewindow)/1000.0)])
+
+    ax3.tick_params(axis='y', which='both', left='on', right='off', 
+                    labelleft='on')
+
+    ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='off')
+
+    ax3.set_ylabel('GC content per kb',fontsize=10)
+
+    plt.savefig(figuredir + motif_file.split('.bed')[0] 
+                + '_enrichment_plot.png',bbox_inches='tight')
+
+    plt.cla()
+#==============================================================================
+
+#==============================================================================
+def simulation_plot(figuredir=config.FIGUREDIR,simES=list(),actualES=float(),
+                        motif_file=''):
+    '''This function plots the simulated 'enrichment' scores against the
+        observed 'enrichment' score
+
+    Parameters
+    ----------
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    simES : list
+        a list of simulated 'enrichment' scores calculated by randomizing
+        region rank
+
+    actualES : float
+        the observed 'enchrichment' score. Can be calculated in many different
+        ways..
+
+    motif_file : string
+        the name of the motif thats associated with all the input data. Used 
+        for figure naming purposes.
+
+    Returns
+    -------
+    None
+    '''
+    F = plt.figure(figsize=(7,6))
+    ax2 = plt.subplot(111)
+    maximum = max(simES)
+    minimum = min(simES)
+    ax2.hist(simES,bins=100)
+    width = (maximum-minimum)/100.0
+    rect = ax2.bar(actualES,ax2.get_ylim()[1],color='red',width=width*2)[0]
+    height = rect.get_height()
+    ax2.text(rect.get_x() + rect.get_width()/2., 1.05*height, 
+                'Observed ES', ha='center', va='bottom')
+
+    ax2.set_xlim([min(minimum,actualES)-(width*40), \
+                max(maximum,actualES)+(width*40)])
+
+    ax2.set_ylim([0,(1.05*height)+5])
+    ax2.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+
+    ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+
+    plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
+    ax2.set_ylabel('Number of Simulations',fontsize=14)
+    ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
+    plt.savefig(figuredir + motif_file.split('.bed')[0] 
+                + '_simulation_plot.png',bbox_inches='tight')
+
+    plt.cla()
+#==============================================================================
+
+#==============================================================================
+def distance_distribution_plot(largewindow=config.LARGEWINDOW,
+                                smallwindow=config.SMALLWINDOW, 
+                                figuredir=config.FIGUREDIR, 
+                                updistancehist=list(), 
+                                middledistancehist=list(),
+                                downdistancehist=list(), motif_file=''):
+    '''This function plots histograms of motif distances to region centers 
+        based on ranking quartiles
+
+    Parameters
+    ----------
+    largewindow : float
+        a user specified larger window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    smallwindow : float
+        a user specified smaller window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    updistancehist : list or array
+        the first quartile of ranked regions. These are presumably higher in
+        condition1
+
+    middledistancehist : list or array
+        the second and third quartile of ranked regions. These are presumably 
+        unchanging regions
+
+    downdistancehist : list or array
+        the fourth quartile of ranked regions. These are presumably higher in
+        condition2
+
+    motif_file : string
+        the name of the motif thats associated with all the input data. Used 
+        for figure naming purposes.
+    '''
+    plt.figure(figsize=(6.5,6))
+    gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
+    ax0 = plt.subplot(gs[0])
+    binwidth = largewindow/100.0
+    ax0.hist(updistancehist,
+                bins=np.arange(0,int(largewindow)+binwidth,binwidth),
+                color='green')
+    ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
+    ax0.axvline(smallwindow,color='red',alpha=0.5)
+    ax0.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+    ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='off')
+    ax0.set_xlim([0,largewindow])
+    ax0.set_ylabel('Hits',fontsize=14)
+    ax1 = plt.subplot(gs[2])
+    ax1.hist(downdistancehist,
+                bins=np.arange(0,int(largewindow)+binwidth,binwidth),
+                color='purple')
+
+    ax1.axvline(smallwindow,color='red',alpha=0.5)
+    ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
+    ax1.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+
+    ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+
+    ax1.set_xlim([0,largewindow])
+    ax1.set_ylabel('Hits',fontsize=14)
+    ax1.set_xlabel('Distance (bp)',fontsize=14)
+    ax2 = plt.subplot(gs[1])
+    ax2.hist(middledistancehist,
+                bins=np.arange(0,int(largewindow)+binwidth,binwidth),
+                color='blue')
+
+    ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
+    ax2.axvline(smallwindow,color='red',alpha=0.5)
+    ax2.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+    ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='off')
+    ax2.set_xlim([0,largewindow])
+    ax2.set_ylabel('Hits',fontsize=14)
+    plt.savefig(figuredir + motif_file.split('.bed')[0] 
+                + '_distance_distribution.png',bbox_inches='tight')
+    
+    plt.cla()
+#==============================================================================
+
+#==============================================================================
+def moustache_plot(figuredir=config.FIGUREDIR,ESlist=list(),PADJlist=list(),
+                    sigx=list(),sigy=list()):
+
+    '''This function plots a moustache plot for all motifs. In the x-axis, 
+        all observed 'enrichment' scores are plotted against the adjusted
+        pvalue of each motif
+
+    Parameters
+    ----------
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    ESlist : list or array
+        a list of 'enrichment' scores to be plotted on the x-axis
+
+    PADJlist : list or array
+        a list of p-adjusted values to be plotted on the y-axis
+
+    sigx : list or array
+        a list of significant motifs to be colored red
+
+    sigy : list or array
+        a list of significant motifs to be colored red
+
+    Returns
+    -------
+    None
+    '''
+    plt.figure(figsize=(7,6))
+    ax = plt.subplot(111)
+    ax.scatter(ESlist,PADJlist,color='black',edgecolor='')
+    ax.scatter(sigx,sigy,color='red',edgecolor='')
+    ax.set_title("TFEA Moustache Plot",fontsize=14)
+    ax.set_xlabel("Enrichment Score (ES)",fontsize=14)
+    ax.set_ylabel("Adjusted p-value (PADJ)",fontsize=14)
+    xlimit = math.fabs(max(ESlist,key=abs))
+    ylimit = math.fabs(max(PADJlist,key=abs))
+    ax.set_xlim([-xlimit,xlimit])
+    ax.set_ylim([0,ylimit])
+    ax.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+
+    plt.savefig(figuredir + 'TFEA_Results_Moustache_Plot.png',
+                    bbox_inches='tight')
+    plt.cla()
+#==============================================================================
+
+#==============================================================================
+def pval_histogram_plot(figuredir=config.FIGUREDIR, PVALlist=list()):
+    '''This function plots a histogram of p-values for all motifs
+
+    Parameters
+    ----------
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    PVALlist : list or array
+        a list of p-values corresponding to the observed 'enrichment' score
+        compared to the distribution of simulated 'enrichment' scores.
+    
+    Returns
+    -------
+    None
+    '''
+    plt.figure(figsize=(7,6))
+    ax = plt.subplot(111)
+    binwidth = 1.0/100.0
+    ax.hist(PVALlist,bins=np.arange(0,0.5+binwidth,binwidth),color='green')
+    ax.set_title("TFEA P-value Histogram",fontsize=14)
+    ax.set_xlabel("P-value",fontsize=14)
+    ax.set_ylabel("Count",fontsize=14)
+    ax.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+
+    plt.savefig(figuredir + 'TFEA_Pval_Histogram.png',
+                    bbox_inches='tight')
+    plt.cla()
+#==============================================================================
+
+#==============================================================================
+def MA_plot(figuredir=config.FIGUREDIR, label1=config.LABEL1, 
+                label2=config.LABEL2, POSlist=list(), ESlist=list(), 
+                MAx=list(), MAy=list()):
+    '''This function plots an 'MA' plot with the 'enrichment' score on the 
+        y-axis and the number of hits within the largewindow in the x-axis
+
+    Parameters
+    ----------
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    label1 : string
+        a label that corresponds to condition1
+
+    label2 : string
+        a label that corresponds to condition2
+
+    POSlist : list or array
+        a list of 'positive' hits for each motif defined as being within a 
+        largewindow
+
+    ESlist : list or array
+        a list of 'enrichment' scores for each motif
+
+    MAx : list or array
+        a list of x-values corresponding to significant motifs to be colored 
+        red
+
+    MAx : list or array
+        a list of y-values corresponding to significant motifs to be colored 
+        red
+
+    Returns
+    -------
+    None
+    '''
+    plt.figure(figsize=(7,6))
+    ax = plt.subplot(111)
+    ax.scatter(POSlist,ESlist,color='black',edgecolor='')
+    ax.scatter(MAx,MAy,color='red',edgecolor='')
+    ax.set_title("TFEA MA-Plot",fontsize=14)
+    ax.set_ylabel("Normalized Enrichment Score (NES) " + label2 + "/" 
+                    + label1, fontsize=14)
+
+    ax.set_xlabel("Hits Log10",fontsize=14)
+    ax.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+
+    plt.savefig(figuredir + 'TFEA_NES_MA_Plot.png',bbox_inches='tight')
+    plt.cla()
+#==============================================================================
+
+#==============================================================================
+def create_text_output(outputdir=config.OUTPUTDIR, TFresults=list()):
+    '''Creates a .txt output of results from TFEA
+
+    Parameters
+    ----------
+    outputdir : string
+        the full path to TFEA output directory (created by TFEA)
+
+    TFresults : list or array
+        a list of lists contining 'enrichment' scores, normalized 'enrichment' 
+        scores, p-value, p-adj, and number of hits for each individual motif
+
+    Returns
+    -------
+    None
+    '''
+    TFresults = sorted(TFresults, key=lambda x: x[3])
+    outfile = open(outputdir + 'results.txt', 'w')
+    outfile.write('TF-Motif\tES\tNES\tP-value\tPADJ\tHITS\n')
+    for val in TFresults:
+        outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) + '\n')
+    outfile.close()
+#==============================================================================
+
+#==============================================================================
+def create_html_output(outputdir=config.OUTPUTDIR, beds=config.BEDS, 
+                        label1=config.LABEL1, label2=config.LABEL2, 
+                        bam1=config.BAM1, bam2=config.BAM2, 
+                        singlemotif=config.SINGLEMOTIF, 
+                        motif_hits=config.MOTIF_HITS, output=config.OUTPUT, 
+                        padj_cutoff=config.PADJCUTOFF, plot=config.PLOT, 
+                        combine=config.COMBINE, count=config.COUNT, 
+                        deseq=config.DESEQ, calculate=config.CALCULATE, 
+                        TFresults=list(), COMBINEtime=float(), 
+                        COUNTtime=float(), DESEQtime=float(), 
+                        CALCULATEtime=float()):
+    '''Creates the main html output and also individual html outputs for each
+        motif
+    
+    Parameters
+    ----------
+    outputdir : string
+        the full path to the output directory created by TFEA
+
+    beds : list or array
+        a list of full paths to bed files to be considered as regions of 
+        interest
+
+    label1 : string
+        an informative label describing sample corresponding to condition1
+
+    label2 : string
+        an informative label describing sample corresponding to condition2
+
+    bam1 : list or array
+        a list of full paths to bam files corresponding to condition1
+
+    bam2 : list or array
+        a list of full paths to bam files corresponding to condition2
+
+    singlemotif : boolean or string
+        either False if all motifs should be considered in TFEA or the name of
+        a specific motif to be analyzed
+
+    motif_hits : string
+        the full path to a directory containing motif hits across the genome
+
+    output : string
+        the full path to a user-specified output directory. TFEA will create
+        a new folder within this directory - this is called outputdir
+
+    padj_cutoff : float
+        the cutoff value for determining significance
+
+    plot : boolean
+        a switch that controls whether all motifs are plotted or just 
+        significant ones defined by the p-adj cutoff
+
+    combine : boolean
+        a switch that determines whether bed files within the beds variable
+        get combined and merged using bedtools
+
+    count : boolean
+        a switch that controls whether reads are counted over the regions of
+        interest
+
+    deseq : boolean
+        a switch that controls whether DE-Seq is performed on the inputted
+        regions that have been counted over
+
+    calculate : boolean
+        a switch that determines whether the TFEA calculation is performed
+
+    TFresults : list or array
+        a list of lists contining 'enrichment' scores, normalized 'enrichment' 
+        scores, p-value, p-adj, and number of hits for each individual motif
+
+    COMBINEtime : float
+        the time it took to combine and merge the bed files using bedtools
+
+    COUNTtime : float
+        the time it took to count reads over regions of interest
+
+    DESEQtime : float
+        the time it took to perform DE-Seq using the counts file
+
+    CALCULATEtime : float
+        the time it took to perform TFEA
+
+    Returns
+    -------
+    None
+    '''
+    #Creates results.txt which is a tab-delimited text file with the results    
+    TFresults = sorted(TFresults, key=lambda x: x[5])
+
+    #summary.html contains all user-defined variables, and also information 
+    #about module used
+    outfile = open(outputdir+'summary.html','w')
+    outfile.write("""<!DOCTYPE html>
+            <html>
+            <head>
+            <title>Variables Used</title>
+            </head>
+            <body>
+                <h1>Variables Used</h1>
+                <p>BEDS = """+str(beds)+"""</p>
+                <p>LABEL1 = """+label1+"""</p>
+                <p>LABEL2 = """+label2+"""</p>
+                <p>BAM1 = """+str(bam1)+"""</p>
+                <p>BAM2 = """+str(bam2)+"""</p>
+                <p>SINGLEMOTIF = """+str(singlemotif)+"""</p>
+                <p>MOTIF_HITS = """+str(motif_hits)+"""</p>
+                <p>OUTPUT = """+output+"""
+            </body>""")
+
+    #For each TF motif with an PADJ value less than a cutoff, an html file is 
+    #created to be used in results.html
+    positivelist = [x[0] for x in TFresults if x[2] > 0 and (plot or x[-1] < padj_cutoff)]
+    negativelist = [x[0] for x in TFresults if x[2] < 0 and (plot or x[-1] < padj_cutoff)]
+    for i in range(len(TFresults)):
+        MOTIF_FILE,ES,NES,PVAL,POS,PADJ = TFresults[i] 
+        
+        if NES > 0:
+            try:
+                NEXT_MOTIF = positivelist[positivelist.index(MOTIF_FILE)+1]
+            except IndexError:
+                NEXT_MOTIF = positivelist[0]
+            try:
+                PREV_MOTIF = positivelist[positivelist.index(MOTIF_FILE)-1]
+            except IndexError:
+                PREV_MOTIF = positivelist[len(positivelist)]
+        else:
+            try:
+                NEXT_MOTIF = negativelist[negativelist.index(MOTIF_FILE)+1]
+            except IndexError:
+                NEXT_MOTIF = negativelist[0]
+            try:
+                PREV_MOTIF = negativelist[negativelist.index(MOTIF_FILE)-1]
+            except IndexError:
+                PREV_MOTIF = negativelist[len(negativelist)]
+        if plot or PADJ < padj_cutoff:
+            outfile = open(outputdir + 'plots/' + MOTIF_FILE 
+                            + '.results.html','w')
+            outfile.write("""<!DOCTYPE html>
+    <html>
+    <head>
+    <title>"""+MOTIF_FILE+""" Results</title>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .row {
+        display: flex; /* equal height of the children */
+        width: 100%;
+        padding-bottom: 50px
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+    </head>
+    <body style="width:1300px; margin:0 auto;">
+        <div>
+            <div style="float:left">
+                <a href="./"""+PREV_MOTIF+""".results.html">PREV</a>
+            </div>
+            <div style="float:right">
+                <a href="./"""+NEXT_MOTIF+""".results.html">NEXT</a>
+            </div>
+            <div style="text-align:center">
+                <a href="../results.html">ALL</a>
+        </div>
+        <div class="row">
+        </div>
+            <h1>"""+MOTIF_FILE+""" Results</h1>
+        <div>
+            <div style="float: middle; width: 1300px; padding-bottom:25px; \
+                padding-top:25px">
+                <table> 
+                    <tr>
+                        <th>TF Motif</th>
+                        <th>ES</th> 
+                        <th>NES</th>
+                        <th>P-value</th>
+                        <th>PADJ</th>
+                        <th>HITS</th>
+                    </tr>
+                    <tr>
+                        <td>"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.2f" % ES)+"""</td>
+                        <td>"""+str("%.2f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str("%.4g" % PADJ)+"""</td>
+                        <td>"""+str(POS)+"""</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div>
+            <div style="float: left; width 1250px; padding-bottom:50px; \
+                padding-top:50px">
+                <img src="./"""+MOTIF_FILE+"""_enrichment_plot.png" \
+                    alt="Enrichment Plot">
+            </div>
+        </div>
+        <!--<div class="row">
+            <div style="float: left; width 1250px; padding-bottom:50px; \
+                padding-top:50px">
+                <img src="./"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
+            </div>
+        </div>-->
+        <div class="row">
+            <div style="float: right; width: 600px">
+                <p>Forward:</p>
+                <img src="./"""+MOTIF_FILE.split('HO_')[-1]+"""_direct.png" \
+                    alt="Forward Logo">
+                <p></p>
+                <p>Reverse:</p>
+                <img src="./"""+MOTIF_FILE.split('HO_')[-1]+"""_revcomp.png" \
+                    alt="Reverse Logo">
+            </div>
+            <div style="float:left; width: 600px">
+                <img src="./"""+MOTIF_FILE+"""_simulation_plot.png" \
+                    alt="Simulation Plot">
+            </div>
+        </div>
+
+    </body>
+    </html>""")
+            outfile.close()
+            PREV_MOTIF = MOTIF_FILE
+
+    outfile = open(outputdir+'results.html','w')
+    outfile.write("""<!DOCTYPE html>
+    <html>
+    <head>
+    <title>TFEA Results</title>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .row {
+        display: flex; /* equal height of the children */
+        width: 100%;
+        padding-bottom: 50px
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+    </head>
+    <body style="width:1300px; margin:0 auto;">
+
+        <h1>TFEA Results """ +label1+ """ vs. """ +label2
+            +"""</h1>
+        <div class="row">
+            <div style="float: left; width: 45%">
+                <img src="./plots/TFEA_NES_MA_Plot.png" alt="NES MA-Plot">
+            </div>
+            <div style="float: left; width: 45%">
+                <img src="./plots/DESEQ_MA_Plot.png" alt="DE-Seq MA-Plot">
+            </div>
+        </div>
+        <div class="row">
+            <div style="float: left; width:45%">
+                <img src="./plots/TFEA_Pval_Histogram.png" alt="TFEA P-Value \
+                    Histogram">
+            </div>
+            <div id="Summary of Variables Used" style="float: right; \
+                width: 45%">
+                <p><a href="./Summary.html">Full Summary of Variables Used\
+                </a></p>
+                <p><b>PADJ < """ + str(padj_cutoff) + """</b></p>
+                <table>
+                    <tr>
+                        <th>Module</th>
+                        <th>Switch</th>
+                        <th>Time (hh:mm:ss)</th>
+                    </tr>
+                    <tr>
+                        <td>COMBINE</td>
+                        <td>"""+str(combine)+"""</td>
+                        <td>"""+str(datetime.timedelta(
+                                    seconds=int(COMBINEtime)))
+                        +"""</td>
+                    </tr>
+                    <tr>
+                        <td>COUNT</td>
+                        <td>"""+str(count)+"""</td>
+                        <td>"""+str(datetime.timedelta(seconds=int(COUNTtime)))
+                        +"""</td>
+                    </tr>
+                    <tr>
+                        <td>DESEQ</td>
+                        <td>"""+str(deseq)+"""</td>
+                        <td>"""+str(datetime.timedelta(seconds=int(DESEQtime)))
+                        +"""</td>
+                    </tr>
+                    <tr>
+                        <td>CALCULATE</td>
+                        <td>"""+str(calculate)+"""</td>
+                        <td>"""+str(datetime.timedelta(
+                                    seconds=int(CALCULATEtime)))
+                        +"""</td>
+                    </tr>
+                    <tr>
+                        <td><b>TOTAL</b></td>
+                        <td> </td>
+                        <td>"""+str(datetime.timedelta(
+                            seconds=int(COMBINEtime)
+                                    +int(COUNTtime)
+                                    +int(DESEQtime)
+                                    +int(CALCULATEtime)))
+                            +"""</td>
+                    </tr>
+                </table>   
+            </div>
+        </div>
+        <div>
+            <div id="Positive Enrichment Score" style="float: left; width:45%">
+                <h1>Positive Enrichment Score</h1>
+                <table> 
+                    <tr>
+                        <th>TF Motif</th>
+                        <th>ES</th> 
+                        <th>NES</th>
+                        <th>P-value</th>
+                        <th>PADJ</th>
+                        <th>HITS</th>
+                    </tr>
+                """)
+
+    for MOTIF_FILE,ES,NES,PVAL,POS,PADJ in TFresults:
+        if NES > 0:
+            if PADJ < padj_cutoff:
+                outfile.write("""
+            <tr style="color: red;">
+                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""
+                    +MOTIF_FILE+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
+                <td>"""+str(POS)+"""</td>
+            </tr>
+                    """)
+            elif plot:
+                outfile.write("""
+            <tr>
+                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""
+                    +MOTIF_FILE+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
+                <td>"""+str(POS)+"""</td>
+            </tr>
+                    """)
+
+            else:
+                outfile.write("""
+            <tr>
+                <td>"""+MOTIF_FILE+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
+                <td>"""+str(POS)+"""</td>
+            </tr>
+                    """)
+
+
+    outfile.write("""            
+        </table>
+    </div>
+
+    <div id="Negative Enrichment Score" style="float: right; width: 45%">
+        <h1>Negative Enrichment Score</h1>
+        <table> 
+            <tr>
+                <th>TF Motif</th>
+                <th>ES</th> 
+                <th>NES</th>
+                <th>P-value</th>
+                <th>PADJ</th>
+                <th>HITS</th>
+            </tr>
+                """)
+
+    for MOTIF_FILE,ES,NES,PVAL,POS,PADJ in TFresults:
+        if NES < 0:
+            if PADJ < padj_cutoff:
+                outfile.write("""
+            <tr style="color: red;">
+                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""
+                    +MOTIF_FILE+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
+                <td>"""+str(POS)+"""</td>
+            </tr>
+                    """)
+            elif plot:
+                outfile.write("""
+            <tr>
+                <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""
+                    +MOTIF_FILE+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
+                <td>"""+str(POS)+"""</td>
+            </tr>
+                    """)
+            else:
+                outfile.write("""
+            <tr>
+                <td>"""+MOTIF_FILE+"""</td>
+                <td>"""+str("%.2f" % ES)+"""</td>
+                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.3g" % PVAL)+"""</td>
+                <td>"""+str("%.3g" % PADJ)+"""</td>
+                <td>"""+str(POS)+"""</td>
+            </tr>
+                    """)
+
+    outfile.write("""        
+            </table>
+        </div>
+        </div>
+
+    </body>
+    </html>""")
+
+    outfile.close()
+#==============================================================================
+
+#==============================================================================
+def get_TFresults_from_txt(results_file=str()):
+    '''This function parses a results_file into a TFresults array
+
+    Parameters
+    ----------
+    results_file : string
+        file containing TFEA results
+        
+    Returns
+    -------
+    TFresults : array
+        results for all motifs within the results_file
+                 
+    Raises
+    ------
+    None
+    '''
+    TFresults = list()
+    with open(results_file) as F:
+        F.readline()
+        for line in F:
+            line = line.strip('\n').split('\t')
+            TFresults.append(line)
+    return TFresults
+#==============================================================================
+
+#==============================================================================
+def create_single_motif_html(outputdir=config.OUTPUTDIR, results=list()):
+    MOTIF_FILE,ES,NES,PVAL,POS = results
+    outfile = open(config.OUTPUTDIR + MOTIF_FILE + '.results.html','w')
+    outfile.write("""<!DOCTYPE html>
+        <html>
+        <head>
+        <title>"""+MOTIF_FILE+""" Results</title>
+        <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+        </style>
+        </head>
+        <body style="width:1300px; margin:0 auto;">
+            <h1>"""+MOTIF_FILE+""" Results</h1>
+        <div>
+            <div style="float: middle; width: 1300px; overflow:scroll; \
+                padding-bottom:25px; padding-top:25px">
+                <table> 
+                    <tr>
+                        <th>TF Motif</th>
+                        <th>ES</th> 
+                        <th>NES</th>
+                        <th>P-value</th>
+                        <th>Total Hits</th>
+                       
+                    </tr>
+                    <tr>
+                        <td>"""+MOTIF_FILE+"""</td>
+                        <td>"""+str("%.2f" % ES)+"""</td>
+                        <td>"""+str("%.2f" % NES)+"""</td>
+                        <td>"""+str("%.4g" % PVAL)+"""</td>
+                        <td>"""+str(POS)+"""</td>
+                       
+                    </tr>
+                </table>
+            </div>
+        </div>
+        <div>
+            <div style="float: left; width 1250px; padding-bottom:50px; \
+                padding-top:50px">
+                <img src="./plots/"""+MOTIF_FILE+"""_enrichment_plot.png" \
+                    alt="Enrichment Plot">
+            </div>
+        </div>
+        <!--<div>
+            <div style="float: left; width 1250px; padding-bottom:50px; \
+                padding-top:50px">
+                <img src="./plots/"""+MOTIF_FILE+"""_meta_eRNA.png" \
+                    alt="Meta Plot">
+            </div>
+        </div>-->
+        <div>
+            <div style="float: right; width: 600px; overflow: scroll">
+                <p>Forward:</p>
+                <img src="./plots/"""+MOTIF_FILE+"""_direct.png" \
+                    alt="Forward Logo">
+                <p></p>
+                <p>Reverse:</p>
+                <img src="./plots/"""+MOTIF_FILE+"""_revcomp.png" \
+                    alt="Reverse Logo">
+            </div>
+            <div style="float:left; width: 600px overflow:scroll">
+                <img src="./plots/"""+MOTIF_FILE+"""_simulation_plot.png" \
+                    alt="Simulation Plot">
+            </div>
+        </div>
+        
+        </body>
+        </html>""")
+    outfile.close()
+#==============================================================================
+
+#==============================================================================

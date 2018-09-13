@@ -16,6 +16,8 @@ import os
 import sys
 import math
 import numpy as np
+from multiprocessing import Pool
+import multiprocessing as mp
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.cm as cm
@@ -52,7 +54,7 @@ def calculate_es_auc(args, fimo=config.FIMO,
                         padj_cutoff=config.PADJCUTOFF, logos=config.LOGOS,
                         figuredir=config.FIGUREDIR,
                         largewindow=config.LARGEWINDOW,
-                        smallwindow=config.SMALLWINDOW,gc_array=list()):
+                        smallwindow=config.SMALLWINDOW):
     '''This function calculates the AUC for any TF based on the TF motif hits 
         relative to the bidirectionals. The calculated AUC is used as a proxy 
         for the enrichemnt of the TFs.
@@ -66,6 +68,39 @@ def calculate_es_auc(args, fimo=config.FIMO,
             millions_mapped : list or array
                 contiains a list of floats that corresponds to the millions 
                 mapped reads for each bam file
+
+    fimo : boolean
+        a switch that controls whether motif hits are generated on the fly
+        using fimo
+
+    ranked_center_file : string
+        the full path to a bed file containing the center of regions sorted by
+        DE-Seq p-value
+
+    motif_hits : string
+        the full path to a directory containing motif hits across the genome
+
+    plot : boolean
+        a switch that controls whether TFEA generates plots for all motifs or
+        just significant ones
+    
+    padj_cutoff : float
+        the cutoff value for calling a motif as significant
+
+    logos : string
+        the full path to a directory containing meme logos for motifs
+
+    figuredir : string
+        the full path to the figure directory within the output directory where
+        figures and plots are stored
+
+    largewindow : float
+        a user specified larger window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    smallwindow : float
+        a user specified smaller window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
 
     Returns
     -------
@@ -81,7 +116,7 @@ def calculate_es_auc(args, fimo=config.FIMO,
     ValueError
         when tf does not have any hits
     '''
-    motif_file, millions_mapped = args
+    motif_file, millions_mapped, gc_array = args
     if fimo:
         ranked_fullregions_file = independent_functions.get_regions()
         ranked_fasta_file = independent_functions.getfasta(
@@ -170,8 +205,70 @@ def plot_individual_graphs(plot=config.PLOT, padj_cutoff=config.PADJCUTOFF,
                             distances_abs=list(), sorted_distances=list(),
                             ranks=list(),pvals=list(),fc=list(), 
                             cumscore=list(), motif_file='',p=float(),
-                            simES=float(), actualES=float(), gc_array=list()):
+                            simES=list(), actualES=float(), gc_array=list()):
+    '''This function plots all TFEA related graphs for an individual motif
 
+    Parameters
+    ----------
+    plot : boolean
+        switch to determine whether all motifs are plotted or just significant
+        ones
+    
+    padj_cutoff : float
+        the cutoff value that determines signficance. This is technically
+        evaluated against the non-adjusted p-value since p-adj has not been
+        calculated yet at this point
+    
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    logos : string
+        full path to a directory containing meme logos. These are copied to the
+        output directory to be displayed in the html results.
+
+    largewindow : float
+        a user specified larger window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    smallwindow : float
+        a user specified smaller window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    distances_abs : list or array
+        a sorted (based on rank) list of absolute motif to region center 
+        distances
+
+    sorted_distances : list or array
+        a sorted (based on rank) list of motif distances. Negative corresponds
+        to upstream of region
+
+    ranks : list or array
+        a list of ranks that correspond to each region of interest. The ranking
+        comes from DE-Seq p-value
+
+    pvals : list or array
+        a list of DE-Seq p-values for all regions
+
+    p : float
+        the p-value of the given motif based on simulations
+
+    simES : list
+        a list of simulated 'enrichment' scores calculated by randomizing
+        region rank
+
+    actualES : float
+        the observed 'enchrichment' score. Can be calculated in many different
+        ways..
+
+    gc_array : list
+        an array of gc richness of regions of interest. It is recommended that
+        this array be no larger than 1000 bins.
+
+    Returns
+    -------
+    None
+    '''
     #Only plot things if user selects to plot all or if the pvalue is less than
     #the cutoff
     if plot or p < padj_cutoff:
@@ -193,8 +290,7 @@ def plot_individual_graphs(plot=config.PLOT, padj_cutoff=config.PADJCUTOFF,
         except ValueError:
             logpval = sorted_pval
 
-        #Plot results for significant hits while list of simulated ES scores is
-        #in memory                              
+        #Get motif logos from logo directory                              
         if 'HO_' in motif_file:
             os.system("scp " + logos 
                         + motif_file.split('.bed')[0].split('HO_')[1] 
@@ -210,169 +306,25 @@ def plot_individual_graphs(plot=config.PLOT, padj_cutoff=config.PADJCUTOFF,
             os.system("scp " + logos + motif_file.split('.bed')[0] 
                         + "_revcomp.png " + figuredir)
 
+        #Plot the enrichment plot
+        independent_functions.enrichment_plot(cumscore=cumscore, 
+                                            sorted_distances=sorted_distances, 
+                                            logpval=logpval, 
+                                            updistancehist=updistancehist, 
+                                            downdistancehist=downdistancehist, 
+                                            gc_array=gc_array,
+                                            motif_file=motif_file)
 
-        #Begin plotting section
-        F = plt.figure(figsize=(15.5,8))
-        xvals = range(1,len(cumscore)+1)
-        limits = [1,len(cumscore)]
-        gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
+        #Plot the simulation plot
+        independent_functions.simulation_plot(simES=simES,actualES=actualES,
+                                            motif_file=motif_file)
 
-        #This is the enrichment score plot (i.e. line plot)
-        ax0 = plt.subplot(gs[0])
-        ax0.plot(xvals,cumscore,color='green')
-        ax0.plot([0, len(cumscore)],[0, 1], '--', alpha=0.75)
-        ax0.set_title('Enrichment Plot: ',fontsize=14)
-        ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
-        ax0.tick_params(axis='y', which='both', left='on', right='off', 
-                        labelleft='on')
-        ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ylims = ax0.get_ylim()
-        ymax = math.fabs(max(ylims,key=abs))
-        ax0.set_ylim([0,ymax])
-        ax0.set_xlim(limits)
-
-        #This is the distance scatter plot right below the enrichment score 
-        #plot
-        ax1 = plt.subplot(gs[1])
-        ax1.scatter(xvals,sorted_distances,edgecolor="",color="black",s=10,
-                    alpha=0.25)
-        ax1.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='on')
-        ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ax1.set_xlim(limits)
-        ax1.set_ylim([-int(largewindow),int(largewindow)])
-        plt.yticks([-int(largewindow),0,int(largewindow)],
-                    [str(-int(largewindow)/1000.0),'0',\
-                    str(int(largewindow)/1000.0)])
-        ax1.set_ylabel('Distance (kb)', fontsize=10)
-
-        #This is the rank metric plot
-        ax2 = plt.subplot(gs[3])
-        ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
-        ax2.tick_params(axis='y', which='both', left='on', right='off', 
-                        labelleft='on')
-        ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='on')
-        ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
-        ax2.set_ylim([-ylim,ylim])
-        ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
-        ax2.set_xlim(limits)
-        ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
-        ax2.set_ylabel('Rank Metric',fontsize=10)
-        try:
-            ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
-        except ValueError:
-            pass
-        try:
-            ax2.axvline(len(xvals) - len(downdistancehist), color='purple', 
-                        alpha=0.25)
-        except ValueError:
-            pass
-
-        #This is the GC content plot
-        ax3 = plt.subplot(gs[2])
-        ax3.set_xlim(limits)
-        GC_ARRAY = np.array(gc_array).transpose()
-        sns.heatmap(GC_ARRAY, cbar=False, xticklabels='auto',
-                    yticklabels='auto')
-
-        plt.yticks([0,int(largewindow),int(largewindow*2)],
-                    [str(-int(largewindow)/1000.0),'0',\
-                    str(int(largewindow)/1000.0)])
-
-        ax3.tick_params(axis='y', which='both', left='on', right='off', 
-                        labelleft='on')
-
-        ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-
-        ax3.set_ylabel('GC content per kb',fontsize=10)
-
-        plt.savefig(figuredir + motif_file.split('.bed')[0] 
-                    + '_enrichment_plot.png',bbox_inches='tight')
-
-        plt.cla()
-
-        F = plt.figure(figsize=(7,6))
-        ax2 = plt.subplot(111)
-        maximum = max(simES)
-        minimum = min(simES)
-        ax2.hist(simES,bins=100)
-        width = (maximum-minimum)/100.0
-        rect = ax2.bar(actualES,ax2.get_ylim()[1],color='red',width=width*2)[0]
-        height = rect.get_height()
-        ax2.text(rect.get_x() + rect.get_width()/2., 1.05*height, 
-                    'Observed ES', ha='center', va='bottom')
-
-        ax2.set_xlim([min(minimum,actualES)-(width*40), \
-                    max(maximum,actualES)+(width*40)])
-
-        ax2.set_ylim([0,(1.05*height)+5])
-        ax2.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='on')
-
-        ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='on')
-
-        plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
-        ax2.set_ylabel('Number of Simulations',fontsize=14)
-        ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
-        plt.savefig(figuredir + motif_file.split('.bed')[0] 
-                    + '_simulation_plot.png',bbox_inches='tight')
-
-        plt.cla()
-
-
-        #Plots the distribution of motif distances with a red line at h                                                                                                                                                                   
-        F = plt.figure(figsize=(6.5,6))
-        gs = gridspec.GridSpec(3, 1, height_ratios=[1, 1, 1])
-        ax0 = plt.subplot(gs[0])
-        binwidth = largewindow/100.0
-        ax0.hist(updistancehist,
-                    bins=np.arange(0,int(largewindow)+binwidth,binwidth),
-                    color='green')
-        ax0.set_title('Distribution of Motif Distance for: fc > 1',fontsize=14)
-        ax0.axvline(smallwindow,color='red',alpha=0.5)
-        ax0.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='on')
-        ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ax0.set_xlim([0,largewindow])
-        ax0.set_ylabel('Hits',fontsize=14)
-        ax1 = plt.subplot(gs[2])
-        ax1.hist(downdistancehist,
-                    bins=np.arange(0,int(largewindow)+binwidth,binwidth),
-                    color='purple')
-
-        ax1.axvline(smallwindow,color='red',alpha=0.5)
-        ax1.set_title('Distribution of Motif Distance for: fc < 1',fontsize=14)
-        ax1.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='on')
-
-        ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='on')
-
-        ax1.set_xlim([0,largewindow])
-        ax1.set_ylabel('Hits',fontsize=14)
-        ax1.set_xlabel('Distance (bp)',fontsize=14)
-        ax2 = plt.subplot(gs[1])
-        ax2.hist(middledistancehist,
-                    bins=np.arange(0,int(largewindow)+binwidth,binwidth),
-                    color='blue')
-
-        ax2.set_title('Distribution of Motif Distance for: middle',fontsize=14)
-        ax2.axvline(smallwindow,color='red',alpha=0.5)
-        ax2.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='on')
-        ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ax2.set_xlim([0,largewindow])
-        ax2.set_ylabel('Hits',fontsize=14)
-        plt.savefig(figuredir + motif_file.split('.bed')[0] 
-                    + '_distance_distribution.png',bbox_inches='tight')                                                                                                             
-        plt.cla()
+        #Plot the distance distribution histograms plot
+        independent_functions.distance_distribution_plot(
+                                        updistancehist=updistancehist, 
+                                        middledistancehist=middledistancehist,
+                                        downdistancehist=downdistancehist, 
+                                        motif_file=motif_file)
 #==============================================================================
 
 #==============================================================================
@@ -408,63 +360,15 @@ def plot_global_graphs(padj_cutoff=config.PADJCUTOFF, label1=config.LABEL1,
     MAx = [x for x, p in zip(POSlist, PADJlist) if p < padj_cutoff]
 
     #Creates a moustache plot of the global PADJs vs. ESs                                                                                                                                                                                       
-    F = plt.figure(figsize=(7,6))
-    ax = plt.subplot(111)
-    ax.scatter(ESlist,PADJlist,color='black',edgecolor='')
-    ax.scatter(sigx,sigy,color='red',edgecolor='')
-    ax.set_title("TFEA Moustache Plot",fontsize=14)
-    ax.set_xlabel("Enrichment Score (ES)",fontsize=14)
-    ax.set_ylabel("Adjusted p-value (PADJ)",fontsize=14)
-    xlimit = math.fabs(max(ESlist,key=abs))
-    ylimit = math.fabs(max(PADJlist,key=abs))
-    ax.set_xlim([-xlimit,xlimit])
-    ax.set_ylim([0,ylimit])
-    ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
-
-    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
-
-    plt.savefig(config.FIGUREDIR + 'TFEA_Results_Moustache_Plot.png',
-                    bbox_inches='tight')
-    plt.cla()
+    independent_functions.moustache_plot(ESlist=ESlist,PADJlist=PADJlist,
+                                            sigx=sigx,sigy=sigy)
 
     #Creates a histogram of p-values                                                                                                                                                                                                            
-    F = plt.figure(figsize=(7,6))
-    ax = plt.subplot(111)
-    binwidth = 1.0/100.0
-    ax.hist(PVALlist,bins=np.arange(0,0.5+binwidth,binwidth),color='green')
-    ax.set_title("TFEA P-value Histogram",fontsize=14)
-    ax.set_xlabel("P-value",fontsize=14)
-    ax.set_ylabel("Count",fontsize=14)
-    ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
-
-    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
-
-    plt.savefig(figuredir + 'TFEA_Pval_Histogram.png',
-                    bbox_inches='tight')
-    plt.cla()
+    independent_functions.pval_histogram_plot(PVALlist=PVALlist)
 
     #Creates an MA-plot with NES on Y-axis and positive hits on X-axis                                                                                                                                                                                                      
-    F = plt.figure(figsize=(7,6))
-    ax = plt.subplot(111)
-    ax.scatter(POSlist,ESlist,color='black',edgecolor='')
-    ax.scatter(MAx,MAy,color='red',edgecolor='')
-    ax.set_title("TFEA MA-Plot",fontsize=14)
-    ax.set_ylabel("Normalized Enrichment Score (NES) " + label2 + "/" 
-                    + label1, fontsize=14)
-
-    ax.set_xlabel("Hits Log10",fontsize=14)
-    ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
-
-    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
-
-    plt.savefig(figuredir + 'TFEA_NES_MA_Plot.png',bbox_inches='tight')
-    plt.cla()
+    independent_functions.MA_plot(POSlist=POSlist, ESlist=ESlist, MAx=MAx, 
+                                    MAy=MAy)
 #==============================================================================
 
 #==============================================================================
@@ -491,7 +395,6 @@ def get_gc_array(tempdir=config.TEMPDIR, ranked_file='',
         a list of gc content averaged to have bins equal to bins specified in
         paramters
     '''
-
     #First, create a bed file with the correct coordinates centered on the 
     #given regions with the specified window size on either side
     outfile = open(tempdir+"ranked_file.windowed.bed",'w')
@@ -559,6 +462,136 @@ def get_gc_array(tempdir=config.TEMPDIR, ranked_file='',
     final_array = np.array(final_array).transpose()
 
     return final_array
+#==============================================================================
+
+#==============================================================================
+def calculate(tempdir=config.TEMPDIR, outputdir=config.OUTPUTDIR, 
+                bam1=config.BAM1, bam2=config.BAM2, 
+                motif_hits=config.MOTIF_HITS, singlemotif=config.SINGLEMOTIF, 
+                COMBINEtime=float(), COUNTtime=float(), DESEQtime=float(), 
+                CALCULATEtime=float()):
+    '''This function performs the bulk of transcription factor enrichment
+        analysis (TFEA), it does the following:
+            1. GC distribution across regions for plotting
+            2. Millions mapped calculation for meta eRNA plots
+            3. Motif distance calculation to the center of inputted regions
+            4. Enrichment score calculation via AUC method
+            5. Random shuffle simulation and recalculation of enrichment score
+            6. Plotting and generation of html report
+
+    Parameters
+    ----------
+    tempdir : string
+        the full path to the tempdir directory within the outputdir created 
+        by TFEA
+
+    outputdir : string
+        the full path to the output directory created by TFEA
+
+    bam1 : list or array
+        a list of full paths to bam files corresponding to condition1
+
+    bam2 : list or array
+        a list of full paths to bam files corresponding to condition2
+
+    singlemotif : boolean or string
+        either False if all motifs should be considered in TFEA or the name of
+        a specific motif to be analyzed
+
+    motif_hits : string
+        the full path to a directory containing motif hits across the genome
+
+    output : string
+        the full path to a user-specified output directory. TFEA will create
+        a new folder within this directory - this is called outputdir
+
+    padj_cutoff : float
+        the cutoff value for determining significance
+
+    plot : boolean
+        a switch that controls whether all motifs are plotted or just 
+        significant ones defined by the p-adj cutoff
+
+    combine : boolean
+        a switch that determines whether bed files within the beds variable
+        get combined and merged using bedtools
+
+    count : boolean
+        a switch that controls whether reads are counted over the regions of
+        interest
+
+    deseq : boolean
+        a switch that controls whether DE-Seq is performed on the inputted
+        regions that have been counted over
+
+    calculate : boolean
+        a switch that determines whether the TFEA calculation is performed
+
+    TFresults : list or array
+        a list of lists contining 'enrichment' scores, normalized 'enrichment' 
+        scores, p-value, p-adj, and number of hits for each individual motif
+
+    COMBINEtime : float
+        the time it took to combine and merge the bed files using bedtools
+
+    COUNTtime : float
+        the time it took to count reads over regions of interest
+
+    DESEQtime : float
+        the time it took to perform DE-Seq using the counts file
+
+    CALCULATEtime : float
+        the time it took to perform TFEA
+
+    '''
+    print "Calculating GC content of regions..."
+    #This line gets an array of GC values for all inputted regions
+    gc_array = get_gc_array(
+                        ranked_file=os.path.join(tempdir, "ranked_file.bed"))
+
+    print "done\nCalculating millions mapped reads for bam files..."
+    #Here we determine how many cpus to use for parallelization
+    cpus = mp.cpu_count()
+    if cpus > 64:
+        cpus = 64
+
+    #Here we calculate millions mapped reads for use with the metaeRNA module
+    p = Pool(cpus)
+    args = [(x) for x in bam1+bam2]
+    millions_mapped = p.map(independent_functions.samtools_flagstat,args)
+
+    print "done\nFinding motif hits in regions..."
+    if singlemotif == False:
+        TFresults = list()
+        if config.POOL:
+            a = time.time()
+            args = [(x,millions_mapped,gc_array) for x in os.listdir(motif_hits)]
+            p = Pool(cpus)
+            TFresults = p.map(calculate_es_auc, args)
+        else:
+            for MOTIF_FILE in os.listdir(motif_hits):
+                results = calculate_es_auc((MOTIF_FILE, millions_mapped,
+                                                gc_array))
+                if results != "no hits":
+                    TFresults.append(results)
+                else:
+                    print "No motifs within specified window for: ", MOTIF_FILE
+        CALCULATEtime = time.time()-CALCULATEtime
+        TFresults = independent_functions.padj_bonferroni(TFresults=TFresults)
+        independent_functions.create_text_output(TFresults=TFresults)
+        independent_functions.create_html_output(TFresults=TFresults, 
+                                                COMBINEtime=COMBINEtime, 
+                                                COUNTtime=COUNTtime, 
+                                                DESEQtime=DESEQtime, 
+                                                CALCULATEtime=CALCULATEtime)
+
+    #Note if you set the SINGLEMOTIF variable to a specific TF, this program 
+    #will be unable to determine an PADJ for the given motif.
+    else:
+        results = calculate_es_auc((singlemotif, millions_mapped, gc_array))
+        independent_functions.create_single_motif_html(results=results)
+
+    print "done"
 #==============================================================================
 
 #==============================================================================

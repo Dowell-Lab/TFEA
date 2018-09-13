@@ -66,11 +66,14 @@ config.read(configfile)
 #to the --sbatch flag so we know not to remake output directories. If --sbatch 
 #flag not specified, simply make output directories and continue.
 if sbatch == False:
-    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(True,config)
+    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(
+                                                                True,config)
 elif str(sbatch) == 'SUBMITTED':
-    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(False,config)
+    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(
+                                                                False,config)
 else:
-    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(True,config)
+    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(
+                                                                True,config)
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
     email = str(sbatch)
@@ -99,7 +102,7 @@ import create_html
 #merges them via bedtools.
 COMBINEtime = time.time()
 if config.COMBINE:
-    bedfile = independent_functions.combine_bed()
+    bedfile = independent_functions.merge_bed()
 else:
     bedfile = config.BEDS[0]
 COMBINEtime = time.time()-COMBINEtime 
@@ -131,55 +134,12 @@ DESEQtime = time.time()-DESEQtime
 #   4. Enrichment score calculation via AUC method
 #   5. Random shuffle simulation and recalculation of enrichment score
 #   6. Plotting and generation of html report
-
 CALCULATEtime = time.time()
 if config.CALCULATE:
-    print "Calculating GC content of regions..."
-    #This line gets an array of GC values for all inputted regions
-    gc_array = dependent_functions.get_gc_array(
-                        ranked_file=os.path.join(tempdir, "ranked_file.bed"))
+    dependent_functions. calculate(COMBINEtime=COMBINEtime, 
+                                    COUNTtime=COUNTtime, DESEQtime=DESEQtime, 
+                                    CALCULATEtime=CALCULATEtime)
 
-    print "done\nCalculating millions mapped reads for bam files..."
-    #Here we determine how many cpus to use for parallelization
-    cpus = mp.cpu_count()
-    if cpus > 64:
-        cpus = 64
-
-    #Here we calculate millions mapped reads for use with the metaeRNA module
-    p = Pool(cpus)
-    args = [(x) for x in config.BAM1+config.BAM2]
-    millions_mapped = p.map(independent_functions.samtools_flagstat,args)
-
-    print "done\nFinding motif hits in regions..."
-    if config.SINGLEMOTIF == False:
-        TFresults = list()
-        if config.POOL:
-            a = time.time()
-            args = [(x,millions_mapped) for x in os.listdir(config.MOTIF_HITS)]
-            p = Pool(cpus)
-            TFresults = p.map(dependent_functions.calculate_es_auc, args)
-        else:
-            for MOTIF_FILE in os.listdir(config.MOTIF_HITS):
-                results = dependent_functions.calculate_es_auc((MOTIF_FILE,
-                                                            millions_mapped))
-                if results != "no hits":
-                    TFresults.append(results)
-                else:
-                    print "No motifs within specified window for: ", MOTIF_FILE
-        CALCULATEtime = time.time()-CALCULATEtime
-        create_html.createTFtext(TFresults, output)
-        TFresults = independent_functions.padj_bonferroni(TFresults=TFresults)
-        create_html.run(TFresults,COMBINEtime,COUNTtime,DESEQtime,
-                        CALCULATEtime)
-
-    #Note if you set the SINGLEMOTIF variable to a specific TF, this program will be unable to
-    #determine an PADJ for the given motif.
-    else:
-        results = dependent_functions.calculate_es_auc((config.SINGLEMOTIF,
-                                                            millions_mapped))
-        create_html.single_motif(results)
-
-    print "done"
 
 #Here we simply remove large bed files that are produced within this package. 
 #This option can be turned on/off within the config file.
