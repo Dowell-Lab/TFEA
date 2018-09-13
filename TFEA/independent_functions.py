@@ -140,6 +140,9 @@ def parse_config(srcdirectory=str(), config=str(), output=str(), tempdir=str(),
         count_file = tempdir + "count_file.header.bed"
         outfile.write('COUNT_FILE="'+count_file+'"\n')
 
+        ranked_center_file = tempdir + "ranked_file.center.bed"
+        outfile.write('RANKED_CENTER_FILE="'+ranked_center_file+'"\n')
+
         #Path to a directory full of motif logos for all TFs in the HOCOMOCO
         #database (v10)
         logos = os.path.join(os.path.dirname(srcdirectory),'human_logo')
@@ -751,7 +754,7 @@ def write_deseq_script(bam1=config.BAM1, bam2=config.BAM2,
 #==============================================================================
 
 #==============================================================================
-def plot_deseq_MA(deseq_file='', label1=config.LABEL1, label2=config.LABEL2,
+def plot_deseq_MA(deseq_file=str(), label1=config.LABEL1, label2=config.LABEL2,
                     figuredir=config.FIGUREDIR):
     '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
     to the figuredir directory created in TFEA output folder
@@ -881,8 +884,8 @@ def padj_bonferroni(TFresults=list()):
 #==============================================================================
 
 #==============================================================================
-def motif_distance_bedtools_closest(ranked_center_file='',
-                            motif_path=''):
+def motif_distance_bedtools_closest(ranked_center_file=str(),
+                            motif_path=str()):
     '''Calculates nearest motif hit from a bed file. TFEA provides this 
         function with a bed file containing the center of the inputted regions.
 
@@ -912,8 +915,8 @@ def motif_distance_bedtools_closest(ranked_center_file='',
 #==============================================================================
 
 #==============================================================================
-def fimo(tempdir=config.TEMPDIR, motifdatabase=config.MOTIFDATABASE, bgfile='',
-            motif='', fastafile=''):
+def fimo(tempdir=config.TEMPDIR, motifdatabase=config.MOTIFDATABASE, 
+            bgfile=str(), motif=str(), fastafile=str()):
     '''This function runs fimo on a given fastafile for a single motif in a 
         provided motif database. The output is cut and sorted to convert into 
         a sorted bed file
@@ -953,7 +956,7 @@ def fimo(tempdir=config.TEMPDIR, motifdatabase=config.MOTIFDATABASE, bgfile='',
 
 #==============================================================================
 def meme2images(motifdatabase=config.MOTIFDATABASE, figuredir=config.FIGUREDIR,
-                motif=''):
+                motif=str()):
     '''This function creates meme logos for use in the output html
 
     Parameters
@@ -976,7 +979,7 @@ def meme2images(motifdatabase=config.MOTIFDATABASE, figuredir=config.FIGUREDIR,
 #==============================================================================
 
 #==============================================================================
-def fasta_markov(tempdir=config.TEMPDIR, fastafile='', order='0'):
+def fasta_markov(tempdir=config.TEMPDIR, fastafile=str(), order='0'):
     '''This function runs meme's fasta-get-markov function that generates a 
         background markov file (for use with fimo) from a fasta file.
     Parameters
@@ -1002,7 +1005,7 @@ def fasta_markov(tempdir=config.TEMPDIR, fastafile='', order='0'):
 
 #==============================================================================
 def fimo_distance(largewindow=config.LARGEWINDOW, tempdir=config.TEMPDIR, 
-                    fimo_file='', motif_file=''):
+                    fimo_file=str(), motif_file=str()):
     '''Parses a fimo output file and writes into a new file that is formatted
         in a way that can be parsed within existing TFEA functions
     Parameters
@@ -1052,9 +1055,9 @@ def fimo_distance(largewindow=config.LARGEWINDOW, tempdir=config.TEMPDIR,
 #==============================================================================
 
 #==============================================================================
-def convert_sequence_to_array(sequence=''):
-    '''This function converts a DNA sequence (ACGT alphabet) to an array, collapsing GCs
-    to 1's and ATs to 0's
+def convert_sequence_to_array(sequence=str()):
+    '''This function converts a DNA sequence (ACGT alphabet) to an array, 
+    collapsing GCs to 1's and ATs to 0's
 
     Parameters
     ----------
