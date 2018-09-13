@@ -139,18 +139,10 @@ def parse_config(srcdirectory=str(), config=str(), output=str(), tempdir=str(),
         #Generated in count_reads function
         count_file = tempdir + "count_file.header.bed"
         outfile.write('COUNT_FILE="'+count_file+'"\n')
-
+        
+        #Path to ranked center file. 
         ranked_center_file = tempdir + "ranked_file.center.bed"
         outfile.write('RANKED_CENTER_FILE="'+ranked_center_file+'"\n')
-
-        #Path to a directory full of motif logos for all TFs in the HOCOMOCO
-        #database (v10)
-        logos = os.path.join(os.path.dirname(srcdirectory),'human_logo')
-        #logos = srcdirectory + 'human_logo/'
-        outfile.write('LOGOS="'+logos+'"\n')
-
-        #Path to mouse directory with motif logos in HOCOMOCO v10
-        ##logos = parent_dir(homedir) + '/mouse_logo/'
 #==============================================================================
 
 #==============================================================================
@@ -414,6 +406,18 @@ def verify_config():
         raise NameError('MOTIFDATABASE variable not found in config.ini file. \
                             Provide the full path to a database of motifs in \
                             meme format.')
+
+    try:
+        if type(config.LOGOS) != str:
+            raise TypeError('LOGOS variable must be a string. Provide the \
+                                full path to a directory containing meme \
+                                formatted motif logos whose name correspond \
+                                motifs within MOTIFDATABASE.')
+    except NameError:
+        raise NameError('LOGOS variable not found in config.ini file. Provide \
+                                the full path to a directory containing meme \
+                                formatted motif logos whose name correspond \
+                                motifs within MOTIFDATABASE.')
 
     print "Config file verified, all inputs present and correct type."
 #==============================================================================
