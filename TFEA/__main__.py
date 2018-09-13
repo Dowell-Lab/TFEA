@@ -33,10 +33,6 @@ parser = argparse.ArgumentParser(description='Transcription Factor Enrichment \
                                     usage='TFEA --config CONFIG.ini [--sbatch \
                                     email@address.com]')
 
-parser.add_argument('--help','-h', metavar='', default=False, 
-                        action='store_const', const=True, help='show this \
-                        help message and exit.')
-
 parser.add_argument('--config','-c',metavar='',help='REQUIRED. A \
                         configuration file containing .ini suffix \
                         (ex. config.ini). See example in the examples folder.')
@@ -47,9 +43,6 @@ parser.add_argument('--sbatch','-s',default=False,metavar='',help='OPTIONAL. \
 
 #Display help message when no args are passed.
 if len(sys.argv) == 1:
-    parser.print_help()
-    sys.exit(1)
-elif parser.parse_args().help:
     parser.print_help()
     sys.exit(1)
 #==============================================================================
