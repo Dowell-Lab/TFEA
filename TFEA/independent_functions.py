@@ -377,7 +377,7 @@ def verify_config():
                             plotting.')
 
     try:
-        if type(config.MOTIF_HITS) != float:
+        if type(config.MOTIF_HITS) != str:
             raise TypeError('MOTIF_HITS variable must be a string. Provide \
                                 the full path to a folder containing bed \
                                 files with motif hits across the genome. \
@@ -390,7 +390,7 @@ def verify_config():
                             can be generated using TFEAs compile module.')
 
     try:
-        if type(config.GENOMEFASTA) != float:
+        if type(config.GENOMEFASTA) != str:
             raise TypeError('GENOMEFASTA variable must be a string. Provide \
                                 the full path to a fasta file containing a \
                                 genome of interest to perform motif scannning \
@@ -402,7 +402,7 @@ def verify_config():
                             over.')
 
     try:
-        if type(config.MOTIFDATABASE) != float:
+        if type(config.MOTIFDATABASE) != str:
             raise TypeError('MOTIFDATABASE variable must be a string. Provide \
                                 the full path to a database of motifs in meme \
                                 format.')
