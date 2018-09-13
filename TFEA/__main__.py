@@ -12,17 +12,15 @@ __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 __version__ = '3.0'
 #==============================================================================
+#MAIN IMPORTS
+#==============================================================================
 import os
 import sys
 import time
 import argparse
 import configparser
-from multiprocessing import Pool
-import multiprocessing as mp
-import independent_functions
-import dependent_functions
 #==============================================================================
-#MAIN
+#ARGUMENT PARSING
 #==============================================================================
 #Leftover from previous version of TFEA, delete if current version works
 # import main
@@ -53,7 +51,16 @@ parser.add_argument('--sbatch','-s',default=False,metavar='',help='OPTIONAL. \
 if len(sys.argv) == 1:
     parser.print_help()
     sys.exit(1)
-
+#==============================================================================
+#SECONDARY IMPORTS
+#==============================================================================
+from multiprocessing import Pool
+import multiprocessing as mp
+import independent_functions
+import dependent_functions
+#==============================================================================
+#MAIN SCRIPT
+#==============================================================================
 #If user provided arguments, then parse them
 sbatch = parser.parse_args().sbatch
 configfile = parser.parse_args().config
@@ -95,8 +102,8 @@ independent_functions.parse_config(srcdirectory=srcdirectory,config=config,
 #Verify config file to make sure user has inputted all necessary variables
 independent_functions.verify_config()
 
+#Import config file once it's created
 import config
-import create_html
 
 #This module takes the input list of BED files, concatenates them, and then 
 #merges them via bedtools.
