@@ -99,7 +99,8 @@ def make_out_directories(dirs=False,config=None):
 #==============================================================================
 
 #==============================================================================
-def parse_config(srcdirectory='',config='',output='',tempdir='',figuredir=''):
+def parse_config(srcdirectory=str(), config=str(), output=str(), tempdir=str(),
+                figuredir=str()):
     '''Creates the config.py file which is used in many aspects of TFEA. Within
         this config.py file, it writes all variables provided in the config
         parameter and also writes output, tempdir, and figuredir full paths
@@ -125,7 +126,7 @@ def parse_config(srcdirectory='',config='',output='',tempdir='',figuredir=''):
     -------
     None
     '''
-    with open(srcdirectory+'config.py','w') as outfile:
+    with open(os.path.join(srcdirectory,'config.py'),'w') as outfile:
         for key in config:
             for item in config[key]:
                 outfile.write(item.upper()+'='+config[key][item]+'\n')
