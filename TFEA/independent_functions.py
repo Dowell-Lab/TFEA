@@ -451,8 +451,12 @@ def verify_config_object(config=object()):
     #Initiallize the output dictionary
     config_dict = dict()
 
+    print config
+
     #get a list of (name, value) pairs for each option in the given section
     config_items = [config.items(section) for section in config]
+
+    print config_items
 
     #pull out only names, give them all uppercase so the user input can be 
     #case-insensitive
