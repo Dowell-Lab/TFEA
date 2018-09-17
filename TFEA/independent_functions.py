@@ -461,10 +461,10 @@ def verify_config_object(config=object()):
 
     #pull out only names, give them all uppercase so the user input can be 
     #case-insensitive
-    names = [name.upper() for (name,value) in config_items]
+    names = [name.upper().encode("utf-8") for (name,value) in config_items]
 
     #pull out corresponding value pair for each variable name
-    values = [value for (name,value) in config_items]
+    values = [value.encode("utf-8") for (name,value) in config_items]
 
     #Try to find the index of a given variable
     try:
