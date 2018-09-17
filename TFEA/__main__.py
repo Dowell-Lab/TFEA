@@ -67,14 +67,14 @@ config.read(configfile)
 #to the --sbatch flag so we know not to remake output directories. If --sbatch 
 #flag not specified, simply make output directories and continue.
 if sbatch == False:
-    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(
-                                                                True,config)
+    args = independent_functions.make_out_directories(dirs=True,config=config)
+    output, tempdir, figuredir, e_and_o = args
 elif str(sbatch) == 'SUBMITTED':
-    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(
-                                                                False,config)
+    args = independent_functions.make_out_directories(dirs=False,config=config)
+    output,tempdir,figuredir,e_and_o = args
 else:
-    output,tempdir,figuredir,e_and_o = independent_functions.make_out_directories(
-                                                                True,config)
+    args = independent_functions.make_out_directories(dirs=True,config=config)
+    output,tempdir,figuredir,e_and_o = args
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
     email = str(sbatch)
@@ -83,8 +83,8 @@ else:
                 + srcdirectory+" --config " +configfile 
                 + " --sbatch SUBMITTED' " + script)
 
-    sys.exit("TFEA has been submitted using an sbatch script, use qstat to \
-            check its progress.")
+    sys.exit(("TFEA has been submitted using an sbatch script, use qstat to "
+            "check its progress."))
 
 
 #Run the config_parser script which will create variables for all folders and 

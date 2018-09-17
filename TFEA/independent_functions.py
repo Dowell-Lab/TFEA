@@ -168,104 +168,104 @@ def verify_config_file():
     '''
     try:
         if type(config.COMBINE) != bool:
-            raise TypeError('COMBINE variable must be a boolean. This switch \
-                            determines whether TFEA merges bed files within \
-                            BED input.')
+            raise TypeError(('COMBINE variable must be a boolean. This switch '
+                            'determines whether TFEA merges bed files within '
+                            'BED input.'))
     except NameError:
-        raise NameError('COMBINE variable not found in config.ini file. This \
-                            switch determines whether TFEA merges bed files \
-                            within BED input.')
+        raise NameError(('COMBINE variable not found in config.ini file. This '
+                            'switch determines whether TFEA merges bed files '
+                            'within BED input.'))
 
     try:
         if type(config.COUNT) != bool:
-            raise TypeError('COUNT variable must be a boolean. This switch \
-                                determines whether TFEA performs read \
-                                counting over BED regions.')
+            raise TypeError(('COUNT variable must be a boolean. This switch '
+                                'determines whether TFEA performs read '
+                                'counting over BED regions.'))
     except NameError:
-        raise NameError('COUNT variable not found in config.ini file. This \
-                            switch determines whether TFEA performs read \
-                            counting over BED regions.')
+        raise NameError(('COUNT variable not found in config.ini file. This '
+                            'switch determines whether TFEA performs read '
+                            'counting over BED regions.'))
 
     try:
         if type(config.DESEQ) != bool:
-            raise TypeError('DESEQ variable must be a boolean. This switch \
-                                determines whether TFEA performs DE-Seq \
-                                analysis on counted BED regions.')
+            raise TypeError(('DESEQ variable must be a boolean. This switch '
+                                'determines whether TFEA performs DE-Seq '
+                                'analysis on counted BED regions.'))
     except NameError:
-        raise NameError('DESEQ variable not found in config.ini file. This \
-                            switch determines whether TFEA performs DE-Seq \
-                            analysis on counted BED regions.')
+        raise NameError(('DESEQ variable not found in config.ini file. This '
+                            'switch determines whether TFEA performs DE-Seq '
+                            'analysis on counted BED regions.'))
 
     try:
         if type(config.CALCULATE) != bool:
-            raise TypeError('CALCULATE variable must be a boolean. This \
-                                switch determines whether TFEA performs its \
-                                standard enrichment score calculation and \
-                                plotting.')
+            raise TypeError(('CALCULATE variable must be a boolean. This '
+                                'switch determines whether TFEA performs its '
+                                'standard enrichment score calculation and '
+                                'plotting.'))
     except NameError:
-        raise NameError('CALCULATE variable not found in config.ini file. \
-                            This switch determines whether TFEA performs its \
-                            standard enrichment score calculation and \
-                            plotting.')
+        raise NameError(('CALCULATE variable not found in config.ini file. '
+                            'This switch determines whether TFEA performs its '
+                            'standard enrichment score calculation and '
+                            'plotting.'))
 
     try:
         if type(config.POOL) != bool:
-            raise TypeError('POOL variable must be a boolean. This switch \
-                                determines whether TFEA runs the analysis \
-                                in parallel using the multiprocessing library \
-                                in python.')
+            raise TypeError(('POOL variable must be a boolean. This switch '
+                                'determines whether TFEA runs the analysis '
+                                'in parallel using the multiprocessing library '
+                                'in python.'))
     except NameError:
-        raise NameError('POOL variable not found in config.ini file. This \
-                            switch determines whether TFEA runs the analysis \
-                            in parallel using the multiprocessing library in \
-                            python.')
+        raise NameError(('POOL variable not found in config.ini file. This '
+                            'switch determines whether TFEA runs the analysis '
+                            'in parallel using the multiprocessing library in '
+                            'python.'))
 
     try:
         if type(config.SINGLEMOTIF) != bool and type(config.SINGLEMOTIF) != str:
-            raise TypeError('SINGLEMOTIF variable must be a boolean or \
-                                string. This switch determines whether TFEA \
-                                performs its analysis on a single motif or \
-                                all. If not False, set to a string matching a \
-                                motif name.')
+            raise TypeError(('SINGLEMOTIF variable must be a boolean or '
+                                'string. This switch determines whether TFEA '
+                                'performs its analysis on a single motif or '
+                                'all. If not False, set to a string matching '
+                                'a motif name.'))
     except NameError:
-        raise NameError('SINGLEMOTIF variable not found in config.ini file. \
-                            This switch determines whether TFEA performs its \
-                            analysis on a single motif or all. If not False, \
-                            set to a string matching a motif name.')
+        raise NameError(('SINGLEMOTIF variable not found in config.ini file. '
+                            'This switch determines whether TFEA performs its '
+                            'analysis on a single motif or all. If not False, '
+                            'set to a string matching a motif name.'))
 
     try:
         if type(config.FIMO) != bool:
-            raise TypeError('FIMO variable must be a boolean. This switch \
-                                determines whether TFEA uses FIMO to get \
-                                motif hits or whether a database of motif hit \
-                                calls (bed format) is used.')
+            raise TypeError(('FIMO variable must be a boolean. This switch '
+                                'determines whether TFEA uses FIMO to get '
+                                'motif hits or whether a database of motif hit '
+                                'calls (bed format) is used.'))
     except NameError:
-        raise NameError('FIMO variable not found in config.ini file. This \
-                            switch determines whether TFEA uses FIMO to get \
-                            motif hits or whether a database of motif hit \
-                            calls (bed format) is used.')
+        raise NameError(('FIMO variable not found in config.ini file. This '
+                            'switch determines whether TFEA uses FIMO to get '
+                            'motif hits or whether a database of motif hit '
+                            'calls (bed format) is used.'))
 
     try:
         if type(config.TEMP) != bool:
-            raise TypeError('TEMP variable must be a boolean. This switch \
-                                determines whether TFEA saves large temporary \
-                                files. If True, temporary files will be \
-                                stored in the temp_files directory. Warning: \
-                                There will be many large files.')
+            raise TypeError(('TEMP variable must be a boolean. This switch '
+                                'determines whether TFEA saves large temporary '
+                                'files. If True, temporary files will be '
+                                'stored in the temp_files directory. Warning: '
+                                'There will be many large files.'))
     except NameError:
-        raise NameError('TEMP variable not found in config.ini file. This \
-                            switch determines whether TFEA saves large \
-                            temporary files. If True, temporary files will be \
-                            stored in the temp_files directory. Warning: \
-                            There will be many large files.')
+        raise NameError(('TEMP variable not found in config.ini file. This '
+                            'switch determines whether TFEA saves large '
+                            'temporary files. If True, temporary files will be '
+                            'stored in the temp_files directory. Warning: '
+                            'There will be many large files.'))
 
     try:
         if type(config.PLOT) != bool:
-            raise TypeError('PLOT variable must be a boolean. This switch \
-                                determines whether TFEA outputs plots for \
-                                all motifs provided or just significant ones. \
-                                Warning: Setting this to True will slow down \
-                                TFEA and create large output folders.')
+            raise TypeError(('PLOT variable must be a boolean. This switch '
+                                'determines whether TFEA outputs plots for '
+                                'all motifs provided or just significant ones. '
+                                'Warning: Setting this to True will slow down '
+                                'TFEA and create large output folders.'))
     except NameError:
         raise NameError('PLOT variable not found in config.ini file. This \
                             switch determines whether TFEA outputs plots for \
