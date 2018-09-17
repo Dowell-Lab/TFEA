@@ -470,7 +470,7 @@ def verify_config_object(config=object()):
     try:
         #If variable name found, verify it's type
         combine = values[names.index('COMBINE')]
-        if type(combine) != bool:
+        if combine != 'True' or combine != 'False':
             #If it's type is incorrect raise a TypeError
             raise TypeError('COMBINE variable must be a boolean. This switch \
                             determines whether TFEA merges bed files within \
