@@ -78,8 +78,8 @@ else:
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
     email = str(sbatch)
-    os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o 
-                + "%x.out --mail-user="+email + " --export=cmd='" 
+    os.system("sbatch --error=" + e_and_o + "/%x.err --output=" + e_and_o 
+                + "/%x.out --mail-user="+email + " --export=cmd='" 
                 + srcdirectory+" --config " +configfile 
                 + " --sbatch SUBMITTED' " + script)
 
