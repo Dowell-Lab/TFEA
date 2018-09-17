@@ -146,7 +146,7 @@ def parse_config(srcdirectory=str(), config=str(), output=str(), tempdir=str(),
 #==============================================================================
 
 #==============================================================================
-def verify_config():
+def verify_config_file():
     '''Verifies that all necessary variables are present within the inputted 
         config file and that they are the correct variable types.
     
@@ -423,6 +423,373 @@ def verify_config():
 #==============================================================================
 
 #==============================================================================
+def verify_config_object(config=object()):
+    '''Verifies the names and values of variables within a configParser object
+        to make sure that all necessary variables are present and they are the
+        correct type
+    
+    Parameters
+    ----------
+    config : configParser object
+        a configParser object storing the variables contained within the 
+        user-inputted config.ini file
+    
+    Returns
+    -------
+    config_dict : dictionary
+        a dictionary with keys corresponding to variable names and values to
+        user-inputted values
+
+    Raises
+    ------
+    TypeError
+        When variable type does not match required type
+
+    NameError
+        When variable is not found within config
+    '''
+    #Initiallize the output dictionary
+    config_dict = dict()
+
+    #get a list of (name, value) pairs for each option in the given section
+    config_items = [config.items(section) for section in config]
+
+    #pull out only names, give them all uppercase so the user input can be 
+    #case-insensitive
+    names = [name.upper() for name,value in config_items]
+
+    #pull out corresponding value pair for each variable name
+    values = [value for name,value in config_items]
+
+    #Try to find the index of a given variable
+    try:
+        #If variable name found, verify it's type
+        combine = values[names.index('COMBINE')]
+        if type(combine) != bool:
+            #If it's type is incorrect raise a TypeError
+            raise TypeError('COMBINE variable must be a boolean. This switch \
+                            determines whether TFEA merges bed files within \
+                            BED input.')
+        else:
+            config_dict['COMBINE'] = combine
+    #Catch if the variable name is not within the name list
+    except ValueError:
+        #Raise a NameError
+        raise NameError('COMBINE variable not found in config.ini file. This \
+                            switch determines whether TFEA merges bed files \
+                            within BED input.')
+
+    try:
+        count = values[names.index('COUNT')]
+        if type(count) != bool:
+            raise TypeError('COUNT variable must be a boolean. This switch \
+                                determines whether TFEA performs read \
+                                counting over BED regions.')
+        else:
+            config_dict['COUNT'] = count
+    except ValueError:
+        raise NameError('COUNT variable not found in config.ini file. This \
+                            switch determines whether TFEA performs read \
+                            counting over BED regions.')
+
+    try:
+        deseq = values[names.index('DESEQ')]
+        if type(deseq) != bool:
+            raise TypeError('DESEQ variable must be a boolean. This switch \
+                                determines whether TFEA performs DE-Seq \
+                                analysis on counted BED regions.')
+        else:
+            config_dict['DESEQ'] = deseq
+    except ValueError:
+        raise NameError('DESEQ variable not found in config.ini file. This \
+                            switch determines whether TFEA performs DE-Seq \
+                            analysis on counted BED regions.')
+
+    try:
+        calculate = values[names.index('CALCULATE')]
+        if type(calculate) != bool:
+            raise TypeError('CALCULATE variable must be a boolean. This \
+                                switch determines whether TFEA performs its \
+                                standard enrichment score calculation and \
+                                plotting.')
+        else:
+            config_dict['CALCULATE']
+    except ValueError:
+        raise NameError('CALCULATE variable not found in config.ini file. \
+                            This switch determines whether TFEA performs its \
+                            standard enrichment score calculation and \
+                            plotting.')
+
+    try:
+        pool = values[names.index('POOL')]
+        if type(pool) != bool:
+            raise TypeError('POOL variable must be a boolean. This switch \
+                                determines whether TFEA runs the analysis \
+                                in parallel using the multiprocessing library \
+                                in python.')
+        else:
+            config_dict['POOL'] = pool
+    except ValueError:
+        raise NameError('POOL variable not found in config.ini file. This \
+                            switch determines whether TFEA runs the analysis \
+                            in parallel using the multiprocessing library in \
+                            python.')
+
+    try:
+        singlemotif = values[names.index('SINGLEMOTIF')]
+        if type(singlemotif) != bool and type(singlemotif) != str:
+            raise TypeError('SINGLEMOTIF variable must be a boolean or \
+                                string. This switch determines whether TFEA \
+                                performs its analysis on a single motif or \
+                                all. If not False, set to a string matching a \
+                                motif name.')
+        else:
+            config_dict['SINGLEMOTIF'] = singlemotif
+    except ValueError:
+        raise NameError('SINGLEMOTIF variable not found in config.ini file. \
+                            This switch determines whether TFEA performs its \
+                            analysis on a single motif or all. If not False, \
+                            set to a string matching a motif name.')
+
+    try:
+        fimo = values[names.index('FIMO')]
+        if type(fimo) != bool:
+            raise TypeError('FIMO variable must be a boolean. This switch \
+                                determines whether TFEA uses FIMO to get \
+                                motif hits or whether a database of motif hit \
+                                calls (bed format) is used.')
+        else:
+            config_dict['FIMO'] = fimo
+    except ValueError:
+        raise NameError('FIMO variable not found in config.ini file. This \
+                            switch determines whether TFEA uses FIMO to get \
+                            motif hits or whether a database of motif hit \
+                            calls (bed format) is used.')
+
+    try:
+        temp = values[names.index('TEMP')]
+        if type(temp) != bool:
+            raise TypeError('TEMP variable must be a boolean. This switch \
+                                determines whether TFEA saves large temporary \
+                                files. If True, temporary files will be \
+                                stored in the temp_files directory. Warning: \
+                                There will be many large files.')
+        else:
+            config_dict['TEMP'] = temp
+    except ValueError:
+        raise NameError('TEMP variable not found in config.ini file. This \
+                            switch determines whether TFEA saves large \
+                            temporary files. If True, temporary files will be \
+                            stored in the temp_files directory. Warning: \
+                            There will be many large files.')
+
+    try:
+        plot = values[names.index('PLOT')]
+        if type(plot) != bool:
+            raise TypeError('PLOT variable must be a boolean. This switch \
+                                determines whether TFEA outputs plots for \
+                                all motifs provided or just significant ones. \
+                                Warning: Setting this to True will slow down \
+                                TFEA and create large output folders.')
+        else:
+            config_dict['PLOT'] = plot
+    except ValueError:
+        raise NameError('PLOT variable not found in config.ini file. This \
+                            switch determines whether TFEA outputs plots for \
+                            all motifs provided or just significant ones. \
+                            Warning: Setting this to True will slow down TFEA \
+                            and create large output folders.')
+
+    try:
+        output = values[names.index('OUTPUT')] 
+        if type(output) != str:
+            raise TypeError('OUTPUT variable must be a string. Determines \
+                                where TFEA stores output.')
+        else:
+            config_dict['OUTPUT'] = output
+    except ValueError:
+        raise NameError('OUTPUT variable not found in config.ini file. \
+                            Determines where TFEA stores output.')
+
+    try:
+        beds = values[names.index('BEDS')]
+        if type(beds) != list:
+            raise TypeError('BED variable must be a list. Input a list of \
+                                regions (bed-format) to perform analysis \
+                                over. If merging not desired, simply input a \
+                                single BED file within a python list.')
+        else:
+            config_dict['BEDS'] = beds
+    except ValueError:
+        raise NameError('BED variable not found in config.ini file. Input a \
+                            list of regions (bed-format) to perform analysis \
+                            over. If merging not desired, simply input a \
+                            single BED file within a python list.')
+
+    try:
+        bam1 = values[names.index('BAM1')]
+        if type(bam1) != list:
+            raise TypeError('BAM1 variable must be a list. Input a list of \
+                                BAM files to obtain read depth and coverage \
+                                over regions of interest. One or multiple \
+                                bams can be specified but they must be within \
+                                a python list.')
+        else:
+            config_dict['BAM1'] = bam1
+    except ValueError:
+        raise NameError('BAM1 variable not found in config.ini file. Input a \
+                            list of BAM files to obtain read depth and \
+                            coverage over regions of interest. One or \
+                            multiple bams can be specified but they must be \
+                            within a python list.')
+
+    try:
+        label1 = values[names.index('LABEL1')] 
+        if type(label1) != str:
+            raise TypeError('LABEL1 variable must be a string. Define a \
+                                treatment or condition to label BAM1 files. \
+                                Used in plotting and output folder naming.')
+        else:
+            config_dict['LABEL1'] = label1
+    except ValueError:
+        raise NameError('LABEL1 variable not found in config.ini file. Define \
+                            a treatment or condition to label BAM1 files. \
+                            Used in plotting and output folder naming.')
+
+    try:
+        bam2 = values[names.index('BAM2')]
+        if type(bam2) != list:
+            raise TypeError('BAM2 variable must be a list. Input a list of \
+                                BAM files to obtain read depth and coverage \
+                                over regions of interest. One or multiple \
+                                bams can be specified but they must be within \
+                                a python list.')
+        else:
+            config_dict['BAM2'] = bam2
+    except ValueError:
+        raise NameError('BAM2 variable not found in config.ini file. Input a \
+                            list of BAM files to obtain read depth and \
+                            coverage over regions of interest. One or \
+                            multiple bams can be specified but they must be \
+                            within a python list.')
+
+    try:
+        label2 = values[names.index('LABEL2')] 
+        if type(label2) != str:
+            raise TypeError('LABEL2 variable must be a string. Define a \
+                                treatment or condition to label BAM1 files. \
+                                Used in plotting and output folder naming.')
+        else:
+            config_dict['LABEL2'] = label2
+    except ValueError:
+        raise NameError('LABEL2 variable not found in config.ini file. Define \
+                            a treatment or condition to label BAM1 files. \
+                            Used in plotting and output folder naming.')
+
+    try:
+        padj_cutoff = values[names.index('PADJCUTOFF')] 
+        if type(values[names.index('PADJCUTOFF')]) != float:
+            raise TypeError('PADJCUTOFF variable must be a float. Provide a \
+                                p-adjusted cutoff value to determine which \
+                                TFs are plotted and called as significant.')
+        else:
+            config_dict['PADJCUTOFF'] = padj_cutoff
+    except ValueError:
+        raise NameError('PADJCUTOFF variable not found in config.ini file. \
+                                Provide a p-adjusted cutoff value to \
+                                determine which TFs are plotted and called as \
+                                significant.')
+
+    try:
+        largewindow = values[names.index('LARGEWINDOW')] 
+        if type(values[names.index('LARGEWINDOW')]) != float:
+            raise TypeError('LARGEWINDOW variable must be a float. Provide a \
+                                larger window to be used by TFEA for plotting \
+                                and GC-content calculation.')
+        else:
+            config_dict['LARGEWINDOW'] = largewindow
+    except ValueError:
+        raise NameError('LARGEWINDOW variable not found in config.ini file. \
+                                Provide a larger window to be used by TFEA \
+                                for plotting and GC-content calculation.')
+
+    try:
+        smallwindow = values[names.index('SMALLWINDOW')] 
+        if type(values[names.index('SMALLWINDOW')]) != float:
+            raise TypeError('SMALLWINDOW variable must be a float. Provide a \
+                                smaller window to be used by TFEA for \
+                                plotting.')
+        else:
+            config_dict['SMALLWINDOW'] = smallwindow
+    except ValueError:
+        raise NameError('SMALLWINDOW variable not found in config.ini file. \
+                            Provide a smaller window to be used by TFEA for \
+                            plotting.')
+
+    try:
+        motif_hits = values[names.index('MOTIF_HITS')] 
+        if type(values[names.index('MOTIF_HITS')]) != str:
+            raise TypeError('MOTIF_HITS variable must be a string. Provide \
+                                the full path to a folder containing bed \
+                                files with motif hits across the genome. \
+                                These can be generated using TFEAs compile \
+                                module.')
+        else:
+            config_dict['MOTIF_HITS'] = motif_hits
+    except ValueError:
+        raise NameError('MOTIF_HITS variable not found in config.ini file. \
+                            Provide the full path to a folder containing bed \
+                            files with motif hits across the genome. These \
+                            can be generated using TFEAs compile module.')
+
+    try:
+        genomefasta = values[names.index('GENOMEFASTA')] 
+        if type(values[names.index('GENOMEFASTA')]) != str:
+            raise TypeError('GENOMEFASTA variable must be a string. Provide \
+                                the full path to a fasta file containing a \
+                                genome of interest to perform motif scannning \
+                                over.')
+        else:
+            config_dict['GENOMEFASTA'] = genomefasta
+    except ValueError:
+        raise NameError('GENOMEFASTA variable not found in config.ini file. \
+                            Provide the full path to a fasta file containing \
+                            a genome of interest to perform motif scannning \
+                            over.')
+
+    try:
+        motifdatabase = values[names.index('MOTIFDATABASE')] 
+        if type(values[names.index('MOTIFDATABASE')]) != str:
+            raise TypeError('MOTIFDATABASE variable must be a string. Provide \
+                                the full path to a database of motifs in meme \
+                                format.')
+        else:
+            config_dict['MOTIFDATABASE'] = motifdatabase
+    except ValueError:
+        raise NameError('MOTIFDATABASE variable not found in config.ini file. \
+                            Provide the full path to a database of motifs in \
+                            meme format.')
+
+    try:
+        logos = values[names.index('LOGOS')] 
+        if type(values[names.index('LOGOS')]) != str:
+            raise TypeError('LOGOS variable must be a string. Provide the \
+                                full path to a directory containing meme \
+                                formatted motif logos whose name correspond \
+                                motifs within MOTIFDATABASE.')
+        else:
+            config_dict['LOGOS'] = logos
+    except ValueError:
+        raise NameError('LOGOS variable not found in config.ini file. Provide \
+                                the full path to a directory containing meme \
+                                formatted motif logos whose name correspond \
+                                motifs within MOTIFDATABASE.')
+
+    print "Config file verified, all inputs present and correct type."
+    return config_dict
+#==============================================================================
+
+#==============================================================================
 def sbatch_submit(srcdirectory=str(),configpath=str(),script=str(),email=str(),
                     config=None):
     '''Submits an sbatch job using the configuration provided to the script 
@@ -492,8 +859,7 @@ def merge_bed(beds=list(),tempdir=str()):
 #==============================================================================
 
 #==============================================================================
-def getfasta(bedfile='', genomefasta=config.GENOMEFASTA, 
-                tempdir=config.TEMPDIR):
+def getfasta(bedfile=str(), genomefasta=str(), tempdir=str()):
     '''Converts a bed file to a fasta file using bedtools. Outputs into the 
         tempdir directory created by TFEA.
 
@@ -523,7 +889,7 @@ def getfasta(bedfile='', genomefasta=config.GENOMEFASTA,
 #==============================================================================
 
 #==============================================================================
-def get_bgfile(fastafile='', tempdir=config.TEMPDIR):
+def get_bgfile(fastafile=str(), tempdir=str()):
     '''Obtains a zero order markov background model (used in FIMO) from a fasta
         file. Outputs into the tempdir directory created by TFEA.
 
@@ -553,9 +919,7 @@ def get_bgfile(fastafile='', tempdir=config.TEMPDIR):
 #==============================================================================
 
 #==============================================================================
-def get_regions(tempdir=config.TEMPDIR, 
-                ranked_center_file=config.RANKED_CENTER_FILE,
-                largewindow=config.LARGEWINDOW):
+def get_regions(tempdir=str(), ranked_center_file=str(), largewindow=float()):
     '''Takes in a bed file that contains regions centered on the user-inputted 
         bed files and outputs a 'full regions' bed file which simply adds a 
         user-defined window to either side of these centered regions.
@@ -592,9 +956,8 @@ def get_regions(tempdir=config.TEMPDIR,
 #==============================================================================
 
 #==============================================================================
-def count_reads(bedfile='', bam1=config.BAM1, bam2=config.BAM2, 
-                tempdir=config.TEMPDIR, label1=config.LABEL1, 
-                label2=config.LABEL2):
+def count_reads(bedfile=str(), bam1=list(), bam2=list(), tempdir=str(), 
+                label1=str(), label2=str()):
     '''Counts reads across regions in a given bed file using bam files inputted
         by a user
 
@@ -649,9 +1012,8 @@ def count_reads(bedfile='', bam1=config.BAM1, bam2=config.BAM2,
 #==============================================================================
 
 #==============================================================================
-def write_deseq_script(bam1=config.BAM1, bam2=config.BAM2, 
-                        tempdir=config.TEMPDIR, count_file=config.COUNT_FILE,
-                        label1=config.LABEL1, label2=config.LABEL2):
+def write_deseq_script(bam1=list(), bam2=list(), tempdir=str(), 
+                        count_file=str(), label1=str(), label2=str()):
     '''Writes an R script within the tempdir directory in TFEA output to run 
         either DE-Seq or DE-Seq2 depending on the number of user-inputted 
         replicates.
@@ -688,7 +1050,7 @@ def write_deseq_script(bam1=config.BAM1, bam2=config.BAM2,
         outfile = open(tempdir + 'DESeq.R','w')
         outfile.write('sink("'+tempdir+'DESeq.Rout")\n')
         outfile.write('library("DESeq2")\n')
-        outfile.write('data <- read.delim("'+config.COUNT_FILE+'", sep="\t", \
+        outfile.write('data <- read.delim("'+count_file+'", sep="\t", \
                         header=TRUE)\n')
         outfile.write('countsTable <- subset(data, select=c('
                 +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
@@ -758,8 +1120,8 @@ def write_deseq_script(bam1=config.BAM1, bam2=config.BAM2,
 #==============================================================================
 
 #==============================================================================
-def plot_deseq_MA(deseq_file=str(), label1=config.LABEL1, label2=config.LABEL2,
-                    figuredir=config.FIGUREDIR):
+def plot_deseq_MA(deseq_file=str(), label1=str(), label2=str(), 
+                    figuredir=str()):
     '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
     to the figuredir directory created in TFEA output folder
 
@@ -888,8 +1250,8 @@ def padj_bonferroni(TFresults=list()):
 #==============================================================================
 
 #==============================================================================
-def motif_distance_bedtools_closest(ranked_center_file=str(),
-                            motif_path=str()):
+def motif_distance_bedtools_closest(ranked_center_file=str(), 
+                                    motif_path=str()):
     '''Calculates nearest motif hit from a bed file. TFEA provides this 
         function with a bed file containing the center of the inputted regions.
 
@@ -919,8 +1281,8 @@ def motif_distance_bedtools_closest(ranked_center_file=str(),
 #==============================================================================
 
 #==============================================================================
-def fimo(tempdir=config.TEMPDIR, motifdatabase=config.MOTIFDATABASE, 
-            bgfile=str(), motif=str(), fastafile=str()):
+def fimo(tempdir=str(), motifdatabase=str(), bgfile=str(), motif=str(), 
+            fastafile=str()):
     '''This function runs fimo on a given fastafile for a single motif in a 
         provided motif database. The output is cut and sorted to convert into 
         a sorted bed file
@@ -959,8 +1321,7 @@ def fimo(tempdir=config.TEMPDIR, motifdatabase=config.MOTIFDATABASE,
 #==============================================================================
 
 #==============================================================================
-def meme2images(motifdatabase=config.MOTIFDATABASE, figuredir=config.FIGUREDIR,
-                motif=str()):
+def meme2images(motifdatabase=str(), figuredir=str(), motif=str()):
     '''This function creates meme logos for use in the output html
 
     Parameters
@@ -983,7 +1344,7 @@ def meme2images(motifdatabase=config.MOTIFDATABASE, figuredir=config.FIGUREDIR,
 #==============================================================================
 
 #==============================================================================
-def fasta_markov(tempdir=config.TEMPDIR, fastafile=str(), order='0'):
+def fasta_markov(tempdir=str(), fastafile=str(), order='0'):
     '''This function runs meme's fasta-get-markov function that generates a 
         background markov file (for use with fimo) from a fasta file.
     Parameters
@@ -1008,8 +1369,8 @@ def fasta_markov(tempdir=config.TEMPDIR, fastafile=str(), order='0'):
 #==============================================================================
 
 #==============================================================================
-def fimo_distance(largewindow=config.LARGEWINDOW, tempdir=config.TEMPDIR, 
-                    fimo_file=str(), motif_file=str()):
+def fimo_parse(largewindow=float(), tempdir=str(), fimo_file=str(), 
+                motif_file=str()):
     '''Parses a fimo output file and writes into a new file that is formatted
         in a way that can be parsed within existing TFEA functions
     Parameters
@@ -1094,7 +1455,7 @@ def convert_sequence_to_array(sequence=str()):
 #==============================================================================
 
 #==============================================================================
-def rank_deseqfile(deseq_file=config.DESEQ_FILE, tempdir=config.TEMPDIR):
+def rank_deseqfile(deseq_file=str(), tempdir=str()):
     '''This function parses a DE-seq output file and creates a new file with 
         the center of each region ranked by p-value 
     
@@ -1109,7 +1470,9 @@ def rank_deseqfile(deseq_file=config.DESEQ_FILE, tempdir=config.TEMPDIR):
         
     Returns
     -------
-    None
+    ranked_center_file : string
+        full path to a bed file that contains the center of regions of interest
+        ranked via DE-Seq p-value
     '''
     up = list()
     down = list()
@@ -1161,29 +1524,34 @@ def rank_deseqfile(deseq_file=config.DESEQ_FILE, tempdir=config.TEMPDIR):
 
     os.system("sort -k1,1 -k2,2n " + tempdir+"ranked_file.center.bed" + " > " 
                 + tempdir + "ranked_file.center.sorted.bed")
+
+    ranked_center_file = tempdir + "ranked_file.center.sorted.bed"
+
+    return ranked_center_file
 #==============================================================================
 
 #==============================================================================
-def samtools_flagstat(args, tempdir=config.TEMPDIR):
+def samtools_flagstat(args):
     '''Performs samtools flagstat on a bam file. Then parses the samtools 
         flagstat output and returns a the millions mapped reads for the given
         bam file.
 
     Parameters
     ----------
-    args : string
-        full paths to a bam files
-
-    tempdir : string
-        full path to the tempdir directory within the output directory (created
-        by TFEA)
+    args : tuple
+        contains arguments for this function:
+        bam : string
+            full paths to a bam files
+        tempdir : string
+            full path to the tempdir directory within the output directory 
+            (created by TFEA)
         
     Returns
     -------
     millions_mapped : float
         millions mapped reads for the given bam file
     '''
-    bam = args
+    bam, tempdir = args
     filename = bam.split('/')[-1]
     os.system("samtools flagstat " + bam + " > " + tempdir + filename 
                 + ".flagstat")
@@ -1195,8 +1563,8 @@ def samtools_flagstat(args, tempdir=config.TEMPDIR):
 #==============================================================================
 
 #==============================================================================
-def enrichment_plot(largewindow=config.LARGEWINDOW,
-                    smallwindow=config.SMALLWINDOW, figuredir=config.FIGUREDIR,
+def enrichment_plot(largewindow=float(),
+                    smallwindow=float(), figuredir=str(),
                     cumscore=list(), sorted_distances=list(), logpval=list(), 
                     updistancehist=list(), downdistancehist=list(), 
                     gc_array=list(), motif_file=''):
@@ -1334,8 +1702,8 @@ def enrichment_plot(largewindow=config.LARGEWINDOW,
 #==============================================================================
 
 #==============================================================================
-def simulation_plot(figuredir=config.FIGUREDIR,simES=list(),actualES=float(),
-                        motif_file=''):
+def simulation_plot(figuredir=str(), simES=list(), actualES=float(),
+                        motif_file=str()):
     '''This function plots the simulated 'enrichment' scores against the
         observed 'enrichment' score
 
@@ -1392,12 +1760,12 @@ def simulation_plot(figuredir=config.FIGUREDIR,simES=list(),actualES=float(),
 #==============================================================================
 
 #==============================================================================
-def distance_distribution_plot(largewindow=config.LARGEWINDOW,
-                                smallwindow=config.SMALLWINDOW, 
-                                figuredir=config.FIGUREDIR, 
+def distance_distribution_plot(largewindow=float(),
+                                smallwindow=float(), 
+                                figuredir=str(), 
                                 updistancehist=list(), 
                                 middledistancehist=list(),
-                                downdistancehist=list(), motif_file=''):
+                                downdistancehist=list(), motif_file=str()):
     '''This function plots histograms of motif distances to region centers 
         based on ranking quartiles
 
@@ -1482,7 +1850,7 @@ def distance_distribution_plot(largewindow=config.LARGEWINDOW,
 #==============================================================================
 
 #==============================================================================
-def moustache_plot(figuredir=config.FIGUREDIR,ESlist=list(),PADJlist=list(),
+def moustache_plot(figuredir=str(),ESlist=list(),PADJlist=list(),
                     sigx=list(),sigy=list()):
 
     '''This function plots a moustache plot for all motifs. In the x-axis, 
@@ -1534,7 +1902,7 @@ def moustache_plot(figuredir=config.FIGUREDIR,ESlist=list(),PADJlist=list(),
 #==============================================================================
 
 #==============================================================================
-def pval_histogram_plot(figuredir=config.FIGUREDIR, PVALlist=list()):
+def pval_histogram_plot(figuredir=str(), PVALlist=list()):
     '''This function plots a histogram of p-values for all motifs
 
     Parameters
@@ -1570,9 +1938,8 @@ def pval_histogram_plot(figuredir=config.FIGUREDIR, PVALlist=list()):
 #==============================================================================
 
 #==============================================================================
-def MA_plot(figuredir=config.FIGUREDIR, label1=config.LABEL1, 
-                label2=config.LABEL2, POSlist=list(), ESlist=list(), 
-                MAx=list(), MAy=list()):
+def MA_plot(figuredir=str(), label1=str(), label2=str(), POSlist=list(), 
+                ESlist=list(), MAx=list(), MAy=list()):
     '''This function plots an 'MA' plot with the 'enrichment' score on the 
         y-axis and the number of hits within the largewindow in the x-axis
 
@@ -1627,7 +1994,7 @@ def MA_plot(figuredir=config.FIGUREDIR, label1=config.LABEL1,
 #==============================================================================
 
 #==============================================================================
-def create_text_output(outputdir=config.OUTPUTDIR, TFresults=list()):
+def create_text_output(outputdir=str(), TFresults=list()):
     '''Creates a .txt output of results from TFEA
 
     Parameters
@@ -1652,17 +2019,9 @@ def create_text_output(outputdir=config.OUTPUTDIR, TFresults=list()):
 #==============================================================================
 
 #==============================================================================
-def create_html_output(outputdir=config.OUTPUTDIR, beds=config.BEDS, 
-                        label1=config.LABEL1, label2=config.LABEL2, 
-                        bam1=config.BAM1, bam2=config.BAM2, 
-                        singlemotif=config.SINGLEMOTIF, 
-                        motif_hits=config.MOTIF_HITS, output=config.OUTPUT, 
-                        padj_cutoff=config.PADJCUTOFF, plot=config.PLOT, 
-                        combine=config.COMBINE, count=config.COUNT, 
-                        deseq=config.DESEQ, calculate=config.CALCULATE, 
-                        TFresults=list(), COMBINEtime=float(), 
-                        COUNTtime=float(), DESEQtime=float(), 
-                        CALCULATEtime=float()):
+def create_html_output(TFresults=list(), config_dict=dict(), 
+                        COMBINEtime=float(), COUNTtime=float(), 
+                        DESEQtime=float(), CALCULATEtime=float()):
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -1740,6 +2099,22 @@ def create_html_output(outputdir=config.OUTPUTDIR, beds=config.BEDS,
     -------
     None
     '''
+    outputdir = config_dict['OUTPUTDIR'] 
+    beds = config_dict['BEDS']
+    label1 = config_dict['LABEL1']
+    label2 = config_dict['LABEL2']
+    bam1 = config_dict['BAM1']
+    bam2 = config_dict['BAM2']
+    singlemotif = config_dict['SINGLEMOTIF']
+    motif_hits = config_dict['MOTIF_HITS']
+    output = config_dict['OUTPUT']
+    padj_cutoff = config_dict['PADJCUTOFF']
+    plot = config_dict['PLOT']
+    combine = config_dict['COMBINE']
+    count = config_dict['COUNT']
+    deseq = config_dict['DESEQ']
+    calculate = config_dict['CALCULATE']
+    
     #Creates results.txt which is a tab-delimited text file with the results    
     TFresults = sorted(TFresults, key=lambda x: x[5])
 
@@ -2144,9 +2519,9 @@ def get_TFresults_from_txt(results_file=str()):
 #==============================================================================
 
 #==============================================================================
-def create_single_motif_html(outputdir=config.OUTPUTDIR, results=list()):
+def create_single_motif_html(outputdir=str(), results=list()):
     MOTIF_FILE,ES,NES,PVAL,POS = results
-    outfile = open(config.OUTPUTDIR + MOTIF_FILE + '.results.html','w')
+    outfile = open(os.path.join(outputdir, MOTIF_FILE + '.results.html'),'w')
     outfile.write("""<!DOCTYPE html>
         <html>
         <head>
