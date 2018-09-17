@@ -454,7 +454,8 @@ def verify_config_object(config=object()):
     print config
 
     #get a list of (name, value) pairs for each option in the given section
-    config_items = [config.items(section) for section in config]
+    config_items = list()
+    config_items = [config_items + config.items(section) for section in config]
 
     print config_items
 
