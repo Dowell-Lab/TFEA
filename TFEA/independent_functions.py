@@ -2104,21 +2104,40 @@ def create_html_output(TFresults=list(), config_dict=dict(),
     -------
     None
     '''
-    outputdir = config_dict['OUTPUTDIR'] 
-    beds = config_dict['BEDS']
-    label1 = config_dict['LABEL1']
-    label2 = config_dict['LABEL2']
-    bam1 = config_dict['BAM1']
-    bam2 = config_dict['BAM2']
-    singlemotif = config_dict['SINGLEMOTIF']
-    motif_hits = config_dict['MOTIF_HITS']
-    output = config_dict['OUTPUT']
-    padj_cutoff = config_dict['PADJCUTOFF']
-    plot = config_dict['PLOT']
-    combine = config_dict['COMBINE']
-    count = config_dict['COUNT']
-    deseq = config_dict['DESEQ']
-    calculate = config_dict['CALCULATE']
+    #Using a config_dict
+    # outputdir = config_dict['OUTPUTDIR'] 
+    # beds = config_dict['BEDS']
+    # label1 = config_dict['LABEL1']
+    # label2 = config_dict['LABEL2']
+    # bam1 = config_dict['BAM1']
+    # bam2 = config_dict['BAM2']
+    # singlemotif = config_dict['SINGLEMOTIF']
+    # motif_hits = config_dict['MOTIF_HITS']
+    # output = config_dict['OUTPUT']
+    # padj_cutoff = config_dict['PADJCUTOFF']
+    # plot = config_dict['PLOT']
+    # combine = config_dict['COMBINE']
+    # count = config_dict['COUNT']
+    # deseq = config_dict['DESEQ']
+    # calculate = config_dict['CALCULATE']
+    
+    #Using a config file
+    import config
+    outputdir = config.OUTPUTDIR
+    beds = config.BEDS
+    label1 = config.LABEL1
+    label2 = config.LABEL2
+    bam1 = config.BAM1
+    bam2 = config.BAM2
+    singlemotif = config.SINGLEMOTIF
+    motif_hits = config.MOTIF_HITS
+    output = config.OUTPUT
+    padj_cutoff = config.PADJCUTOFF
+    plot = config.PLOT
+    combine = config.COMBINE
+    count = config.COUNT
+    deseq = config.DESEQ
+    calculate = config.CALCULATE
     
     #Creates results.txt which is a tab-delimited text file with the results    
     TFresults = sorted(TFresults, key=lambda x: x[5])

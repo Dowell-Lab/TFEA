@@ -89,54 +89,55 @@ else:
 
 #Run the config_parser script which will create variables for all folders and 
 #paths to use throughout TFEA
-# independent_functions.parse_config(srcdirectory=srcdirectory,config=config,
-#                                     output=output,tempdir=tempdir,
-#                                     figuredir=figuredir)
+independent_functions.parse_config(srcdirectory=srcdirectory,config=config,
+                                    output=output,tempdir=tempdir,
+                                    figuredir=figuredir)
 
 #Verify config file to make sure user has inputted all necessary variables
-config_dict = independent_functions.verify_config_object(config=config)
+# config_dict = independent_functions.verify_config_object(config=config)
+independent_functions.verify_config_file()
 
 #Import config file once it's created
-# import config
+import config
 
 #This module takes the input list of BED files, concatenates them, and then 
 #merges them via bedtools.
 COMBINEtime = time.time()
-if config_dict['COMBINE']:
-    bedfile = independent_functions.merge_bed(beds=config_dict['BEDS'], 
-                                                tempdir=config_dict['TEMPDIR'])
+if config.COMBINE:
+    bedfile = independent_functions.merge_bed(beds=config.BEDS, 
+                                                tempdir=config.TEMPDIR)
 else:
-    bedfile = config_dict['BEDS'][0]
+    bedfile = config.BEDS[0]
 COMBINEtime = time.time()-COMBINEtime 
 
 #This module counts reads from all Bam files in BAM1 and BAM2 and creates 
 #count_file with this info.
 COUNTtime = time.time()
-if config_dict['COUNT']:
+if config.COUNT:
     print "Counting reads in regions..."
-    independent_functions.count_reads(bedfile=bedfile, bam1=config_dict['BAM1'], 
-                                        bam2=config_dict['BAM2'], 
-                                        tempdir=config_dict['TEMPDIR'], 
-                                        label1=config_dict['LABEL1'], 
-                                        label2=config_dict['LABEL2'])
+    independent_functions.count_reads(bedfile=bedfile, bam1=config.BAM1, 
+                                        bam2=config.BAM2, 
+                                        tempdir=config.TEMPDIR, 
+                                        label1=config.LABEL1, 
+                                        label2=config.LABEL2)
     print "done"
 COUNTtime = time.time()-COUNTtime
 
 #This module runs DESeq on the count_file produced above - this is used to rank
 #inputted regions
 DESEQtime = time.time()
-if config_dict['DESEQ']:
+if config.DESEQ:
     print "Running DESeq..."
-    deseq_file = dependent_functions.deseq_run(bam1=config_dict['BAM1'], 
-                                        bam2=config_dict['BAM2'], 
-                                        tempdir=config_dict['TEMPDIR'], 
-                                        count_file=config_dict['COUNT_FILE'],
-                                        label1=config_dict['LABEL1'], 
-                                        label2=config_dict['LABEL2'],
-                                        figuredir=config_dict['FIGUREDIR'])
+    deseq_file = dependent_functions.deseq_run(bam1=config.BAM1, 
+                                        bam2=config.BAM2, 
+                                        tempdir=config.TEMPDIR, 
+                                        count_file=config.COUNT_FILE,
+                                        label1=config.LABEL1, 
+                                        label2=config.LABEL2,
+                                        figuredir=config.FIGUREDIR)
     ranked_center_file = independent_functions.rank_deseqfile(
                                                 deseq_file=deseq_file,
-                                                tempdir=config_dict['TEMPDIR'])
+                                                tempdir=config.TEMPDIR)
     print "done"
 DESEQtime = time.time()-DESEQtime
 
@@ -149,34 +150,34 @@ DESEQtime = time.time()-DESEQtime
 #   5. Random shuffle simulation and recalculation of enrichment score
 #   6. Plotting and generation of html report
 CALCULATEtime = time.time()
-if config_dict['CALCULATE']:
-    dependent_functions.calculate(tempdir=config_dict['TEMPDIR'], 
-                                    outputdir=config_dict['OUTPUTDIR'], 
-                                    bam1=config_dict['BAM1'], 
-                                    bam2=config_dict['BAM2'], 
-                                    label1=config_dict['LABEL1'],
-                                    label2=config_dict['LABEL2'],
-                                    motif_hits=config_dict['MOTIF_HITS'], 
-                                    singlemotif=config_dict['SINGLEMOTIF'], 
+if config.CALCULATE:
+    dependent_functions.calculate(tempdir=config.TEMPDIR, 
+                                    outputdir=config.OUTPUTDIR, 
+                                    bam1=config.BAM1, 
+                                    bam2=config.BAM2, 
+                                    label1=config.LABEL1,
+                                    label2=config.LABEL2,
+                                    motif_hits=config.MOTIF_HITS, 
+                                    singlemotif=config.SINGLEMOTIF, 
                                     ranked_center_file=ranked_center_file, 
                                     COMBINEtime=COMBINEtime, 
                                     COUNTtime=COUNTtime, DESEQtime=DESEQtime, 
                                     CALCULATEtime=CALCULATEtime, 
-                                    fimo=config_dict['FIMO'], 
-                                    plot=config_dict['PLOT'], 
-                                    pool=config_dict['POOL'],
-                                    padj_cutoff=config_dict['PADJCUTOFF'], 
-                                    logos=config_dict['LOGOS'], 
-                                    figuredir=config_dict['FIGUREDIR'],
-                                    largewindow=config_dict['LARGEWINDOW'], 
-                                    smallwindow=config_dict['SMALLWINDOW'],
-                                    motifdatabase=config_dict['MOTIFDATABASE'],
-                                    config_dict=config_dict)
+                                    fimo=config.FIMO, 
+                                    plot=config.PLOT, 
+                                    pool=config.POOL,
+                                    padj_cutoff=config.PADJCUTOFF, 
+                                    logos=config.LOGOS, 
+                                    figuredir=config.FIGUREDIR,
+                                    largewindow=config.LARGEWINDOW, 
+                                    smallwindow=config.SMALLWINDOW,
+                                    motifdatabase=config.MOTIFDATABASE)
+                                    #config_dict=config_dict)
 
 
 #Here we simply remove large bed files that are produced within this package. 
 #This option can be turned on/off within the config file.
-if not config_dict['TEMP']:
+if not config.TEMP:
     print "Removing temporary bed files..."
     os.system("rm " + tempdir + '*.sorted.distance.bed')
     os.system("rm " + tempdir + '*.fa')
