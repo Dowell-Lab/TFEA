@@ -58,39 +58,39 @@ def make_out_directories(dirs=False,config=None):
     label2 = config['DATA']['LABEL2'].strip("'")
     outfoldername = 'TFEA_'+label1+'-'+label2+'_'
     if dirs:
-        if not os.path.isdir(output + outfoldername + '0/'):
-            output = output + outfoldername + '0/'
+        if not os.path.isdir(os.path.join(output, outfoldername + '0')):
+            output = os.path.join(output, outfoldername + '0')
             os.makedirs(output)
         else:
             outputfolders = list()
             for folder in os.listdir(output):
                 if outfoldername in folder:
                     outputfolders.append(int(folder.split('_')[-1]))
-            output = output + outfoldername + str(max(outputfolders)+1) + '/'
+            output = os.path.join(output, outfoldername + str(max(outputfolders)+1))
             os.makedirs(output)
     else:
         outputfolders = list()
         for folder in os.listdir(output):
             if outfoldername in folder:
                 outputfolders.append(int(folder.split('_')[-1]))
-        output = output + outfoldername + str(max(outputfolders)) + '/' 
+        output = os.path.join(output, outfoldername + str(max(outputfolders)))
 
 
     #Temporary files will go in this directory
-    tempdir = output + 'temp_files/'
+    tempdir = os.path.join(output, 'temp_files')
     if dirs:
         if not os.path.isdir(tempdir):
             os.makedirs(tempdir)
 
     #Error and out files will go in this directory
-    e_and_o = output + 'e_and_o/'
+    e_and_o = os.path.join(output, 'e_and_o')
     if dirs:
         if not os.path.isdir(e_and_o):
             os.makedirs(e_and_o)
 
 
     #Directory where plots used in html file will be stored.
-    figuredir = output + 'plots/'
+    figuredir = os.path.join(output, 'plots')
     if dirs:
         if not os.path.isdir(figuredir):
             os.makedirs(figuredir)
