@@ -1011,7 +1011,7 @@ def count_reads(bedfile=str(), bam1=list(), bam2=list(), tempdir=str(),
                     + '\t'.join([label1]*len(bam1)) + "\t" 
                     + '\t'.join([label2]*len(bam2)) + "\n")
 
-    with open(tempdir + "count_file.bed") as F:
+    with open(os.path.join(tempdir, "count_file.bed")) as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
