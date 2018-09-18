@@ -895,7 +895,7 @@ def getfasta(bedfile=str(), genomefasta=str(), tempdir=str()):
                 + " -bed " + bedfile
                 + " -fo " + os.path.join(tempdir, "ranked_file.fullregions.fa"))
     print command
-    os.system(command)
+    # os.system(command)
 
     ranked_file_fasta = os.path.join(tempdir, "ranked_file.fullregions.fa")
 
@@ -2644,3 +2644,6 @@ def create_single_motif_html(outputdir=str(), results=list()):
 #==============================================================================
 
 #==============================================================================
+
+if __name__ == "__main__":
+    getfasta(bedfile='afile', genomefasta='afile', tempdir='adir')
