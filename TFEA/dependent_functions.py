@@ -442,7 +442,8 @@ def get_gc_array(tempdir=str(), ranked_file=str(), genomefasta=str(),
     ranked_file_windowed_fasta = independent_functions.getfasta(
                                     genomefasta=genomefasta, 
                                     tempdir=tempdir,
-                                    bedfile=tempdir+"ranked_file.windowed.bed")
+                                    bedfile=os.path.join(tempdir, 
+                                                "ranked_file.windowed.bed"))
 
     #Create a gc_array which simply contains all sequences in fasta file c
     #ollapsed into 1.0 for G/C and 0.0 for A/T
