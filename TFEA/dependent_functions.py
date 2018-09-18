@@ -48,8 +48,8 @@ def deseq_run(bam1=list(), bam2=list(), tempdir=str(), count_file=str(),
                                                 tempdir=tempdir, 
                                                 count_file=count_file,
                                                 label1=label1, label2=label2)
-    os.system("R < " + tempdir + "/DESeq.R --no-save")
-    deseq_file = os.path.join(tempdir,'DESeq.res.txt')
+    os.system("R < " + os.path.join(tempdir, "DESeq.R") + " --no-save")
+    deseq_file = os.path.join(tempdir, 'DESeq.res.txt')
     independent_functions.plot_deseq_MA(deseq_file=deseq_file,
                                             label1=label1, label2=label2, 
                                             figuredir=figuredir)
@@ -425,8 +425,8 @@ def get_gc_array(tempdir=str(), ranked_file=str(), genomefasta=str(),
     '''
     #First, create a bed file with the correct coordinates centered on the 
     #given regions with the specified window size on either side
-    outfile = open(tempdir+"ranked_file.windowed.bed",'w')
-    with open(tempdir + "ranked_file.bed") as F:
+    outfile = open(os.path.join(tempdir, "ranked_file.windowed.bed"),'w')
+    with open(os.path.join(tempdir, "ranked_file.bed")) as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
