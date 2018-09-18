@@ -891,13 +891,9 @@ def getfasta(bedfile=str(), genomefasta=str(), tempdir=str()):
         full path to a fasta file containing the inputted bed file regions in 
         fasta format 
     '''
-    command = ("bedtools getfasta -name -fi " + genomefasta 
+    os.system("bedtools getfasta -name -fi " + genomefasta 
                 + " -bed " + bedfile
                 + " -fo " + os.path.join(tempdir, "ranked_file.fullregions.fa"))
-    command2 = "bedtools getfasta -name -fi " + genomefasta + " -bed " + bedfile + " -fo " + os.path.join(tempdir, "ranked_file.fullregions.fa")
-    print "command1: ", command
-    print "command2: ", command2
-    # os.system(command)
 
     ranked_file_fasta = os.path.join(tempdir, "ranked_file.fullregions.fa")
 

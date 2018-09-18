@@ -171,7 +171,8 @@ if config.CALCULATE:
                                     figuredir=config.FIGUREDIR,
                                     largewindow=config.LARGEWINDOW, 
                                     smallwindow=config.SMALLWINDOW,
-                                    motifdatabase=config.MOTIFDATABASE)
+                                    motifdatabase=config.MOTIFDATABASE,
+                                    genomefasta=config.GENOMEFASTA)
                                     #config_dict=config_dict)
 
 
