@@ -48,11 +48,12 @@ def deseq_run(bam1=list(), bam2=list(), tempdir=str(), count_file=str(),
                                                 tempdir=tempdir, 
                                                 count_file=count_file,
                                                 label1=label1, label2=label2)
-    os.system("R < " + tempdir + "DESeq.R --no-save")
-    independent_functions.plot_deseq_MA(
-                            deseq_file=os.path.join(tempdir,'DESeq.res.txt'),
-                            label1=label1, label2=label2, figuredir=figuredir)
-    deseq_file = tempdir+'DESeq.res.txt'
+    os.system("R < " + tempdir + "/DESeq.R --no-save")
+    deseq_file = os.path.join(tempdir,'DESeq.res.txt')
+    independent_functions.plot_deseq_MA(deseq_file=deseq_file,
+                                            label1=label1, label2=label2, 
+                                            figuredir=figuredir)
+    
     return deseq_file
 #==============================================================================
 

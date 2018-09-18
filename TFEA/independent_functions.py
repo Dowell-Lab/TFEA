@@ -850,15 +850,21 @@ def merge_bed(beds=list(),tempdir=str()):
         full path to a bed file containing the merged regions inputted by the 
         user 
     '''
-    os.system("cat " + " ".join(beds) + " > " + tempdir + "combined_input.bed")
+    os.system("cat " + " ".join(beds) + " > " 
+                + os.path.join(tempdir, "combined_input.bed"))
 
-    os.system("sort -k1,1 -k2,2n " + tempdir + "combined_input.bed > " 
-                + tempdir + "combined_input.sorted.bed")
+    os.system("sort -k1,1 -k2,2n " 
+                + os.path.join(tempdir, "combined_input.bed")
+                + " > " 
+                + os.path.join(tempdir, "combined_input.sorted.bed"))
 
-    os.system("bedtools merge -i " + tempdir + "combined_input.sorted.bed > " 
-                + tempdir + "combined_input.merge.bed")
+    os.system("bedtools merge -i " 
+                + os.path.join(tempdir, "combined_input.sorted.bed") 
+                + " > " 
+                + os.path.join(tempdir, "combined_input.merge.bed"))
 
-    combined_input_merged_bed = tempdir + "combined_input.merge.bed"
+    combined_input_merged_bed = os.path.join(tempdir, 
+                                                "combined_input.merge.bed")
 
     return combined_input_merged_bed
 #==============================================================================
@@ -885,10 +891,11 @@ def getfasta(bedfile=str(), genomefasta=str(), tempdir=str()):
         full path to a fasta file containing the inputted bed file regions in 
         fasta format 
     '''
-    os.system("bedtools getfasta -name -fi "+genomefasta+" -bed "+bedfile
-                + " -fo " + tempdir + "ranked_file.fullregions.fa")
+    os.system("bedtools getfasta -name -fi " + genomefasta 
+                + " -bed " + bedfile
+                + " -fo " + os.path.join(tempdir, "ranked_file.fullregions.fa"))
 
-    ranked_file_fasta = tempdir + "ranked_file.fullregions.fa"
+    ranked_file_fasta = os.path.join(tempdir, "ranked_file.fullregions.fa")
 
     return ranked_file_fasta
 #==============================================================================
@@ -915,10 +922,8 @@ def get_bgfile(fastafile=str(), tempdir=str()):
         full path to a meme-formatted zero order markov background file 
         (txt file)
     '''
-    os.system("fasta-get-markov " + fastafile + " " + tempdir
-                + "markov_background.txt")
-
-    markov_background = tempdir + "markov_background.txt"
+    markov_background = os.path.join(tempdir, "markov_background.txt")
+    os.system("fasta-get-markov " + fastafile + " " + markov_background)
 
     return markov_background
 #==============================================================================
@@ -945,7 +950,7 @@ def get_regions(tempdir=str(), ranked_center_file=str(), largewindow=float()):
     ranked_full_regions : string 
         full path to a bed file with full regions to be compared with TFEA
     '''
-    outfile = open(tempdir+'ranked_file.fullregions.bed','w')
+    outfile = open(os.path.join(tempdir, 'ranked_file.fullregions.bed'),'w')
     with open(ranked_center_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
@@ -956,7 +961,7 @@ def get_regions(tempdir=str(), ranked_center_file=str(), largewindow=float()):
             name = ','.join([rank,pval,fc])
             outfile.write('\t'.join([chrom,start,stop,name]) + '\n')
 
-    ranked_full_regions = tempdir + 'ranked_file.fullregions.bed'
+    ranked_full_regions = os.path.join(tempdir, 'ranked_file.fullregions.bed')
     return ranked_full_regions
 #==============================================================================
 
@@ -996,12 +1001,12 @@ def count_reads(bedfile=str(), bam1=list(), bam2=list(), tempdir=str(),
     #This os.system call runs bedtools multicov to count reads in all specified
     #BAMs for given regions in BED
     os.system("bedtools multicov -bams " + " ".join(bam1) + " " 
-                + " ".join(bam2) + " -bed " + bedfile + " > " + tempdir 
-                + "count_file.bed")
+                + " ".join(bam2) + " -bed " + bedfile + " > " 
+                + os.path.join(tempdir, "count_file.bed"))
 
     #This section adds a header to the count_file and reformats it to remove 
     #excess information and add a column with the region for later use
-    outfile = open(tempdir + "count_file.header.bed",'w')
+    outfile = open(os.path.join(tempdir, "count_file.header.bed"),'w')
     outfile.write("chrom\tstart\tstop\tregion\t" 
                     + '\t'.join([label1]*len(bam1)) + "\t" 
                     + '\t'.join([label2]*len(bam2)) + "\n")
@@ -1052,8 +1057,8 @@ def write_deseq_script(bam1=list(), bam2=list(), tempdir=str(),
     '''
     #If more than 1 replicate, use DE-Seq2
     if (len(bam1) > 1 and len(bam2) > 1):
-        outfile = open(tempdir + 'DESeq.R','w')
-        outfile.write('sink("'+tempdir+'DESeq.Rout")\n')
+        outfile = open(os.path.join(tempdir, 'DESeq.R'),'w')
+        outfile.write('sink("' + os.path.join(tempdir,'DESeq.Rout') + '")\n')
         outfile.write('library("DESeq2")\n')
         outfile.write('data <- read.delim("'+count_file+'", sep="\t", \
                         header=TRUE)\n')
@@ -1089,8 +1094,8 @@ def write_deseq_script(bam1=list(), bam2=list(), tempdir=str(),
         outfile.write('resShrink$fc <- 2^(resShrink$log2FoldChange)\n')
         outfile.write('res <- resShrink[c(1:3,7,4:6)]\n')
         outfile.write('write.table(res, file = "'
-                        +tempdir+'DESeq.res.txt", \
-                        append = FALSE, sep= "\t" )\n')
+                        + os.path.join(tempdir,'DESeq.res.txt') 
+                        + '", append = FALSE, sep= "\t" )\n')
         outfile.write('sink()')
     else:
         outfile = open(tempdir + 'DESeq.R','w')
@@ -1117,8 +1122,9 @@ def write_deseq_script(bam1=list(), bam2=list(), tempdir=str(),
 
         outfile.write('res <- nbinomTest( cds, "'+label1+'", "'+label2+'" )\n')
         outfile.write('rownames(res) <- res$id\n')                      
-        outfile.write('write.table(res, file = "'+tempdir+'DESeq.res.txt", \
-                        append = FALSE, sep= "\t" )\n')
+        outfile.write('write.table(res, file = "'
+                        + os.path.join(tempdir,'DESeq.res.txt') 
+                        + '", append = FALSE, sep= "\t" )\n')
 
         outfile.write('sink()')
     outfile.close()
@@ -1193,7 +1199,8 @@ def plot_deseq_MA(deseq_file=str(), label1=str(), label2=str(),
                     labelleft='on')
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
                     labelbottom='on')
-    plt.savefig(figuredir + 'DESEQ_MA_Plot.png',bbox_inches='tight')
+    plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.png'),
+                bbox_inches='tight')
 #==============================================================================
 
 #==============================================================================
@@ -1315,12 +1322,13 @@ def fimo(tempdir=str(), motifdatabase=str(), bgfile=str(), motif=str(),
         full path to where fimo output which is stored within the tempdir 
         directory.
     '''
-    os.system("fimo --text --bgfile "+bgfile+" --motif "+motif+" " +
-              motifdatabase+" "+fastafile+" > "+tempdir+motif+".txt")
-    os.system("cut -d$'\\t' -f 3- "+tempdir+motif +
-              ".txt > " + tempdir+motif+".bed")
-
-    fimo_out = tempdir+motif+".bed"
+    os.system("fimo --text --bgfile " + bgfile 
+                + " --motif " + motif + " " 
+                + motifdatabase + " " + fastafile 
+                + " > " + os.path.join(tempdir,motif+".txt"))
+    fimo_out = os.path.join(tempdir,motif+".bed")
+    os.system("cut -d$'\\t' -f 3- " + os.path.join(tempdir, motif + ".txt") 
+                + " > " + fimo_out)
 
     return fimo_out
 #==============================================================================
@@ -1370,7 +1378,7 @@ def fasta_markov(tempdir=str(), fastafile=str(), order='0'):
     None
     '''
     os.system("fasta-get-markov -m " + order + " " + fastafile +
-              " > " + tempdir + "Markov_Background.txt")
+              " > " + os.path.join(tempdir, "Markov_Background.txt"))
 #==============================================================================
 
 #==============================================================================
@@ -1483,7 +1491,8 @@ def rank_deseqfile(deseq_file=str(), tempdir=str()):
     down = list()
     with open(deseq_file) as F:
         header = F.readline().strip('\n').split('\t')
-        fc_index = [i for i in range(len(header)) if header[i]=='"fc"' or header[i]=='"foldChange"'][0]
+        fc_index = [i for i in range(len(header)) 
+                    if header[i]=='"fc"' or header[i]=='"foldChange"'][0]
         for line in F:
             line = line.strip('\n').split('\t')
             if line[fc_index] != 'NA':
@@ -1505,7 +1514,7 @@ def rank_deseqfile(deseq_file=str(), tempdir=str()):
                     up.append((chrom,start,stop,pval,str(fc)))
 
     #Save ranked regions in a bed file (pvalue included)
-    outfile = open(tempdir + "ranked_file.bed",'w')
+    outfile = open(os.path.join(tempdir, "ranked_file.bed"),'w')
     r=1
     for region in sorted(up, key=lambda x: x[3]):
         outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
@@ -1516,8 +1525,8 @@ def rank_deseqfile(deseq_file=str(), tempdir=str()):
     outfile.close()
 
     #Get center base for each region
-    outfile = open(tempdir+"ranked_file.center.bed",'w')
-    with open(tempdir + "ranked_file.bed") as F:
+    outfile = open(os.path.join(tempdir, "ranked_file.center.bed"),'w')
+    with open(os.path.join(tempdir, "ranked_file.bed")) as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
@@ -1527,10 +1536,12 @@ def rank_deseqfile(deseq_file=str(), tempdir=str()):
     outfile.close()
 
 
-    os.system("sort -k1,1 -k2,2n " + tempdir+"ranked_file.center.bed" + " > " 
-                + tempdir + "ranked_file.center.sorted.bed")
+    os.system("sort -k1,1 -k2,2n " 
+                + os.path.join(tempdir, "ranked_file.center.bed") 
+                + " > " 
+                + os.path.join(tempdir, "ranked_file.center.sorted.bed"))
 
-    ranked_center_file = tempdir + "ranked_file.center.sorted.bed"
+    ranked_center_file = os.path.join(tempdir, "ranked_file.center.sorted.bed")
 
     return ranked_center_file
 #==============================================================================
@@ -1558,8 +1569,8 @@ def samtools_flagstat(args):
     '''
     bam, tempdir = args
     filename = bam.split('/')[-1]
-    os.system("samtools flagstat " + bam + " > " + tempdir + filename 
-                + ".flagstat")
+    os.system("samtools flagstat " + bam + " > " 
+                + os.path.join(tempdir, filename + ".flagstat"))
     with open(tempdir+filename+".flagstat") as F:
         lines = F.readlines()
         millions_mapped = float(lines[4].strip('\n').split(' ')[0])/1000000.0
@@ -1700,8 +1711,8 @@ def enrichment_plot(largewindow=float(),
 
     ax3.set_ylabel('GC content per kb',fontsize=10)
 
-    plt.savefig(figuredir + motif_file.split('.bed')[0] 
-                + '_enrichment_plot.png',bbox_inches='tight')
+    plt.savefig(os.path.join(figuredir, motif_file.split('.bed')[0] 
+                + '_enrichment_plot.png'),bbox_inches='tight')
 
     plt.cla()
 #==============================================================================
@@ -1758,8 +1769,8 @@ def simulation_plot(figuredir=str(), simES=list(), actualES=float(),
     plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
     ax2.set_ylabel('Number of Simulations',fontsize=14)
     ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
-    plt.savefig(figuredir + motif_file.split('.bed')[0] 
-                + '_simulation_plot.png',bbox_inches='tight')
+    plt.savefig(os.path.join(figuredir, motif_file.split('.bed')[0] 
+                + '_simulation_plot.png'),bbox_inches='tight')
 
     plt.cla()
 #==============================================================================
@@ -1848,8 +1859,8 @@ def distance_distribution_plot(largewindow=float(),
                     labelbottom='off')
     ax2.set_xlim([0,largewindow])
     ax2.set_ylabel('Hits',fontsize=14)
-    plt.savefig(figuredir + motif_file.split('.bed')[0] 
-                + '_distance_distribution.png',bbox_inches='tight')
+    plt.savefig(os.path.join(figuredir, motif_file.split('.bed')[0] 
+                + '_distance_distribution.png'),bbox_inches='tight')
     
     plt.cla()
 #==============================================================================
@@ -2144,7 +2155,7 @@ def create_html_output(TFresults=list(), config_dict=dict(),
 
     #summary.html contains all user-defined variables, and also information 
     #about module used
-    outfile = open(outputdir+'summary.html','w')
+    outfile = open(os.path.join(outputdir,'summary.html'),'w')
     outfile.write("""<!DOCTYPE html>
             <html>
             <head>
@@ -2164,8 +2175,10 @@ def create_html_output(TFresults=list(), config_dict=dict(),
 
     #For each TF motif with an PADJ value less than a cutoff, an html file is 
     #created to be used in results.html
-    positivelist = [x[0] for x in TFresults if x[2] > 0 and (plot or x[-1] < padj_cutoff)]
-    negativelist = [x[0] for x in TFresults if x[2] < 0 and (plot or x[-1] < padj_cutoff)]
+    positivelist = [x[0] for x in TFresults 
+                    if x[2] > 0 and (plot or x[-1] < padj_cutoff)]
+    negativelist = [x[0] for x in TFresults 
+                    if x[2] < 0 and (plot or x[-1] < padj_cutoff)]
     for i in range(len(TFresults)):
         MOTIF_FILE,ES,NES,PVAL,POS,PADJ = TFresults[i] 
         
@@ -2294,7 +2307,7 @@ def create_html_output(TFresults=list(), config_dict=dict(),
             outfile.close()
             PREV_MOTIF = MOTIF_FILE
 
-    outfile = open(outputdir+'results.html','w')
+    outfile = open(os.path.join(outputdir, 'results.html'),'w')
     outfile.write("""<!DOCTYPE html>
     <html>
     <head>
