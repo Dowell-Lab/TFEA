@@ -1571,7 +1571,7 @@ def samtools_flagstat(args):
     filename = bam.split('/')[-1]
     os.system("samtools flagstat " + bam + " > " 
                 + os.path.join(tempdir, filename + ".flagstat"))
-    with open(tempdir+filename+".flagstat") as F:
+    with open(os.path.join(tempdir,filename+".flagstat")) as F:
         lines = F.readlines()
         millions_mapped = float(lines[4].strip('\n').split(' ')[0])/1000000.0
 
