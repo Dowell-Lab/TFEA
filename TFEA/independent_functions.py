@@ -1278,16 +1278,24 @@ def motif_distance_bedtools_closest(ranked_center_file=str(),
     motif_distance_bed_sorted : string
         full path to where the sorted motif distance file was outputted
     '''
-    os.system("bedtools closest -D ref -t first -a " 
+    print ("bedtools closest -D ref -t first -a " 
                 + ranked_center_file.split('.bed')[0] + ".sorted.bed -b " 
                 + motif_path + " > " + '/' 
                 + '/'.join(ranked_center_file.split('/')[:-1]) + '/' 
                 + motif_path.split('/')[-1] + ".sorted.distance.bed")
+    
 
     motif_distance_bed_sorted = '/' \
                                 + '/'.join(ranked_center_file.split('/')[:-1])\
                                 + '/' + motif_path.split('/')[-1]\
                                 + ".sorted.distance.bed"
+
+    print motif_distance_bed_sorted
+
+    os.system("bedtools closest -D ref -t first -a " 
+                + ranked_center_file.split('.bed')[0] + ".sorted.bed -b " 
+                + motif_path + " > " + motif_distance_bed_sorted)
+    
 
     return motif_distance_bed_sorted
 #==============================================================================
@@ -1422,7 +1430,7 @@ def fimo_parse(largewindow=float(), tempdir=str(), fimo_file=str(),
                 if prev_distance > math.fabs(distance):
                     d[rank] = [rank, pval, fc, score, distance]
 
-    outname = tempdir+motif_file+'.sorted.distance.bed'
+    outname = os.path.join(tempdir, motif_file+'.sorted.distance.bed')
     outfile = open(outname, 'w')
     for i in range(len(d)):
         rank = str(i)
