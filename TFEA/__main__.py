@@ -71,10 +71,10 @@ if sbatch == False:
     output, tempdir, figuredir, e_and_o = args
 elif str(sbatch) == 'SUBMITTED':
     args = independent_functions.make_out_directories(dirs=False,config=config)
-    output,tempdir,figuredir,e_and_o = args
+    output, tempdir, figuredir, e_and_o = args
 else:
     args = independent_functions.make_out_directories(dirs=True,config=config)
-    output,tempdir,figuredir,e_and_o = args
+    output, tempdir, figuredir, e_and_o = args
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
     email = str(sbatch)

@@ -1920,7 +1920,7 @@ def moustache_plot(figuredir=str(),ESlist=list(),PADJlist=list(),
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
                     labelbottom='on')
 
-    plt.savefig(figuredir + 'TFEA_Results_Moustache_Plot.png',
+    plt.savefig(os.path.join(figuredir, 'TFEA_Results_Moustache_Plot.png'),
                     bbox_inches='tight')
     plt.cla()
 #==============================================================================
@@ -1956,7 +1956,7 @@ def pval_histogram_plot(figuredir=str(), PVALlist=list()):
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
                     labelbottom='on')
 
-    plt.savefig(figuredir + 'TFEA_Pval_Histogram.png',
+    plt.savefig(os.path.join(figuredir, 'TFEA_Pval_Histogram.png'),
                     bbox_inches='tight')
     plt.cla()
 #==============================================================================
@@ -2013,7 +2013,8 @@ def MA_plot(figuredir=str(), label1=str(), label2=str(), POSlist=list(),
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
                     labelbottom='on')
 
-    plt.savefig(figuredir + 'TFEA_NES_MA_Plot.png',bbox_inches='tight')
+    plt.savefig(os.path.join(figuredir, 'TFEA_NES_MA_Plot.png'),
+                bbox_inches='tight')
     plt.cla()
 #==============================================================================
 
@@ -2035,7 +2036,7 @@ def create_text_output(outputdir=str(), TFresults=list()):
     None
     '''
     TFresults = sorted(TFresults, key=lambda x: x[3])
-    outfile = open(outputdir + 'results.txt', 'w')
+    outfile = open(os.path.join(outputdir, 'results.txt'), 'w')
     outfile.write('TF-Motif\tES\tNES\tP-value\tPADJ\tHITS\n')
     for val in TFresults:
         outfile.write('\t'.join([str(val[i]) for i in range(len(val))]) + '\n')
@@ -2209,8 +2210,8 @@ def create_html_output(TFresults=list(), config_dict=dict(),
             except IndexError:
                 PREV_MOTIF = negativelist[len(negativelist)]
         if plot or PADJ < padj_cutoff:
-            outfile = open(outputdir + 'plots/' + MOTIF_FILE 
-                            + '.results.html','w')
+            outfile = open(os.path.join(outputdir, 'plots', + MOTIF_FILE 
+                            + '.results.html'),'w')
             outfile.write("""<!DOCTYPE html>
     <html>
     <head>
