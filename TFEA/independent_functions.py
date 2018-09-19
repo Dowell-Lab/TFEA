@@ -73,7 +73,9 @@ def make_out_directories(dirs=False,config=None):
         for folder in os.listdir(output):
             if outfoldername in folder:
                 outputfolders.append(int(folder.split('_')[-1]))
+        print "outputfolders: ", outputfolders
         output = os.path.join(output, outfoldername + str(max(outputfolders)))
+        print "output: ", output
 
 
     #Temporary files will go in this directory
@@ -2210,7 +2212,7 @@ def create_html_output(TFresults=list(), config_dict=dict(),
             except IndexError:
                 PREV_MOTIF = negativelist[len(negativelist)]
         if plot or PADJ < padj_cutoff:
-            outfile = open(os.path.join(outputdir, 'plots', + MOTIF_FILE 
+            outfile = open(os.path.join(outputdir, 'plots', MOTIF_FILE 
                             + '.results.html'),'w')
             outfile.write("""<!DOCTYPE html>
     <html>
