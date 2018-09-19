@@ -1293,7 +1293,7 @@ def motif_distance_bedtools_closest(ranked_center_file=str(),
     print motif_distance_bed_sorted
 
     os.system("bedtools closest -D ref -t first -a " 
-                + ranked_center_file.split('.bed')[0] + ".sorted.bed -b " 
+                + ranked_center_file + " -b " 
                 + motif_path + " > " + motif_distance_bed_sorted)
     
 
