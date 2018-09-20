@@ -1253,7 +1253,7 @@ def padj_bonferroni(TFresults=list()):
     '''
     TFresults = [x for x in TFresults if x != "no hits"]
     for i in range(len(TFresults)):
-        PVAL = TFresults[i][-1]
+        PVAL = TFresults[i][-2]
         #Using Bonferroni Correction
         PADJ = 1 if PVAL*len(TFresults) > 1 else PVAL*len(TFresults)
         TFresults[i].append(PADJ)

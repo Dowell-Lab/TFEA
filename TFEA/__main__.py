@@ -183,7 +183,7 @@ if config.CALCULATE:
 #This option can be turned on/off within the config file.
 if not config.TEMP:
     print "Removing temporary bed files..."
-    os.system("rm " + tempdir + '*.sorted.distance.bed')
-    os.system("rm " + tempdir + '*.fa')
+    os.system("rm " + os.path.join(tempdir, '*.sorted.distance.bed'))
+    os.system("rm " + os.path.join(tempdir, '*.fa'))
 
 print "done"
