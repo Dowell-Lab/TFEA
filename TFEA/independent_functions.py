@@ -1280,19 +1280,9 @@ def motif_distance_bedtools_closest(ranked_center_file=str(),
     motif_distance_bed_sorted : string
         full path to where the sorted motif distance file was outputted
     '''
-    print ("bedtools closest -D ref -t first -a " 
-                + ranked_center_file.split('.bed')[0] + ".sorted.bed -b " 
-                + motif_path + " > " + '/' 
-                + '/'.join(ranked_center_file.split('/')[:-1]) + '/' 
-                + motif_path.split('/')[-1] + ".sorted.distance.bed")
-    
-
-    motif_distance_bed_sorted = '/' \
-                                + '/'.join(ranked_center_file.split('/')[:-1])\
+    motif_distance_bed_sorted = '/'.join(ranked_center_file.split('/')[:-1])\
                                 + '/' + motif_path.split('/')[-1]\
                                 + ".sorted.distance.bed"
-
-    print motif_distance_bed_sorted
 
     os.system("bedtools closest -D ref -t first -a " 
                 + ranked_center_file + " -b " 
@@ -1471,7 +1461,6 @@ def convert_sequence_to_array(sequence=str()):
         elif character == 'A' or character == 'T':
             array.append(0.0)
         else:
-            print "Warning: Character not recognized"
             array.append(0.0)
 
     return array 
