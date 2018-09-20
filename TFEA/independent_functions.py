@@ -131,6 +131,8 @@ def parse_config(srcdirectory=str(), config=str(), output=str(), tempdir=str(),
             for item in config[key]:
                 outfile.write(item.upper()+'='+config[key][item]+'\n')
 
+        print "parse_config: ", tempdir
+
         outfile.write('OUTPUTDIR="'+output+'"\n')
         outfile.write('TEMPDIR="'+tempdir+'"\n')
         outfile.write('FIGUREDIR="'+figuredir+'"\n')
@@ -1006,6 +1008,7 @@ def count_reads(bedfile=str(), bam1=list(), bam2=list(), tempdir=str(),
 
     #This section adds a header to the count_file and reformats it to remove 
     #excess information and add a column with the region for later use
+    count_file = os.path.join(tempdir, "count_file.header.bed")
     outfile = open(os.path.join(tempdir, "count_file.header.bed"),'w')
     outfile.write("chrom\tstart\tstop\tregion\t" 
                     + '\t'.join([label1]*len(bam1)) + "\t" 
@@ -1019,6 +1022,8 @@ def count_reads(bedfile=str(), bam1=list(), bam2=list(), tempdir=str(),
             outfile.write('\t'.join([chrom,start,stop]) + "\t" 
                             + chrom + ":" + start + "-" + stop + "\t"
                             + '\t'.join(counts) + "\n")
+
+    return count_file
 #==============================================================================
 
 #==============================================================================
@@ -1235,7 +1240,7 @@ def permutations_auc(distances=list(), permutations=1000):
 #==============================================================================
 
 #==============================================================================
-def permutations_youden_rank(distances=list(), permutations=1000):
+def permutations_youden_rank(distances=list(), trend=list(), permutations=1000):
     '''Generates permutations of the distances and calculates AUC for each 
         permutation.
 
@@ -1254,13 +1259,13 @@ def permutations_youden_rank(distances=list(), permutations=1000):
        
     '''
     es_permute = []
-    triangle_area = 0.5*(len(distances))
     for i in range(permutations):
         random_distances = np.random.permutation(distances)
-        cum_distances = np.cumsum(random_distances)
-        es = np.trapz(cum_distances)
-        auc = es - triangle_area
-        es_permute.append(auc)
+        cumscore = np.cumsum(random_distances)
+        youden = cumscore - trend
+        youden_max = max(cumscore - trend)
+        rank_max = np.where(youden == youden_max)[0][0]/len(youden)
+        es_permute.append(rank_max)
 
     return es_permute
 #==============================================================================

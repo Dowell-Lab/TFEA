@@ -349,23 +349,28 @@ def calculate_es_youden_rank(args):
     normalized_score = [x/total for x in score]
     cumscore = np.cumsum(normalized_score)
 
+    trend = np.arange(0,1,1/len(ranks))
+
     #The AUC is the relative to the "random" line
-    actualES = np.trapz(cumscore) - (0.5*len(cumscore))
+    youden = cumscore - trend
+    youden_max = max(cumscore - trend)
+    rank_max = np.where(youden == youden_max)[0][0]/len(youden)
 
     #Calculate random AUC
     simES = independent_functions.permutations_youden_rank(
-                                                    distances=normalized_score)
+                                                    distances=normalized_score, 
+                                                    trend=trend)
 
     ##significance calculator                                                                                                                                                            
     mu = np.mean(simES)
-    NES = actualES/abs(mu)
+    NES = youden/abs(mu)
     sigma = np.std(simES)
 
 
-    if actualES > 0:
-        p = 1-norm.cdf(actualES,mu,sigma)
+    if youden > 0:
+        p = 1-norm.cdf(rank_max,mu,sigma)
     else:
-        p = norm.cdf(actualES,mu,sigma)
+        p = norm.cdf(rank_max,mu,sigma)
 
     plot_individual_graphs(plot=plot, padj_cutoff=padj_cutoff,
                             figuredir=figuredir, logos=logos, 
@@ -375,9 +380,9 @@ def calculate_es_youden_rank(args):
                             sorted_distances=sorted_distances,ranks=ranks,
                             pvals=pvals, fc=fc, cumscore=cumscore, 
                             motif_file=motif_file, p=p, simES=simES, 
-                            actualES=actualES, gc_array=gc_array)
+                            actualES=rank_max, gc_array=gc_array)
 
-    return [motif_file.split('.bed')[0],actualES,NES,p,pos]
+    return [motif_file.split('.bed')[0], rank_max, NES, p, pos]
 #==============================================================================
 
 #==============================================================================

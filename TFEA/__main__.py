@@ -67,13 +67,16 @@ config_object.read(configfile)
 #to the --sbatch flag so we know not to remake output directories. If --sbatch 
 #flag not specified, simply make output directories and continue.
 if sbatch == False:
-    args = independent_functions.make_out_directories(dirs=True, config=config_object)
+    args = independent_functions.make_out_directories(dirs=True, 
+                                                        config=config_object)
     output, tempdir, figuredir, e_and_o = args
 elif str(sbatch) == 'SUBMITTED':
-    args = independent_functions.make_out_directories(dirs=False, config=config_object)
+    args = independent_functions.make_out_directories(dirs=False, 
+                                                        config=config_object)
     output, tempdir, figuredir, e_and_o = args
 else:
-    args = independent_functions.make_out_directories(dirs=True, config=config_object)
+    args = independent_functions.make_out_directories(dirs=True, 
+                                                        config=config_object)
     output, tempdir, figuredir, e_and_o = args
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
@@ -89,7 +92,8 @@ else:
 
 #Run the config_parser script which will create variables for all folders and 
 #paths to use throughout TFEA
-independent_functions.parse_config(srcdirectory=srcdirectory,config=config_object,
+independent_functions.parse_config(srcdirectory=srcdirectory, 
+                                    config=config_object,
                                     output=output,tempdir=tempdir,
                                     figuredir=figuredir)
 
@@ -108,7 +112,7 @@ print "main temp: ", tempdir
 COMBINEtime = time.time()
 if config.COMBINE:
     bedfile = independent_functions.merge_bed(beds=config.BEDS, 
-                                                tempdir=config.TEMPDIR)
+                                                tempdir=tempdir)
 else:
     bedfile = config.BEDS[0]
 COMBINEtime = time.time()-COMBINEtime 
@@ -118,11 +122,12 @@ COMBINEtime = time.time()-COMBINEtime
 COUNTtime = time.time()
 if config.COUNT:
     print "Counting reads in regions..."
-    independent_functions.count_reads(bedfile=bedfile, bam1=config.BAM1, 
-                                        bam2=config.BAM2, 
-                                        tempdir=config.TEMPDIR, 
-                                        label1=config.LABEL1, 
-                                        label2=config.LABEL2)
+    count_file = independent_functions.count_reads(bedfile=bedfile, 
+                                                    bam1=config.BAM1, 
+                                                    bam2=config.BAM2, 
+                                                    tempdir=tempdir, 
+                                                    label1=config.LABEL1, 
+                                                    label2=config.LABEL2)
     print "done"
 COUNTtime = time.time()-COUNTtime
 
@@ -132,15 +137,16 @@ DESEQtime = time.time()
 if config.DESEQ:
     print "Running DESeq..."
     deseq_file = dependent_functions.deseq_run(bam1=config.BAM1, 
-                                        bam2=config.BAM2, 
-                                        tempdir=config.TEMPDIR, 
-                                        count_file=config.COUNT_FILE,
-                                        label1=config.LABEL1, 
-                                        label2=config.LABEL2,
-                                        figuredir=config.FIGUREDIR)
+                                                bam2=config.BAM2, 
+                                                tempdir=tempdir, 
+                                                count_file=count_file,
+                                                label1=config.LABEL1, 
+                                                label2=config.LABEL2,
+                                                figuredir=figuredir)
+
     ranked_center_file = independent_functions.rank_deseqfile(
                                                 deseq_file=deseq_file,
-                                                tempdir=config.TEMPDIR)
+                                                tempdir=tempdir)
     print "done"
 DESEQtime = time.time()-DESEQtime
 
@@ -154,8 +160,8 @@ DESEQtime = time.time()-DESEQtime
 #   6. Plotting and generation of html report
 CALCULATEtime = time.time()
 if config.CALCULATE:
-    dependent_functions.calculate(tempdir=config.TEMPDIR, 
-                                    outputdir=config.OUTPUTDIR, 
+    dependent_functions.calculate(tempdir=tempdir, 
+                                    outputdir=output, 
                                     bam1=config.BAM1, 
                                     bam2=config.BAM2, 
                                     label1=config.LABEL1,
@@ -171,7 +177,7 @@ if config.CALCULATE:
                                     pool=config.POOL,
                                     padj_cutoff=config.PADJCUTOFF, 
                                     logos=config.LOGOS, 
-                                    figuredir=config.FIGUREDIR,
+                                    figuredir=figuredir,
                                     largewindow=config.LARGEWINDOW, 
                                     smallwindow=config.SMALLWINDOW,
                                     motifdatabase=config.MOTIFDATABASE,
