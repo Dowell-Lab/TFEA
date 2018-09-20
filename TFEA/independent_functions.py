@@ -73,9 +73,7 @@ def make_out_directories(dirs=False,config=None):
         for folder in os.listdir(output):
             if outfoldername in folder:
                 outputfolders.append(int(folder.split('_')[-1]))
-        print "outputfolders: ", outputfolders
         output = os.path.join(output, outfoldername + str(max(outputfolders)))
-        print "output: ", output
 
 
     #Temporary files will go in this directory
