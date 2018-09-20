@@ -191,7 +191,170 @@ def calculate_es_auc(args):
     actualES = np.trapz(cumscore) - (0.5*len(cumscore))
 
     #Calculate random AUC
-    simES = independent_functions.permutations(normalized_score)
+    simES = independent_functions.permutations_auc(distances=normalized_score)
+
+    ##significance calculator                                                                                                                                                            
+    mu = np.mean(simES)
+    NES = actualES/abs(mu)
+    sigma = np.std(simES)
+
+
+    if actualES > 0:
+        p = 1-norm.cdf(actualES,mu,sigma)
+    else:
+        p = norm.cdf(actualES,mu,sigma)
+
+    plot_individual_graphs(plot=plot, padj_cutoff=padj_cutoff,
+                            figuredir=figuredir, logos=logos, 
+                            largewindow=largewindow, 
+                            smallwindow=smallwindow,
+                            distances_abs=distances_abs, 
+                            sorted_distances=sorted_distances,ranks=ranks,
+                            pvals=pvals, fc=fc, cumscore=cumscore, 
+                            motif_file=motif_file, p=p, simES=simES, 
+                            actualES=actualES, gc_array=gc_array)
+
+    return [motif_file.split('.bed')[0],actualES,NES,p,pos]
+#==============================================================================
+
+#==============================================================================
+def calculate_es_youden_rank(args):
+    '''This function calculates the AUC for any TF based on the TF motif hits 
+        relative to the bidirectionals. The calculated AUC is used as a proxy 
+        for the enrichemnt of the TFs.
+
+    Parameters
+    ----------
+    args : tuple 
+        contains two arguments that are unpacked within this function:
+            motif_file : string
+                the name of a motif bed file contained within MOTIF_HITS
+
+            millions_mapped : list or array
+                contiains a list of floats that corresponds to the millions 
+                mapped reads for each bam file
+
+            fimo : boolean
+                a switch that controls whether motif hits are generated on the 
+                fly using fimo
+
+            ranked_center_file : string
+                the full path to a bed file containing the center of regions 
+                sorted by DE-Seq p-value
+
+            motif_hits : string
+                the full path to a directory containing motif hits across the 
+                genome
+
+            plot : boolean
+                a switch that controls whether TFEA generates plots for all 
+                motifs or just significant ones
+            
+            padj_cutoff : float
+                the cutoff value for calling a motif as significant
+
+            logos : string
+                the full path to a directory containing meme logos for motifs
+
+            figuredir : string
+                the full path to the figure directory within the output 
+                directory where figures and plots are stored
+
+            largewindow : float
+                a user specified larger window used for plotting purposes and 
+                to do some calculations regarding the user-provided regions of 
+                interest
+
+            smallwindow : float
+                a user specified smaller window used for plotting purposes and 
+                to do some calculations regarding the user-provided regions of 
+                interest
+
+    Returns
+    -------
+    AUC : float
+        the area under the curve (AUC) for a given tf
+
+    p-value : float
+        theoretical p-value calculated by comparing the observed value  to the
+        distribution of all simulations (default:1000)
+                 
+    Raises
+    ------
+    ValueError
+        when tf does not have any hits
+    '''
+    motif_file = args[0]
+    millions_mapped = args[1]
+    gc_array = args[2]
+    fimo  = args[3]
+    ranked_center_file = args[4]
+    motif_hits = args[5]
+    plot = args[6] 
+    padj_cutoff = args[7]
+    logos = args[8]
+    figuredir = args[9]
+    largewindow = args[10]
+    smallwindow = args[11]
+    genomefasta = args[12]
+    tempdir = args[13]
+    motifdatabase = args[14]
+
+    if fimo:
+        ranked_center_distance_file = fimo_distance(
+                                        ranked_center_file=ranked_center_file,
+                                        motif_file=motif_file,
+                                        genomefasta=genomefasta, 
+                                        largewindow=largewindow, 
+                                        tempdir=tempdir, 
+                                        figuredir=figuredir,
+                                        motifdatabase=motifdatabase)
+    else:
+        ranked_center_distance_file = independent_functions.motif_distance_bedtools_closest(
+                                        ranked_center_file=ranked_center_file,
+                                        motif_path=motif_hits+motif_file)
+
+    distances = []
+    ranks = []
+    pvals= []
+    pos = 0
+    fc = []
+
+    with open(ranked_center_distance_file) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            distance = int(line[-1])
+            rank = int(line[5])
+            pvals.append(float(line[3]))
+            fc.append(float(line[4]))
+            ranks.append(rank)
+            distances.append(distance)
+            if distance < largewindow:
+                pos+=1
+
+    #sort distances based on the ranks from TF bed file
+    #and calculate the absolute distance
+    rank_number = len(ranks)
+    ranks = [float(rank)/rank_number for rank in ranks]
+    sorted_distances = [x for _,x in sorted(zip(ranks, distances))]
+    distances_abs = [abs(x) for x in sorted_distances] 
+
+    #filter any TFs/files without and hits
+    if len(distances_abs) == 0:
+        return "no hits"
+
+    #Get -exp() of distance and get cumulative scores
+    score = [math.exp(-x) for x in distances_abs] 
+    total = float(sum(score))
+    normalized_score = [x/total for x in score]
+    cumscore = np.cumsum(normalized_score)
+
+    #The AUC is the relative to the "random" line
+    actualES = np.trapz(cumscore) - (0.5*len(cumscore))
+
+    #Calculate random AUC
+    simES = independent_functions.permutations_youden_rank(
+                                                    distances=normalized_score)
 
     ##significance calculator                                                                                                                                                            
     mu = np.mean(simES)

@@ -1204,7 +1204,7 @@ def plot_deseq_MA(deseq_file=str(), label1=str(), label2=str(),
 #==============================================================================
 
 #==============================================================================
-def permutations(distances=list(), permutations=1000):
+def permutations_auc(distances=list(), permutations=1000):
     '''Generates permutations of the distances and calculates AUC for each 
         permutation.
 
@@ -1232,6 +1232,67 @@ def permutations(distances=list(), permutations=1000):
         es_permute.append(auc)
 
     return es_permute
+#==============================================================================
+
+#==============================================================================
+def permutations_youden_rank(distances=list(), permutations=1000):
+    '''Generates permutations of the distances and calculates AUC for each 
+        permutation.
+
+    Parameters
+    ----------
+    distances : list or array
+        normalized distances 
+        
+    permutations : int
+        number of times to permute (default=1000)
+        
+    Returns
+    -------
+    es_permute : list 
+        list of AUC calculated for permutations 
+       
+    '''
+    es_permute = []
+    triangle_area = 0.5*(len(distances))
+    for i in range(permutations):
+        random_distances = np.random.permutation(distances)
+        cum_distances = np.cumsum(random_distances)
+        es = np.trapz(cum_distances)
+        auc = es - triangle_area
+        es_permute.append(auc)
+
+    return es_permute
+#==============================================================================
+
+#==============================================================================
+def pvalue_global_youden_rank(TFresults=list(), permutations=1000):
+    '''Calculates a p-value based on a distribution of youden_ranks
+
+    Parameters
+    ----------
+    distances : list or array
+        normalized distances 
+        
+    permutations : int
+        number of times to permute (default=1000)
+        
+    Returns
+    -------
+    es_permute : list 
+        list of AUC calculated for permutations 
+       
+    '''
+    all_youden = [motif[1] for motif in TFresults]
+    ##significance calculator                                                                                                                                                            
+    mu = np.mean(all_youden)
+    sigma = np.std(all_youden)
+    for i in range(len(TFresults)):
+        actual_youden_rank = TFresults[i][1]
+        p = min(norm.cdf(actual_youden_rank,mu,sigma), 
+                            1-norm.cdf(actual_youden_rank,mu,sigma))
+        TFresults[i].append(p)
+
 #==============================================================================
 
 #==============================================================================
