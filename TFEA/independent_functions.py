@@ -126,6 +126,8 @@ def parse_config(srcdirectory=str(), config=str(), output=str(), tempdir=str(),
     -------
     None
     '''
+    import config
+    print "before: ", config.TEMPDIR
     with open(os.path.join(srcdirectory,'config.py'),'w') as outfile:
         for key in config:
             for item in config[key]:
@@ -145,6 +147,8 @@ def parse_config(srcdirectory=str(), config=str(), output=str(), tempdir=str(),
         #Path to ranked center file. 
         ranked_center_file = os.path.join(tempdir, "ranked_file.center.bed")
         outfile.write('RANKED_CENTER_FILE="'+ranked_center_file+'"\n')
+    import config
+    print "after: ", config.TEMPDIR
 #==============================================================================
 
 #==============================================================================
