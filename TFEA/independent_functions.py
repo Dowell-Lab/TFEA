@@ -1209,7 +1209,7 @@ def plot_deseq_MA(deseq_file=str(), label1=str(), label2=str(),
 #==============================================================================
 
 #==============================================================================
-def permutations_auc(distances=list(), permutations=1000):
+def permutations_auc(distances=list(), trend=list(), permutations=1000):
     '''Generates permutations of the distances and calculates AUC for each 
         permutation.
 
@@ -1228,7 +1228,7 @@ def permutations_auc(distances=list(), permutations=1000):
        
     '''
     es_permute = []
-    triangle_area = 0.5*(len(distances))
+    triangle_area = np.trapz(trend)
     for i in range(permutations):
         random_distances = np.random.permutation(distances)
         cum_distances = np.cumsum(random_distances)
@@ -1297,7 +1297,6 @@ def pvalue_global_youden_rank(TFresults=list(), permutations=1000):
         p = min(norm.cdf(actual_youden_rank,mu,sigma), 
                             1-norm.cdf(actual_youden_rank,mu,sigma))
         TFresults[i].append(p)
-
 #==============================================================================
 
 #==============================================================================

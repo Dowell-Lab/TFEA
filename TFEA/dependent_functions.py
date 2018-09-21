@@ -187,11 +187,16 @@ def calculate_es_auc(args):
     normalized_score = [x/total for x in score]
     cumscore = np.cumsum(normalized_score)
 
+    trend = np.arange(0,1,1/len(ranks))
+
     #The AUC is the relative to the "random" line
-    actualES = np.trapz(cumscore) - (0.5*len(cumscore))
+    actualES = np.trapz(cumscore) - np.trapz(trend)
+
+
 
     #Calculate random AUC
-    simES = independent_functions.permutations_auc(distances=normalized_score)
+    simES = independent_functions.permutations_auc(distances=normalized_score,
+                                                    trend=trend)
 
     ##significance calculator                                                                                                                                                            
     mu = np.mean(simES)
