@@ -104,15 +104,6 @@ independent_functions.verify_config_file()
 
 #Import config file once it's created
 import config
-config = reload(config)
-import sys
-
-print "config temp: ", config.TEMPDIR
-config.TEMPDIR = tempdir
-print "config temp new: ", config.TEMPDIR
-print "main temp: ", tempdir
-
-sys.exit(1)
 
 #This module takes the input list of BED files, concatenates them, and then 
 #merges them via bedtools.

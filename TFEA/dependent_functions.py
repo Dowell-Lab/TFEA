@@ -777,7 +777,8 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
                         largewindow, smallwindow, genomefasta, tempdir, 
                         motifdatabase) for x in os.listdir(motif_hits)]
             p = Pool(cpus)
-            TFresults = p.map(calculate_es_auc, args)
+            # TFresults = p.map(calculate_es_auc, args)
+            TFresults = p.map(calculate_es_youden_rank, args)
         else:
             for motif_file in os.listdir(motif_hits):
                 results = calculate_es_auc((motif_file, millions_mapped, 

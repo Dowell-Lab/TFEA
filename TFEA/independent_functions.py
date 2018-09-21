@@ -167,7 +167,6 @@ def verify_config_file():
         When variable is not found within config
     '''
     import config
-    config=reload(config)
     try:
         if type(config.COMBINE) != bool:
             raise TypeError(('COMBINE variable must be a boolean. This switch '
@@ -2197,7 +2196,6 @@ def create_html_output(TFresults=list(), config_dict=dict(),
     
     #Using a config file
     import config
-    config=reload(config)
     outputdir = config.OUTPUTDIR
     beds = config.BEDS
     label1 = config.LABEL1
