@@ -94,7 +94,7 @@ else:
 #paths to use throughout TFEA
 print "srcdirectory: ", srcdirectory
 independent_functions.parse_config(srcdirectory=srcdirectory, 
-                                    config=config_object,
+                                    config_object=config_object,
                                     output=output,tempdir=tempdir,
                                     figuredir=figuredir)
 
