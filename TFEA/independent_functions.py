@@ -128,25 +128,26 @@ def parse_config(srcdirectory=str(), config_object=str(), output=str(),
     '''
     import config
     print "before: ", config.TEMPDIR
-    with open(os.path.join(srcdirectory,'config.py'),'w') as outfile:
-        for key in config_object:
-            for item in config_object[key]:
-                outfile.write(item.upper()+'='+config_object[key][item]+'\n')
+    outfile =  open(os.path.join(srcdirectory,'config.py'),'w')
+    for key in config_object:
+        for item in config_object[key]:
+            outfile.write(item.upper()+'='+config_object[key][item]+'\n')
 
-        print "parse_config: ", tempdir
+    print "parse_config: ", tempdir
 
-        outfile.write('OUTPUTDIR="'+output+'"\n')
-        outfile.write('TEMPDIR="'+tempdir+'"\n')
-        outfile.write('FIGUREDIR="'+figuredir+'"\n')
+    outfile.write('OUTPUTDIR="'+output+'"\n')
+    outfile.write('TEMPDIR="'+tempdir+'"\n')
+    outfile.write('FIGUREDIR="'+figuredir+'"\n')
 
-        #Path to count file. Can be changed if using your own count file.
-        #Generated in count_reads function
-        count_file = os.path.join(tempdir, "count_file.header.bed")
-        outfile.write('COUNT_FILE="'+count_file+'"\n')
-        
-        #Path to ranked center file. 
-        ranked_center_file = os.path.join(tempdir, "ranked_file.center.bed")
-        outfile.write('RANKED_CENTER_FILE="'+ranked_center_file+'"\n')
+    #Path to count file. Can be changed if using your own count file.
+    #Generated in count_reads function
+    count_file = os.path.join(tempdir, "count_file.header.bed")
+    outfile.write('COUNT_FILE="'+count_file+'"\n')
+    
+    #Path to ranked center file. 
+    ranked_center_file = os.path.join(tempdir, "ranked_file.center.bed")
+    outfile.write('RANKED_CENTER_FILE="'+ranked_center_file+'"\n')
+    outfile.close()
     import config
     print "after: ", config.TEMPDIR
 #==============================================================================
