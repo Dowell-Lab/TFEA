@@ -127,6 +127,8 @@ if config.COUNT:
                                                     label1=config.LABEL1, 
                                                     label2=config.LABEL2)
     print "done"
+else:
+    count_file = config.COUNT_FILE
 COUNTtime = time.time()-COUNTtime
 
 #This module runs DESeq on the count_file produced above - this is used to rank
@@ -146,6 +148,8 @@ if config.DESEQ:
                                                 deseq_file=deseq_file,
                                                 tempdir=tempdir)
     print "done"
+else:
+    ranked_center_file = config.RANKED_CENTER_FILE
 DESEQtime = time.time()-DESEQtime
 
 
