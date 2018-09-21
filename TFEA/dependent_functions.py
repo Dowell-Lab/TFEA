@@ -574,7 +574,7 @@ def plot_global_graphs(padj_cutoff=float(), label1=str(), label2=str(),
 #==============================================================================
 
 #==============================================================================
-def get_gc_array(tempdir=str(), ranked_file=str(), genomefasta=str(), 
+def get_gc_array(tempdir=str(), ranked_center_file=str(), genomefasta=str(), 
                     window=int(), bins=1000):
     '''This function calculates gc content over all eRNAs. It uses the 
     LARGEWINDOW variable within the config file instead of the whole region. 
@@ -600,7 +600,7 @@ def get_gc_array(tempdir=str(), ranked_file=str(), genomefasta=str(),
     #First, create a bed file with the correct coordinates centered on the 
     #given regions with the specified window size on either side
     outfile = open(os.path.join(tempdir, "ranked_file.windowed.bed"),'w')
-    with open(os.path.join(tempdir, "ranked_file.bed")) as F:
+    with open(ranked_center_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
@@ -755,7 +755,7 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
     print "Calculating GC content of regions..."
     #This line gets an array of GC values for all inputted regions
     gc_array = get_gc_array(
-                        ranked_file=os.path.join(tempdir, "ranked_file.bed"),
+                        ranked_center_file=ranked_center_file,
                         window=int(largewindow), tempdir=tempdir, 
                         genomefasta=genomefasta)
 
