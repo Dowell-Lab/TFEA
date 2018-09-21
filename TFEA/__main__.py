@@ -104,7 +104,7 @@ independent_functions.verify_config_file()
 
 #Import config file once it's created
 import config
-reload config
+config = reload(config)
 import sys
 
 print "config temp: ", config.TEMPDIR
