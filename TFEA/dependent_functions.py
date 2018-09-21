@@ -768,7 +768,8 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
     #Here we calculate millions mapped reads for use with the metaeRNA module
     p = Pool(cpus)
     args = [(x,tempdir) for x in bam1+bam2]
-    millions_mapped = p.map(independent_functions.samtools_flagstat,args)
+    # millions_mapped = p.map(independent_functions.samtools_flagstat,args)
+    millions_mapped = list()
 
     print "done\nFinding motif hits in regions..."
     if singlemotif == False:
