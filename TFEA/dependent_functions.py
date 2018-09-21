@@ -816,10 +816,15 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
     #Note if you set the SINGLEMOTIF variable to a specific TF, this program 
     #will be unable to determine an PADJ for the given motif.
     else:
-        results = calculate_es_auc((singlemotif, millions_mapped, gc_array, 
-                        fimo, ranked_center_file, motif_hits, plot, 
+        # results = calculate_es_auc((singlemotif, millions_mapped, gc_array, 
+        #                 fimo, ranked_center_file, motif_hits, plot, 
+        #                 padj_cutoff, logos, figuredir, largewindow, 
+        #                 smallwindow, genomefasta, tempdir, motifdatabase))
+        results = calculate_es_youden_rank((singlemotif, millions_mapped, 
+                        gc_array, fimo, ranked_center_file, motif_hits, plot, 
                         padj_cutoff, logos, figuredir, largewindow, 
                         smallwindow, genomefasta, tempdir, motifdatabase))
+
         independent_functions.create_single_motif_html(results=results, 
                                                         outputdir=outputdir)
 

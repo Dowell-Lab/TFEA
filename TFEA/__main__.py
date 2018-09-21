@@ -92,7 +92,6 @@ else:
 
 #Run the config_parser script which will create variables for all folders and 
 #paths to use throughout TFEA
-print "srcdirectory: ", srcdirectory
 independent_functions.parse_config(srcdirectory=srcdirectory, 
                                     config_object=config_object,
                                     output=output,tempdir=tempdir,
