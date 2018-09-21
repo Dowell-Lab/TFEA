@@ -371,10 +371,7 @@ def calculate_es_youden_rank(args):
     sigma = np.std(simES)
 
 
-    if youden > 0:
-        p = 1-norm.cdf(rank_max,mu,sigma)
-    else:
-        p = norm.cdf(rank_max,mu,sigma)
+    p = min(1-norm.cdf(rank_max,mu,sigma), norm.cdf(rank_max,mu,sigma))
 
     plot_individual_graphs(plot=plot, padj_cutoff=padj_cutoff,
                             figuredir=figuredir, logos=logos, 
