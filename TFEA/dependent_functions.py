@@ -24,7 +24,6 @@ import matplotlib.cm as cm
 from matplotlib import gridspec
 from scipy.stats import norm 
 import time
-import config
 import independent_functions
 #==============================================================================
 #Functions

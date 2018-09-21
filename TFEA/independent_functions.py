@@ -21,7 +21,6 @@ import matplotlib.cm as cm
 from matplotlib import gridspec
 from scipy.stats import norm 
 import numpy as np
-import config
 #==============================================================================
 #Functions
 #==============================================================================
@@ -131,8 +130,6 @@ def parse_config(srcdirectory=str(), config_object=str(), output=str(),
         for item in config_object[key]:
             outfile.write(item.upper()+'='+config_object[key][item]+'\n')
 
-    print "parse_config: ", tempdir
-
     outfile.write('OUTPUTDIR="'+output+'"\n')
     outfile.write('TEMPDIR="'+tempdir+'"\n')
     outfile.write('FIGUREDIR="'+figuredir+'"\n')
@@ -169,6 +166,8 @@ def verify_config_file():
     NameError
         When variable is not found within config
     '''
+    import config
+    config=reload(config)
     try:
         if type(config.COMBINE) != bool:
             raise TypeError(('COMBINE variable must be a boolean. This switch '
@@ -2198,6 +2197,7 @@ def create_html_output(TFresults=list(), config_dict=dict(),
     
     #Using a config file
     import config
+    config=reload(config)
     outputdir = config.OUTPUTDIR
     beds = config.BEDS
     label1 = config.LABEL1
