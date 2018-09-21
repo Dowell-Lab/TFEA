@@ -112,9 +112,6 @@ config.TEMPDIR = tempdir
 print "config temp new: ", config.TEMPDIR
 print "main temp: ", tempdir
 
-import main
-main.run()
-
 sys.exit(1)
 
 #This module takes the input list of BED files, concatenates them, and then 
