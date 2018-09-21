@@ -338,7 +338,7 @@ def calculate_es_youden_rank(args):
 
     #sort distances based on the ranks from TF bed file
     #and calculate the absolute distance
-    rank_number = len(ranks)
+    rank_number = float(len(ranks))
     print ranks
     ranks = [float(rank)/rank_number for rank in ranks]
     sorted_distances = [x for _,x in sorted(zip(ranks, distances))]
@@ -783,10 +783,15 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
             TFresults = p.map(calculate_es_youden_rank, args)
         else:
             for motif_file in os.listdir(motif_hits):
-                results = calculate_es_auc((motif_file, millions_mapped, 
-                        gc_array, fimo, ranked_center_file, motif_hits, plot, 
-                        padj_cutoff, logos, figuredir, largewindow, 
-                        smallwindow, genomefasta, tempdir, motifdatabase))
+                # results = calculate_es_auc((motif_file, millions_mapped, 
+                #         gc_array, fimo, ranked_center_file, motif_hits, plot, 
+                #         padj_cutoff, logos, figuredir, largewindow, 
+                #         smallwindow, genomefasta, tempdir, motifdatabase))
+                results = calculate_es_youden_rank((motif_file, 
+                        millions_mapped, gc_array, fimo, ranked_center_file, 
+                        motif_hits, plot, padj_cutoff, logos, figuredir, 
+                        largewindow, smallwindow, genomefasta, tempdir, 
+                        motifdatabase))
                 if results != "no hits":
                     TFresults.append(results)
                 else:
