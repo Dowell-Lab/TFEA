@@ -353,9 +353,7 @@ def calculate_es_youden_rank(args):
     normalized_score = [x/total for x in score]
     cumscore = np.cumsum(normalized_score)
 
-    print len(ranks)
-    print ranks[:10]
-    trend = np.arange(0,1,1/len(ranks))
+    trend = np.arange(0,1,1.0/float(len(ranks)))
 
     #The AUC is the relative to the "random" line
     youden = cumscore - trend
