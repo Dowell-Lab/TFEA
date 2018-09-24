@@ -186,7 +186,7 @@ def calculate_es_auc(args):
     normalized_score = [x/total for x in score]
     cumscore = np.cumsum(normalized_score)
 
-    trend = np.arange(0,1,1/len(ranks))
+    trend = np.arange(0,1,1.0/float(len(ranks)))
 
     #The AUC is the relative to the "random" line
     actualES = np.trapz(cumscore) - np.trapz(trend)
@@ -358,7 +358,9 @@ def calculate_es_youden_rank(args):
     #The AUC is the relative to the "random" line
     youden = cumscore - trend
     youden_max = max(cumscore - trend)
-    rank_max = np.where(youden == youden_max)[0][0]/len(youden)
+    rank_max = np.where(youden == youden_max)[0][0]/float(len(youden))
+
+    print rank_max
 
     #Calculate random AUC
     simES = independent_functions.permutations_youden_rank(
@@ -595,10 +597,12 @@ def get_gc_array(tempdir=str(), ranked_center_file=str(), genomefasta=str(),
     #First, create a bed file with the correct coordinates centered on the 
     #given regions with the specified window size on either side
     outfile = open(os.path.join(tempdir, "ranked_file.windowed.bed"),'w')
+    ranks = list()
     with open(ranked_center_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
+            ranks.append(int(line[-1]))
             center = (int(start)+int(stop))/2
             newstart = center - window
             newstop = center + window
@@ -624,6 +628,9 @@ def get_gc_array(tempdir=str(), ranked_center_file=str(), genomefasta=str(),
                 gc_content = independent_functions.convert_sequence_to_array(
                                                                 sequence=line)
                 gc_array.append(gc_content)
+    
+    #Sort array based on ranks
+    gc_array = [gc for _,gc in sorted(zip(ranks,gc_array))]
 
     #The length of each bin is equal to the total positions over the number of 
     #desired bins
@@ -775,8 +782,8 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
                         largewindow, smallwindow, genomefasta, tempdir, 
                         motifdatabase) for x in os.listdir(motif_hits)]
             p = Pool(cpus)
-            # TFresults = p.map(calculate_es_auc, args)
-            TFresults = p.map(calculate_es_youden_rank, args)
+            TFresults = p.map(calculate_es_auc, args)
+            # TFresults = p.map(calculate_es_youden_rank, args)
         else:
             for motif_file in os.listdir(motif_hits):
                 # results = calculate_es_auc((motif_file, millions_mapped, 
@@ -795,6 +802,7 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
 
 
         CALCULATEtime = time.time()-CALCULATEtime
+        # independent_functions.pvalue_global_youden_rank(TFresults=TFresults)
         TFresults = independent_functions.padj_bonferroni(TFresults=TFresults)
         plot_global_graphs(padj_cutoff=padj_cutoff, label1=label1, 
                             label2=label2, figuredir=figuredir, 

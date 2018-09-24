@@ -108,7 +108,9 @@ import config
 #merges them via bedtools.
 COMBINEtime = time.time()
 if config.COMBINE:
-    bedfile = independent_functions.merge_bed(beds=config.BEDS, 
+    # bedfile = independent_functions.merge_bed(beds=config.BEDS, 
+    #                                             tempdir=tempdir)
+    bedfile = independent_functions.tfit_clean_merge(beds=config.BEDS, 
                                                 tempdir=tempdir)
 else:
     bedfile = config.BEDS[0]
