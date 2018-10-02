@@ -15,21 +15,18 @@ matplotlib.use('Agg')
 import os
 import sys
 import math
+import time
 import numpy as np
+import traceback
 from multiprocessing import Pool
 import multiprocessing as mp
-import matplotlib.pyplot as plt
-import seaborn as sns
-import matplotlib.cm as cm
-from matplotlib import gridspec
 from scipy.stats import norm 
-import time
 import independent_functions
 #==============================================================================
 #Functions
 #==============================================================================
-def deseq_run(bam1=list(), bam2=list(), tempdir=str(), count_file=str(),
-                label1=str(), label2=str(), figuredir=str()):
+def deseq_run(bam1=None, bam2=None, tempdir=None, count_file=None,
+                label1=None, label2=None, figuredir=None):
     '''Writes the DE-Seq script, runs the DE-Seq script, and plots the DE-Seq 
         MA plot
 
@@ -123,100 +120,116 @@ def calculate_es_auc(args):
     ValueError
         when tf does not have any hits
     '''
-    motif_file = args[0]
-    millions_mapped = args[1]
-    gc_array = args[2]
-    fimo  = args[3]
-    ranked_center_file = args[4]
-    motif_hits = args[5]
-    plot = args[6] 
-    padj_cutoff = args[7]
-    logos = args[8]
-    figuredir = args[9]
-    largewindow = args[10]
-    smallwindow = args[11]
-    genomefasta = args[12]
-    tempdir = args[13]
-    motifdatabase = args[14]
+    try:
+        motif_file = args[0]
+        millions_mapped = args[1]
+        gc_array = args[2]
+        fimo  = args[3]
+        ranked_center_file = args[4]
+        motif_hits = args[5]
+        plot = args[6] 
+        padj_cutoff = args[7]
+        logos = args[8]
+        figuredir = args[9]
+        largewindow = args[10]
+        smallwindow = args[11]
+        genomefasta = args[12]
+        tempdir = args[13]
+        motifdatabase = args[14]
 
-    if fimo:
-        ranked_center_distance_file = fimo_distance(
-                                        ranked_center_file=ranked_center_file,
-                                        motif_file=motif_file,
-                                        genomefasta=genomefasta, 
-                                        largewindow=largewindow, 
-                                        tempdir=tempdir, 
-                                        figuredir=figuredir,
-                                        motifdatabase=motifdatabase)
-    else:
-        ranked_center_distance_file = independent_functions.motif_distance_bedtools_closest(
-                                        ranked_center_file=ranked_center_file,
-                                        motif_path=motif_hits+motif_file)
+        if fimo:
+            ranked_center_distance_file = fimo_distance(
+                                            ranked_center_file=ranked_center_file,
+                                            motif_file=motif_file,
+                                            genomefasta=genomefasta, 
+                                            largewindow=largewindow, 
+                                            tempdir=tempdir, 
+                                            figuredir=figuredir,
+                                            motifdatabase=motifdatabase)
+        else:
+            motif_full_path = os.path.join(motif_hits, motif_file)
+            ranked_center_distance_file = independent_functions.motif_distance_bedtools_closest(
+                                            ranked_center_file=ranked_center_file,
+                                            motif_path=motif_full_path)
+            pos = independent_functions.get_motif_hits(motif_file=motif_full_path, 
+                                                        header=False)
 
-    distances = []
-    ranks = []
-    pvals= []
-    pos = 0
-    fc = []
+        distances = []
+        ranks = []
+        pvals= []
+        # pos = 0
+        fc = []
 
-    with open(ranked_center_distance_file) as F:
-        for line in F:
-            line = line.strip('\n').split('\t')
-            distance = int(line[-1])
-            rank = int(line[5])
-            pvals.append(float(line[3]))
-            fc.append(float(line[4]))
-            ranks.append(rank)
-            distances.append(distance)
-            if distance < largewindow:
-                pos+=1
+        with open(ranked_center_distance_file) as F:
+            for line in F:
+                line = line.strip('\n').split('\t')
+                distance = int(line[-1])
+                rank = int(line[5])
+                pvals.append(float(line[3]))
+                fc.append(float(line[4]))
+                ranks.append(rank)
+                distances.append(distance)
+                # if distance < largewindow:
+                #     pos+=1
 
-    #sort distances based on the ranks from TF bed file
-    #and calculate the absolute distance
-    sorted_distances = [x for _,x in sorted(zip(ranks, distances))]
-    distances_abs = [abs(x) for x in sorted_distances] 
+        #sort distances based on the ranks from TF bed file
+        #and calculate the absolute distance
+        sorted_distances = [x for _,x in sorted(zip(ranks, distances))]
+        distances_abs = [abs(x) for x in sorted_distances] 
 
-    #filter any TFs/files without and hits
-    if len(distances_abs) == 0:
-        return "no hits"
+        #filter any TFs/files without and hits
+        if len(distances_abs) == 0:
+            return "no hits"
 
-    #Get -exp() of distance and get cumulative scores
-    score = [math.exp(-x) for x in distances_abs] 
-    total = float(sum(score))
-    normalized_score = [x/total for x in score]
-    cumscore = np.cumsum(normalized_score)
+        #Get -exp() of distance and get cumulative scores
+        score = [math.exp(-x) for x in distances_abs] 
+        total = float(sum(score))
+        binwidth = 1.0/float(len(distances_abs))
+        # normalized_score = [(x/total)*binwidth for x in score]
+        normalized_score = [(x/total) for x in score]
+        cumscore = np.cumsum(normalized_score)
+        # print "cumscore: ", cumscore
 
-    trend = np.arange(0,1,1.0/float(len(ranks)))
+        trend = np.arange(0,1,1.0/float(len(ranks)))
+        # trend = [x*binwidth for x in trend]
+        # print "trend: ", trend
 
-    #The AUC is the relative to the "random" line
-    actualES = np.trapz(cumscore) - np.trapz(trend)
-
-
-
-    #Calculate random AUC
-    simES = independent_functions.permutations_auc(distances=normalized_score,
-                                                    trend=trend)
-
-    ##significance calculator                                                                                                                                                            
-    mu = np.mean(simES)
-    NES = actualES/abs(mu)
-    sigma = np.std(simES)
+        #The AUC is the relative to the "random" line
+        actualES = np.trapz(cumscore) - np.trapz(trend)
 
 
-    if actualES > 0:
-        p = 1-norm.cdf(actualES,mu,sigma)
-    else:
-        p = norm.cdf(actualES,mu,sigma)
 
-    plot_individual_graphs(plot=plot, padj_cutoff=padj_cutoff,
-                            figuredir=figuredir, logos=logos, 
-                            largewindow=largewindow, 
-                            smallwindow=smallwindow,
-                            distances_abs=distances_abs, 
-                            sorted_distances=sorted_distances,ranks=ranks,
-                            pvals=pvals, fc=fc, cumscore=cumscore, 
-                            motif_file=motif_file, p=p, simES=simES, 
-                            actualES=actualES, gc_array=gc_array)
+        #Calculate random AUC
+        simES = independent_functions.permutations_auc(distances=normalized_score,
+                                                        trend=trend)
+
+        ##significance calculator                                                                                                                                                            
+        mu = np.mean(simES)
+        NES = actualES/abs(mu)
+        sigma = np.std(simES)
+
+
+        if actualES > 0:
+            p = 1-norm.cdf(actualES,mu,sigma)
+        else:
+            p = norm.cdf(actualES,mu,sigma)
+
+        plot_individual_graphs(plot=plot, padj_cutoff=padj_cutoff,
+                                figuredir=figuredir, logos=logos, 
+                                largewindow=largewindow, 
+                                smallwindow=smallwindow,
+                                distances_abs=distances_abs, 
+                                sorted_distances=sorted_distances,ranks=ranks,
+                                pvals=pvals, fc=fc, cumscore=cumscore, 
+                                motif_file=motif_file, p=p, simES=simES, 
+                                actualES=actualES, gc_array=gc_array)
+    except Exception as e:
+        print 'Caught exception in worker thread (x = %d):' % x
+
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        print traceback.print_exc()
+        raise e
 
     return [motif_file.split('.bed')[0],actualES,NES,p,pos]
 #==============================================================================
@@ -389,14 +402,14 @@ def calculate_es_youden_rank(args):
 #==============================================================================
 
 #==============================================================================
-def plot_individual_graphs(plot=bool(), padj_cutoff=float(),
-                            figuredir=str(), logos=str(), 
-                            largewindow=float(), 
-                            smallwindow=float(),
-                            distances_abs=list(), sorted_distances=list(),
-                            ranks=list(),pvals=list(),fc=list(), 
-                            cumscore=list(), motif_file='',p=float(),
-                            simES=list(), actualES=float(), gc_array=list()):
+def plot_individual_graphs(plot=None, padj_cutoff=None,
+                            figuredir=None, logos=None, 
+                            largewindow=None, 
+                            smallwindow=None,
+                            distances_abs=None, sorted_distances=None,
+                            ranks=None, pvals=None, fc=None, 
+                            cumscore=None, motif_file=None, p=None,
+                            simES=None, actualES=None, gc_array=None):
     '''This function plots all TFEA related graphs for an individual motif
 
     Parameters
@@ -475,11 +488,15 @@ def plot_individual_graphs(plot=bool(), padj_cutoff=float(),
         #Get log pval to plot for rank metric
         sorted_pval = [x for _,x in sorted(zip(ranks, pvals))]
         sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
-        try:
-            logpval = [math.log(x,10) if y < 1 else -math.log(x,10) \
-                        for x,y in zip(sorted_pval,sorted_fc)]
-        except ValueError:
-            logpval = sorted_pval
+        logpval = list()
+        for x,y in zip(sorted_pval,sorted_fc):
+            try:
+                if y < 1:
+                    logpval.append(math.log(x,10))
+                else:
+                    logpval.append(-math.log(x,10))
+            except:
+                logpval.append(0.0)
 
         #Get motif logos from logo directory                              
         if 'HO_' in motif_file:
@@ -514,20 +531,20 @@ def plot_individual_graphs(plot=bool(), padj_cutoff=float(),
                                             actualES=actualES,
                                             motif_file=motif_file)
 
-        #Plot the distance distribution histograms plot
-        independent_functions.distance_distribution_plot(
-                                        largewindow=largewindow,
-                                        smallwindow=smallwindow,
-                                        figuredir=figuredir,
-                                        updistancehist=updistancehist, 
-                                        middledistancehist=middledistancehist,
-                                        downdistancehist=downdistancehist, 
-                                        motif_file=motif_file)
+        # #Plot the distance distribution histograms plot
+        # independent_functions.distance_distribution_plot(
+        #                                 largewindow=largewindow,
+        #                                 smallwindow=smallwindow,
+        #                                 figuredir=figuredir,
+        #                                 updistancehist=updistancehist, 
+        #                                 middledistancehist=middledistancehist,
+        #                                 downdistancehist=downdistancehist, 
+        #                                 motif_file=motif_file)
 #==============================================================================
 
 #==============================================================================
-def plot_global_graphs(padj_cutoff=float(), label1=str(), label2=str(), 
-                        figuredir=str(), TFresults=list()):
+def plot_global_graphs(padj_cutoff=None, label1=None, label2=None, 
+                        figuredir=None, TFresults=None):
     '''This function plots graphs that are displayed on the main results.html 
         filethat correspond to results relating to all analyzed TFs.
 
@@ -546,8 +563,10 @@ def plot_global_graphs(padj_cutoff=float(), label1=str(), label2=str(),
     ESlist = [i[1] for i in TFresults]
     NESlist = [i[2] for i in TFresults]
     PVALlist = [i[3] for i in TFresults]
-    POSlist = [math.log(i[4],10) if i[4] != 0 else 0 for i in TFresults]
+    POSlist = [i[4] for i in TFresults]
     PADJlist = [i[5] for i in TFresults]
+
+    POSlist = [math.log(x,10) for x in POSlist if x != 0]
 
     sigx = [x for x, p in zip(ESlist, PADJlist) if p < padj_cutoff]
     sigy = [p for x, p in zip(ESlist, PADJlist) if p < padj_cutoff]
@@ -571,8 +590,8 @@ def plot_global_graphs(padj_cutoff=float(), label1=str(), label2=str(),
 #==============================================================================
 
 #==============================================================================
-def get_gc_array(tempdir=str(), ranked_center_file=str(), genomefasta=str(), 
-                    window=int(), bins=1000):
+def get_gc_array(tempdir=None, ranked_center_file=None, genomefasta=None, 
+                    window=None, bins=1000):
     '''This function calculates gc content over all eRNAs. It uses the 
     LARGEWINDOW variable within the config file instead of the whole region. 
     It performs a running average of window size = total_regions/bins
@@ -672,14 +691,14 @@ def get_gc_array(tempdir=str(), ranked_center_file=str(), genomefasta=str(),
 #==============================================================================
 
 #==============================================================================
-def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
-                bam1=list(), bam2=list(), config_dict=dict(), 
-                motif_hits=str(), singlemotif=str(), 
-                COMBINEtime=float(), COUNTtime=float(), DESEQtime=float(), 
-                CALCULATEtime=float(), fimo=bool(), plot=bool(), 
-                padj_cutoff=float(), logos=str(), figuredir=str(),
-                largewindow=float(), smallwindow=float(), genomefasta=str(),
-                motifdatabase=str(), pool=bool(), label1=str(), label2=str()):
+def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
+                bam1=None, bam2=None, 
+                motif_hits=None, singlemotif=None, 
+                COMBINEtime=None, COUNTtime=None, DESEQtime=None, 
+                CALCULATEtime=None, fimo=None, plot=None, 
+                padj_cutoff=None, logos=None, figuredir=None,
+                largewindow=None, smallwindow=None, genomefasta=None,
+                motifdatabase=None, pool=None, label1=None, label2=None):
     '''This function performs the bulk of transcription factor enrichment
         analysis (TFEA), it does the following:
             1. GC distribution across regions for plotting
@@ -756,10 +775,9 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
     '''
     print "Calculating GC content of regions..."
     #This line gets an array of GC values for all inputted regions
-    gc_array = get_gc_array(
-                        ranked_center_file=ranked_center_file,
-                        window=int(largewindow), tempdir=tempdir, 
-                        genomefasta=genomefasta)
+    gc_array = get_gc_array(ranked_center_file=ranked_center_file,
+                            window=int(largewindow), tempdir=tempdir, 
+                            genomefasta=genomefasta)
 
     print "done\nCalculating millions mapped reads for bam files..."
     #Here we determine how many cpus to use for parallelization
@@ -786,15 +804,15 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
             # TFresults = p.map(calculate_es_youden_rank, args)
         else:
             for motif_file in os.listdir(motif_hits):
-                # results = calculate_es_auc((motif_file, millions_mapped, 
-                #         gc_array, fimo, ranked_center_file, motif_hits, plot, 
-                #         padj_cutoff, logos, figuredir, largewindow, 
-                #         smallwindow, genomefasta, tempdir, motifdatabase))
-                results = calculate_es_youden_rank((motif_file, 
-                        millions_mapped, gc_array, fimo, ranked_center_file, 
-                        motif_hits, plot, padj_cutoff, logos, figuredir, 
-                        largewindow, smallwindow, genomefasta, tempdir, 
-                        motifdatabase))
+                results = calculate_es_auc((motif_file, millions_mapped, 
+                        gc_array, fimo, ranked_center_file, motif_hits, plot, 
+                        padj_cutoff, logos, figuredir, largewindow, 
+                        smallwindow, genomefasta, tempdir, motifdatabase))
+                # results = calculate_es_youden_rank((motif_file, 
+                #         millions_mapped, gc_array, fimo, ranked_center_file, 
+                #         motif_hits, plot, padj_cutoff, logos, figuredir, 
+                #         largewindow, smallwindow, genomefasta, tempdir, 
+                #         motifdatabase))
                 if results != "no hits":
                     TFresults.append(results)
                 else:
@@ -804,13 +822,18 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
         CALCULATEtime = time.time()-CALCULATEtime
         # independent_functions.pvalue_global_youden_rank(TFresults=TFresults)
         TFresults = independent_functions.padj_bonferroni(TFresults=TFresults)
+        # TFresults = independent_functions.pvalue_global_auc(TFresults=TFresults,
+        #                                                     auc_index=1)
+        #Creates results.txt which is a tab-delimited text file with the results    
+        TFresults = sorted(TFresults, key=lambda x: x[-3])
         plot_global_graphs(padj_cutoff=padj_cutoff, label1=label1, 
                             label2=label2, figuredir=figuredir, 
                             TFresults=TFresults)
         independent_functions.create_text_output(TFresults=TFresults, 
                                                     outputdir=outputdir)
-        independent_functions.create_html_output(TFresults=TFresults, 
-                                                    config_dict=config_dict, 
+        independent_functions.create_summary_html()
+        independent_functions.create_motif_result_html(TFresults=TFresults)
+        independent_functions.create_main_results_html(TFresults=TFresults, 
                                                     COMBINEtime=COMBINEtime, 
                                                     COUNTtime=COUNTtime, 
                                                     DESEQtime=DESEQtime, 
@@ -819,25 +842,23 @@ def calculate(tempdir=str(), outputdir=str(), ranked_center_file=str(),
     #Note if you set the SINGLEMOTIF variable to a specific TF, this program 
     #will be unable to determine an PADJ for the given motif.
     else:
-        # results = calculate_es_auc((singlemotif, millions_mapped, gc_array, 
-        #                 fimo, ranked_center_file, motif_hits, plot, 
-        #                 padj_cutoff, logos, figuredir, largewindow, 
-        #                 smallwindow, genomefasta, tempdir, motifdatabase))
-        results = calculate_es_youden_rank((singlemotif, millions_mapped, 
-                        gc_array, fimo, ranked_center_file, motif_hits, plot, 
+        results = calculate_es_auc((singlemotif, millions_mapped, gc_array, 
+                        fimo, ranked_center_file, motif_hits, plot, 
                         padj_cutoff, logos, figuredir, largewindow, 
                         smallwindow, genomefasta, tempdir, motifdatabase))
-
-        independent_functions.create_single_motif_html(results=results, 
-                                                        outputdir=outputdir)
+        # results = calculate_es_youden_rank((singlemotif, millions_mapped, 
+        #                 gc_array, fimo, ranked_center_file, motif_hits, plot, 
+        #                 padj_cutoff, logos, figuredir, largewindow, 
+        #                 smallwindow, genomefasta, tempdir, motifdatabase))
+        independent_functions.create_motif_result_html(TFresults=[results+[0]])
 
     print "done"
 #==============================================================================
 
 #==============================================================================
-def fimo_distance(motif_file=str(),genomefasta=str(), largewindow=float(),
-                tempdir=str(), motifdatabase=str(), figuredir=str(),
-                ranked_center_file=str()):
+def fimo_distance(motif_file=None,genomefasta=None, largewindow=None,
+                tempdir=None, motifdatabase=None, figuredir=None,
+                ranked_center_file=None):
     ranked_fullregions_file = independent_functions.get_regions(
                                         tempdir=tempdir, 
                                         ranked_center_file=ranked_center_file,

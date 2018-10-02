@@ -45,39 +45,103 @@ parser.add_argument('--sbatch','-s',default=False,metavar='',help='OPTIONAL. \
 if len(sys.argv) == 1:
     parser.print_help()
     sys.exit(1)
-#==============================================================================
-#SECONDARY IMPORTS
-#==============================================================================
-from multiprocessing import Pool
-import multiprocessing as mp
-import independent_functions
-import dependent_functions
-#==============================================================================
-#MAIN SCRIPT
-#==============================================================================
+
 #If user provided arguments, then parse them
 sbatch = parser.parse_args().sbatch
 configfile = parser.parse_args().config
 config_object = configparser.ConfigParser(
                             interpolation=configparser.ExtendedInterpolation())
 config_object.read(configfile)
+#==============================================================================
+#Functions
+#==============================================================================
+def make_out_directories(dirs=False, config_object=None):
+    '''Creates output directories in a user-specified location where all TFEA 
+        outputs will go.
 
+    Parameters
+    ----------
+    dirs : boolean
+        determines whether output folders will be created or not (default: 
+        False)
+        
+    config : dict
+        a configparser object that contains variables within the config file
+
+    Returns
+    -------
+    output : string 
+        full path to the parent output directory
+
+    tempdir : string
+        full path to the temporary directory where files are stored
+
+    figuredir : string
+        full path to the directory containing figures and plots
+        
+    e_and_o : string
+        full path to the directory that stores stdout and stderr files
+    '''
+    #Output directory
+    output = config_object['DATA']['OUTPUT'].strip("'")
+    label1 = config_object['DATA']['LABEL1'].strip("'")
+    label2 = config_object['DATA']['LABEL2'].strip("'")
+    outfoldername = 'TFEA_'+label1+'-'+label2+'_'
+    if dirs:
+        if not os.path.isdir(os.path.join(output, outfoldername + '0')):
+            output = os.path.join(output, outfoldername + '0')
+            os.makedirs(output)
+        else:
+            outputfolders = list()
+            for folder in os.listdir(output):
+                if outfoldername in folder:
+                    outputfolders.append(int(folder.split('_')[-1]))
+            output = os.path.join(output, outfoldername + str(max(outputfolders)+1))
+            os.makedirs(output)
+    else:
+        outputfolders = list()
+        for folder in os.listdir(output):
+            if outfoldername in folder:
+                outputfolders.append(int(folder.split('_')[-1]))
+        output = os.path.join(output, outfoldername + str(max(outputfolders)))
+
+
+    #Temporary files will go in this directory
+    tempdir = os.path.join(output, 'temp_files')
+    if dirs:
+        if not os.path.isdir(tempdir):
+            os.makedirs(tempdir)
+
+    #Error and out files will go in this directory
+    e_and_o = os.path.join(output, 'e_and_o')
+    if dirs:
+        if not os.path.isdir(e_and_o):
+            os.makedirs(e_and_o)
+
+
+    #Directory where plots used in html file will be stored.
+    figuredir = os.path.join(output, 'plots')
+    if dirs:
+        if not os.path.isdir(figuredir):
+            os.makedirs(figuredir)
+
+    return output,tempdir,figuredir,e_and_o
+#==============================================================================
+#CREATING DIRECTORIES
+#==============================================================================
 #If user specifies the --sbatch flag, then we first create the output 
 #directories then run the sbatch script with the 'SUBMITTED' command submitted 
 #to the --sbatch flag so we know not to remake output directories. If --sbatch 
 #flag not specified, simply make output directories and continue.
 if sbatch == False:
-    args = independent_functions.make_out_directories(dirs=True, 
-                                                        config=config_object)
-    output, tempdir, figuredir, e_and_o = args
+    output, tempdir, figuredir, e_and_o = make_out_directories(dirs=True, 
+                                                config_object=config_object)
 elif str(sbatch) == 'SUBMITTED':
-    args = independent_functions.make_out_directories(dirs=False, 
-                                                        config=config_object)
-    output, tempdir, figuredir, e_and_o = args
+    output, tempdir, figuredir, e_and_o = make_out_directories(dirs=False, 
+                                                config_object=config_object)
 else:
-    args = independent_functions.make_out_directories(dirs=True, 
-                                                        config=config_object)
-    output, tempdir, figuredir, e_and_o = args
+    output, tempdir, figuredir, e_and_o = make_out_directories(dirs=True, 
+                                                config_object=config_object)
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
     email = str(sbatch)
@@ -88,8 +152,16 @@ else:
 
     sys.exit(("TFEA has been submitted using an sbatch script, use qstat to "
             "check its progress."))
-
-
+#==============================================================================
+#SECONDARY IMPORTS
+#==============================================================================
+from multiprocessing import Pool
+import multiprocessing as mp
+import independent_functions
+import dependent_functions
+#==============================================================================
+#MAIN SCRIPT
+#==============================================================================
 #Run the config_parser script which will create variables for all folders and 
 #paths to use throughout TFEA
 independent_functions.parse_config(srcdirectory=srcdirectory, 
@@ -110,8 +182,11 @@ COMBINEtime = time.time()
 if config.COMBINE:
     # bedfile = independent_functions.merge_bed(beds=config.BEDS, 
     #                                             tempdir=tempdir)
-    bedfile = independent_functions.tfit_clean_merge(beds=config.BEDS, 
-                                                tempdir=tempdir)
+    # bedfile = independent_functions.tfit_clean_merge(beds=config.BEDS, 
+    #                                             tempdir=tempdir)
+    bedfile = independent_functions.intersect_merge_bed(bed1=config.BEDS[0:2],
+                                                        bed2=config.BEDS[2:4], 
+                                                        tempdir=tempdir)
 else:
     bedfile = config.BEDS[0]
 COMBINEtime = time.time()-COMBINEtime 
@@ -185,7 +260,6 @@ if config.CALCULATE:
                                     smallwindow=config.SMALLWINDOW,
                                     motifdatabase=config.MOTIFDATABASE,
                                     genomefasta=config.GENOMEFASTA)
-                                    #config_dict=config_dict)
 
 
 #Here we simply remove large bed files that are produced within this package. 

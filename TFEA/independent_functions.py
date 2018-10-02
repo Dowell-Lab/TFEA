@@ -15,8 +15,9 @@ matplotlib.use('Agg')
 import os
 import math
 import datetime
+import subprocess
 import matplotlib.pyplot as plt
-import seaborn as sns
+# import seaborn as sns
 import matplotlib.cm as cm
 from matplotlib import gridspec
 from scipy.stats import norm 
@@ -24,82 +25,8 @@ import numpy as np
 #==============================================================================
 #Functions
 #==============================================================================
-def make_out_directories(dirs=False,config=None):
-    '''Creates output directories in a user-specified location where all TFEA 
-        outputs will go.
-
-    Parameters
-    ----------
-    dirs : boolean
-        determines whether output folders will be created or not (default: 
-        False)
-        
-    config : dict
-        a configparser object that contains variables within the config file
-
-    Returns
-    -------
-    output : string 
-        full path to the parent output directory
-
-    tempdir : string
-        full path to the temporary directory where files are stored
-
-    figuredir : string
-        full path to the directory containing figures and plots
-        
-    e_and_o : string
-        full path to the directory that stores stdout and stderr files
-    '''
-    #Output directory
-    output = config['DATA']['OUTPUT'].strip("'")
-    label1 = config['DATA']['LABEL1'].strip("'")
-    label2 = config['DATA']['LABEL2'].strip("'")
-    outfoldername = 'TFEA_'+label1+'-'+label2+'_'
-    if dirs:
-        if not os.path.isdir(os.path.join(output, outfoldername + '0')):
-            output = os.path.join(output, outfoldername + '0')
-            os.makedirs(output)
-        else:
-            outputfolders = list()
-            for folder in os.listdir(output):
-                if outfoldername in folder:
-                    outputfolders.append(int(folder.split('_')[-1]))
-            output = os.path.join(output, outfoldername + str(max(outputfolders)+1))
-            os.makedirs(output)
-    else:
-        outputfolders = list()
-        for folder in os.listdir(output):
-            if outfoldername in folder:
-                outputfolders.append(int(folder.split('_')[-1]))
-        output = os.path.join(output, outfoldername + str(max(outputfolders)))
-
-
-    #Temporary files will go in this directory
-    tempdir = os.path.join(output, 'temp_files')
-    if dirs:
-        if not os.path.isdir(tempdir):
-            os.makedirs(tempdir)
-
-    #Error and out files will go in this directory
-    e_and_o = os.path.join(output, 'e_and_o')
-    if dirs:
-        if not os.path.isdir(e_and_o):
-            os.makedirs(e_and_o)
-
-
-    #Directory where plots used in html file will be stored.
-    figuredir = os.path.join(output, 'plots')
-    if dirs:
-        if not os.path.isdir(figuredir):
-            os.makedirs(figuredir)
-
-    return output,tempdir,figuredir,e_and_o
-#==============================================================================
-
-#==============================================================================
-def parse_config(srcdirectory=str(), config_object=str(), output=str(), 
-                tempdir=str(), figuredir=str()):
+def parse_config(srcdirectory=None, config_object=None, output=None, 
+                tempdir=None, figuredir=None):
     '''Creates the config.py file which is used in many aspects of TFEA. Within
         this config.py file, it writes all variables provided in the config
         parameter and also writes output, tempdir, and figuredir full paths
@@ -416,7 +343,7 @@ def verify_config_file():
 #==============================================================================
 
 #==============================================================================
-def verify_config_object(config=object()):
+def verify_config_object(config=None):
     '''Verifies the names and values of variables within a configParser object
         to make sure that all necessary variables are present and they are the
         correct type
@@ -788,44 +715,7 @@ def verify_config_object(config=object()):
 #==============================================================================
 
 #==============================================================================
-def sbatch_submit(srcdirectory=str(),configpath=str(),script=str(),email=str(),
-                    config=None):
-    '''Submits an sbatch job using the configuration provided to the script 
-        variable that runs TFEA with options specified within a give config 
-        file
-
-    Parameters
-    ----------
-    srcdirectory : string
-        full path to TFEA source directory
-        
-    configpath : string
-        full path to the config file
-
-    script : string
-        full path to the sbatch script containing configuration options
-
-    email : string
-        user e-mail to receive sbatch job notifications
-
-    config : dict
-        a configparser object
-
-    Returns
-    -------
-    None
-    '''
-    #First make output directories, only save path to the e_and_o folder
-    _, _, _, e_and_o = make_out_directories(dirs=True, config=config)
-
-    #Submit the sbatch job
-    os.system("sbatch --error=" + e_and_o + "%x.err --output=" + e_and_o 
-                + "%x.out --mail-user="+email+" --export=src="+srcdirectory
-                + ",config=" +configpath+ " " + script)
-#==============================================================================
-
-#==============================================================================
-def merge_bed(beds=list(),tempdir=str()):
+def merge_bed(beds=None, tempdir=None):
     '''Concatenates, sorts, and merges (bedtools) a list of bed files. Outputs 
         into the tempdir directory created by TFEA
 
@@ -854,7 +744,7 @@ def merge_bed(beds=list(),tempdir=str()):
 #==============================================================================
 
 #==============================================================================
-def tfit_clean_merge(beds=list(), tempdir=str(), size_cut=500):
+def tfit_clean_merge(beds=None, tempdir=None, size_cut=500):
     '''Takes in a list of bed files outputted by Tfit and for each region in
         each bed file splits the region based on its genomic size and the 
         size_cut variable. The 'large regions' get merged via bedtools, the 
@@ -946,7 +836,80 @@ def tfit_clean_merge(beds=list(), tempdir=str(), size_cut=500):
 #==============================================================================
 
 #==============================================================================
-def getfasta(bedfile=str(), genomefasta=str(), tempdir=str()):
+def get_motif_hits(motif_file=None, header=False):
+    '''Counts number of lines in a bed file. Meant to be used with motif hit
+        files.
+
+    Parameters
+    ----------
+    motif_file : string
+        full path to a file to be counted
+
+    Returns
+    -------
+    line_count : int 
+        number of lines within the provided motif_file 
+    '''
+    line_count = subprocess.check_output(["wc", "-l", motif_file]).encode("utf-8")
+    line_count = int(line_count.split()[0])
+    if header:
+        line_count = line_count-1
+    return line_count
+#==============================================================================
+
+#==============================================================================
+def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
+    '''Takes in two lists of bed files, each containing replicates for one 
+        condition. Intersects replicates using bedtools then merges intersected
+        regions.
+
+    Parameters
+    ----------
+    bed1 : list or array
+        full paths to bed files for condition 1 (strings)
+    
+    bed2 : list or array
+        full paths to bed files for condition 2 (strings)
+        
+    tempdir : string
+        full path to tempdir directory in output directory (created by TFEA)
+
+    Returns
+    -------
+    combined_input_merged_bed : string 
+        full path to a bed file containing the merged regions inputted by the 
+        user 
+    '''
+    #Define the output file
+    combined_input_merged_bed = os.path.join(tempdir, 
+                                                "combined_input.merge.bed")
+
+    #Build command to perform bedtools intersect on condition1 beds
+    intersect1 = ("bedtools intersect -a " + bed1[0] + " -b " + bed1[1])
+    for bedfile in bed1[2:]:
+        intersect1 = (intersect1 + " | bedtools intersect -a stdin -b " 
+                    + bedfile)
+
+    #Build command to perform bedtools intersect on condition2 beds
+    intersect2 = ("bedtools intersect -a " + bed2[0] + " -b " + bed2[1])
+    for bedfile in bed2[2:]:
+        intersect2 = (intersect2 + " | bedtools intersect -a stdin -b " 
+                    + bedfile)
+
+    #Build full command which pipes both intersect commands into cat, then 
+    # sorts and merges this resulting bed file
+    command = ("cat <(" + intersect1 + ") <(" + intersect2 
+                + ") | bedtools sort -i stdin | bedtools merge -i stdin > " 
+                + combined_input_merged_bed)
+    
+    #Need to use subprocess here because this command is bash not sh
+    subprocess.call(['bash', '-c', command])
+
+    return combined_input_merged_bed
+#==============================================================================
+
+#==============================================================================
+def getfasta(bedfile=None, genomefasta=None, tempdir=None):
     '''Converts a bed file to a fasta file using bedtools. Outputs into the 
         tempdir directory created by TFEA.
 
@@ -977,7 +940,7 @@ def getfasta(bedfile=str(), genomefasta=str(), tempdir=str()):
 #==============================================================================
 
 #==============================================================================
-def get_bgfile(fastafile=str(), tempdir=str()):
+def get_bgfile(fastafile=None, tempdir=None):
     '''Obtains a zero order markov background model (used in FIMO) from a fasta
         file. Outputs into the tempdir directory created by TFEA.
 
@@ -1005,7 +968,7 @@ def get_bgfile(fastafile=str(), tempdir=str()):
 #==============================================================================
 
 #==============================================================================
-def get_regions(tempdir=str(), ranked_center_file=str(), largewindow=float()):
+def get_regions(tempdir=None, ranked_center_file=None, largewindow=None):
     '''Takes in a bed file that contains regions centered on the user-inputted 
         bed files and outputs a 'full regions' bed file which simply adds a 
         user-defined window to either side of these centered regions.
@@ -1042,8 +1005,8 @@ def get_regions(tempdir=str(), ranked_center_file=str(), largewindow=float()):
 #==============================================================================
 
 #==============================================================================
-def count_reads(bedfile=str(), bam1=list(), bam2=list(), tempdir=str(), 
-                label1=str(), label2=str()):
+def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None, 
+                label2=None):
     '''Counts reads across regions in a given bed file using bam files inputted
         by a user
 
@@ -1083,7 +1046,7 @@ def count_reads(bedfile=str(), bam1=list(), bam2=list(), tempdir=str(),
     #This section adds a header to the count_file and reformats it to remove 
     #excess information and add a column with the region for later use
     count_file = os.path.join(tempdir, "count_file.header.bed")
-    outfile = open(os.path.join(tempdir, "count_file.header.bed"),'w')
+    outfile = open(count_file,'w')
     outfile.write("chrom\tstart\tstop\tregion\t" 
                     + '\t'.join([label1]*len(bam1)) + "\t" 
                     + '\t'.join([label2]*len(bam2)) + "\n")
@@ -1101,8 +1064,8 @@ def count_reads(bedfile=str(), bam1=list(), bam2=list(), tempdir=str(),
 #==============================================================================
 
 #==============================================================================
-def write_deseq_script(bam1=list(), bam2=list(), tempdir=str(), 
-                        count_file=str(), label1=str(), label2=str()):
+def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None, 
+                        label1=None, label2=None):
     '''Writes an R script within the tempdir directory in TFEA output to run 
         either DE-Seq or DE-Seq2 depending on the number of user-inputted 
         replicates.
@@ -1210,8 +1173,7 @@ def write_deseq_script(bam1=list(), bam2=list(), tempdir=str(),
 #==============================================================================
 
 #==============================================================================
-def plot_deseq_MA(deseq_file=str(), label1=str(), label2=str(), 
-                    figuredir=str()):
+def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None):
     '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
     to the figuredir directory created in TFEA output folder
 
@@ -1283,7 +1245,7 @@ def plot_deseq_MA(deseq_file=str(), label1=str(), label2=str(),
 #==============================================================================
 
 #==============================================================================
-def permutations_auc(distances=list(), trend=list(), permutations=1000):
+def permutations_auc(distances=None, trend=None, permutations=1000):
     '''Generates permutations of the distances and calculates AUC for each 
         permutation.
 
@@ -1314,7 +1276,7 @@ def permutations_auc(distances=list(), trend=list(), permutations=1000):
 #==============================================================================
 
 #==============================================================================
-def permutations_youden_rank(distances=list(), trend=list(), permutations=1000):
+def permutations_youden_rank(distances=None, trend=None, permutations=1000):
     '''Generates permutations of the distances and calculates AUC for each 
         permutation.
 
@@ -1345,7 +1307,7 @@ def permutations_youden_rank(distances=list(), trend=list(), permutations=1000):
 #==============================================================================
 
 #==============================================================================
-def pvalue_global_youden_rank(TFresults=list(), permutations=1000):
+def pvalue_global_youden_rank(TFresults=None, permutations=1000):
     '''Calculates a p-value based on a distribution of youden_ranks
 
     Parameters
@@ -1374,7 +1336,38 @@ def pvalue_global_youden_rank(TFresults=list(), permutations=1000):
 #==============================================================================
 
 #==============================================================================
-def padj_bonferroni(TFresults=list()):
+def pvalue_global_auc(TFresults=None,auc_index=None):
+    '''Calculates a p-value based on a distribution of youden_ranks
+
+    Parameters
+    ----------
+    distances : list or array
+        normalized distances 
+        
+    permutations : int
+        number of times to permute (default=1000)
+        
+    Returns
+    -------
+    es_permute : list 
+        list of AUC calculated for permutations 
+       
+    '''
+    auc_list = [x[auc_index] for x in TFresults]
+    ##significance calculator                                                                                                                                                            
+    mu = np.mean(auc_list)
+    sigma = np.std(auc_list)
+    for i in range(len(TFresults)):
+        actual_auc = TFresults[i][auc_index]
+        p = min(norm.cdf(actual_auc,mu,sigma), 
+                1-norm.cdf(actual_auc,mu,sigma))
+        TFresults[i].append(p)
+
+    return TFresults
+#==============================================================================
+
+#==============================================================================
+def padj_bonferroni(TFresults=None):
     '''This function iterates through TFEA results, removes TFs that returned 
         "no hits" and calculates a p-adj using the Bonferroni Correction for 
         each TF motif appending it to the given TFresults array
@@ -1401,8 +1394,7 @@ def padj_bonferroni(TFresults=list()):
 #==============================================================================
 
 #==============================================================================
-def motif_distance_bedtools_closest(ranked_center_file=str(), 
-                                    motif_path=str()):
+def motif_distance_bedtools_closest(ranked_center_file=None, motif_path=None):
     '''Calculates nearest motif hit from a bed file. TFEA provides this 
         function with a bed file containing the center of the inputted regions.
 
@@ -1430,8 +1422,8 @@ def motif_distance_bedtools_closest(ranked_center_file=str(),
 #==============================================================================
 
 #==============================================================================
-def fimo(tempdir=str(), motifdatabase=str(), bgfile=str(), motif=str(), 
-            fastafile=str()):
+def fimo(tempdir=None, motifdatabase=None, bgfile=None, motif=None, 
+            fastafile=None):
     '''This function runs fimo on a given fastafile for a single motif in a 
         provided motif database. The output is cut and sorted to convert into 
         a sorted bed file
@@ -1471,7 +1463,7 @@ def fimo(tempdir=str(), motifdatabase=str(), bgfile=str(), motif=str(),
 #==============================================================================
 
 #==============================================================================
-def meme2images(motifdatabase=str(), figuredir=str(), motif=str()):
+def meme2images(motifdatabase=None, figuredir=None, motif=None):
     '''This function creates meme logos for use in the output html
 
     Parameters
@@ -1494,7 +1486,7 @@ def meme2images(motifdatabase=str(), figuredir=str(), motif=str()):
 #==============================================================================
 
 #==============================================================================
-def fasta_markov(tempdir=str(), fastafile=str(), order='0'):
+def fasta_markov(tempdir=None, fastafile=None, order='0'):
     '''This function runs meme's fasta-get-markov function that generates a 
         background markov file (for use with fimo) from a fasta file.
     Parameters
@@ -1519,8 +1511,8 @@ def fasta_markov(tempdir=str(), fastafile=str(), order='0'):
 #==============================================================================
 
 #==============================================================================
-def fimo_parse(largewindow=float(), tempdir=str(), fimo_file=str(), 
-                motif_file=str()):
+def fimo_parse(largewindow=None, tempdir=None, fimo_file=None, 
+                motif_file=None):
     '''Parses a fimo output file and writes into a new file that is formatted
         in a way that can be parsed within existing TFEA functions
     Parameters
@@ -1570,7 +1562,7 @@ def fimo_parse(largewindow=float(), tempdir=str(), fimo_file=str(),
 #==============================================================================
 
 #==============================================================================
-def convert_sequence_to_array(sequence=str()):
+def convert_sequence_to_array(sequence=None):
     '''This function converts a DNA sequence (ACGT alphabet) to an array, 
     collapsing GCs to 1's and ATs to 0's
 
@@ -1604,7 +1596,7 @@ def convert_sequence_to_array(sequence=str()):
 #==============================================================================
 
 #==============================================================================
-def rank_deseqfile(deseq_file=str(), tempdir=str()):
+def rank_deseqfile(deseq_file=None, tempdir=None):
     '''This function parses a DE-seq output file and creates a new file with 
         the center of each region ranked by p-value 
     
@@ -1715,11 +1707,10 @@ def samtools_flagstat(args):
 #==============================================================================
 
 #==============================================================================
-def enrichment_plot(largewindow=float(),
-                    smallwindow=float(), figuredir=str(),
-                    cumscore=list(), sorted_distances=list(), logpval=list(), 
-                    updistancehist=list(), downdistancehist=list(), 
-                    gc_array=list(), motif_file=''):
+def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
+                    cumscore=None, sorted_distances=None, logpval=None, 
+                    updistancehist=None, downdistancehist=None, 
+                    gc_array=None, motif_file=None, dpi=None):
     '''This function plots the TFEA enrichment plot.
 
     Parameters
@@ -1769,17 +1760,26 @@ def enrichment_plot(largewindow=float(),
     -------
     None
     '''
+
+    from scipy.stats import gaussian_kde
     #Begin plotting section
+    len_cumscore = float(len(cumscore))
     plt.figure(figsize=(15.5,8))
-    xvals = range(1,len(cumscore)+1)
-    limits = [1,len(cumscore)]
-    gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
+    xvals = range(0, int(len_cumscore))
+    # xvals = np.arange(0,1,1.0/len_cumscore)
+    limits = [0,len_cumscore]
+
+    #With GC-Content
+    # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
+
+    #Without GC-Content
+    gs = gridspec.GridSpec(3, 1, height_ratios=[2, 2, 1])
 
     #This is the enrichment score plot (i.e. line plot)
     ax0 = plt.subplot(gs[0])
     ax0.plot(xvals,cumscore,color='green')
-    ax0.plot([0, len(cumscore)],[0, 1], '--', alpha=0.75)
-    ax0.set_title('Enrichment Plot: ',fontsize=14)
+    ax0.plot([0, len_cumscore],[0, 1], '--', alpha=0.75)
+    ax0.set_title(motif_file.split('.bed')[0] + ' Enrichment Plot',fontsize=14)
     ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
     ax0.tick_params(axis='y', which='both', left='on', right='off', 
                     labelleft='on')
@@ -1792,11 +1792,17 @@ def enrichment_plot(largewindow=float(),
 
     #This is the distance scatter plot right below the enrichment score 
     #plot
+    x = xvals
+    y = sorted_distances
+    # xy = np.vstack([x, y])
+    # z = gaussian_kde(xy)(xy)
+    # idx = np.argsort(z)
+    # x, y, z = [x[i] for i in idx], [y[i] for i in idx], [z[i] for i in idx]
     ax1 = plt.subplot(gs[1])
-    ax1.scatter(xvals,sorted_distances,edgecolor="",color="black",s=10,
-                alpha=0.25)
+    # ax1.scatter(x,y,edgecolor="", c=z, s=10, alpha=0.25)
+    ax1.scatter(x,y,edgecolor="", color="black", s=10, alpha=0.25)
     ax1.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
+                    labelleft='on') 
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
                     labelbottom='off')
     ax1.set_xlim(limits)
@@ -1807,7 +1813,7 @@ def enrichment_plot(largewindow=float(),
     ax1.set_ylabel('Distance (kb)', fontsize=10)
 
     #This is the rank metric plot
-    ax2 = plt.subplot(gs[3])
+    ax2 = plt.subplot(gs[2])
     ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
     ax2.tick_params(axis='y', which='both', left='on', right='off', 
                     labelleft='on')
@@ -1817,45 +1823,46 @@ def enrichment_plot(largewindow=float(),
     ax2.set_ylim([-ylim,ylim])
     ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
     ax2.set_xlim(limits)
-    ax2.set_xlabel('Rank in Ordered Dataset', fontsize=14)
+    ax2.set_xlabel('Rank', fontsize=14)#(n='+str(int(len_cumscore))+')', fontsize=14)
     ax2.set_ylabel('Rank Metric',fontsize=10)
-    try:
-        ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
-    except ValueError:
-        pass
-    try:
-        ax2.axvline(len(xvals) - len(downdistancehist), color='purple', 
-                    alpha=0.25)
-    except ValueError:
-        pass
+    # try:
+    #     ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
+    # except ValueError:
+    #     pass
+    # try:
+    #     ax2.axvline(len(xvals) - len(downdistancehist), color='purple', 
+    #                 alpha=0.25)
+    # except ValueError:
+    #     pass
 
     #This is the GC content plot
-    ax3 = plt.subplot(gs[2])
-    ax3.set_xlim(limits)
-    sns.heatmap(gc_array, cbar=False, xticklabels='auto',
-                yticklabels='auto')
+    # ax3 = plt.subplot(gs[2])
+    # ax3.set_xlim(limits)
+    # # plt.imshow(gc_array, cmap='hot', interpolation='nearest')
+    # sns.heatmap(gc_array, cbar=False, xticklabels='auto',
+    #             yticklabels='auto')
 
-    plt.yticks([0,int(largewindow),int(largewindow*2)],
-                [str(-int(largewindow)/1000.0),'0',\
-                str(int(largewindow)/1000.0)])
+    # plt.yticks([0,int(largewindow),int(largewindow*2)],
+    #             [str(-int(largewindow)/1000.0),'0',\
+    #             str(int(largewindow)/1000.0)])
 
-    ax3.tick_params(axis='y', which='both', left='on', right='off', 
-                    labelleft='on')
+    # ax3.tick_params(axis='y', which='both', left='on', right='off', 
+    #                 labelleft='on')
 
-    ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='off')
+    # ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
+    #                 labelbottom='off')
 
-    ax3.set_ylabel('GC content per kb',fontsize=10)
+    # ax3.set_ylabel('GC content per kb',fontsize=10)
 
     plt.savefig(os.path.join(figuredir, motif_file.split('.bed')[0] 
-                + '_enrichment_plot.png'),bbox_inches='tight')
+                + '_enrichment_plot.png'),dpi=dpi,bbox_inches='tight')
 
     plt.cla()
 #==============================================================================
 
 #==============================================================================
-def simulation_plot(figuredir=str(), simES=list(), actualES=float(),
-                        motif_file=str()):
+def simulation_plot(figuredir=None, simES=None, actualES=None,
+                        motif_file=None, dpi=None):
     '''This function plots the simulated 'enrichment' scores against the
         observed 'enrichment' score
 
@@ -1881,7 +1888,7 @@ def simulation_plot(figuredir=str(), simES=list(), actualES=float(),
     -------
     None
     '''
-    F = plt.figure(figsize=(7,6))
+    plt.figure(figsize=(7,6))
     ax2 = plt.subplot(111)
     maximum = max(simES)
     minimum = min(simES)
@@ -1904,20 +1911,18 @@ def simulation_plot(figuredir=str(), simES=list(), actualES=float(),
 
     plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
     ax2.set_ylabel('Number of Simulations',fontsize=14)
-    ax2.set_xlabel('Enrichment Score (ES)',fontsize=14)
+    ax2.set_xlabel('Area Under the Curve (AUC)',fontsize=14)
     plt.savefig(os.path.join(figuredir, motif_file.split('.bed')[0] 
-                + '_simulation_plot.png'),bbox_inches='tight')
+                + '_simulation_plot.png'),dpi=dpi, bbox_inches='tight')
 
     plt.cla()
 #==============================================================================
 
 #==============================================================================
-def distance_distribution_plot(largewindow=float(),
-                                smallwindow=float(), 
-                                figuredir=str(), 
-                                updistancehist=list(), 
-                                middledistancehist=list(),
-                                downdistancehist=list(), motif_file=str()):
+def distance_distribution_plot(largewindow=None, smallwindow=None, 
+                                figuredir=None, updistancehist=None, 
+                                middledistancehist=None, downdistancehist=None,
+                                motif_file=None):
     '''This function plots histograms of motif distances to region centers 
         based on ranking quartiles
 
@@ -2002,8 +2007,8 @@ def distance_distribution_plot(largewindow=float(),
 #==============================================================================
 
 #==============================================================================
-def moustache_plot(figuredir=str(),ESlist=list(),PADJlist=list(),
-                    sigx=list(),sigy=list()):
+def moustache_plot(figuredir=None, ESlist=None, PADJlist=None, sigx=None, 
+                    sigy=None):
 
     '''This function plots a moustache plot for all motifs. In the x-axis, 
         all observed 'enrichment' scores are plotted against the adjusted
@@ -2054,7 +2059,7 @@ def moustache_plot(figuredir=str(),ESlist=list(),PADJlist=list(),
 #==============================================================================
 
 #==============================================================================
-def pval_histogram_plot(figuredir=str(), PVALlist=list()):
+def pval_histogram_plot(figuredir=None, PVALlist=None):
     '''This function plots a histogram of p-values for all motifs
 
     Parameters
@@ -2090,8 +2095,8 @@ def pval_histogram_plot(figuredir=str(), PVALlist=list()):
 #==============================================================================
 
 #==============================================================================
-def MA_plot(figuredir=str(), label1=str(), label2=str(), POSlist=list(), 
-                ESlist=list(), MAx=list(), MAy=list()):
+def MA_plot(figuredir=None, label1=None, label2=None, POSlist=None, 
+            ESlist=None, MAx=None, MAy=None):
     '''This function plots an 'MA' plot with the 'enrichment' score on the 
         y-axis and the number of hits within the largewindow in the x-axis
 
@@ -2131,10 +2136,9 @@ def MA_plot(figuredir=str(), label1=str(), label2=str(), POSlist=list(),
     ax.scatter(POSlist,ESlist,color='black',edgecolor='')
     ax.scatter(MAx,MAy,color='red',edgecolor='')
     ax.set_title("TFEA MA-Plot",fontsize=14)
-    ax.set_ylabel("Normalized Enrichment Score (NES) " + label2 + "/" 
-                    + label1, fontsize=14)
+    ax.set_ylabel("Area Under the Curve (AUC)", fontsize=14)
 
-    ax.set_xlabel("Hits Log10",fontsize=14)
+    ax.set_xlabel("Motif Hits Log10",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='on')
 
@@ -2147,7 +2151,7 @@ def MA_plot(figuredir=str(), label1=str(), label2=str(), POSlist=list(),
 #==============================================================================
 
 #==============================================================================
-def create_text_output(outputdir=str(), TFresults=list()):
+def create_text_output(outputdir=None, TFresults=None):
     '''Creates a .txt output of results from TFEA
 
     Parameters
@@ -2172,9 +2176,7 @@ def create_text_output(outputdir=str(), TFresults=list()):
 #==============================================================================
 
 #==============================================================================
-def create_html_output(TFresults=list(), config_dict=dict(), 
-                        COMBINEtime=float(), COUNTtime=float(), 
-                        DESEQtime=float(), CALCULATEtime=float()):
+def create_summary_html():
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -2252,23 +2254,6 @@ def create_html_output(TFresults=list(), config_dict=dict(),
     -------
     None
     '''
-    #Using a config_dict
-    # outputdir = config_dict['OUTPUTDIR'] 
-    # beds = config_dict['BEDS']
-    # label1 = config_dict['LABEL1']
-    # label2 = config_dict['LABEL2']
-    # bam1 = config_dict['BAM1']
-    # bam2 = config_dict['BAM2']
-    # singlemotif = config_dict['SINGLEMOTIF']
-    # motif_hits = config_dict['MOTIF_HITS']
-    # output = config_dict['OUTPUT']
-    # padj_cutoff = config_dict['PADJCUTOFF']
-    # plot = config_dict['PLOT']
-    # combine = config_dict['COMBINE']
-    # count = config_dict['COUNT']
-    # deseq = config_dict['DESEQ']
-    # calculate = config_dict['CALCULATE']
-    
     #Using a config file
     import config
     outputdir = config.OUTPUTDIR
@@ -2281,14 +2266,18 @@ def create_html_output(TFresults=list(), config_dict=dict(),
     motif_hits = config.MOTIF_HITS
     output = config.OUTPUT
     padj_cutoff = config.PADJCUTOFF
+    smallwindow = config.SMALLWINDOW
+    largewindow = config.LARGEWINDOW
     plot = config.PLOT
     combine = config.COMBINE
     count = config.COUNT
     deseq = config.DESEQ
     calculate = config.CALCULATE
-    
-    #Creates results.txt which is a tab-delimited text file with the results    
-    TFresults = sorted(TFresults, key=lambda x: x[5])
+    fimo = config.FIMO
+    temp = config.TEMP
+    logos = config.LOGOS
+    motifdatabase = config.MOTIFDATABASE
+    genomefasta = config.GENOMEFASTA
 
     #summary.html contains all user-defined variables, and also information 
     #about module used
@@ -2300,15 +2289,116 @@ def create_html_output(TFresults=list(), config_dict=dict(),
             </head>
             <body>
                 <h1>Variables Used</h1>
+                <p>OUTPUT = """+output+"""
                 <p>BEDS = """+str(beds)+"""</p>
                 <p>LABEL1 = """+label1+"""</p>
                 <p>LABEL2 = """+label2+"""</p>
                 <p>BAM1 = """+str(bam1)+"""</p>
                 <p>BAM2 = """+str(bam2)+"""</p>
+                <p>COMBINE = """+str(combine)+"""</p>
+                <p>COUNT = """+str(count)+"""</p>
+                <p>DESEQ = """+str(deseq)+"""</p>
+                <p>CALCULATE = """+str(calculate)+"""</p>
                 <p>SINGLEMOTIF = """+str(singlemotif)+"""</p>
+                <p>PLOT = """+str(plot)+"""</p>
+                <p>FIMO = """+str(fimo)+"""</p>
+                <p>TEMP = """+str(temp)+"""</p>
+                <p>PADJCUTOFF = """+str(padj_cutoff)+"""</p>
+                <p>SMALLWINDOW = """+str(smallwindow)+"""</p>
+                <p>LARGEWINDOW = """+str(largewindow)+"""</p>
                 <p>MOTIF_HITS = """+str(motif_hits)+"""</p>
-                <p>OUTPUT = """+output+"""
+                <p>LOGOS = """+str(logos)+"""</p>
+                <p>MOTIFDATABASE = """+str(motifdatabase)+"""</p>
+                <p>GENOMEFASTA = """+str(genomefasta)+"""</p>
             </body>""")
+    outfile.close()
+#==============================================================================
+
+#==============================================================================
+def create_motif_result_html(TFresults=None):
+    '''Creates the main html output and also individual html outputs for each
+        motif
+    
+    Parameters
+    ----------
+    outputdir : string
+        the full path to the output directory created by TFEA
+
+    beds : list or array
+        a list of full paths to bed files to be considered as regions of 
+        interest
+
+    label1 : string
+        an informative label describing sample corresponding to condition1
+
+    label2 : string
+        an informative label describing sample corresponding to condition2
+
+    bam1 : list or array
+        a list of full paths to bam files corresponding to condition1
+
+    bam2 : list or array
+        a list of full paths to bam files corresponding to condition2
+
+    singlemotif : boolean or string
+        either False if all motifs should be considered in TFEA or the name of
+        a specific motif to be analyzed
+
+    motif_hits : string
+        the full path to a directory containing motif hits across the genome
+
+    output : string
+        the full path to a user-specified output directory. TFEA will create
+        a new folder within this directory - this is called outputdir
+
+    padj_cutoff : float
+        the cutoff value for determining significance
+
+    plot : boolean
+        a switch that controls whether all motifs are plotted or just 
+        significant ones defined by the p-adj cutoff
+
+    combine : boolean
+        a switch that determines whether bed files within the beds variable
+        get combined and merged using bedtools
+
+    count : boolean
+        a switch that controls whether reads are counted over the regions of
+        interest
+
+    deseq : boolean
+        a switch that controls whether DE-Seq is performed on the inputted
+        regions that have been counted over
+
+    calculate : boolean
+        a switch that determines whether the TFEA calculation is performed
+
+    TFresults : list or array
+        a list of lists contining 'enrichment' scores, normalized 'enrichment' 
+        scores, p-value, p-adj, and number of hits for each individual motif
+
+    COMBINEtime : float
+        the time it took to combine and merge the bed files using bedtools
+
+    COUNTtime : float
+        the time it took to count reads over regions of interest
+
+    DESEQtime : float
+        the time it took to perform DE-Seq using the counts file
+
+    CALCULATEtime : float
+        the time it took to perform TFEA
+
+    Returns
+    -------
+    None
+    '''
+    #Using a config file
+    import config
+    outputdir = config.OUTPUTDIR
+    padj_cutoff = config.PADJCUTOFF
+    singlemotif = config.SINGLEMOTIF
+    plot = config.PLOT
 
     #For each TF motif with an PADJ value less than a cutoff, an html file is 
     #created to be used in results.html
@@ -2316,28 +2406,28 @@ def create_html_output(TFresults=list(), config_dict=dict(),
                     if x[2] > 0 and (plot or x[-1] < padj_cutoff)]
     negativelist = [x[0] for x in TFresults 
                     if x[2] < 0 and (plot or x[-1] < padj_cutoff)]
+
     for i in range(len(TFresults)):
         MOTIF_FILE,ES,NES,PVAL,POS,PADJ = TFresults[i] 
-        
-        if NES > 0:
-            try:
-                NEXT_MOTIF = positivelist[positivelist.index(MOTIF_FILE)+1]
-            except IndexError:
-                NEXT_MOTIF = positivelist[0]
-            try:
-                PREV_MOTIF = positivelist[positivelist.index(MOTIF_FILE)-1]
-            except IndexError:
-                PREV_MOTIF = positivelist[len(positivelist)]
-        else:
-            try:
-                NEXT_MOTIF = negativelist[negativelist.index(MOTIF_FILE)+1]
-            except IndexError:
-                NEXT_MOTIF = negativelist[0]
-            try:
-                PREV_MOTIF = negativelist[negativelist.index(MOTIF_FILE)-1]
-            except IndexError:
-                PREV_MOTIF = negativelist[len(negativelist)]
-        if plot or PADJ < padj_cutoff:
+        if plot or PADJ < padj_cutoff or singlemotif:
+            if ES > 0:
+                try:
+                    NEXT_MOTIF = positivelist[positivelist.index(MOTIF_FILE)+1]
+                except IndexError:
+                    NEXT_MOTIF = positivelist[0]
+                try:
+                    PREV_MOTIF = positivelist[positivelist.index(MOTIF_FILE)-1]
+                except IndexError:
+                    PREV_MOTIF = positivelist[len(positivelist)]
+            else:
+                try:
+                    NEXT_MOTIF = negativelist[negativelist.index(MOTIF_FILE)+1]
+                except IndexError:
+                    NEXT_MOTIF = negativelist[0]
+                try:
+                    PREV_MOTIF = negativelist[negativelist.index(MOTIF_FILE)-1]
+                except IndexError:
+                    PREV_MOTIF = negativelist[len(negativelist)]
             outfile = open(os.path.join(outputdir, 'plots', MOTIF_FILE 
                             + '.results.html'),'w')
             outfile.write("""<!DOCTYPE html>
@@ -2443,12 +2533,105 @@ def create_html_output(TFresults=list(), config_dict=dict(),
     </html>""")
             outfile.close()
             PREV_MOTIF = MOTIF_FILE
+#==============================================================================
+
+#==============================================================================
+def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None, 
+                                DESEQtime=None, CALCULATEtime=None):
+    '''Creates the main html output and also individual html outputs for each
+        motif
+    
+    Parameters
+    ----------
+    outputdir : string
+        the full path to the output directory created by TFEA
+
+    beds : list or array
+        a list of full paths to bed files to be considered as regions of 
+        interest
+
+    label1 : string
+        an informative label describing sample corresponding to condition1
+
+    label2 : string
+        an informative label describing sample corresponding to condition2
+
+    bam1 : list or array
+        a list of full paths to bam files corresponding to condition1
+
+    bam2 : list or array
+        a list of full paths to bam files corresponding to condition2
+
+    singlemotif : boolean or string
+        either False if all motifs should be considered in TFEA or the name of
+        a specific motif to be analyzed
+
+    motif_hits : string
+        the full path to a directory containing motif hits across the genome
+
+    output : string
+        the full path to a user-specified output directory. TFEA will create
+        a new folder within this directory - this is called outputdir
+
+    padj_cutoff : float
+        the cutoff value for determining significance
+
+    plot : boolean
+        a switch that controls whether all motifs are plotted or just 
+        significant ones defined by the p-adj cutoff
+
+    combine : boolean
+        a switch that determines whether bed files within the beds variable
+        get combined and merged using bedtools
+
+    count : boolean
+        a switch that controls whether reads are counted over the regions of
+        interest
+
+    deseq : boolean
+        a switch that controls whether DE-Seq is performed on the inputted
+        regions that have been counted over
+
+    calculate : boolean
+        a switch that determines whether the TFEA calculation is performed
+
+    TFresults : list or array
+        a list of lists contining 'enrichment' scores, normalized 'enrichment' 
+        scores, p-value, p-adj, and number of hits for each individual motif
+
+    COMBINEtime : float
+        the time it took to combine and merge the bed files using bedtools
+
+    COUNTtime : float
+        the time it took to count reads over regions of interest
+
+    DESEQtime : float
+        the time it took to perform DE-Seq using the counts file
+
+    CALCULATEtime : float
+        the time it took to perform TFEA
+
+    Returns
+    -------
+    None
+    '''
+    #Using a config file
+    import config
+    outputdir = config.OUTPUTDIR
+    label1 = config.LABEL1
+    label2 = config.LABEL2
+    padj_cutoff = config.PADJCUTOFF
+    plot = config.PLOT
+    combine = config.COMBINE
+    count = config.COUNT
+    deseq = config.DESEQ
+    calculate = config.CALCULATE
 
     outfile = open(os.path.join(outputdir, 'results.html'),'w')
     outfile.write("""<!DOCTYPE html>
     <html>
     <head>
-    <title>TFEA Results</title>
+    <title>TFEA Results """ + label1 + """ vs. """ + label2 +"""</title>
     <style>
         table {
             font-family: arial, sans-serif;
@@ -2480,8 +2663,7 @@ def create_html_output(TFresults=list(), config_dict=dict(),
     </head>
     <body style="width:1300px; margin:0 auto;">
 
-        <h1>TFEA Results """ +label1+ """ vs. """ +label2
-            +"""</h1>
+        <h1>TFEA Results """ + label1 + """ vs. """ + label2 + """</h1>
         <div class="row">
             <div style="float: left; width: 45%">
                 <img src="./plots/TFEA_NES_MA_Plot.png" alt="NES MA-Plot">
@@ -2666,7 +2848,7 @@ def create_html_output(TFresults=list(), config_dict=dict(),
 #==============================================================================
 
 #==============================================================================
-def get_TFresults_from_txt(results_file=str()):
+def get_TFresults_from_txt(results_file=None):
     '''This function parses a results_file into a TFresults array
 
     Parameters
@@ -2693,92 +2875,3 @@ def get_TFresults_from_txt(results_file=str()):
 #==============================================================================
 
 #==============================================================================
-def create_single_motif_html(outputdir=str(), results=list()):
-    MOTIF_FILE, ES, NES, PVAL, POS = results
-    outfile = open(os.path.join(outputdir, MOTIF_FILE + '.results.html'),'w')
-    outfile.write("""<!DOCTYPE html>
-        <html>
-        <head>
-        <title>"""+MOTIF_FILE+""" Results</title>
-        <style>
-        table {
-            font-family: arial, sans-serif;
-            border-collapse: collapse;
-            width: 100%;
-        }
-
-        td, th {
-            border: 1px solid #dddddd;
-            text-align: left;
-            padding: 8px;
-        }
-
-        tr:nth-child(even) {
-            background-color: #dddddd;
-        }
-        </style>
-        </head>
-        <body style="width:1300px; margin:0 auto;">
-            <h1>"""+MOTIF_FILE+""" Results</h1>
-        <div>
-            <div style="float: middle; width: 1300px; overflow:scroll; \
-                padding-bottom:25px; padding-top:25px">
-                <table> 
-                    <tr>
-                        <th>TF Motif</th>
-                        <th>ES</th> 
-                        <th>NES</th>
-                        <th>P-value</th>
-                        <th>Total Hits</th>
-                       
-                    </tr>
-                    <tr>
-                        <td>"""+MOTIF_FILE+"""</td>
-                        <td>"""+str("%.2f" % ES)+"""</td>
-                        <td>"""+str("%.2f" % NES)+"""</td>
-                        <td>"""+str("%.4g" % PVAL)+"""</td>
-                        <td>"""+str(POS)+"""</td>
-                       
-                    </tr>
-                </table>
-            </div>
-        </div>
-        <div>
-            <div style="float: left; width 1250px; padding-bottom:50px; \
-                padding-top:50px">
-                <img src="./plots/"""+MOTIF_FILE+"""_enrichment_plot.png" \
-                    alt="Enrichment Plot">
-            </div>
-        </div>
-        <!--<div>
-            <div style="float: left; width 1250px; padding-bottom:50px; \
-                padding-top:50px">
-                <img src="./plots/"""+MOTIF_FILE+"""_meta_eRNA.png" \
-                    alt="Meta Plot">
-            </div>
-        </div>-->
-        <div>
-            <div style="float: right; width: 600px; overflow: scroll">
-                <p>Forward:</p>
-                <img src="./plots/"""+MOTIF_FILE+"""_direct.png" \
-                    alt="Forward Logo">
-                <p></p>
-                <p>Reverse:</p>
-                <img src="./plots/"""+MOTIF_FILE+"""_revcomp.png" \
-                    alt="Reverse Logo">
-            </div>
-            <div style="float:left; width: 600px overflow:scroll">
-                <img src="./plots/"""+MOTIF_FILE+"""_simulation_plot.png" \
-                    alt="Simulation Plot">
-            </div>
-        </div>
-        
-        </body>
-        </html>""")
-    outfile.close()
-#==============================================================================
-
-#==============================================================================
-
-if __name__ == "__main__":
-    getfasta(bedfile='afile', genomefasta='afile', tempdir='adir')
