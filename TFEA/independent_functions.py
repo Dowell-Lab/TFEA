@@ -2272,7 +2272,8 @@ def create_summary_html():
     #Using a config file
     import config
     outputdir = config.OUTPUTDIR
-    beds = config.BEDS
+    bed1 = config.BED1
+    bed2 = config.BED2
     label1 = config.LABEL1
     label2 = config.LABEL2
     bam1 = config.BAM1
@@ -2305,7 +2306,8 @@ def create_summary_html():
             <body>
                 <h1>Variables Used</h1>
                 <p>OUTPUT = """+output+"""
-                <p>BEDS = """+str(beds)+"""</p>
+                <p>BED1 = """+str(bed1)+"""</p>
+                <p>BED2 = """+str(bed2)+"""</p>
                 <p>LABEL1 = """+label1+"""</p>
                 <p>LABEL2 = """+label2+"""</p>
                 <p>BAM1 = """+str(bam1)+"""</p>
