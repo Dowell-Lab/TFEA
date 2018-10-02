@@ -202,7 +202,19 @@ def verify_config_file():
                             Determines where TFEA stores output.')
 
     try:
-        if type(config.BEDS) != list:
+        if type(config.BED1) != list:
+            raise TypeError('BED variable must be a list. Input a list of \
+                                regions (bed-format) to perform analysis \
+                                over. If merging not desired, simply input a \
+                                single BED file within a python list.')
+    except NameError:
+        raise NameError('BED variable not found in config.ini file. Input a \
+                            list of regions (bed-format) to perform analysis \
+                            over. If merging not desired, simply input a \
+                            single BED file within a python list.')
+    
+    try:
+        if type(config.BED2) != list:
             raise TypeError('BED variable must be a list. Input a list of \
                                 regions (bed-format) to perform analysis \
                                 over. If merging not desired, simply input a \
@@ -1760,8 +1772,9 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
     -------
     None
     '''
-
+    import config
     from scipy.stats import gaussian_kde
+    dpi = config.DPI
     #Begin plotting section
     len_cumscore = float(len(cumscore))
     plt.figure(figsize=(15.5,8))
@@ -2036,13 +2049,15 @@ def moustache_plot(figuredir=None, ESlist=None, PADJlist=None, sigx=None,
     -------
     None
     '''
+    import config
+    dpi = config.DPI
     plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     ax.scatter(ESlist,PADJlist,color='black',edgecolor='')
     ax.scatter(sigx,sigy,color='red',edgecolor='')
     ax.set_title("TFEA Moustache Plot",fontsize=14)
-    ax.set_xlabel("Enrichment Score (ES)",fontsize=14)
-    ax.set_ylabel("Adjusted p-value (PADJ)",fontsize=14)
+    ax.set_xlabel("Area Under the Curve (AUC)",fontsize=14)
+    ax.set_ylabel("P-value (PADJ)",fontsize=14)
     xlimit = math.fabs(max(ESlist,key=abs))
     ylimit = math.fabs(max(PADJlist,key=abs))
     ax.set_xlim([-xlimit,xlimit])
@@ -2053,8 +2068,8 @@ def moustache_plot(figuredir=None, ESlist=None, PADJlist=None, sigx=None,
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
                     labelbottom='on')
 
-    plt.savefig(os.path.join(figuredir, 'TFEA_Results_Moustache_Plot.png'),
-                    bbox_inches='tight')
+    plt.savefig(os.path.join(figuredir, 'TFEA_Results_Moustache_Plot.png'), 
+                    dpi=dpi, bbox_inches='tight')
     plt.cla()
 #==============================================================================
 

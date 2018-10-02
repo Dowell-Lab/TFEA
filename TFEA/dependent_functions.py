@@ -576,7 +576,7 @@ def plot_global_graphs(padj_cutoff=None, label1=None, label2=None,
 
     #Creates a moustache plot of the global PADJs vs. ESs                                                                                                                                                                                       
     independent_functions.moustache_plot(figuredir=figuredir, ESlist=ESlist,
-                                            PADJlist=PADJlist, sigx=sigx, 
+                                            PADJlist=PVALlist, sigx=sigx, 
                                             sigy=sigy)
 
     #Creates a histogram of p-values                                                                                                                                                                                                            

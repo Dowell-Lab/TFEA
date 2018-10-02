@@ -180,15 +180,15 @@ import config
 #merges them via bedtools.
 COMBINEtime = time.time()
 if config.COMBINE:
-    # bedfile = independent_functions.merge_bed(beds=config.BEDS, 
+    # bedfile = independent_functions.merge_bed(beds=config.BED1+config.BED2, 
     #                                             tempdir=tempdir)
-    # bedfile = independent_functions.tfit_clean_merge(beds=config.BEDS, 
-    #                                             tempdir=tempdir)
-    bedfile = independent_functions.intersect_merge_bed(bed1=config.BEDS[0:2],
-                                                        bed2=config.BEDS[2:4], 
+    # bedfile = independent_functions.tfit_clean_merge(
+    #                           beds=config.BED1+config.BED2, tempdir=tempdir)
+    bedfile = independent_functions.intersect_merge_bed(bed1=config.BED1,
+                                                        bed2=config.BED2, 
                                                         tempdir=tempdir)
 else:
-    bedfile = config.BEDS[0]
+    bedfile = config.BED1[0]
 COMBINEtime = time.time()-COMBINEtime 
 
 #This module counts reads from all Bam files in BAM1 and BAM2 and creates 
