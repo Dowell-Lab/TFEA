@@ -896,17 +896,23 @@ def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
     combined_input_merged_bed = os.path.join(tempdir, 
                                                 "combined_input.merge.bed")
 
-    #Build command to perform bedtools intersect on condition1 beds
-    intersect1 = ("bedtools intersect -a " + bed1[0] + " -b " + bed1[1])
-    for bedfile in bed1[2:]:
-        intersect1 = (intersect1 + " | bedtools intersect -a stdin -b " 
-                    + bedfile)
+    if len(bed1) > 1:
+        #Build command to perform bedtools intersect on condition1 beds
+        intersect1 = ("bedtools intersect -a " + bed1[0] + " -b " + bed1[1])
+        for bedfile in bed1[2:]:
+            intersect1 = (intersect1 + " | bedtools intersect -a stdin -b " 
+                        + bedfile)
+    else:
+        intersect1 = "cat " + bed1[0]
 
-    #Build command to perform bedtools intersect on condition2 beds
-    intersect2 = ("bedtools intersect -a " + bed2[0] + " -b " + bed2[1])
-    for bedfile in bed2[2:]:
-        intersect2 = (intersect2 + " | bedtools intersect -a stdin -b " 
-                    + bedfile)
+    if len(bed2) > 1:
+        #Build command to perform bedtools intersect on condition2 beds
+        intersect2 = ("bedtools intersect -a " + bed2[0] + " -b " + bed2[1])
+        for bedfile in bed2[2:]:
+            intersect2 = (intersect2 + " | bedtools intersect -a stdin -b " 
+                        + bedfile)
+    else:
+        intersect2 = "cat " + bed2[0]
 
     #Build full command which pipes both intersect commands into cat, then 
     # sorts and merges this resulting bed file
@@ -2021,7 +2027,7 @@ def distance_distribution_plot(largewindow=None, smallwindow=None,
 
 #==============================================================================
 def moustache_plot(figuredir=None, ESlist=None, PADJlist=None, sigx=None, 
-                    sigy=None):
+                    sigy=None, dpi=None):
 
     '''This function plots a moustache plot for all motifs. In the x-axis, 
         all observed 'enrichment' scores are plotted against the adjusted
@@ -2050,7 +2056,13 @@ def moustache_plot(figuredir=None, ESlist=None, PADJlist=None, sigx=None,
     None
     '''
     import config
+    import math
     dpi = config.DPI
+    PADJlist = [-math.log(x,10) if x > 0 else 0 for x in PADJlist]
+    sigy = [-math.log(x,10) if x > 0 else 0 for x in sigy]
+    max_val = max(PADJlist)
+    PADJlist = [x if x != 0 else max_val for x in PADJlist]
+    sigy = [x if x != 0 else max_val for x in sigy]
     plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     ax.scatter(ESlist,PADJlist,color='black',edgecolor='')
@@ -2892,3 +2904,16 @@ def get_TFresults_from_txt(results_file=None):
 #==============================================================================
 
 #==============================================================================
+if __name__ == "__main__":
+    results_file = "/Users/jonathanrubin/Google_Drive/Colorado University/Jonathan/TFEA_outputs/IRIS/new_outputs/TFEA_30_IFN-30_IFN_CA_0/results.txt"
+    TFresults = get_TFresults_from_txt(results_file=results_file)
+    ESlist = [float(x[1]) for x in TFresults]
+    PADJlist = [float(x[-3]) for x in TFresults]
+    padj_cutoff = 0.001
+    sigx = [x for x, p in zip(ESlist, PADJlist) if p < padj_cutoff]
+    sigy = [p for x, p in zip(ESlist, PADJlist) if p < padj_cutoff]
+    figuredir = "/Users/jonathanrubin/Google_Drive/Colorado University/Jonathan/TFEA_outputs/IRIS/new_outputs/TFEA_30_IFN-30_IFN_CA_0/plots/"
+    import config
+    config.DPI = 1200
+    moustache_plot(figuredir=figuredir, ESlist=ESlist, PADJlist=PADJlist, 
+                    sigx=sigx, sigy=sigy)

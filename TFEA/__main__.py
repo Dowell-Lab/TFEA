@@ -188,7 +188,8 @@ if config.COMBINE:
                                                         bed2=config.BED2, 
                                                         tempdir=tempdir)
 else:
-    bedfile = config.BED1[0]
+    bedfile = config.BED1 + config.BED2
+    bedfile = bedfile[0]
 COMBINEtime = time.time()-COMBINEtime 
 
 #This module counts reads from all Bam files in BAM1 and BAM2 and creates 
