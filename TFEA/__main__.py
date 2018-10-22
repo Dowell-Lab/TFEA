@@ -5,20 +5,21 @@
     this package
 '''
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo Sigauke'
-__credits__ = ['Jonathan D. Rubin', 'Rutendo Sigauke', 'Jacob Stanley',
-                'Robin Dowell']
+__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
+__credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
+                'Robin D. Dowell']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 __version__ = '3.0'
 #==============================================================================
-#MAIN IMPORTS
+#PRIMARY IMPORTS
 #==============================================================================
 import os
 import sys
 import time
 import argparse
 import configparser
+import preconfig_functions
 #==============================================================================
 #ARGUMENT PARSING
 #==============================================================================
@@ -53,80 +54,6 @@ config_object = configparser.ConfigParser(
                             interpolation=configparser.ExtendedInterpolation())
 config_object.read(configfile)
 #==============================================================================
-#Functions
-#==============================================================================
-def make_out_directories(dirs=False, config_object=None):
-    '''Creates output directories in a user-specified location where all TFEA 
-        outputs will go.
-
-    Parameters
-    ----------
-    dirs : boolean
-        determines whether output folders will be created or not (default: 
-        False)
-        
-    config : dict
-        a configparser object that contains variables within the config file
-
-    Returns
-    -------
-    output : string 
-        full path to the parent output directory
-
-    tempdir : string
-        full path to the temporary directory where files are stored
-
-    figuredir : string
-        full path to the directory containing figures and plots
-        
-    e_and_o : string
-        full path to the directory that stores stdout and stderr files
-    '''
-    #Output directory
-    output = config_object['DATA']['OUTPUT'].strip("'")
-    label1 = config_object['DATA']['LABEL1'].strip("'")
-    label2 = config_object['DATA']['LABEL2'].strip("'")
-    outfoldername = 'TFEA_'+label1+'-'+label2+'_'
-    if dirs:
-        if not os.path.isdir(os.path.join(output, outfoldername + '0')):
-            output = os.path.join(output, outfoldername + '0')
-            os.makedirs(output)
-        else:
-            outputfolders = list()
-            for folder in os.listdir(output):
-                if outfoldername in folder:
-                    outputfolders.append(int(folder.split('_')[-1]))
-            output = os.path.join(output, outfoldername + str(max(outputfolders)+1))
-            os.makedirs(output)
-    else:
-        outputfolders = list()
-        for folder in os.listdir(output):
-            if outfoldername in folder:
-                outputfolders.append(int(folder.split('_')[-1]))
-        output = os.path.join(output, outfoldername + str(max(outputfolders)))
-
-
-    #Temporary files will go in this directory
-    tempdir = os.path.join(output, 'temp_files')
-    if dirs:
-        if not os.path.isdir(tempdir):
-            os.makedirs(tempdir)
-
-    #Error and out files will go in this directory
-    e_and_o = os.path.join(output, 'e_and_o')
-    if dirs:
-        if not os.path.isdir(e_and_o):
-            os.makedirs(e_and_o)
-
-
-    #Directory where plots used in html file will be stored.
-    figuredir = os.path.join(output, 'plots')
-    if dirs:
-        if not os.path.isdir(figuredir):
-            os.makedirs(figuredir)
-
-    return output,tempdir,figuredir,e_and_o
-#==============================================================================
 #CREATING DIRECTORIES
 #==============================================================================
 #If user specifies the --sbatch flag, then we first create the output 
@@ -134,13 +61,16 @@ def make_out_directories(dirs=False, config_object=None):
 #to the --sbatch flag so we know not to remake output directories. If --sbatch 
 #flag not specified, simply make output directories and continue.
 if sbatch == False:
-    output, tempdir, figuredir, e_and_o = make_out_directories(dirs=True, 
+    output, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
+                                                dirs=True, 
                                                 config_object=config_object)
 elif str(sbatch) == 'SUBMITTED':
-    output, tempdir, figuredir, e_and_o = make_out_directories(dirs=False, 
+    output, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
+                                                dirs=False, 
                                                 config_object=config_object)
 else:
-    output, tempdir, figuredir, e_and_o = make_out_directories(dirs=True, 
+    output, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
+                                                dirs=True, 
                                                 config_object=config_object)
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
@@ -152,30 +82,28 @@ else:
 
     sys.exit(("TFEA has been submitted using an sbatch script, use qstat to "
             "check its progress."))
-#==============================================================================
-#SECONDARY IMPORTS
-#==============================================================================
-from multiprocessing import Pool
-import multiprocessing as mp
-import independent_functions
-import dependent_functions
-#==============================================================================
-#MAIN SCRIPT
-#==============================================================================
+
 #Run the config_parser script which will create variables for all folders and 
 #paths to use throughout TFEA
-independent_functions.parse_config(srcdirectory=srcdirectory, 
+preconfig_functions.parse_config(srcdirectory=srcdirectory, 
                                     config_object=config_object,
                                     output=output,tempdir=tempdir,
                                     figuredir=figuredir)
 
 #Verify config file to make sure user has inputted all necessary variables
 # config_dict = independent_functions.verify_config_object(config=config)
-independent_functions.verify_config_file()
-
-#Import config file once it's created
+preconfig_functions.verify_config_file()
+#==============================================================================
+#SECONDARY IMPORTS
+#==============================================================================
+from multiprocessing import Pool
+import multiprocessing as mp
 import config
-
+import independent_functions
+import dependent_functions
+#==============================================================================
+#MAIN SCRIPT
+#==============================================================================
 #This module takes the input list of BED files, concatenates them, and then 
 #merges them via bedtools.
 COMBINEtime = time.time()
@@ -204,7 +132,9 @@ if config.COUNT:
                                                     label1=config.LABEL1, 
                                                     label2=config.LABEL2)
     print "done"
-else:
+elif config.DESEQ:
+    #If you don't want to perform multibamcov but still want to perform
+    # DE-Seq, user must provide a count_file
     count_file = config.COUNT_FILE
 COUNTtime = time.time()-COUNTtime
 
@@ -225,7 +155,9 @@ if config.DESEQ:
                                                 deseq_file=deseq_file,
                                                 tempdir=tempdir)
     print "done"
-else:
+elif config.CALCULATE:
+    #If user does not want to perform DE-Seq but still wants TFEA to caluclate
+    # TF enrichment, user must provide a ranked_center_file
     ranked_center_file = config.RANKED_CENTER_FILE
 DESEQtime = time.time()-DESEQtime
 
@@ -267,7 +199,11 @@ if config.CALCULATE:
 #This option can be turned on/off within the config file.
 if not config.TEMP:
     print "Removing temporary bed files..."
-    os.system("rm " + os.path.join(tempdir, '*.sorted.distance.bed'))
-    os.system("rm " + os.path.join(tempdir, '*.fa'))
+    files_to_keep = ['count_file.bed', 'DESeq.R', 'DESeq.res.txt', 
+                    'DESeq.Rout', 'ranked_file.bed', 'markov_background.txt', 
+                    'ranked_file.center.bed', 'ranked_file.center.sorted.bed']
+    for file1 in os.listdir(tempdir):
+        if file1 not in files_to_keep:
+             os.remove(os.path.join(tempdir, file1))
 
 print "done"
