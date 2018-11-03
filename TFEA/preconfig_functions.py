@@ -11,6 +11,7 @@ __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 #==============================================================================
 import os
+import shutil
 #==============================================================================
 #Functions used before 'import config' statement
 #==============================================================================
@@ -44,25 +45,14 @@ def make_out_directories(dirs=False, config_object=None):
     #Output directory
     output = config_object['DATA']['OUTPUT'].strip("'")
     name = config_object['DATA']['NAME'].strip("'")
-    outfoldername = 'TFEA_'+name+'_'
+    outfoldername = name
+    output = os.path.join(output, outfoldername)
     if dirs:
-        if not os.path.isdir(os.path.join(output, outfoldername + '0')):
-            output = os.path.join(output, outfoldername + '0')
+        if not os.path.isdir(output):
             os.makedirs(output)
         else:
-            outputfolders = list()
-            for folder in os.listdir(output):
-                if outfoldername in folder:
-                    outputfolders.append(int(folder.split('_')[-1]))
-            output = os.path.join(output, outfoldername + str(max(outputfolders)+1))
+            shutil.rmtree(output)
             os.makedirs(output)
-    else:
-        outputfolders = list()
-        for folder in os.listdir(output):
-            if outfoldername in folder:
-                outputfolders.append(int(folder.split('_')[-1]))
-        output = os.path.join(output, outfoldername + str(max(outputfolders)))
-
 
     #Temporary files will go in this directory
     tempdir = os.path.join(output, 'temp_files')
@@ -173,10 +163,10 @@ def verify_config_file():
         raise NameError('CALCULATE variable not found in config.ini file.')
 
     try:
-        if type(config.POOL) != bool:
-            raise TypeError('POOL variable must be a boolean.')
+        if type(config.HOMER) != bool:
+            raise TypeError('HOMER variable must be a boolean.')
     except NameError:
-        raise NameError('POOL variable not found in config.ini file.')
+        raise NameError('HOMER variable not found in config.ini file.')
 
     try:
         if type(config.SINGLEMOTIF) != bool and type(config.SINGLEMOTIF) != str:
@@ -262,10 +252,17 @@ def verify_config_file():
 
     if config.FIMO != True:
         try:
-            if type(config.MOTIF_HITS) != str:
-                raise TypeError('MOTIF_HITS variable must be a string.')
+            if type(config.MOTIF_GENOMEWIDE_HITS) != str:
+                raise TypeError('MOTIF_GENOMEWIDE_HITS variable must be a string.')
         except NameError:
-            raise NameError('MOTIF_HITS variable not found in config.ini file.')
+            raise NameError('MOTIF_GENOMEWIDE_HITS variable not found in config.ini file.')
+
+    if config.HOMER != True:
+        try:
+            if type(config.HOMER_MOTIF_FILE) != str:
+                raise TypeError('HOMER_MOTIF_FILE variable must be a string.')
+        except NameError:
+            raise NameError('HOMER_MOTIF_FILE variable not found in config.ini file.')
 
     try:
         if type(config.GENOMEFASTA) != str:

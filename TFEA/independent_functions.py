@@ -16,6 +16,7 @@ import os
 import math
 import datetime
 import subprocess
+import traceback
 import matplotlib.pyplot as plt
 # import seaborn as sns
 import matplotlib.cm as cm
@@ -114,7 +115,7 @@ def tfit_clean_merge(beds=None, tempdir=None, size_cut=500):
         command = command + " | bedtools intersect -a stdin -b " + bedfile
     command = (command + " > " 
                 + os.path.join(tempdir, "small_regions.intersect.bed"))
-    print command
+    # print command
     os.system(command)
 
     #Expand the intersected regions so they are size_cut in length
@@ -734,8 +735,8 @@ def get_motif_names(motifdatabase=None):
 #==============================================================================
 
 #==============================================================================
-def fimo(tempdir=None, motifdatabase=None, bgfile=None, motif=None, 
-            fastafile=None, thresh='0.0001'):
+def fimo(motif=None, bg_file=None, ranked_fasta_file=None, tempdir=None, 
+        motifdatabase=None, thresh="0.0001"):
     '''This function runs fimo on a given fastafile for a single motif in a 
         provided motif database. The output is cut and sorted to convert into 
         a sorted bed file
@@ -763,23 +764,139 @@ def fimo(tempdir=None, motifdatabase=None, bgfile=None, motif=None,
         full path to where fimo output which is stored within the tempdir 
         directory.
     '''
-    fimo_out = os.path.join(tempdir,motif)
+    fimo_out = os.path.join(tempdir, motif)
     command = ("fimo --skip-matched-sequence --verbosity 1 --thresh " + thresh 
-                + " --bgfile " + bgfile 
+                + " --bgfile " + bg_file 
                 + " --motif " + motif.strip('.bed') + " " + motifdatabase 
-                + " " + fastafile
+                + " " + ranked_fasta_file
                 + " > " + fimo_out)
-    # command = ("fimo --qv-thresh --verbosity 1 --thresh " + thresh 
-    #             + " --oc " + fimo_out
-    #             + " --bgfile " + bgfile 
-    #             + " --motif " + motif.strip('.bed') + " " + motifdatabase 
-    #             + " " + fastafile)
-    # print command
-    # os.system(command)
     with open(os.devnull, 'w') as devnull:
         subprocess.call(command, shell=True, stderr=devnull)
 
     return fimo_out
+#==============================================================================
+
+#==============================================================================
+def homer(tempdir=None, srcdirectory=None, fastafile=None, motif_file=None, 
+            cpus=None):
+    '''This function runs fimo on a given fastafile for a single motif in a 
+        provided motif database. The output is cut and sorted to convert into 
+        a sorted bed file
+
+    Parameters
+    ----------
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    motifdatabase : string
+        full path to a motif database file in meme format
+
+    bgfile : string
+        full path to a markov background model
+
+    motif : string
+        the name of a motif that matches a motif within motifdatabase
+
+    fastafile : string
+        full path to a fasta file that fimo will perform motif scanning on
+        
+    Returns
+    -------
+    fimo_out : string
+        full path to where fimo output which is stored within the tempdir 
+        directory.
+    '''
+    homer_out = os.path.join(tempdir,"homer_out.txt")
+    command = ("homer2 find -p " + str(cpus) + " -i " + fastafile 
+        + " -m " 
+        + motif_file
+        + " > " + homer_out)
+    # print command
+    os.system(command)
+    # with open(os.devnull, 'w') as devnull:
+    #     subprocess.call(command, shell=True, stderr=devnull)
+
+    return homer_out
+#==============================================================================
+
+#==============================================================================
+def homer_parse(largewindow=None, tempdir=None, homer_out=None,
+                ranked_center_file=None):
+    '''Parses a fimo output file and writes into a new file that is formatted
+        in a way that can be parsed within existing TFEA functions
+
+    Parameters
+    ----------
+    largewindow : float
+        the size of the larger window to perform TFEA. Specified by user in
+        config file
+
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    fimo_file : string
+        full path to the fimo output file to be parsed by this function
+
+    motif_file : string
+        the name of the motif being parsed, this function will create a file
+        using this motif_file string
+        
+    Returns
+    -------
+    outname : string
+        the full path to the file to be used by other TFEA functions
+    '''
+    motif_names = list()
+    motif_files = list()
+    with open(homer_out) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            pval, fc, rank = line[0].split(',')
+            distance = line[1]
+            score = line[-1]
+            motif_name = line[-3].split('/')[0]
+            if motif_name not in motif_names:
+                motif_names.append(motif_name)
+                motif_files.append(open(os.path.join(tempdir,motif_name+'.txt'),'w'))
+            motif_files[motif_names.index(motif_name)].write('\t'.join([score, 
+                                                        '', '', pval, fc, rank, 
+                                                        str(distance)]) + '\n')
+    
+    for file1 in motif_files:
+        file1.close()
+
+    motif_list = list()
+    for motif_name in motif_names:
+        temp_lines = dict()
+        hits = 0
+        motif_name = os.path.join(tempdir,motif_name+'.txt')
+        with open(motif_name) as F:
+            for line in F:
+                line = line.strip('\n').split('\t')
+                score = line[0]
+                pval, fc, rank, distance = line[3:]
+                rank = int(rank)
+                temp_lines[rank] = (rank, pval, fc, score, distance)
+                hits+=1
+        motif_list.append((motif_name, hits))
+        outname = os.path.join(tempdir,motif_name+'.sorted.distance.bed')
+        outfile = open(outname, 'w')
+
+        with open(ranked_center_file, 'r') as F:
+            for line in F:
+                line = line.strip('\n').split('\t')
+                pval, fc, rank = line[3:]
+                if rank in temp_lines:
+                    rank, pval, fc, score, distance = temp_lines[rank]
+                    outfile.write('\t'.join([score, '', '', pval, fc, rank, 
+                                    str(distance)]) + '\n')
+                else:
+                    outfile.write('\t'.join(
+                                        [str(0.0), '', '', pval, fc, rank, 
+                                        str(int(largewindow**2))]) + '\n')
+        outfile.close()
+
+    return motif_list
 #==============================================================================
 
 #==============================================================================
@@ -838,8 +955,8 @@ def fasta_markov(tempdir=None, fastafile=None, order='2'):
 #==============================================================================
 
 #==============================================================================
-def fimo_parse(largewindow=None, tempdir=None, fimo_file=None, 
-                motif_file=None, ranked_center_file=None):
+def fimo_parse(largewindow=None, tempdir=None, fimo_file=None,
+                ranked_center_file=None):
     '''Parses a fimo output file and writes into a new file that is formatted
         in a way that can be parsed within existing TFEA functions
 
@@ -865,7 +982,6 @@ def fimo_parse(largewindow=None, tempdir=None, fimo_file=None,
         the full path to the file to be used by other TFEA functions
     '''
     d = dict()
-    fimo_file = os.path.join(fimo_file)
     with open(fimo_file) as F:
         header = F.readline().strip('\n').split('\t')
         if len(header) > 1:
@@ -875,7 +991,7 @@ def fimo_parse(largewindow=None, tempdir=None, fimo_file=None,
                 name_index = header.index('sequence_name')
                 score_index = header.index('score')
             except:
-                print header
+                pass
             for line in F:
                 line = line.strip('\n').split('\t')
                 pval, fc, rank = line[name_index].split(',')
@@ -890,10 +1006,10 @@ def fimo_parse(largewindow=None, tempdir=None, fimo_file=None,
                     if prev_score < float(score):
                         d[rank] = [rank, pval, fc, score, distance]
     
-    scores = [float(d[key][-2]) for key in d]
-    if len(scores) > 0:
-        print motif_file, "mean: ", np.mean(scores), "max: ", max(scores), "min: ", min(scores)
-    outname = os.path.join(tempdir, motif_file+'.sorted.distance.bed')
+    # scores = [float(d[key][-2]) for key in d]
+    # if len(scores) > 0:
+    #     print fimo_file, "mean: ", np.mean(scores), "max: ", max(scores), "min: ", min(scores)
+    outname = fimo_file.strip('.bed')+'.sorted.distance.bed'
     outfile = open(outname, 'w')
     with open(ranked_center_file, 'r') as F:
         for line in F:
@@ -901,12 +1017,12 @@ def fimo_parse(largewindow=None, tempdir=None, fimo_file=None,
             pval, fc, rank = line[3:]
             if rank in d:
                 rank, pval, fc, score, distance = d[rank]
-                outfile.write('\t'.join([rank, pval, fc, score, str(distance)])
-                            +'\n')
+                outfile.write('\t'.join([score, '', '', pval, fc, rank, 
+                                str(distance)]) + '\n')
             else:
                 outfile.write('\t'.join(
-                                    [rank, pval, fc, str(0.0), str(int(largewindow)*10)])
-                                    +'\n')
+                                    [str(0.0), '', '', pval, fc, rank, 
+                                    str(int(largewindow)*10)]) + '\n')
     outfile.close()
 
     return outname
@@ -1284,100 +1400,104 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
     dpi = config.DPI
     #Begin plotting section
     len_cumscore = float(len(cumscore))
-    plt.figure(figsize=(15.5,8))
-    xvals = range(0, int(len_cumscore))
-    # xvals = np.arange(0,1,1.0/len_cumscore)
-    limits = [0,len_cumscore]
+    try:
+        F = plt.figure(figsize=(15.5,8))
+        # xvals = range(0, int(len_cumscore))
+        xvals = np.arange(0,1,1.0/len_cumscore)
+        limits = [0,1]
 
-    #With GC-Content
-    # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
+        #With GC-Content
+        # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
 
-    #Without GC-Content
-    gs = gridspec.GridSpec(3, 1, height_ratios=[2, 2, 1])
+        #Without GC-Content
+        gs = gridspec.GridSpec(3, 1, height_ratios=[2, 2, 1])
 
-    #This is the enrichment score plot (i.e. line plot)
-    ax0 = plt.subplot(gs[0])
-    ax0.plot(xvals,cumscore,color='green')
-    ax0.plot([0, len_cumscore],[0, 1], '--', alpha=0.75)
-    ax0.set_title(motif_file.split('.bed')[0] + ' Enrichment Plot',fontsize=14)
-    ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
-    ax0.tick_params(axis='y', which='both', left='on', right='off', 
-                    labelleft='on')
-    ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='off')
-    ylims = ax0.get_ylim()
-    ymax = math.fabs(max(ylims,key=abs))
-    ax0.set_ylim([0,ymax])
-    ax0.set_xlim(limits)
+        #This is the enrichment score plot (i.e. line plot)
+        ax0 = plt.subplot(gs[0])
+        ax0.plot(xvals,cumscore,color='green')
+        ax0.plot([0, 1],[0, 1], '--', alpha=0.75)
+        ax0.set_title(motif_file.split('.bed')[0] + ' Enrichment Plot',fontsize=14)
+        ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
+        ax0.tick_params(axis='y', which='both', left='on', right='off', 
+                        labelleft='on')
+        ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
+        ylims = ax0.get_ylim()
+        ymax = math.fabs(max(ylims,key=abs))
+        ax0.set_ylim([0,ymax])
+        ax0.set_xlim(limits)
 
-    #This is the distance scatter plot right below the enrichment score 
-    #plot
-    x = xvals
-    y = sorted_distances
-    # xy = np.vstack([x, y])
-    # z = gaussian_kde(xy)(xy)
-    # idx = np.argsort(z)
-    # x, y, z = [x[i] for i in idx], [y[i] for i in idx], [z[i] for i in idx]
-    ax1 = plt.subplot(gs[1])
-    # ax1.scatter(x,y,edgecolor="", c=z, s=10, alpha=0.25)
-    ax1.scatter(x,y,edgecolor="", color="black", s=10, alpha=0.25)
-    ax1.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on') 
-    ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='off')
-    ax1.set_xlim(limits)
-    ax1.set_ylim([-int(largewindow),int(largewindow)])
-    plt.yticks([-int(largewindow),0,int(largewindow)],
-                [str(-int(largewindow)/1000.0),'0',\
-                str(int(largewindow)/1000.0)])
-    ax1.set_ylabel('Distance (kb)', fontsize=10)
+        #This is the distance scatter plot right below the enrichment score 
+        #plot
+        x = xvals
+        y = sorted_distances
+        # xy = np.vstack([x, y])
+        # z = gaussian_kde(xy)(xy)
+        # idx = np.argsort(z)
+        # x, y, z = [x[i] for i in idx], [y[i] for i in idx], [z[i] for i in idx]
+        ax1 = plt.subplot(gs[1])
+        # ax1.scatter(x,y,edgecolor="", c=z, s=10, alpha=0.25)
+        ax1.scatter(x,y,edgecolor="", color="black", s=10, alpha=0.25)
+        ax1.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='on') 
+        ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
+        ax1.set_xlim(limits)
+        ax1.set_ylim([-int(largewindow),int(largewindow)])
+        plt.yticks([-int(largewindow),0,int(largewindow)],
+                    [str(-int(largewindow)/1000.0),'0',\
+                    str(int(largewindow)/1000.0)])
+        ax1.set_ylabel('Distance (kb)', fontsize=10)
 
-    #This is the rank metric plot
-    ax2 = plt.subplot(gs[2])
-    ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
-    ax2.tick_params(axis='y', which='both', left='on', right='off', 
-                    labelleft='on')
-    ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
-    ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
-    ax2.set_ylim([-ylim,ylim])
-    ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
-    ax2.set_xlim(limits)
-    ax2.set_xlabel('Rank', fontsize=14)#(n='+str(int(len_cumscore))+')', fontsize=14)
-    ax2.set_ylabel('Rank Metric',fontsize=10)
-    # try:
-    #     ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
-    # except ValueError:
-    #     pass
-    # try:
-    #     ax2.axvline(len(xvals) - len(downdistancehist), color='purple', 
-    #                 alpha=0.25)
-    # except ValueError:
-    #     pass
+        #This is the rank metric plot
+        ax2 = plt.subplot(gs[2])
+        ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
+        ax2.tick_params(axis='y', which='both', left='on', right='off', 
+                        labelleft='on')
+        ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='on')
+        ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
+        ax2.set_ylim([-ylim,ylim])
+        ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
+        ax2.set_xlim(limits)
+        ax2.set_xlabel('Relative Rank (n='+str(int(len_cumscore))+')', fontsize=14)
+        ax2.set_ylabel('Rank Metric',fontsize=10)
+        # try:
+        #     ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
+        # except ValueError:
+        #     pass
+        # try:
+        #     ax2.axvline(len(xvals) - len(downdistancehist), color='purple', 
+        #                 alpha=0.25)
+        # except ValueError:
+        #     pass
 
-    #This is the GC content plot
-    # ax3 = plt.subplot(gs[2])
-    # ax3.set_xlim(limits)
-    # # plt.imshow(gc_array, cmap='hot', interpolation='nearest')
-    # sns.heatmap(gc_array, cbar=False, xticklabels='auto',
-    #             yticklabels='auto')
+        #This is the GC content plot
+        # ax3 = plt.subplot(gs[2])
+        # ax3.set_xlim(limits)
+        # # plt.imshow(gc_array, cmap='hot', interpolation='nearest')
+        # sns.heatmap(gc_array, cbar=False, xticklabels='auto',
+        #             yticklabels='auto')
 
-    # plt.yticks([0,int(largewindow),int(largewindow*2)],
-    #             [str(-int(largewindow)/1000.0),'0',\
-    #             str(int(largewindow)/1000.0)])
+        # plt.yticks([0,int(largewindow),int(largewindow*2)],
+        #             [str(-int(largewindow)/1000.0),'0',\
+        #             str(int(largewindow)/1000.0)])
 
-    # ax3.tick_params(axis='y', which='both', left='on', right='off', 
-    #                 labelleft='on')
+        # ax3.tick_params(axis='y', which='both', left='on', right='off', 
+        #                 labelleft='on')
 
-    # ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
-    #                 labelbottom='off')
+        # ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
+        #                 labelbottom='off')
 
-    # ax3.set_ylabel('GC content per kb',fontsize=10)
+        # ax3.set_ylabel('GC content per kb',fontsize=10)
 
-    plt.savefig(os.path.join(figuredir, motif_file.split('.bed')[0] 
-                + '_enrichment_plot.png'),dpi=dpi,bbox_inches='tight')
+        plt.savefig(os.path.join(figuredir, motif_file
+                    + '_enrichment_plot.png'),dpi=dpi,bbox_inches='tight')
 
-    plt.cla()
+        plt.close()
+
+    except:
+        print len(xvals), len(cumscore)
 #==============================================================================
 
 #==============================================================================
@@ -1408,7 +1528,7 @@ def simulation_plot(figuredir=None, simES=None, actualES=None,
     -------
     None
     '''
-    plt.figure(figsize=(7,6))
+    F = plt.figure(figsize=(7,6))
     ax2 = plt.subplot(111)
     maximum = max(simES)
     minimum = min(simES)
@@ -1432,7 +1552,7 @@ def simulation_plot(figuredir=None, simES=None, actualES=None,
     plt.title('Distribution of Simulated Enrichment Scores',fontsize=14)
     ax2.set_ylabel('Number of Simulations',fontsize=14)
     ax2.set_xlabel('Area Under the Curve (AUC)',fontsize=14)
-    plt.savefig(os.path.join(figuredir, motif_file.split('.bed')[0] 
+    plt.savefig(os.path.join(figuredir, motif_file 
                 + '_simulation_plot.png'),dpi=dpi, bbox_inches='tight')
 
     plt.cla()
@@ -1519,7 +1639,7 @@ def pval_histogram_plot(figuredir=None, PVALlist=None):
     plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     binwidth = 1.0/100.0
-    print PVALlist
+    # print PVALlist
     ax.hist(PVALlist,bins=np.arange(0,0.5+binwidth,binwidth),color='green')
     ax.set_title("TFEA P-value Histogram",fontsize=14)
     ax.set_xlabel("P-value",fontsize=14)
@@ -1540,6 +1660,61 @@ def MA_plot(figuredir=None, label1=None, label2=None, POSlist=None,
             ESlist=None, MAx=None, MAy=None):
     '''This function plots an 'MA' plot with the 'enrichment' score on the 
         y-axis and the number of hits within the largewindow in the x-axis
+
+    Parameters
+    ----------
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    label1 : string
+        a label that corresponds to condition1
+
+    label2 : string
+        a label that corresponds to condition2
+
+    POSlist : list or array
+        a list of 'positive' hits for each motif defined as being within a 
+        largewindow
+
+    ESlist : list or array
+        a list of 'enrichment' scores for each motif
+
+    MAx : list or array
+        a list of x-values corresponding to significant motifs to be colored 
+        red
+
+    MAx : list or array
+        a list of y-values corresponding to significant motifs to be colored 
+        red
+
+    Returns
+    -------
+    None
+    '''
+    plt.figure(figsize=(7,6))
+    ax = plt.subplot(111)
+    ax.scatter(POSlist,ESlist,color='black',edgecolor='')
+    ax.scatter(MAx,MAy,color='red',edgecolor='')
+    ax.set_title("TFEA MA-Plot",fontsize=14)
+    ax.set_ylabel("Area Under the Curve (AUC)", fontsize=14)
+
+    ax.set_xlabel("Motif Hits Log10",fontsize=14)
+    ax.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+
+    plt.savefig(os.path.join(figuredir, 'TFEA_NES_MA_Plot.png'),
+                bbox_inches='tight')
+    plt.cla()
+#==============================================================================
+
+#==============================================================================
+def meta_eRNA_quartiles(figuredir=None, label1=None, label2=None, POSlist=None, 
+            ESlist=None, MAx=None, MAy=None):
+    '''Under Construction...
 
     Parameters
     ----------
@@ -1705,7 +1880,7 @@ def create_summary_html():
     bam1 = config.BAM1
     bam2 = config.BAM2
     singlemotif = config.SINGLEMOTIF
-    motif_hits = config.MOTIF_HITS
+    motif_hits = config.MOTIF_GENOMEWIDE_HITS
     output = config.OUTPUT
     padj_cutoff = config.PADJCUTOFF
     smallwindow = config.SMALLWINDOW
@@ -1716,6 +1891,7 @@ def create_summary_html():
     deseq = config.DESEQ
     calculate = config.CALCULATE
     fimo = config.FIMO
+    homer = config.HOMER
     temp = config.TEMP
     logos = config.LOGOS
     motifdatabase = config.MOTIFDATABASE
@@ -1745,6 +1921,7 @@ def create_summary_html():
                 <p>SINGLEMOTIF = """+str(singlemotif)+"""</p>
                 <p>PLOT = """+str(plot)+"""</p>
                 <p>FIMO = """+str(fimo)+"""</p>
+                <p>HOMER = """+str(homer)+"""</p>
                 <p>TEMP = """+str(temp)+"""</p>
                 <p>PADJCUTOFF = """+str(padj_cutoff)+"""</p>
                 <p>SMALLWINDOW = """+str(smallwindow)+"""</p>
@@ -1871,12 +2048,8 @@ def create_motif_result_html(TFresults=None):
                     PREV_MOTIF = negativelist[negativelist.index(MOTIF_FILE)-1]
                 except IndexError:
                     PREV_MOTIF = negativelist[len(negativelist)]
-            if fimo:
-                direct_logo = "logo" + MOTIF_FILE.strip('HO_') + ".eps"
-                reverse_logo = "logo_rc" + MOTIF_FILE.strip('HO_') + ".eps"
-            else:
-                direct_logo = MOTIF_FILE.strip('HO_') + "_direct.png"
-                reverse_logo = MOTIF_FILE.strip('HO_') + "_revcomp.png"
+            direct_logo = MOTIF_FILE.strip('HO_') + "_direct.png"
+            reverse_logo = MOTIF_FILE.strip('HO_') + "_revcomp.png"
             outfile = open(os.path.join(outputdir, 'plots', MOTIF_FILE 
                             + '.results.html'),'w')
             outfile.write("""<!DOCTYPE html>
@@ -1932,8 +2105,7 @@ def create_motif_result_html(TFresults=None):
                 <table> 
                     <tr>
                         <th>TF Motif</th>
-                        <th>ES</th> 
-                        <th>NES</th>
+                        <th>AUC</th> 
                         <th>P-value</th>
                         <th>PADJ</th>
                         <th>HITS</th>
@@ -1941,7 +2113,6 @@ def create_motif_result_html(TFresults=None):
                     <tr>
                         <td>"""+MOTIF_FILE+"""</td>
                         <td>"""+str("%.2f" % ES)+"""</td>
-                        <td>"""+str("%.2f" % NES)+"""</td>
                         <td>"""+str("%.4g" % PVAL)+"""</td>
                         <td>"""+str("%.4g" % PADJ)+"""</td>
                         <td>"""+str(POS)+"""</td>
@@ -1965,11 +2136,11 @@ def create_motif_result_html(TFresults=None):
         <div class="row">
             <div style="float: right; width: 600px">
                 <p>Forward:</p>
-                <img src="./"""+direct_logo+""" \
+                <img src="./"""+direct_logo+"""" \
                     alt="Forward Logo">
                 <p></p>
                 <p>Reverse:</p>
-                <img src="./"""+reverse_logo+""" \
+                <img src="./"""+reverse_logo+"""" \
                     alt="Reverse Logo">
             </div>
             <div style="float:left; width: 600px">
@@ -2182,8 +2353,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
                 <table> 
                     <tr>
                         <th>TF Motif</th>
-                        <th>ES</th> 
-                        <th>NES</th>
+                        <th>AUC</th>
                         <th>P-value</th>
                         <th>PADJ</th>
                         <th>HITS</th>
@@ -2197,8 +2367,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""
                     +MOTIF_FILE+"""</td>
-                <td>"""+str("%.2f" % ES)+"""</td>
-                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.4f" % ES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str(POS)+"""</td>
@@ -2209,8 +2378,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
             <tr>
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""
                     +MOTIF_FILE+"""</td>
-                <td>"""+str("%.2f" % ES)+"""</td>
-                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.4f" % ES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str(POS)+"""</td>
@@ -2221,8 +2389,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
                 outfile.write("""
             <tr>
                 <td>"""+MOTIF_FILE+"""</td>
-                <td>"""+str("%.2f" % ES)+"""</td>
-                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.4f" % ES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str(POS)+"""</td>
@@ -2239,8 +2406,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
         <table> 
             <tr>
                 <th>TF Motif</th>
-                <th>ES</th> 
-                <th>NES</th>
+                <th>AUC</th> 
                 <th>P-value</th>
                 <th>PADJ</th>
                 <th>HITS</th>
@@ -2254,8 +2420,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
             <tr style="color: red;">
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""
                     +MOTIF_FILE+"""</td>
-                <td>"""+str("%.2f" % ES)+"""</td>
-                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.4f" % ES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str(POS)+"""</td>
@@ -2266,8 +2431,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
             <tr>
                 <td><a href="./plots/"""+MOTIF_FILE+""".results.html">"""
                     +MOTIF_FILE+"""</td>
-                <td>"""+str("%.2f" % ES)+"""</td>
-                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.4f" % ES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str(POS)+"""</td>
@@ -2277,8 +2441,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
                 outfile.write("""
             <tr>
                 <td>"""+MOTIF_FILE+"""</td>
-                <td>"""+str("%.2f" % ES)+"""</td>
-                <td>"""+str("%.2f" % NES)+"""</td>
+                <td>"""+str("%.4f" % ES)+"""</td>
                 <td>"""+str("%.3g" % PVAL)+"""</td>
                 <td>"""+str("%.3g" % PADJ)+"""</td>
                 <td>"""+str(POS)+"""</td>

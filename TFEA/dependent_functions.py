@@ -18,6 +18,7 @@ import math
 import time
 import numpy as np
 import traceback
+import config
 from multiprocessing import Pool
 import multiprocessing as mp
 from scipy.stats import norm 
@@ -121,88 +122,29 @@ def calculate_es_auc(args):
         when tf does not have any hits
     '''
     try:
-        motif_file = args[0]
+        motif_file, hits = args[0]
         millions_mapped = args[1]
         gc_array = args[2]
-        fimo  = args[3]
-        ranked_center_file = args[4]
-        motif_hits = args[5]
-        plot = args[6] 
-        padj_cutoff = args[7]
-        logos = args[8]
-        figuredir = args[9]
-        largewindow = args[10]
-        smallwindow = args[11]
-        genomefasta = args[12]
-        tempdir = args[13]
-        motifdatabase = args[14]
-        bg_file = args[15]
-        ranked_fasta_file = args[16]
-
-        if fimo:
-            print "running fimo..."
-            ranked_center_distance_file, fimo_file = fimo_distance(
-                                            ranked_center_file=ranked_center_file,
-                                            motif_file=motif_file,
-                                            genomefasta=genomefasta, 
-                                            largewindow=largewindow, 
-                                            tempdir=tempdir, 
-                                            figuredir=figuredir,
-                                            motifdatabase=motifdatabase,
-                                            bg_file=bg_file,
-                                            ranked_fasta_file=ranked_fasta_file)
-            pos = independent_functions.get_motif_hits(motif_file=fimo_file, 
-                                                        header=True)
-        else:
-            motif_full_path = os.path.join(motif_hits, motif_file)
-            ranked_center_distance_file = independent_functions.motif_distance_bedtools_closest(
-                                            ranked_center_file=ranked_center_file,
-                                            motif_path=motif_full_path)
-            pos = independent_functions.get_motif_hits(motif_file=motif_full_path, 
-                                                        header=False)
-            #Get motif logos from logo directory                              
-            if 'HO_' in motif_file:
-                os.system("scp " + logos 
-                            + motif_file.split('.bed')[0].split('HO_')[1] 
-                            + "_direct.png " + figuredir)
-
-                os.system("scp " + logos 
-                            + motif_file.split('.bed')[0].split('HO_')[1] 
-                            + "_revcomp.png " + figuredir)
-            else:
-                os.system("scp " + logos + motif_file.split('.bed')[0] 
-                            + "_direct.png " + figuredir)
-
-                os.system("scp " + logos + motif_file.split('.bed')[0] 
-                            + "_revcomp.png " + figuredir)
+        plot = args[3]
+        padj_cutoff = args[4]
+        logos = args[5]
+        figuredir = args[6]
+        largewindow = args[7]
+        smallwindow = args[8]
 
         distances = []
         ranks = []
         pvals= []
-        # pos = 0
         fc = []
-        if fimo:
-            with open(ranked_center_distance_file) as F:
-                for line in F:
-                    line = line.strip('\n').split('\t')
-                    distance = int(line[-1])
-                    rank = int(line[0])
-                    pvals.append(float(line[1]))
-                    fc.append(float(line[2]))
-                    ranks.append(rank)
-                    distances.append(distance)
-        else:
-            with open(ranked_center_distance_file) as F:
-                for line in F:
-                    line = line.strip('\n').split('\t')
-                    distance = int(line[-1])
-                    rank = int(line[5])
-                    pvals.append(float(line[3]))
-                    fc.append(float(line[4]))
-                    ranks.append(rank)
-                    distances.append(distance)
-                    # if distance < largewindow:
-                    #     pos+=1
+        with open(motif_file) as F:
+            for line in F:
+                line = line.strip('\n').split('\t')
+                pvals.append(float(line[3]))
+                fc.append(float(line[4]))
+                rank = int(line[5])
+                distance = int(line[-1])
+                ranks.append(rank)
+                distances.append(distance)
 
         #sort distances based on the ranks from TF bed file
         #and calculate the absolute distance
@@ -212,25 +154,35 @@ def calculate_es_auc(args):
         
 
         #Get -exp() of distance and get cumulative scores
-        # average_distance = float(sum(distances_abs))/float(len(distances_abs))
-        average_distance = smallwindow/10.0
+        #Filter distances into quartiles to get middle distribution
+        q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
+        q3 = round(np.percentile(np.arange(1, len(distances_abs),1), 75))
+        middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x < largewindow]
+        average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
         # average_distance = 1.0
         score = [math.exp(-float(x)/average_distance) for x in distances_abs]
         total = float(sum(score))
         
 
-        #filter any TFs/files without and hits
+        #Filter any TFs/files without any hits
         if total == 0:
             return "no hits"
 
         binwidth = 1.0/float(len(distances_abs))
-        # normalized_score = [(x/total)*binwidth for x in score]
-        normalized_score = [(x/total) for x in score]
+        # print "binwidth: ", binwidth
+        plotting_score = [(float(x)/total) for x in score]
+        # print "plotting_score: ", plotting_score[:10]
+        normalized_score = [(float(x)/total)*binwidth for x in score]
+        # print "normalized_score: ", normalized_score[:10]
+        # normalized_score = [(x/total) for x in score]
+        plotting_cumscore = np.cumsum(plotting_score)
+        # print "plotting_cumscore: ", plotting_cumscore[:10]
         cumscore = np.cumsum(normalized_score)
+        # print "cumscore: ", cumscore[:10]
         # print "cumscore: ", cumscore
 
         trend = np.arange(0,1,1.0/float(len(ranks)))
-        # trend = [x*binwidth for x in trend]
+        trend = [x*binwidth for x in trend]
         # print "trend: ", trend
 
         #The AUC is the relative to the "random" line
@@ -258,185 +210,17 @@ def calculate_es_auc(args):
                                 smallwindow=smallwindow,
                                 distances_abs=distances_abs, 
                                 sorted_distances=sorted_distances,ranks=ranks,
-                                pvals=pvals, fc=fc, cumscore=cumscore, 
-                                motif_file=motif_file, p=p, simES=simES, 
-                                actualES=actualES, gc_array=gc_array)
+                                pvals=pvals, fc=fc, cumscore=plotting_cumscore, 
+                                motif_file=motif_file.split('/')[-1].strip('sorted.distance.bed'),
+                                p=p, simES=simES, actualES=actualES, 
+                                gc_array=gc_array)
     except Exception as e:
-        # print 'Caught exception in worker thread (x = %d):' % x
-
         # This prints the type, value, and stack trace of the
         # current exception being handled.
         print traceback.print_exc()
         raise e
 
-    return [motif_file.split('.bed')[0],actualES,NES,p,pos]
-#==============================================================================
-
-#==============================================================================
-def calculate_es_youden_rank(args):
-    '''This function calculates the AUC for any TF based on the TF motif hits 
-        relative to the bidirectionals. The calculated AUC is used as a proxy 
-        for the enrichemnt of the TFs.
-
-    Parameters
-    ----------
-    args : tuple 
-        contains two arguments that are unpacked within this function:
-            motif_file : string
-                the name of a motif bed file contained within MOTIF_HITS
-
-            millions_mapped : list or array
-                contiains a list of floats that corresponds to the millions 
-                mapped reads for each bam file
-
-            fimo : boolean
-                a switch that controls whether motif hits are generated on the 
-                fly using fimo
-
-            ranked_center_file : string
-                the full path to a bed file containing the center of regions 
-                sorted by DE-Seq p-value
-
-            motif_hits : string
-                the full path to a directory containing motif hits across the 
-                genome
-
-            plot : boolean
-                a switch that controls whether TFEA generates plots for all 
-                motifs or just significant ones
-            
-            padj_cutoff : float
-                the cutoff value for calling a motif as significant
-
-            logos : string
-                the full path to a directory containing meme logos for motifs
-
-            figuredir : string
-                the full path to the figure directory within the output 
-                directory where figures and plots are stored
-
-            largewindow : float
-                a user specified larger window used for plotting purposes and 
-                to do some calculations regarding the user-provided regions of 
-                interest
-
-            smallwindow : float
-                a user specified smaller window used for plotting purposes and 
-                to do some calculations regarding the user-provided regions of 
-                interest
-
-    Returns
-    -------
-    AUC : float
-        the area under the curve (AUC) for a given tf
-
-    p-value : float
-        theoretical p-value calculated by comparing the observed value  to the
-        distribution of all simulations (default:1000)
-                 
-    Raises
-    ------
-    ValueError
-        when tf does not have any hits
-    '''
-    motif_file = args[0]
-    millions_mapped = args[1]
-    gc_array = args[2]
-    fimo  = args[3]
-    ranked_center_file = args[4]
-    motif_hits = args[5]
-    plot = args[6] 
-    padj_cutoff = args[7]
-    logos = args[8]
-    figuredir = args[9]
-    largewindow = args[10]
-    smallwindow = args[11]
-    genomefasta = args[12]
-    tempdir = args[13]
-    motifdatabase = args[14]
-
-    if fimo:
-        ranked_center_distance_file = fimo_distance(
-                                        ranked_center_file=ranked_center_file,
-                                        motif_file=motif_file,
-                                        genomefasta=genomefasta, 
-                                        largewindow=largewindow, 
-                                        tempdir=tempdir, 
-                                        figuredir=figuredir,
-                                        motifdatabase=motifdatabase)
-    else:
-        ranked_center_distance_file = independent_functions.motif_distance_bedtools_closest(
-                                        ranked_center_file=ranked_center_file,
-                                        motif_path=motif_hits+motif_file)
-
-    distances = []
-    ranks = []
-    pvals= []
-    pos = 0
-    fc = []
-
-    with open(ranked_center_distance_file) as F:
-        for line in F:
-            line = line.strip('\n').split('\t')
-            distance = int(line[-1])
-            rank = int(line[5])
-            pvals.append(float(line[3]))
-            fc.append(float(line[4]))
-            ranks.append(rank)
-            distances.append(distance)
-            if distance < largewindow:
-                pos+=1
-
-    #sort distances based on the ranks from TF bed file
-    #and calculate the absolute distance
-    rank_number = float(len(ranks))
-    ranks = [float(rank)/rank_number for rank in ranks]
-    sorted_distances = [x for _,x in sorted(zip(ranks, distances))]
-    distances_abs = [abs(x) for x in sorted_distances] 
-
-    #filter any TFs/files without and hits
-    if len(distances_abs) == 0:
-        return "no hits"
-
-    #Get -exp() of distance and get cumulative scores
-    score = [math.exp(-x) for x in distances_abs] 
-    total = float(sum(score))
-    normalized_score = [x/total for x in score]
-    cumscore = np.cumsum(normalized_score)
-
-    trend = np.arange(0,1,1.0/float(len(ranks)))
-
-    #The AUC is the relative to the "random" line
-    youden = cumscore - trend
-    youden_max = max(cumscore - trend)
-    rank_max = np.where(youden == youden_max)[0][0]/float(len(youden))
-
-    print rank_max
-
-    #Calculate random AUC
-    simES = independent_functions.permutations_youden_rank(
-                                                    distances=normalized_score, 
-                                                    trend=trend)
-
-    ##significance calculator                                                                                                                                                            
-    mu = np.mean(simES)
-    NES = youden/abs(mu)
-    sigma = np.std(simES)
-
-
-    p = min(1-norm.cdf(rank_max,mu,sigma), norm.cdf(rank_max,mu,sigma))
-
-    plot_individual_graphs(plot=plot, padj_cutoff=padj_cutoff,
-                            figuredir=figuredir, logos=logos, 
-                            largewindow=largewindow, 
-                            smallwindow=smallwindow,
-                            distances_abs=distances_abs, 
-                            sorted_distances=sorted_distances,ranks=ranks,
-                            pvals=pvals, fc=fc, cumscore=cumscore, 
-                            motif_file=motif_file, p=p, simES=simES, 
-                            actualES=rank_max, gc_array=gc_array)
-
-    return [motif_file.split('.bed')[0], rank_max, NES, p, pos]
+    return [motif_file.split('/')[-1].strip('sorted.distance.bed'),actualES,NES,p,hits]
 #==============================================================================
 
 #==============================================================================
@@ -514,6 +298,18 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
     #Only plot things if user selects to plot all or if the pvalue is less than
     #the cutoff
     if plot or p < padj_cutoff:
+        if config.HOMER:
+            pass
+        else:
+            #Get motif logos from logo directory
+            os.system("scp '" + logos 
+                        + motif_file.strip('.sorted.distance.bed').strip('HO_') 
+                        + "_direct.png' " + figuredir)
+
+            os.system("scp '" + logos 
+                        + motif_file.strip('.sorted.distance.bed').strip('HO_') 
+                        + "_revcomp.png' " + figuredir)
+        
 
         #Filter distances into quartiles for plotting purposes
         q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
@@ -535,22 +331,6 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
                     logpval.append(-math.log(x,10))
             except:
                 logpval.append(0.0)
-
-        # #Get motif logos from logo directory                              
-        # if 'HO_' in motif_file:
-        #     os.system("scp " + logos 
-        #                 + motif_file.split('.bed')[0].split('HO_')[1] 
-        #                 + "_direct.png " + figuredir)
-
-        #     os.system("scp " + logos 
-        #                 + motif_file.split('.bed')[0].split('HO_')[1] 
-        #                 + "_revcomp.png " + figuredir)
-        # else:
-        #     os.system("scp " + logos + motif_file.split('.bed')[0] 
-        #                 + "_direct.png " + figuredir)
-
-        #     os.system("scp " + logos + motif_file.split('.bed')[0] 
-        #                 + "_revcomp.png " + figuredir)
 
         #Plot the enrichment plot
         independent_functions.enrichment_plot(largewindow=largewindow,
@@ -731,12 +511,12 @@ def get_gc_array(tempdir=None, ranked_center_file=None, genomefasta=None,
 #==============================================================================
 def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
                 bam1=None, bam2=None, 
-                motif_hits=None, singlemotif=None, 
+                motif_list=None, singlemotif=None, 
                 COMBINEtime=None, COUNTtime=None, DESEQtime=None, 
                 CALCULATEtime=None, fimo=None, plot=None, 
                 padj_cutoff=None, logos=None, figuredir=None,
                 largewindow=None, smallwindow=None, genomefasta=None,
-                motifdatabase=None, pool=None, label1=None, label2=None):
+                motifdatabase=None, label1=None, label2=None, hits=None):
     '''This function performs the bulk of transcription factor enrichment
         analysis (TFEA), it does the following:
             1. GC distribution across regions for plotting
@@ -813,9 +593,10 @@ def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
     '''
     print "Calculating GC content of regions..."
     #This line gets an array of GC values for all inputted regions
-    gc_array = get_gc_array(ranked_center_file=ranked_center_file,
-                            window=int(largewindow), tempdir=tempdir, 
-                            genomefasta=genomefasta)
+    # gc_array = get_gc_array(ranked_center_file=ranked_center_file,
+    #                         window=int(largewindow), tempdir=tempdir, 
+    #                         genomefasta=genomefasta)
+    gc_array = list()
 
     print "done\nCalculating millions mapped reads for bam files..."
     #Here we determine how many cpus to use for parallelization
@@ -829,61 +610,16 @@ def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
     # millions_mapped = p.map(independent_functions.samtools_flagstat,args)
     millions_mapped = list()
 
-    if fimo:
-        ranked_fullregions_file = independent_functions.get_regions(
-                                        tempdir=tempdir, 
-                                        ranked_center_file=ranked_center_file,
-                                        largewindow=largewindow)
-
-        ranked_fasta_file = independent_functions.getfasta(
-                                                genomefasta=genomefasta, 
-                                                tempdir=tempdir,
-                                                bedfile=ranked_fullregions_file)
-
-        bg_file = independent_functions.fasta_markov(fastafile=ranked_fasta_file,
-                                                    tempdir=tempdir)
-
-        motif_list = independent_functions.get_motif_names(
-                                                motifdatabase=motifdatabase)
-    else:
-        motif_list = os.listdir(motif_hits)
-
     print "done\nFinding motif hits in regions..."
     if singlemotif == False:
-        TFresults = list()
-        if pool:
-            
-            args = [(x, millions_mapped, gc_array, fimo, ranked_center_file,
-                        motif_hits, plot, padj_cutoff, logos, figuredir,
-                        largewindow, smallwindow, genomefasta, tempdir, 
-                        motifdatabase, bg_file, 
-                        ranked_fasta_file) for x in motif_list]
-            p = Pool(cpus)
-            TFresults = p.map(calculate_es_auc, args)
-            # TFresults = p.map(calculate_es_youden_rank, args)
-        else:
-            for motif_file in motif_list:
-                results = calculate_es_auc((motif_file, millions_mapped, 
-                        gc_array, fimo, ranked_center_file, motif_hits, plot, 
-                        padj_cutoff, logos, figuredir, largewindow, 
-                        smallwindow, genomefasta, tempdir, motifdatabase, 
-                        bg_file, ranked_fasta_file))
-                # results = calculate_es_youden_rank((motif_file, 
-                #         millions_mapped, gc_array, fimo, ranked_center_file, 
-                #         motif_hits, plot, padj_cutoff, logos, figuredir, 
-                #         largewindow, smallwindow, genomefasta, tempdir, 
-                #         motifdatabase))
-                if results != "no hits":
-                    TFresults.append(results)
-                else:
-                    print "No motifs within specified window for: ", motif_file
-
+        args = [(motif_file, millions_mapped, gc_array, 
+                plot, padj_cutoff, logos, figuredir, largewindow, 
+                smallwindow) for motif_file in motif_list if motif_file[1] > 0]
+        p = Pool(cpus)
+        TFresults = p.map(calculate_es_auc, args)
 
         CALCULATEtime = time.time()-CALCULATEtime
-        # independent_functions.pvalue_global_youden_rank(TFresults=TFresults)
         TFresults = independent_functions.padj_bonferroni(TFresults=TFresults)
-        # TFresults = independent_functions.pvalue_global_auc(TFresults=TFresults,
-        #                                                     auc_index=1)
         #Creates results.txt which is a tab-delimited text file with the results    
         TFresults = sorted(TFresults, key=lambda x: x[-3])
         plot_global_graphs(padj_cutoff=padj_cutoff, label1=label1, 
@@ -903,43 +639,68 @@ def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
     #will be unable to determine an PADJ for the given motif.
     else:
         results = calculate_es_auc((singlemotif, millions_mapped, gc_array, 
-                        fimo, ranked_center_file, motif_hits, plot, 
-                        padj_cutoff, logos, figuredir, largewindow, 
-                        smallwindow, genomefasta, tempdir, motifdatabase, 
-                        bg_file, ranked_fasta_file))
-        # results = calculate_es_youden_rank((singlemotif, millions_mapped, 
-        #                 gc_array, fimo, ranked_center_file, motif_hits, plot, 
-        #                 padj_cutoff, logos, figuredir, largewindow, 
-        #                 smallwindow, genomefasta, tempdir, motifdatabase))
+                    ranked_center_file, plot, padj_cutoff, logos, figuredir, 
+                    largewindow, smallwindow, tempdir))
         independent_functions.create_motif_result_html(TFresults=[results+[0]])
 
     print "done"
 #==============================================================================
 
 #==============================================================================
-def fimo_distance(motif_file=None,genomefasta=None, largewindow=None,
-                    tempdir=None, motifdatabase=None, figuredir=None,
-                    ranked_center_file=None, bg_file=None, 
-                    ranked_fasta_file=None):
+def fimo_distance(args):
+    try:
+        motif_file = args[0]
+        largewindow = args[1]
+        tempdir = args[2]
+        motifdatabase = args[3]
+        figuredir = args[4]
+        ranked_center_file = args[5]
+        bg_file = args[6]
+        ranked_fasta_file = args[7]
+        fimo_file = independent_functions.fimo(bg_file=bg_file, 
+                                        motif=motif_file,
+                                        ranked_fasta_file=ranked_fasta_file,
+                                        tempdir=tempdir, 
+                                        motifdatabase=motifdatabase)
 
-    fimo_file = independent_functions.fimo(bgfile=bg_file, 
-                                            motif=motif_file,
-                                            fastafile=ranked_fasta_file,
-                                            tempdir=tempdir, 
-                                            motifdatabase=motifdatabase)
+        # independent_functions.meme2images(motif=motif_file, 
+        #                                     motifdatabase=motifdatabase, 
+        #                                     figuredir=figuredir)
 
-    independent_functions.meme2images(motif=motif_file, 
-                                        motifdatabase=motifdatabase, 
-                                        figuredir=figuredir)
+        ranked_center_distance_file = independent_functions.fimo_parse(
+                                        fimo_file=fimo_file,
+                                        largewindow=largewindow,
+                                        tempdir=tempdir, 
+                                        ranked_center_file=ranked_center_file)
 
-    ranked_center_distance_file = independent_functions.fimo_parse(
-                                                        fimo_file=fimo_file,
-                                                        motif_file=motif_file,
-                                                        largewindow=largewindow,
-                                                        tempdir=tempdir, 
-                                                        ranked_center_file=ranked_center_file)
+        hits = independent_functions.get_motif_hits(motif_file=fimo_file, 
+                                                        header=True)
+    except Exception as e:
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        print traceback.print_exc()
+        raise e
 
-    return ranked_center_distance_file, fimo_file
+    return [ranked_center_distance_file, hits]
+#==============================================================================
+
+#==============================================================================
+def bedtools_distance(args):
+    motif_file, motif_genomewide_hits, ranked_center_file = args
+    try:
+        motif_full_path = os.path.join(motif_genomewide_hits, motif_file)
+        ranked_center_distance_file = independent_functions.motif_distance_bedtools_closest(
+                                        ranked_center_file=ranked_center_file,
+                                        motif_path=motif_full_path)
+        hits = independent_functions.get_motif_hits(motif_file=motif_full_path, 
+                                                    header=False)
+    except Exception as e:
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        print traceback.print_exc()
+        raise e
+
+    return [ranked_center_distance_file, hits]
 #==============================================================================
 
 #==============================================================================

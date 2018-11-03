@@ -830,3 +830,407 @@ def distance_distribution_plot(largewindow=None, smallwindow=None,
     
     plt.cla()
 #==============================================================================
+
+#==============================================================================
+def fimo(tempdir=None, motifdatabase=None, bgfile=None, motif=None, 
+            fastafile=None, thresh='0.0001'):
+    '''This function runs fimo on a given fastafile for a single motif in a 
+        provided motif database. The output is cut and sorted to convert into 
+        a sorted bed file
+
+    Parameters
+    ----------
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    motifdatabase : string
+        full path to a motif database file in meme format
+
+    bgfile : string
+        full path to a markov background model
+
+    motif : string
+        the name of a motif that matches a motif within motifdatabase
+
+    fastafile : string
+        full path to a fasta file that fimo will perform motif scanning on
+        
+    Returns
+    -------
+    fimo_out : string
+        full path to where fimo output which is stored within the tempdir 
+        directory.
+    '''
+    fimo_out = os.path.join(tempdir,motif)
+    command = ("fimo --skip-matched-sequence --verbosity 1 --thresh " + thresh 
+                + " --bgfile " + bgfile 
+                + " --motif " + motif.strip('.bed') + " " + motifdatabase 
+                + " " + fastafile
+                + " > " + fimo_out)
+    # command = ("fimo --qv-thresh --verbosity 1 --thresh " + thresh 
+    #             + " --oc " + fimo_out
+    #             + " --bgfile " + bgfile 
+    #             + " --motif " + motif.strip('.bed') + " " + motifdatabase 
+    #             + " " + fastafile)
+    # print command
+    # os.system(command)
+    with open(os.devnull, 'w') as devnull:
+        subprocess.call(command, shell=True, stderr=devnull)
+
+    return fimo_out
+#==============================================================================
+
+#==============================================================================
+def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
+                bam1=None, bam2=None, 
+                motif_hits=None, singlemotif=None, 
+                COMBINEtime=None, COUNTtime=None, DESEQtime=None, 
+                CALCULATEtime=None, fimo=None, plot=None, 
+                padj_cutoff=None, logos=None, figuredir=None,
+                largewindow=None, smallwindow=None, genomefasta=None,
+                motifdatabase=None, pool=None, label1=None, label2=None):
+    '''This function performs the bulk of transcription factor enrichment
+        analysis (TFEA), it does the following:
+            1. GC distribution across regions for plotting
+            2. Millions mapped calculation for meta eRNA plots
+            3. Motif distance calculation to the center of inputted regions
+            4. Enrichment score calculation via AUC method
+            5. Random shuffle simulation and recalculation of enrichment score
+            6. Plotting and generation of html report
+
+    Parameters
+    ----------
+    tempdir : string
+        the full path to the tempdir directory within the outputdir created 
+        by TFEA
+
+    outputdir : string
+        the full path to the output directory created by TFEA
+
+    bam1 : list or array
+        a list of full paths to bam files corresponding to condition1
+
+    bam2 : list or array
+        a list of full paths to bam files corresponding to condition2
+
+    singlemotif : boolean or string
+        either False if all motifs should be considered in TFEA or the name of
+        a specific motif to be analyzed
+
+    motif_hits : string
+        the full path to a directory containing motif hits across the genome
+
+    output : string
+        the full path to a user-specified output directory. TFEA will create
+        a new folder within this directory - this is called outputdir
+
+    padj_cutoff : float
+        the cutoff value for determining significance
+
+    plot : boolean
+        a switch that controls whether all motifs are plotted or just 
+        significant ones defined by the p-adj cutoff
+
+    combine : boolean
+        a switch that determines whether bed files within the beds variable
+        get combined and merged using bedtools
+
+    count : boolean
+        a switch that controls whether reads are counted over the regions of
+        interest
+
+    deseq : boolean
+        a switch that controls whether DE-Seq is performed on the inputted
+        regions that have been counted over
+
+    calculate : boolean
+        a switch that determines whether the TFEA calculation is performed
+
+    TFresults : list or array
+        a list of lists contining 'enrichment' scores, normalized 'enrichment' 
+        scores, p-value, p-adj, and number of hits for each individual motif
+
+    COMBINEtime : float
+        the time it took to combine and merge the bed files using bedtools
+
+    COUNTtime : float
+        the time it took to count reads over regions of interest
+
+    DESEQtime : float
+        the time it took to perform DE-Seq using the counts file
+
+    CALCULATEtime : float
+        the time it took to perform TFEA
+
+    '''
+    print "Calculating GC content of regions..."
+    #This line gets an array of GC values for all inputted regions
+    gc_array = get_gc_array(ranked_center_file=ranked_center_file,
+                            window=int(largewindow), tempdir=tempdir, 
+                            genomefasta=genomefasta)
+
+    print "done\nCalculating millions mapped reads for bam files..."
+    #Here we determine how many cpus to use for parallelization
+    cpus = mp.cpu_count()
+    if cpus > 64:
+        cpus = 64
+
+    #Here we calculate millions mapped reads for use with the metaeRNA module
+    # p = Pool(cpus)
+    # args = [(x,tempdir) for x in bam1+bam2]
+    # millions_mapped = p.map(independent_functions.samtools_flagstat,args)
+    millions_mapped = list()
+
+    if fimo:
+        ranked_fullregions_file = independent_functions.get_regions(
+                                        tempdir=tempdir, 
+                                        ranked_center_file=ranked_center_file,
+                                        largewindow=largewindow)
+
+        ranked_fasta_file = independent_functions.getfasta(
+                                                genomefasta=genomefasta, 
+                                                tempdir=tempdir,
+                                                bedfile=ranked_fullregions_file)
+
+        bg_file = independent_functions.fasta_markov(fastafile=ranked_fasta_file,
+                                                    tempdir=tempdir)
+
+        motif_list = independent_functions.get_motif_names(
+                                                motifdatabase=motifdatabase)
+    else:
+        motif_list = os.listdir(motif_hits)
+
+    print "done\nFinding motif hits in regions..."
+    if singlemotif == False:
+        TFresults = list()
+        if pool:
+            
+            args = [(x, millions_mapped, gc_array, fimo, ranked_center_file,
+                        motif_hits, plot, padj_cutoff, logos, figuredir,
+                        largewindow, smallwindow, genomefasta, tempdir, 
+                        motifdatabase, bg_file, 
+                        ranked_fasta_file) for x in motif_list]
+            p = Pool(cpus)
+            TFresults = p.map(calculate_es_auc, args)
+            # TFresults = p.map(calculate_es_youden_rank, args)
+        else:
+            for motif_file in motif_list:
+                results = calculate_es_auc((motif_file, millions_mapped, 
+                        gc_array, fimo, ranked_center_file, motif_hits, plot, 
+                        padj_cutoff, logos, figuredir, largewindow, 
+                        smallwindow, genomefasta, tempdir, motifdatabase, 
+                        bg_file, ranked_fasta_file))
+                # results = calculate_es_youden_rank((motif_file, 
+                #         millions_mapped, gc_array, fimo, ranked_center_file, 
+                #         motif_hits, plot, padj_cutoff, logos, figuredir, 
+                #         largewindow, smallwindow, genomefasta, tempdir, 
+                #         motifdatabase))
+                if results != "no hits":
+                    TFresults.append(results)
+                else:
+                    print "No motifs within specified window for: ", motif_file
+
+
+        CALCULATEtime = time.time()-CALCULATEtime
+        # independent_functions.pvalue_global_youden_rank(TFresults=TFresults)
+        TFresults = independent_functions.padj_bonferroni(TFresults=TFresults)
+        # TFresults = independent_functions.pvalue_global_auc(TFresults=TFresults,
+        #                                                     auc_index=1)
+        #Creates results.txt which is a tab-delimited text file with the results    
+        TFresults = sorted(TFresults, key=lambda x: x[-3])
+        plot_global_graphs(padj_cutoff=padj_cutoff, label1=label1, 
+                            label2=label2, figuredir=figuredir, 
+                            TFresults=TFresults)
+        independent_functions.create_text_output(TFresults=TFresults, 
+                                                    outputdir=outputdir)
+        independent_functions.create_summary_html()
+        independent_functions.create_motif_result_html(TFresults=TFresults)
+        independent_functions.create_main_results_html(TFresults=TFresults, 
+                                                    COMBINEtime=COMBINEtime, 
+                                                    COUNTtime=COUNTtime, 
+                                                    DESEQtime=DESEQtime, 
+                                                    CALCULATEtime=CALCULATEtime)
+
+    #Note if you set the SINGLEMOTIF variable to a specific TF, this program 
+    #will be unable to determine an PADJ for the given motif.
+    else:
+        results = calculate_es_auc((singlemotif, millions_mapped, gc_array, 
+                        fimo, ranked_center_file, motif_hits, plot, 
+                        padj_cutoff, logos, figuredir, largewindow, 
+                        smallwindow, genomefasta, tempdir, motifdatabase, 
+                        bg_file, ranked_fasta_file))
+        # results = calculate_es_youden_rank((singlemotif, millions_mapped, 
+        #                 gc_array, fimo, ranked_center_file, motif_hits, plot, 
+        #                 padj_cutoff, logos, figuredir, largewindow, 
+        #                 smallwindow, genomefasta, tempdir, motifdatabase))
+        independent_functions.create_motif_result_html(TFresults=[results+[0]])
+
+    print "done"
+#==============================================================================
+
+#==============================================================================
+def calculate_es_youden_rank(args):
+    '''This function calculates the AUC for any TF based on the TF motif hits 
+        relative to the bidirectionals. The calculated AUC is used as a proxy 
+        for the enrichemnt of the TFs.
+
+    Parameters
+    ----------
+    args : tuple 
+        contains two arguments that are unpacked within this function:
+            motif_file : string
+                the name of a motif bed file contained within MOTIF_HITS
+
+            millions_mapped : list or array
+                contiains a list of floats that corresponds to the millions 
+                mapped reads for each bam file
+
+            fimo : boolean
+                a switch that controls whether motif hits are generated on the 
+                fly using fimo
+
+            ranked_center_file : string
+                the full path to a bed file containing the center of regions 
+                sorted by DE-Seq p-value
+
+            motif_hits : string
+                the full path to a directory containing motif hits across the 
+                genome
+
+            plot : boolean
+                a switch that controls whether TFEA generates plots for all 
+                motifs or just significant ones
+            
+            padj_cutoff : float
+                the cutoff value for calling a motif as significant
+
+            logos : string
+                the full path to a directory containing meme logos for motifs
+
+            figuredir : string
+                the full path to the figure directory within the output 
+                directory where figures and plots are stored
+
+            largewindow : float
+                a user specified larger window used for plotting purposes and 
+                to do some calculations regarding the user-provided regions of 
+                interest
+
+            smallwindow : float
+                a user specified smaller window used for plotting purposes and 
+                to do some calculations regarding the user-provided regions of 
+                interest
+
+    Returns
+    -------
+    AUC : float
+        the area under the curve (AUC) for a given tf
+
+    p-value : float
+        theoretical p-value calculated by comparing the observed value  to the
+        distribution of all simulations (default:1000)
+                 
+    Raises
+    ------
+    ValueError
+        when tf does not have any hits
+    '''
+    motif_file = args[0]
+    millions_mapped = args[1]
+    gc_array = args[2]
+    fimo  = args[3]
+    ranked_center_file = args[4]
+    motif_hits = args[5]
+    plot = args[6] 
+    padj_cutoff = args[7]
+    logos = args[8]
+    figuredir = args[9]
+    largewindow = args[10]
+    smallwindow = args[11]
+    genomefasta = args[12]
+    tempdir = args[13]
+    motifdatabase = args[14]
+
+    if fimo:
+        ranked_center_distance_file = fimo_distance(
+                                        ranked_center_file=ranked_center_file,
+                                        motif_file=motif_file,
+                                        genomefasta=genomefasta, 
+                                        largewindow=largewindow, 
+                                        tempdir=tempdir, 
+                                        figuredir=figuredir,
+                                        motifdatabase=motifdatabase)
+    else:
+        ranked_center_distance_file = independent_functions.motif_distance_bedtools_closest(
+                                        ranked_center_file=ranked_center_file,
+                                        motif_path=motif_hits+motif_file)
+
+    distances = []
+    ranks = []
+    pvals= []
+    pos = 0
+    fc = []
+
+    with open(ranked_center_distance_file) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            distance = int(line[-1])
+            rank = int(line[5])
+            pvals.append(float(line[3]))
+            fc.append(float(line[4]))
+            ranks.append(rank)
+            distances.append(distance)
+            if distance < largewindow:
+                pos+=1
+
+    #sort distances based on the ranks from TF bed file
+    #and calculate the absolute distance
+    rank_number = float(len(ranks))
+    ranks = [float(rank)/rank_number for rank in ranks]
+    sorted_distances = [x for _,x in sorted(zip(ranks, distances))]
+    distances_abs = [abs(x) for x in sorted_distances] 
+
+    #filter any TFs/files without and hits
+    if len(distances_abs) == 0:
+        return "no hits"
+
+    #Get -exp() of distance and get cumulative scores
+    score = [math.exp(-x) for x in distances_abs] 
+    total = float(sum(score))
+    normalized_score = [x/total for x in score]
+    cumscore = np.cumsum(normalized_score)
+
+    trend = np.arange(0,1,1.0/float(len(ranks)))
+
+    #The AUC is the relative to the "random" line
+    youden = cumscore - trend
+    youden_max = max(cumscore - trend)
+    rank_max = np.where(youden == youden_max)[0][0]/float(len(youden))
+
+    print rank_max
+
+    #Calculate random AUC
+    simES = independent_functions.permutations_youden_rank(
+                                                    distances=normalized_score, 
+                                                    trend=trend)
+
+    ##significance calculator                                                                                                                                                            
+    mu = np.mean(simES)
+    NES = youden/abs(mu)
+    sigma = np.std(simES)
+
+
+    p = min(1-norm.cdf(rank_max,mu,sigma), norm.cdf(rank_max,mu,sigma))
+
+    plot_individual_graphs(plot=plot, padj_cutoff=padj_cutoff,
+                            figuredir=figuredir, logos=logos, 
+                            largewindow=largewindow, 
+                            smallwindow=smallwindow,
+                            distances_abs=distances_abs, 
+                            sorted_distances=sorted_distances,ranks=ranks,
+                            pvals=pvals, fc=fc, cumscore=cumscore, 
+                            motif_file=motif_file, p=p, simES=simES, 
+                            actualES=rank_max, gc_array=gc_array)
+
+    return [motif_file.split('.bed')[0], rank_max, NES, p, pos]
+#==============================================================================

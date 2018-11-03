@@ -104,8 +104,10 @@ import dependent_functions
 #==============================================================================
 #MAIN SCRIPT
 #==============================================================================
+
 #This module takes the input list of BED files, concatenates them, and then 
 #merges them via bedtools.
+#==============================================================================
 COMBINEtime = time.time()
 if config.COMBINE:
     # bedfile = independent_functions.merge_bed(beds=config.BED1+config.BED2, 
@@ -119,9 +121,11 @@ else:
     bedfile = config.BED1 + config.BED2
     bedfile = bedfile[0]
 COMBINEtime = time.time()-COMBINEtime 
+#==============================================================================
 
 #This module counts reads from all Bam files in BAM1 and BAM2 and creates 
 #count_file with this info.
+#==============================================================================
 COUNTtime = time.time()
 if config.COUNT:
     print "Counting reads in regions..."
@@ -137,9 +141,11 @@ elif config.DESEQ:
     # DE-Seq, user must provide a count_file
     count_file = config.COUNT_FILE
 COUNTtime = time.time()-COUNTtime
+#==============================================================================
 
 #This module runs DESeq on the count_file produced above - this is used to rank
 #inputted regions
+#==============================================================================
 DESEQtime = time.time()
 if config.DESEQ:
     print "Running DESeq..."
@@ -160,7 +166,74 @@ elif config.CALCULATE:
     # TF enrichment, user must provide a ranked_center_file
     ranked_center_file = config.RANKED_CENTER_FILE
 DESEQtime = time.time()-DESEQtime
+#==============================================================================
 
+#Either perform motif scanning on the fly or use genome-wide motif hits 
+# provided by user
+#==============================================================================
+cpus = mp.cpu_count()
+if cpus > 64:
+    cpus = 64
+
+if config.FIMO:
+    ranked_fullregions_file = independent_functions.get_regions(
+                                        tempdir=tempdir, 
+                                        ranked_center_file=ranked_center_file,
+                                        largewindow=config.LARGEWINDOW)
+
+    ranked_fasta_file = independent_functions.getfasta(
+                                            genomefasta=config.GENOMEFASTA, 
+                                            tempdir=tempdir,
+                                            bedfile=ranked_fullregions_file)
+    
+    bg_file = independent_functions.fasta_markov(fastafile=ranked_fasta_file,
+                                                    tempdir=tempdir)
+
+    if config.SINGLEMOTIF == False:
+        motif_list = independent_functions.get_motif_names(
+                                            motifdatabase=config.MOTIFDATABASE)
+    else:
+        motif_list = [config.SINGLEMOTIF]
+
+    #Perform FIMO motif scanning using parallelization
+    fimo_args = [(motif, config.LARGEWINDOW, tempdir, config.MOTIFDATABASE, 
+        figuredir, ranked_center_file, bg_file, 
+        ranked_fasta_file) for motif in motif_list]
+    p = Pool(cpus)
+    motif_list = p.map(dependent_functions.fimo_distance, fimo_args)
+
+elif config.HOMER:
+    ranked_fullregions_file = independent_functions.get_regions(
+                                        tempdir=tempdir, 
+                                        ranked_center_file=ranked_center_file,
+                                        largewindow=config.LARGEWINDOW)
+
+    ranked_fasta_file = independent_functions.getfasta(
+                                            genomefasta=config.GENOMEFASTA, 
+                                            tempdir=tempdir,
+                                            bedfile=ranked_fullregions_file)
+    
+    homer_out = independent_functions.homer(tempdir=tempdir, 
+                        srcdirectory=os.path.dirname(srcdirectory), 
+                        fastafile=ranked_fasta_file, cpus=cpus,
+                        motif_file=config.HOMER_MOTIF_FILE)
+    
+    motif_list = independent_functions.homer_parse(largewindow=config.LARGEWINDOW, 
+                                                tempdir=tempdir, homer_out=homer_out,
+                                                ranked_center_file=ranked_center_file)
+    
+else:
+    if config.SINGLEMOTIF == False:
+        list_motif_files = os.listdir(config.MOTIF_GENOMEWIDE_HITS)
+    else:
+        list_motif_files = os.path.join(config.MOTIF_GENOMEWIDE_HITS, 
+                                config.SINGLEMOTIF)
+    bedtools_distance_args = [(motif_file, config.MOTIF_GENOMEWIDE_HITS, 
+                            ranked_center_file) for motif_file in list_motif_files]
+    p = Pool(cpus)
+    motif_list = p.map(dependent_functions.bedtools_distance, 
+                                                        bedtools_distance_args)
+#==============================================================================
 
 #This is the bulk of the analysis of this package, it performs:
 #   1. GC distribution across regions for plotting
@@ -169,6 +242,7 @@ DESEQtime = time.time()-DESEQtime
 #   4. Enrichment score calculation via AUC method
 #   5. Random shuffle simulation and recalculation of enrichment score
 #   6. Plotting and generation of html report
+#==============================================================================
 CALCULATEtime = time.time()
 if config.CALCULATE:
     dependent_functions.calculate(tempdir=tempdir, 
@@ -177,7 +251,7 @@ if config.CALCULATE:
                                     bam2=config.BAM2, 
                                     label1=config.LABEL1,
                                     label2=config.LABEL2,
-                                    motif_hits=config.MOTIF_HITS, 
+                                    motif_list=motif_list, 
                                     singlemotif=config.SINGLEMOTIF, 
                                     ranked_center_file=ranked_center_file, 
                                     COMBINEtime=COMBINEtime, 
@@ -185,7 +259,6 @@ if config.CALCULATE:
                                     CALCULATEtime=CALCULATEtime, 
                                     fimo=config.FIMO, 
                                     plot=config.PLOT, 
-                                    pool=config.POOL,
                                     padj_cutoff=config.PADJCUTOFF, 
                                     logos=config.LOGOS, 
                                     figuredir=figuredir,
@@ -193,10 +266,11 @@ if config.CALCULATE:
                                     smallwindow=config.SMALLWINDOW,
                                     motifdatabase=config.MOTIFDATABASE,
                                     genomefasta=config.GENOMEFASTA)
-
+#==============================================================================
 
 #Here we simply remove large bed files that are produced within this package. 
 #This option can be turned on/off within the config file.
+#==============================================================================
 if not config.TEMP:
     print "Removing temporary bed files..."
     files_to_keep = ['count_file.bed', 'DESeq.R', 'DESeq.res.txt', 
@@ -207,3 +281,4 @@ if not config.TEMP:
              os.remove(os.path.join(tempdir, file1))
 
 print "done"
+#==============================================================================

@@ -4,17 +4,17 @@
 #SBATCH --job-name=TFEA
 
 ###Specify the queue
-#SBATCH -p long
+#SBATCH -p short
 
 ###Specify WallTime
-#SBATCH --time=24:00:00
+#SBATCH --time=4:00:00
 
 ### Specify the number of nodes/cores
 #SBATCH --nodes=1
-#SBATCH --ntasks=64
+#SBATCH --ntasks=10
 
 ### Allocate the amount of memory needed
-#SBATCH --mem=500gb
+#SBATCH --mem=50gb
 
 ### Setting to mail when the job is complete
 #SBATCH --error /scratch/Users/rusi2317/e_and_o/%x.err
