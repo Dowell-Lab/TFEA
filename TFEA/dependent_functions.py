@@ -151,13 +151,11 @@ def calculate_es_auc(args):
         sorted_distances = [x for _,x in sorted(zip(ranks, distances))]
         distances_abs = [abs(x) for x in sorted_distances] 
 
-        
-
         #Get -exp() of distance and get cumulative scores
         #Filter distances into quartiles to get middle distribution
         q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
         q3 = round(np.percentile(np.arange(1, len(distances_abs),1), 75))
-        middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x < largewindow]
+        middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x <= largewindow]
         average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
         # average_distance = 1.0
         score = [math.exp(-float(x)/average_distance) for x in distances_abs]
@@ -187,8 +185,6 @@ def calculate_es_auc(args):
 
         #The AUC is the relative to the "random" line
         actualES = np.trapz(cumscore) - np.trapz(trend)
-
-
 
         #Calculate random AUC
         simES = independent_functions.permutations_auc(distances=normalized_score,

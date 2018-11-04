@@ -1430,23 +1430,30 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         #This is the distance scatter plot right below the enrichment score 
         #plot
         x = xvals
-        y = sorted_distances
+        # y = sorted_distances
         # xy = np.vstack([x, y])
         # z = gaussian_kde(xy)(xy)
         # idx = np.argsort(z)
         # x, y, z = [x[i] for i in idx], [y[i] for i in idx], [z[i] for i in idx]
         ax1 = plt.subplot(gs[1])
         # ax1.scatter(x,y,edgecolor="", c=z, s=10, alpha=0.25)
-        ax1.scatter(x,y,edgecolor="", color="black", s=10, alpha=0.25)
+        # ax1.scatter(x,y,edgecolor="", color="black", s=10, alpha=0.25)
+        rgb_colors = np.zeros((len(x), 4))
+        rgb_colors[:,0] = 1.0
+        rgb_colors[:,1] = 1.0
+        rgb_colors[:,2] = 1.0
+        rgb_colors[:,3] = [1.0 - math.fabs(y) for y in sorted_distances]
+        ax1.bar(x,[1 for l in x], edgecolor="", color=rgb_colors)
         ax1.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='on') 
+                        labelleft='off') 
         ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
                         labelbottom='off')
         ax1.set_xlim(limits)
-        ax1.set_ylim([-int(largewindow),int(largewindow)])
-        plt.yticks([-int(largewindow),0,int(largewindow)],
-                    [str(-int(largewindow)/1000.0),'0',\
-                    str(int(largewindow)/1000.0)])
+        # ax1.set_ylim([-int(largewindow),int(largewindow)])
+        ax1.set_ylim([0,1])
+        # plt.yticks([-int(largewindow),0,int(largewindow)],
+        #             [str(-int(largewindow)/1000.0),'0',\
+        #             str(int(largewindow)/1000.0)])
         ax1.set_ylabel('Distance (kb)', fontsize=10)
 
         #This is the rank metric plot
@@ -1496,8 +1503,12 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
 
         plt.close()
 
-    except:
+    except Exception as e:
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        print traceback.print_exc()
         print len(xvals), len(cumscore)
+        raise e
 #==============================================================================
 
 #==============================================================================
