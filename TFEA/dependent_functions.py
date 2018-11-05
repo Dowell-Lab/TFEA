@@ -205,10 +205,10 @@ def calculate_es_auc(args):
                                 largewindow=largewindow, 
                                 smallwindow=smallwindow,
                                 distances_abs=distances_abs, 
-                                sorted_distances=sorted_distances,ranks=ranks,
+                                sorted_distances=sorted_distances, ranks=ranks,
                                 pvals=pvals, fc=fc, cumscore=plotting_cumscore, 
                                 motif_file=motif_file.split('/')[-1].strip('sorted.distance.bed'),
-                                p=p, simES=simES, actualES=actualES, 
+                                p=p, simES=simES, actualES=actualES, score=score,  
                                 gc_array=gc_array)
     except Exception as e:
         # This prints the type, value, and stack trace of the
@@ -222,7 +222,7 @@ def calculate_es_auc(args):
 #==============================================================================
 def plot_individual_graphs(plot=None, padj_cutoff=None,
                             figuredir=None, logos=None, 
-                            largewindow=None, 
+                            largewindow=None, score=None, 
                             smallwindow=None,
                             distances_abs=None, sorted_distances=None,
                             ranks=None, pvals=None, fc=None, 
@@ -337,7 +337,7 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
                                             logpval=logpval, 
                                             updistancehist=updistancehist, 
                                             downdistancehist=downdistancehist, 
-                                            gc_array=gc_array,
+                                            gc_array=gc_array, score=score, 
                                             motif_file=motif_file)
 
         #Plot the simulation plot

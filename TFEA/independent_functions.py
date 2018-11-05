@@ -1345,7 +1345,8 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
 def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
                     cumscore=None, sorted_distances=None, logpval=None, 
                     updistancehist=None, downdistancehist=None, 
-                    gc_array=None, motif_file=None, dpi=None, save=True):
+                    gc_array=None, motif_file=None, dpi=None, save=True, 
+                    score=None):
     '''This function plots the TFEA enrichment plot.
 
     Parameters
@@ -1438,12 +1439,31 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         ax1 = plt.subplot(gs[1])
         # ax1.scatter(x,y,edgecolor="", c=z, s=10, alpha=0.25)
         # ax1.scatter(x,y,edgecolor="", color="black", s=10, alpha=0.25)
-        rgb_colors = np.zeros((len(x), 4))
-        rgb_colors[:,0] = 1.0
-        rgb_colors[:,1] = 1.0
-        rgb_colors[:,2] = 1.0
-        rgb_colors[:,3] = [1.0 - math.fabs(y) for y in sorted_distances]
-        ax1.bar(x,[1 for l in x], edgecolor="", color=rgb_colors)
+
+        # bins=barbins
+        # counts, edges = np.histogram(score, bins=bins)
+        # edges        = (edges[1:]+edges[:-1])/2.
+        # plt.bar(edges, counts, width=(edges[-1]-edges[0])/bins)
+    
+        
+        # norm    = matplotlib.colors.Normalize(vmin=min(counts), vmax=max(counts))
+        # cmap    = cm.Greys
+        # m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+        # colors  = [m.to_rgba(c) for c in counts] 
+        # rgb_colors = np.zeros((len(x), 4))
+        # rgb_colors[:,0] = 0.0
+        # rgb_colors[:,1] = 0.0
+        # rgb_colors[:,2] = 0.0
+        # rgb_colors[:,3] = [1.0 - math.fabs(y) for y in score]
+        norm    = matplotlib.colors.Normalize(vmin=min(score), vmax=max(score))
+        cmap    = cm.Greys
+        m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+        colors  = [m.to_rgba(c) for c in score] 
+        ax1.bar(x,[1 for l in x], edgecolor="", color=colors)
+
+        # ax1.bar(edges, np.ones((len(edges),)), color=colors, 
+        #         width=(edges[-1]-edges[0])/len(edges), 
+        #         edgecolor=colors)
         ax1.tick_params(axis='y', which='both', left='off', right='off', 
                         labelleft='off') 
         ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
