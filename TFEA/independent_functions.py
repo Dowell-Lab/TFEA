@@ -1345,7 +1345,7 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
 def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
                     cumscore=None, sorted_distances=None, logpval=None, 
                     updistancehist=None, downdistancehist=None, 
-                    gc_array=None, motif_file=None, dpi=None):
+                    gc_array=None, motif_file=None, dpi=None, save=True):
     '''This function plots the TFEA enrichment plot.
 
     Parameters
@@ -1497,17 +1497,17 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         #                 labelbottom='off')
 
         # ax3.set_ylabel('GC content per kb',fontsize=10)
-
-        plt.savefig(os.path.join(figuredir, motif_file
+        if save:
+            plt.savefig(os.path.join(figuredir, motif_file
                     + '_enrichment_plot.png'),dpi=dpi,bbox_inches='tight')
-
-        plt.close()
+            plt.close()
+        else:
+            plt.show()
 
     except Exception as e:
         # This prints the type, value, and stack trace of the
         # current exception being handled.
         print traceback.print_exc()
-        print len(xvals), len(cumscore)
         raise e
 #==============================================================================
 
@@ -1723,9 +1723,17 @@ def MA_plot(figuredir=None, label1=None, label2=None, POSlist=None,
 #==============================================================================
 
 #==============================================================================
-def meta_eRNA_quartiles(figuredir=None, label1=None, label2=None, POSlist=None, 
-            ESlist=None, MAx=None, MAy=None):
-    '''Under Construction...
+def meta_eRNA_quartiles(figuredir=None, label1=None, label2=None, logpval=None,
+                        q1label1pos=None, q1label1neg=None, q1label2pos=None,
+                        q1label2neg=None, q23label1pos=None, q23label1neg=None,
+                        q23label2pos=None, q23label2neg=None, q4label1pos=None,
+                        q4label1neg=None, q4label2pos=None, q4label2neg=None, 
+                        q1distancehist=None, q23distancehist=None, 
+                        q4distancehist=None):
+    '''This function creates a plot with meta profiles for inputted regions
+        of interest. It creates a separate plot for quartiles 1, 2/3, and 4.
+        Additionally, under each meta plot it also produces a heatmap histogram
+        of motif hits.
 
     Parameters
     ----------
@@ -1758,22 +1766,63 @@ def meta_eRNA_quartiles(figuredir=None, label1=None, label2=None, POSlist=None,
     -------
     None
     '''
-    plt.figure(figsize=(7,6))
-    ax = plt.subplot(111)
-    ax.scatter(POSlist,ESlist,color='black',edgecolor='')
-    ax.scatter(MAx,MAy,color='red',edgecolor='')
-    ax.set_title("TFEA MA-Plot",fontsize=14)
-    ax.set_ylabel("Area Under the Curve (AUC)", fontsize=14)
+    F = plt.figure(figsize=(15.5,6))
+    
+    xvals = range(-int(1500),int(1500))
 
-    ax.set_xlabel("Motif Hits Log10",fontsize=14)
-    ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
+    gs = gridspec.GridSpec(2, 3, height_ratios=[2, 1, 2, 1, 2, 1])
 
-    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+    # First quartile plot
+    ax0 = plt.subplot(gs[0])
+    line1, = ax0.plot(xvals,q1label1pos,color='blue',label=label1)
+    ax0.plot(xvals,q1label1neg,color='blue')
+    line2, = ax0.plot(xvals,q1label2pos,color='red',label=label2)
+    ax0.plot(xvals,q1label2neg,color='red')
+    ax0.legend(loc=1)
+    ax0.set_title('First Quartile',fontsize=14)
+    ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax0.set_xlabel('Distance to eRNA Origin (bp)')
 
-    plt.savefig(os.path.join(figuredir, 'TFEA_NES_MA_Plot.png'),
-                bbox_inches='tight')
+    ax1 = plt.subplot(gs[1])
+    #Placeholder for heatmap histogram
+
+
+    # Second quartile plot
+    ax2 = plt.subplot(gs[2])
+    line1, = ax0.plot(xvals,q23label1pos,color='blue',label=label1)
+    ax2.plot(xvals,q23label1neg,color='blue')
+    line2, = ax0.plot(xvals,q23label2pos,color='red',label=label2)
+    ax2.plot(xvals,q23label2neg,color='red')
+    ax2.legend(loc=1)
+    ax2.set_title('Meta Plot over all regions',fontsize=14)
+    ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax2.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax2.set_xlabel('Distance to eRNA Origin (bp)')
+
+    ax3 = plt.subplot(gs[3])
+    # Placeholder for second heatmap histogram
+
+    # Third quartile plot
+    ax4 = plt.subplot(gs[4])
+    line1, = ax0.plot(xvals,q4label1pos,color='blue',label=label1)
+    ax4.plot(xvals,q4label1neg,color='blue')
+    line2, = ax0.plot(xvals,q4label2pos,color='red',label=label2)
+    ax4.plot(xvals,q4label2neg,color='red')
+    ax4.legend(loc=1)
+    ax4.set_title('Meta Plot over all regions',fontsize=14)
+    ax4.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    ax4.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax4.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax4.set_xlabel('Distance to eRNA Origin (bp)')
+
+    ax5 = plt.subplot(gs[5])
+    #Placeholder for thid heatmap histogram
+
+    plt.savefig('./test.png',bbox_inches='tight')
+    plt.show()
     plt.cla()
 #==============================================================================
 
@@ -2513,27 +2562,38 @@ if __name__ == "__main__":
     #                 sigx=sigx, sigy=sigy)
 
     #==================METAeRNA TEST===================
-    import matplotlib.pyplot as plt
-    posprofile1, negprofile1, posprofile2, negprofile2 = meta_profile(regionlist=[('chr17', '67603195','67603800')], 
-                                                            millions_mapped=[54307224,158978147], 
-                                                            largewindow=1500.0, 
-                                                            bam1=['../../TFEA_outputs/SRR1105736.fastqbowtie2.sorted.bam'], 
-                                                            bam2=['../../TFEA_outputs/SRR1105738.fastqbowtie2.sorted.bam'])
-    print sum(posprofile1), sum(negprofile1), sum(posprofile2), sum(negprofile2)
+    # import matplotlib.pyplot as plt
+    # posprofile1, negprofile1, posprofile2, negprofile2 = meta_profile(regionlist=[('chr17', '67603195','67603800')], 
+    #                                                         millions_mapped=[54307224,158978147], 
+    #                                                         largewindow=1500.0, 
+    #                                                         bam1=['../../TFEA_outputs/SRR1105736.fastqbowtie2.sorted.bam'], 
+    #                                                         bam2=['../../TFEA_outputs/SRR1105738.fastqbowtie2.sorted.bam'])
+    # print sum(posprofile1), sum(negprofile1), sum(posprofile2), sum(negprofile2)
 
-    F = plt.figure(figsize=(15.5,6))
-    ax0 = plt.subplot(111)
-    xvals = range(-int(1500),int(1500))
-    line1, = ax0.plot(xvals,posprofile1,color='blue',label='DMSO')
-    ax0.plot(xvals,negprofile1,color='blue')
-    line2, = ax0.plot(xvals,posprofile2,color='red',label='Nutlin')
-    ax0.plot(xvals,negprofile2,color='red')
-    ax0.legend(loc=1)
-    ax0.set_title('Meta Plot over all regions',fontsize=14)
-    ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
-    ax0.set_xlabel('Distance to eRNA Origin (bp)')
-    plt.savefig('./test.png',bbox_inches='tight')
+    # F = plt.figure(figsize=(15.5,6))
+    # ax0 = plt.subplot(111)
+    # xvals = range(-int(1500),int(1500))
+    # line1, = ax0.plot(xvals,posprofile1,color='blue',label='DMSO')
+    # ax0.plot(xvals,negprofile1,color='blue')
+    # line2, = ax0.plot(xvals,posprofile2,color='red',label='Nutlin')
+    # ax0.plot(xvals,negprofile2,color='red')
+    # ax0.legend(loc=1)
+    # ax0.set_title('Meta Plot over all regions',fontsize=14)
+    # ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    # ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    # ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
+    # ax0.set_xlabel('Distance to eRNA Origin (bp)')
+    # plt.savefig('./test.png',bbox_inches='tight')
     # plt.show()
     # plt.cla()
+
+    #==================Enrichment Plot TEST=================
+    import math
+    sorted_distances = np.arange(0,150,10000)
+    cumscore = np.cumsum(sorted_distances)
+    logpval = np.arange(0.0001,1,10000)
+    logpval = [math.exp(-x) for x in logpval]
+    enrichment_plot(largewindow=150.0, smallwindow=15.0, figuredir='../',
+                    cumscore=cumscore, sorted_distances=sorted_distances, logpval=logpval, 
+                    updistancehist=None, downdistancehist=None, 
+                    gc_array=None, dpi=None, save=False)

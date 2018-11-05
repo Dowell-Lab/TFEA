@@ -213,7 +213,7 @@ def calculate_es_auc(args):
     except Exception as e:
         # This prints the type, value, and stack trace of the
         # current exception being handled.
-        print traceback.print_exc()
+        print(traceback.print_exc())
         raise e
 
     return [motif_file.split('/')[-1].strip('sorted.distance.bed'),actualES,NES,p,hits]
