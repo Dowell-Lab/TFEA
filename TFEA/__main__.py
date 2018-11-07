@@ -83,8 +83,11 @@ else:
     sys.exit(("TFEA has been submitted using an sbatch script, use qstat to "
             "check its progress."))
 
-#Run the config_parser script which will create variables for all folders and 
-#paths to use throughout TFEA
+#==============================================================================
+#SECOND VERIFICATION OF CONFIG FILE
+#==============================================================================
+#This second verification ensures that at time of sbatch submission, the config
+#file is correct (in case a second instance of TFEA is running)
 preconfig_functions.parse_config(srcdirectory=srcdirectory, 
                                     config_object=config_object,
                                     output=output,tempdir=tempdir,
@@ -103,6 +106,13 @@ import independent_functions
 import dependent_functions
 #==============================================================================
 #MAIN SCRIPT
+#==============================================================================
+
+#Calculate how many cpus can be used for later parallelization steps
+#==============================================================================
+cpus = mp.cpu_count()
+if cpus > 64:
+    cpus = 64
 #==============================================================================
 
 #This module takes the input list of BED files, concatenates them, and then 
@@ -168,27 +178,81 @@ elif config.CALCULATE:
 DESEQtime = time.time()-DESEQtime
 #==============================================================================
 
+#Create a meta plot using input regions and input bam files
+#==============================================================================
+if config.METAPLOT:
+    print "Creating meta plots..."
+    meta_profile_dict = dependent_functions.meta_plot(
+                                    ranked_center_file=ranked_center_file, 
+                                    largewindow=config.LARGEWINDOW, 
+                                    bam1=config.BAM1, bam2=config.BAM2, 
+                                    tempdir=tempdir, cpus=cpus, 
+                                    figuredir=figuredir, label1=config.LABEL1, 
+                                    label2=config.LABEL2, dpi=config.DPI)
+    print "done"
+
 #Either perform motif scanning on the fly or use genome-wide motif hits 
 # provided by user
 #==============================================================================
-cpus = mp.cpu_count()
-if cpus > 64:
-    cpus = 64
 
-if config.FIMO:
-    ranked_fullregions_file = independent_functions.get_regions(
+#GENOMEWIDEHITS refers to precomputed motif hits accross the genome, if a user
+#specifies this option, they must populate MOTIF_GENOMEWIDE_HITS with a full
+#path to a folder containing bed files where each bed file is the genomewide
+#hits of a particular motif
+if config.GENOMEWIDEHITS:
+    if config.SINGLEMOTIF == False:
+        #If all motifs should be analyzed, then the list of motif files is
+        #simply all files within MOTIF_GENOMEWIDE_HITS
+        list_motif_files = os.listdir(config.MOTIF_GENOMEWIDE_HITS)
+    else:
+        #If a single motif should be analyzed then the list of motif files is
+        #simply the full path to that bed file
+        list_motif_files = os.path.join(config.MOTIF_GENOMEWIDE_HITS, 
+                                config.SINGLEMOTIF)
+
+    #Build the list of arguments to compute motif to region distances using 
+    #bedtools
+    bedtools_distance_args = [(motif_file, config.MOTIF_GENOMEWIDE_HITS, 
+                            ranked_center_file) for motif_file in list_motif_files]
+    p = Pool(cpus)
+
+    #Execute bedtools_distance function
+    motif_list = p.map(dependent_functions.bedtools_distance, 
+                                                        bedtools_distance_args)
+else:
+
+    #If a user desires TFEA to perform motif scanning, SMALLWINDOW will be used
+    #to obtain background ACGT content, and actual scanning will be performed
+    #over LARGEWINDOW (mostly for display purposes)
+    ranked_smallregions_file = independent_functions.get_regions(
                                         tempdir=tempdir, 
                                         ranked_center_file=ranked_center_file,
-                                        largewindow=config.LARGEWINDOW)
+                                        window=config.SMALLWINDOW,
+                                        outname='ranked_smallregions.bed')
 
-    ranked_fasta_file = independent_functions.getfasta(
+    ranked_largeregions_file = independent_functions.get_regions(
+                                        tempdir=tempdir, 
+                                        ranked_center_file=ranked_center_file,
+                                        window=config.LARGEWINDOW,
+                                        outname='ranked_largeregions.bed')
+
+    ranked_smallregions_fasta_file = independent_functions.getfasta(
                                             genomefasta=config.GENOMEFASTA, 
                                             tempdir=tempdir,
-                                            bedfile=ranked_fullregions_file)
-    
-    bg_file = independent_functions.fasta_markov(fastafile=ranked_fasta_file,
-                                                    tempdir=tempdir)
+                                            bedfile=ranked_smallregions_file,
+                                            outname='ranked_smallregions.fa')
 
+    ranked_largeregions_fasta_file = independent_functions.getfasta(
+                                            genomefasta=config.GENOMEFASTA, 
+                                            tempdir=tempdir,
+                                            bedfile=ranked_largeregions_file,
+                                            outname='ranked_largeregions.fa')
+    
+    bg_file = independent_functions.fasta_markov(
+                                    fastafile=ranked_smallregions_fasta_file,
+                                    tempdir=tempdir)
+
+if config.FIMO:
     if config.SINGLEMOTIF == False:
         motif_list = independent_functions.get_motif_names(
                                             motifdatabase=config.MOTIFDATABASE)
@@ -198,41 +262,19 @@ if config.FIMO:
     #Perform FIMO motif scanning using parallelization
     fimo_args = [(motif, config.LARGEWINDOW, tempdir, config.MOTIFDATABASE, 
         figuredir, ranked_center_file, bg_file, 
-        ranked_fasta_file) for motif in motif_list]
+        ranked_largeregions_fasta_file) for motif in motif_list]
     p = Pool(cpus)
     motif_list = p.map(dependent_functions.fimo_distance, fimo_args)
 
 elif config.HOMER:
-    ranked_fullregions_file = independent_functions.get_regions(
-                                        tempdir=tempdir, 
-                                        ranked_center_file=ranked_center_file,
-                                        largewindow=config.LARGEWINDOW)
-
-    ranked_fasta_file = independent_functions.getfasta(
-                                            genomefasta=config.GENOMEFASTA, 
-                                            tempdir=tempdir,
-                                            bedfile=ranked_fullregions_file)
-    
     homer_out = independent_functions.homer(tempdir=tempdir, 
                         srcdirectory=os.path.dirname(srcdirectory), 
-                        fastafile=ranked_fasta_file, cpus=cpus,
+                        fastafile=ranked_largeregions_fasta_file, cpus=cpus,
                         motif_file=config.HOMER_MOTIF_FILE)
     
     motif_list = independent_functions.homer_parse(largewindow=config.LARGEWINDOW, 
-                                                tempdir=tempdir, homer_out=homer_out,
-                                                ranked_center_file=ranked_center_file)
-    
-else:
-    if config.SINGLEMOTIF == False:
-        list_motif_files = os.listdir(config.MOTIF_GENOMEWIDE_HITS)
-    else:
-        list_motif_files = os.path.join(config.MOTIF_GENOMEWIDE_HITS, 
-                                config.SINGLEMOTIF)
-    bedtools_distance_args = [(motif_file, config.MOTIF_GENOMEWIDE_HITS, 
-                            ranked_center_file) for motif_file in list_motif_files]
-    p = Pool(cpus)
-    motif_list = p.map(dependent_functions.bedtools_distance, 
-                                                        bedtools_distance_args)
+                                        tempdir=tempdir, homer_out=homer_out,
+                                        ranked_center_file=ranked_center_file)
 #==============================================================================
 
 #This is the bulk of the analysis of this package, it performs:
@@ -258,14 +300,15 @@ if config.CALCULATE:
                                     COUNTtime=COUNTtime, DESEQtime=DESEQtime, 
                                     CALCULATEtime=CALCULATEtime, 
                                     fimo=config.FIMO, 
-                                    plot=config.PLOT, 
+                                    plot=config.PLOTALL, 
                                     padj_cutoff=config.PADJCUTOFF, 
                                     logos=config.LOGOS, 
                                     figuredir=figuredir,
                                     largewindow=config.LARGEWINDOW, 
                                     smallwindow=config.SMALLWINDOW,
                                     motifdatabase=config.MOTIFDATABASE,
-                                    genomefasta=config.GENOMEFASTA)
+                                    genomefasta=config.GENOMEFASTA, 
+                                    meta_profile_dict=meta_profile_dict)
 #==============================================================================
 
 #Here we simply remove large bed files that are produced within this package. 

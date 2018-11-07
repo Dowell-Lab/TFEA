@@ -131,6 +131,9 @@ def calculate_es_auc(args):
         figuredir = args[6]
         largewindow = args[7]
         smallwindow = args[8]
+        meta_profile_dict = args[9]
+        label1 = args[10]
+        label2 = args[11]
 
         distances = []
         ranks = []
@@ -155,10 +158,10 @@ def calculate_es_auc(args):
         #Filter distances into quartiles to get middle distribution
         q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
         q3 = round(np.percentile(np.arange(1, len(distances_abs),1), 75))
-        middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x <= largewindow]
+        middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x <= smallwindow]
         average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
         # average_distance = 1.0
-        score = [math.exp(-float(x)/average_distance) for x in distances_abs]
+        score = [math.exp(-float(x)/average_distance) if x <= smallwindow else 0.0 for x in distances_abs]
         total = float(sum(score))
         
 
@@ -167,21 +170,13 @@ def calculate_es_auc(args):
             return "no hits"
 
         binwidth = 1.0/float(len(distances_abs))
-        # print "binwidth: ", binwidth
         plotting_score = [(float(x)/total) for x in score]
-        # print "plotting_score: ", plotting_score[:10]
         normalized_score = [(float(x)/total)*binwidth for x in score]
-        # print "normalized_score: ", normalized_score[:10]
-        # normalized_score = [(x/total) for x in score]
         plotting_cumscore = np.cumsum(plotting_score)
-        # print "plotting_cumscore: ", plotting_cumscore[:10]
         cumscore = np.cumsum(normalized_score)
-        # print "cumscore: ", cumscore[:10]
-        # print "cumscore: ", cumscore
 
         trend = np.arange(0,1,1.0/float(len(ranks)))
         trend = [x*binwidth for x in trend]
-        # print "trend: ", trend
 
         #The AUC is the relative to the "random" line
         actualES = np.trapz(cumscore) - np.trapz(trend)
@@ -209,7 +204,8 @@ def calculate_es_auc(args):
                                 pvals=pvals, fc=fc, cumscore=plotting_cumscore, 
                                 motif_file=motif_file.split('/')[-1].strip('sorted.distance.bed'),
                                 p=p, simES=simES, actualES=actualES, score=score,  
-                                gc_array=gc_array)
+                                gc_array=gc_array, label1=label1, label2=label2,
+                                meta_profile_dict=meta_profile_dict)
     except Exception as e:
         # This prints the type, value, and stack trace of the
         # current exception being handled.
@@ -227,7 +223,8 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
                             distances_abs=None, sorted_distances=None,
                             ranks=None, pvals=None, fc=None, 
                             cumscore=None, motif_file=None, p=None,
-                            simES=None, actualES=None, gc_array=None):
+                            simES=None, actualES=None, gc_array=None,
+                            meta_profile_dict=None, label1=None, label2=None):
     '''This function plots all TFEA related graphs for an individual motif
 
     Parameters
@@ -308,11 +305,13 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
         
 
         #Filter distances into quartiles for plotting purposes
-        q1 = round(np.percentile(np.arange(1, len(distances_abs),1), 25))
-        q3 = round(np.percentile(np.arange(1, len(distances_abs),1), 75))
-        updistancehist = distances_abs[0:int(q1)]
-        middledistancehist =  distances_abs[int(q1):int(q3)]
-        downdistancehist = distances_abs[int(q3):len(distances_abs)]
+        q1 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 25)))
+        q2 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 50)))
+        q3 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 75)))
+        q1_distances = sorted_distances[:q1]
+        q2_distances = sorted_distances[q1:q2]
+        q3_distances = sorted_distances[q2:q3]
+        q4_distances = sorted_distances[q3:]
 
         
         #Get log pval to plot for rank metric
@@ -334,11 +333,16 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
                                             figuredir=figuredir,
                                             cumscore=cumscore, 
                                             sorted_distances=sorted_distances, 
-                                            logpval=logpval, 
-                                            updistancehist=updistancehist, 
-                                            downdistancehist=downdistancehist, 
+                                            logpval=logpval,  
                                             gc_array=gc_array, score=score, 
-                                            motif_file=motif_file)
+                                            motif_file=motif_file, 
+                                            q1_distances=q1_distances, 
+                                            q2_distances=q2_distances, 
+                                            q3_distances=q3_distances, 
+                                            q4_distances=q4_distances,
+                                            meta_profile_dict=meta_profile_dict,
+                                            dpi=None, label1=label1, 
+                                            label2=label2)
 
         #Plot the simulation plot
         independent_functions.simulation_plot(figuredir=figuredir, simES=simES,
@@ -346,14 +350,15 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
                                             motif_file=motif_file)
 
         # #Plot the distance distribution histograms plot
-        # independent_functions.distance_distribution_plot(
-        #                                 largewindow=largewindow,
-        #                                 smallwindow=smallwindow,
-        #                                 figuredir=figuredir,
-        #                                 updistancehist=updistancehist, 
-        #                                 middledistancehist=middledistancehist,
-        #                                 downdistancehist=downdistancehist, 
-        #                                 motif_file=motif_file)
+        # independent_functions.meta_plot(figuredir=figuredir, 
+        #                                     meta_profile_dict=meta_profile_dict,
+        #                                     motif_file=motif_file, 
+        #                                     q1_distances=q1_distances, 
+        #                                     q2_distances=q2_distances, 
+        #                                     q3_distances=q3_distances, 
+        #                                     q4_distances=q4_distances, 
+        #                                     bins=100, 
+        #                                     dpi=None)
 #==============================================================================
 
 #==============================================================================
@@ -512,7 +517,8 @@ def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
                 CALCULATEtime=None, fimo=None, plot=None, 
                 padj_cutoff=None, logos=None, figuredir=None,
                 largewindow=None, smallwindow=None, genomefasta=None,
-                motifdatabase=None, label1=None, label2=None, hits=None):
+                motifdatabase=None, label1=None, label2=None, hits=None, 
+                meta_profile_dict=None):
     '''This function performs the bulk of transcription factor enrichment
         analysis (TFEA), it does the following:
             1. GC distribution across regions for plotting
@@ -609,8 +615,9 @@ def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
     print "done\nFinding motif hits in regions..."
     if singlemotif == False:
         args = [(motif_file, millions_mapped, gc_array, 
-                plot, padj_cutoff, logos, figuredir, largewindow, 
-                smallwindow) for motif_file in motif_list if motif_file[1] > 0]
+                plot, padj_cutoff, logos, figuredir, largewindow, smallwindow, 
+                meta_profile_dict, label1, 
+                label2) for motif_file in motif_list if motif_file[1] > 0]
         p = Pool(cpus)
         TFresults = p.map(calculate_es_auc, args)
 
@@ -634,9 +641,9 @@ def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
     #Note if you set the SINGLEMOTIF variable to a specific TF, this program 
     #will be unable to determine an PADJ for the given motif.
     else:
-        results = calculate_es_auc((singlemotif, millions_mapped, gc_array, 
-                    ranked_center_file, plot, padj_cutoff, logos, figuredir, 
-                    largewindow, smallwindow, tempdir))
+        results = calculate_es_auc((motif_list[0], millions_mapped, gc_array, 
+                plot, padj_cutoff, logos, figuredir, largewindow, smallwindow, 
+                meta_profile_dict, label1, label2))
         independent_functions.create_motif_result_html(TFresults=[results+[0]])
 
     print "done"
@@ -697,6 +704,98 @@ def bedtools_distance(args):
         raise e
 
     return [ranked_center_distance_file, hits]
+#==============================================================================
+
+#==============================================================================
+def meta_plot(ranked_center_file=None, largewindow=None, bam1=None, bam2=None, 
+                tempdir=None, cpus=None, figuredir=None, label1=None, 
+                label2=None, dpi=None):
+    regions = list()
+    ranks = list()
+    with open(ranked_center_file) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            chrom, start, stop = line[:3]
+            start = int(start) - int(largewindow)
+            stop = int(stop) + int(largewindow)
+            regions.append((chrom, start, stop))
+            rank = line[-1]
+            ranks.append(rank)
+
+    regions = [x for _,x in sorted(zip(ranks,regions))]
+    q1 = int(round(np.percentile(np.arange(1, len(regions), 1), 25)))
+    q2 = int(round(np.percentile(np.arange(1, len(regions), 1), 50)))
+    q3 = int(round(np.percentile(np.arange(1, len(regions), 1), 75)))
+
+    q1regions = regions[:q1]
+    q2regions = regions[q1:q2]
+    q3regions = regions[q2:q3]
+    q4regions = regions[q3:]
+
+    #Get millions mapped reads for each bam file
+    # samtools_args = [(bam, tempdir) for bam in bam1+bam2]
+    # p = Pool(cpus)
+    # millions_mapped = p.map(independent_functions.samtools_flagstat, samtools_args)
+
+    millions_mapped = list()
+
+    #Get positive and negative strand profiles for each condition for each 
+    # quartile
+    q1posprofile1, q1negprofile1, q1posprofile2, q1negprofile2 = independent_functions.meta_profile(
+                                        regionlist=q1regions, 
+                                        millions_mapped=millions_mapped, 
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+    
+    q2posprofile1, q2negprofile1, q2posprofile2, q2negprofile2 = independent_functions.meta_profile(
+                                        regionlist=q2regions, 
+                                        millions_mapped=millions_mapped, 
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+
+    q3posprofile1, q3negprofile1, q3posprofile2, q3negprofile2 = independent_functions.meta_profile(
+                                        regionlist=q3regions, 
+                                        millions_mapped=millions_mapped, 
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+
+    q4posprofile1, q4negprofile1, q4posprofile2, q4negprofile2 = independent_functions.meta_profile(
+                                        regionlist=q4regions, 
+                                        millions_mapped=millions_mapped, 
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+
+    meta_profile_dict = {'q1posprofile1': q1posprofile1, 
+                            'q1negprofile1': q1negprofile1,
+                            'q1posprofile2': q1posprofile2, 
+                            'q1negprofile2': q1negprofile2, 
+                            'q2posprofile1': q2posprofile1, 
+                            'q2negprofile1': q2negprofile1, 
+                            'q2posprofile2': q2posprofile2, 
+                            'q2negprofile2': q2negprofile2,
+                            'q3posprofile1': q3posprofile1, 
+                            'q3negprofile1': q3negprofile1, 
+                            'q3posprofile2': q3posprofile2, 
+                            'q3negprofile2': q3negprofile2,
+                            'q4posprofile1': q4posprofile1, 
+                            'q4negprofile1': q4negprofile1, 
+                            'q4posprofile2': q4posprofile2, 
+                            'q4negprofile2': q4negprofile2}
+
+    # #Plot all profiles in a single plot
+    # independent_functions.meta_eRNA_quartiles(figuredir=figuredir, 
+    #                     label1=label1, label2=label2, largewindow=largewindow,
+    #                     q1label1pos=q1posprofile1, q1label1neg=q1negprofile1, 
+    #                     q1label2pos=q1posprofile2, q1label2neg=q1negprofile2, 
+    #                     q2label1pos=q2posprofile1, q2label1neg=q2negprofile1,
+    #                     q2label2pos=q2posprofile2, q2label2neg=q2negprofile2, 
+    #                     q3label1pos=q3posprofile1, q3label1neg=q3negprofile1, 
+    #                     q3label2pos=q3posprofile2, q3label2neg=q3negprofile2, 
+    #                     q4label1pos=q4posprofile1, q4label1neg=q4negprofile1, 
+    #                     q4label2pos=q4posprofile2, q4label2neg=q4negprofile2,
+    #                     dpi=dpi)
+
+    return meta_profile_dict
 #==============================================================================
 
 #==============================================================================

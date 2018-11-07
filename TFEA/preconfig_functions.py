@@ -173,6 +173,13 @@ def verify_config_file():
             raise TypeError('SINGLEMOTIF variable must be a boolean or string.')
     except NameError:
         raise NameError('SINGLEMOTIF variable not found in config.ini file.')
+
+    try:
+        if type(config.GENOMEWIDEHITS) != bool:
+            raise TypeError('GENOMEWIDEHITS variable must be a boolean.')
+    except NameError:
+        raise NameError('GENOMEWIDEHITS variable not found in config.ini file.')
+
     try:
         if type(config.FIMO) != bool:
             raise TypeError('FIMO variable must be a boolean.')
@@ -186,10 +193,16 @@ def verify_config_file():
         raise NameError('TEMP variable not found in config.ini file.')
 
     try:
-        if type(config.PLOT) != bool:
+        if type(config.PLOTALL) != bool:
             raise TypeError('PLOT variable must be a boolean.')
     except NameError:
         raise NameError('PLOT variable not found in config.ini file.')
+
+    try:
+        if type(config.METAPLOT) != bool:
+            raise TypeError('METAPLOT variable must be a boolean.')
+    except NameError:
+        raise NameError('METAPLOT variable not found in config.ini file.')
 
     try:
         if type(config.OUTPUT) != str:
@@ -256,8 +269,14 @@ def verify_config_file():
                 raise TypeError('MOTIF_GENOMEWIDE_HITS variable must be a string.')
         except NameError:
             raise NameError('MOTIF_GENOMEWIDE_HITS variable not found in config.ini file.')
+    else:
+        try:
+            if type(config.FIMO_THRESH) != float:
+                raise TypeError('FIMO_THRESH variable must be a float.')
+        except NameError:
+            raise NameError('FIMO_THRESH variable not found in config.ini file.')
 
-    if config.HOMER != True:
+    if config.HOMER == True:
         try:
             if type(config.HOMER_MOTIF_FILE) != str:
                 raise TypeError('HOMER_MOTIF_FILE variable must be a string.')

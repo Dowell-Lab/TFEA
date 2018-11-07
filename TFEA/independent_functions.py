@@ -23,6 +23,7 @@ import matplotlib.cm as cm
 from matplotlib import gridspec
 from scipy.stats import norm 
 import numpy as np
+import config
 #==============================================================================
 #Functions
 #==============================================================================
@@ -228,7 +229,7 @@ def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
 #==============================================================================
 
 #==============================================================================
-def getfasta(bedfile=None, genomefasta=None, tempdir=None):
+def getfasta(bedfile=None, genomefasta=None, tempdir=None, outname=None):
     '''Converts a bed file to a fasta file using bedtools. Outputs into the 
         tempdir directory created by TFEA.
 
@@ -251,9 +252,9 @@ def getfasta(bedfile=None, genomefasta=None, tempdir=None):
     '''
     os.system("bedtools getfasta -name -fi " + genomefasta 
                 + " -bed " + bedfile
-                + " -fo " + os.path.join(tempdir, "ranked_file.fullregions.fa"))
+                + " -fo " + os.path.join(tempdir, outname))
 
-    ranked_file_fasta = os.path.join(tempdir, "ranked_file.fullregions.fa")
+    ranked_file_fasta = os.path.join(tempdir, outname)
 
     return ranked_file_fasta
 #==============================================================================
@@ -287,7 +288,8 @@ def get_bgfile(fastafile=None, tempdir=None):
 #==============================================================================
 
 #==============================================================================
-def get_regions(tempdir=None, ranked_center_file=None, largewindow=None):
+def get_regions(tempdir=None, ranked_center_file=None, window=None, 
+                outname=None):
     '''Takes in a bed file that contains regions centered on the user-inputted 
         bed files and outputs a 'full regions' bed file which simply adds a 
         user-defined window to either side of these centered regions.
@@ -300,7 +302,7 @@ def get_regions(tempdir=None, ranked_center_file=None, largewindow=None):
     ranked_center_file : string
         full path to a bed file with centered coordinates
         
-    largewindow : float
+    window : float
         half the desired window size
 
     Returns
@@ -308,18 +310,18 @@ def get_regions(tempdir=None, ranked_center_file=None, largewindow=None):
     ranked_full_regions : string 
         full path to a bed file with full regions to be compared with TFEA
     '''
-    outfile = open(os.path.join(tempdir, 'ranked_file.fullregions.bed'),'w')
+    outfile = open(os.path.join(tempdir, outname),'w')
     with open(ranked_center_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
-            start = str(int(start)-int(largewindow))
-            stop = str(int(stop)+int(largewindow))
+            start = str(int(start)-int(window))
+            stop = str(int(stop)+int(window))
             rank, pval, fc = line[3:]
             name = ','.join([rank, pval, fc])
             outfile.write('\t'.join([chrom,start,stop,name]) + '\n')
 
-    ranked_full_regions = os.path.join(tempdir, 'ranked_file.fullregions.bed')
+    ranked_full_regions = os.path.join(tempdir, outname)
     return ranked_full_regions
 #==============================================================================
 
@@ -736,7 +738,7 @@ def get_motif_names(motifdatabase=None):
 
 #==============================================================================
 def fimo(motif=None, bg_file=None, ranked_fasta_file=None, tempdir=None, 
-        motifdatabase=None, thresh="0.0001"):
+        motifdatabase=None, thresh=config.FIMO_THRESH):
     '''This function runs fimo on a given fastafile for a single motif in a 
         provided motif database. The output is cut and sorted to convert into 
         a sorted bed file
@@ -765,7 +767,7 @@ def fimo(motif=None, bg_file=None, ranked_fasta_file=None, tempdir=None,
         directory.
     '''
     fimo_out = os.path.join(tempdir, motif)
-    command = ("fimo --skip-matched-sequence --verbosity 1 --thresh " + thresh 
+    command = ("fimo --skip-matched-sequence --verbosity 1 --thresh " + str(thresh) 
                 + " --bgfile " + bg_file 
                 + " --motif " + motif.strip('.bed') + " " + motifdatabase 
                 + " " + ranked_fasta_file
@@ -1006,9 +1008,6 @@ def fimo_parse(largewindow=None, tempdir=None, fimo_file=None,
                     if prev_score < float(score):
                         d[rank] = [rank, pval, fc, score, distance]
     
-    # scores = [float(d[key][-2]) for key in d]
-    # if len(scores) > 0:
-    #     print fimo_file, "mean: ", np.mean(scores), "max: ", max(scores), "min: ", min(scores)
     outname = fimo_file.strip('.bed')+'.sorted.distance.bed'
     outfile = open(outname, 'w')
     with open(ranked_center_file, 'r') as F:
@@ -1227,18 +1226,16 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
     import HTSeq as hts
     regions=list()
     if regionlist != None and region_file == None:
-        for chrom, start, _ in regionlist:
+        for chrom, start, stop in regionlist:
             regions.append(
-                hts.GenomicInterval(chrom, int(start)-int(largewindow),
-                                    int(start)+int(largewindow), '.'))
+                hts.GenomicInterval(chrom, int(start), int(stop), '.'))
     elif region_file != None and regionlist == None:
         with open(region_file) as F:
             for line in F:
                 line = line.strip('\n').split('\t')
-                chrom, start, _ = line[:3]
+                chrom, start, stop = line[:3]
                 regions.append(
-                    hts.GenomicInterval(chrom, int(start)-int(largewindow), 
-                                    int(start)+int(largewindow), '.'))
+                    hts.GenomicInterval(chrom, int(start), int(stop), '.'))
     elif region_file == None and regionlist == None:
         raise NameError("Must input either a regionlist or region_file.")
     else:
@@ -1254,9 +1251,9 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
 
     if len(hts_bam1) == 0 or len(hts_bam2) == 0:
         raise ValueError("One of bam1 or bam2 variables is empty.")
-    if len(millions_mapped) == 0 or len(millions_mapped) != len(hts_bam1) + len(hts_bam2):
-        raise ValueError(("Millions_mapped variable is empty or does not match "
-                            "length of bam variables combined."))
+    # if len(millions_mapped) == 0 or len(millions_mapped) != len(hts_bam1) + len(hts_bam2):
+    #     raise ValueError(("Millions_mapped variable is empty or does not match "
+    #                         "length of bam variables combined."))
 
 
     posprofile1 = np.zeros(2*int(largewindow))  
@@ -1265,16 +1262,19 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
     negprofile2 = np.zeros(2*int(largewindow))
     rep1number = float(len(hts_bam1))
     rep2number = float(len(hts_bam2))
+    mil_map1 = 0.0
+    mil_map2 = 0.0
     for window in regions:
         avgposprofile1 = np.zeros(2*int(largewindow))
         avgnegprofile1 = np.zeros(2*int(largewindow))
         i = 0
         for sortedbamfile in hts_bam1:
-            mil_map = millions_mapped[i]
+            # mil_map = float(millions_mapped[i])
             i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
             for almnt in sortedbamfile[ window ]:
+                mil_map1 += 1.0
                 if almnt.iv.strand == '+':
                     start_in_window = almnt.iv.start - window.start
                     end_in_window = almnt.iv.end - window.end \
@@ -1297,8 +1297,10 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
             #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile1 = [x+y for x,y in zip(avgposprofile1, tempposprofile)]
             avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
-        avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
-        avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
+        # avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
+        # avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
+        avgposprofile1 = [x/rep1number for x in avgposprofile1]
+        avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
         posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
         negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
 
@@ -1306,12 +1308,13 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
         avgnegprofile2 = np.zeros(2*int(largewindow))
         i = len(hts_bam1)
         for sortedbamfile in hts_bam2:
-            mil_map = millions_mapped[i]
+            # mil_map = float(millions_mapped[i])
             i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
             for almnt in sortedbamfile[ window ]:
                 if almnt.iv.strand == '+':
+                    mil_map2 += 1.0
                     start_in_window = almnt.iv.start - window.start
                     end_in_window   = almnt.iv.end - window.end \
                                         + 2*int(largewindow)
@@ -1333,12 +1336,59 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
             #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
             avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
-        avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
-        avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
+        # avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
+        # avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
+        avgposprofile2 = [x/rep2number for x in avgposprofile2]
+        avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
         posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
         negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
+    
+    mil_map1 = mil_map1/rep1number
+    mil_map2 = mil_map2/rep2number
+
+    posprofile1 = [x/mil_map1 for x in posprofile1]
+    negprofile1 = [x/mil_map1 for x in negprofile1]
+    posprofile2 = [x/mil_map2 for x in posprofile2]
+    negprofile2 = [x/mil_map2 for x in negprofile2]
+
 
     return posprofile1, negprofile1, posprofile2, negprofile2
+#==============================================================================
+
+#==============================================================================
+def meta_profile2(regionlist=None, region_file=None, millions_mapped=None, 
+                largewindow=None, bam1=None, bam2=None):
+
+    import HTSeq
+    bamfile = HTSeq.BAM_Reader( "SRR001432_head.bam" )
+    gtffile = HTSeq.GFF_Reader( "Homo_sapiens.GRCh37.56_chrom1.gtf" )
+    halfwinwidth = largewindow
+    fragmentsize = 200
+
+    tsspos = HTSeq.GenomicArrayOfSets( "auto", stranded=False )
+    for feature in gtffile:
+        if feature.type == "exon" and feature.attr["exon_number"] == "1":
+            p = feature.iv.start_d_as_pos
+            window = HTSeq.GenomicInterval( p.chrom, p.pos - halfwinwidth, p.pos + halfwinwidth, "." )
+            tsspos[ window ] += p
+
+    profile = np.zeros( 2*halfwinwidth, dtype="i" )
+    for almnt in bamfile:
+        if almnt.aligned:
+            almnt.iv.length = fragmentsize
+            s = set()
+            for step_iv, step_set in tsspos[ almnt.iv ].steps():
+                s |= step_set
+            for p in s:
+                if p.strand == "+":
+                    start_in_window = almnt.iv.start - p.pos + halfwinwidth
+                    end_in_window   = almnt.iv.end   - p.pos + halfwinwidth
+                else:
+                    start_in_window = p.pos + halfwinwidth - almnt.iv.end
+                    end_in_window   = p.pos + halfwinwidth - almnt.iv.start
+                start_in_window = max( start_in_window, 0 )
+                end_in_window = min( end_in_window, 2*halfwinwidth )
+                profile[ start_in_window : end_in_window ] += 1
 #==============================================================================
 
 #==============================================================================
@@ -1346,7 +1396,9 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
                     cumscore=None, sorted_distances=None, logpval=None, 
                     updistancehist=None, downdistancehist=None, 
                     gc_array=None, motif_file=None, dpi=None, save=True, 
-                    score=None):
+                    score=None, q1_distances=None, q2_distances=None, 
+                    q3_distances=None, q4_distances=None, 
+                    meta_profile_dict=None, label1=None, label2=None):
     '''This function plots the TFEA enrichment plot.
 
     Parameters
@@ -1399,96 +1451,68 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
     import config
     from scipy.stats import gaussian_kde
     dpi = config.DPI
-    #Begin plotting section
-    len_cumscore = float(len(cumscore))
     try:
-        F = plt.figure(figsize=(15.5,8))
+        #Begin plotting section
+        len_cumscore = float(len(cumscore))
+        F = plt.figure(figsize=(15.5,12))
         # xvals = range(0, int(len_cumscore))
-        xvals = np.arange(0,1,1.0/len_cumscore)
+        xvals = np.linspace(start=0, stop=1, num=len_cumscore)
         limits = [0,1]
 
         #With GC-Content
         # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
 
         #Without GC-Content
-        gs = gridspec.GridSpec(3, 1, height_ratios=[2, 2, 1])
+        # gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 2])
+
+        gs = gridspec.GridSpec(7, 4)
+        fillplot = plt.subplot(gs[3, :])
+        lineplot = plt.subplot(gs[:2, :], sharex=fillplot)
+        barplot = plt.subplot(gs[2, :], sharex=fillplot)
+        
 
         #This is the enrichment score plot (i.e. line plot)
-        ax0 = plt.subplot(gs[0])
-        ax0.plot(xvals,cumscore,color='green')
-        ax0.plot([0, 1],[0, 1], '--', alpha=0.75)
-        ax0.set_title(motif_file.split('.bed')[0] + ' Enrichment Plot',fontsize=14)
-        ax0.set_ylabel('Enrichment Score (ES)', fontsize=10)
-        ax0.tick_params(axis='y', which='both', left='on', right='off', 
+        # ax0 = plt.subplot(gs[0])
+        lineplot.plot(xvals,cumscore,color='green')
+        lineplot.plot([0, 1],[0, 1], '--', alpha=0.75)
+        lineplot.set_title(motif_file.split('.bed')[0] + ' Enrichment Plot',
+                        fontsize=14)
+        lineplot.set_ylabel('Enrichment Score (ES)', fontsize=10)
+        lineplot.tick_params(axis='y', which='both', left='on', right='off', 
                         labelleft='on')
-        ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ylims = ax0.get_ylim()
-        ymax = math.fabs(max(ylims,key=abs))
-        ax0.set_ylim([0,ymax])
-        ax0.set_xlim(limits)
+        # lineplot.tick_params(axis='x', which='both', bottom='off', top='off', 
+        #                 labelbottom='off')
+        lineplot.set_ylim([0,1])
+        lineplot.set_xlim(limits)
 
-        #This is the distance scatter plot right below the enrichment score 
-        #plot
+        #This is the barplot right below the enrichment score line plot
         x = xvals
-        # y = sorted_distances
-        # xy = np.vstack([x, y])
-        # z = gaussian_kde(xy)(xy)
-        # idx = np.argsort(z)
-        # x, y, z = [x[i] for i in idx], [y[i] for i in idx], [z[i] for i in idx]
-        ax1 = plt.subplot(gs[1])
-        # ax1.scatter(x,y,edgecolor="", c=z, s=10, alpha=0.25)
-        # ax1.scatter(x,y,edgecolor="", color="black", s=10, alpha=0.25)
-
-        # bins=barbins
-        # counts, edges = np.histogram(score, bins=bins)
-        # edges        = (edges[1:]+edges[:-1])/2.
-        # plt.bar(edges, counts, width=(edges[-1]-edges[0])/bins)
-    
-        
-        # norm    = matplotlib.colors.Normalize(vmin=min(counts), vmax=max(counts))
-        # cmap    = cm.Greys
-        # m       = cm.ScalarMappable(norm=norm, cmap=cmap)
-        # colors  = [m.to_rgba(c) for c in counts] 
-        # rgb_colors = np.zeros((len(x), 4))
-        # rgb_colors[:,0] = 0.0
-        # rgb_colors[:,1] = 0.0
-        # rgb_colors[:,2] = 0.0
-        # rgb_colors[:,3] = [1.0 - math.fabs(y) for y in score]
         norm    = matplotlib.colors.Normalize(vmin=min(score), vmax=max(score))
         cmap    = cm.Greys
         m       = cm.ScalarMappable(norm=norm, cmap=cmap)
         colors  = [m.to_rgba(c) for c in score] 
-        ax1.bar(x,[1 for l in x], edgecolor="", color=colors)
-
-        # ax1.bar(edges, np.ones((len(edges),)), color=colors, 
-        #         width=(edges[-1]-edges[0])/len(edges), 
-        #         edgecolor=colors)
-        ax1.tick_params(axis='y', which='both', left='off', right='off', 
+        barplot.bar(x,[1 for l in x], edgecolor="", color=colors)
+        barplot.tick_params(axis='y', which='both', left='off', right='off', 
                         labelleft='off') 
-        ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ax1.set_xlim(limits)
-        # ax1.set_ylim([-int(largewindow),int(largewindow)])
-        ax1.set_ylim([0,1])
-        # plt.yticks([-int(largewindow),0,int(largewindow)],
-        #             [str(-int(largewindow)/1000.0),'0',\
-        #             str(int(largewindow)/1000.0)])
-        ax1.set_ylabel('Distance (kb)', fontsize=10)
+        # barplot.tick_params(axis='x', which='both', bottom='off', top='off', 
+        #                 labelbottom='off')
+        barplot.set_xlim(limits)
+        barplot.set_ylim([0,1])
+        barplot.set_ylabel('Score', fontsize=10)
 
-        #This is the rank metric plot
-        ax2 = plt.subplot(gs[2])
-        ax2.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
-        ax2.tick_params(axis='y', which='both', left='on', right='off', 
+        #This is the rank metric fill plot
+        fillplot.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
+        fillplot.tick_params(axis='y', which='both', left='on', right='off', 
                         labelleft='on')
-        ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='on')
+        # fillplot.tick_params(axis='x', which='both', bottom='off', top='off', 
+        #                 labelbottom='on')
         ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
-        ax2.set_ylim([-ylim,ylim])
-        ax2.yaxis.set_ticks([int(-ylim),0,int(ylim)])
-        ax2.set_xlim(limits)
-        ax2.set_xlabel('Relative Rank (n='+str(int(len_cumscore))+')', fontsize=14)
-        ax2.set_ylabel('Rank Metric',fontsize=10)
+        fillplot.set_ylim([-ylim,ylim])
+        fillplot.yaxis.set_ticks([int(-ylim),0,int(ylim)])
+        fillplot.set_xlim(limits)
+        fillplot.set_xlabel('Relative Rank (n='+str(int(len_cumscore))+')', 
+                        fontsize=14)
+        fillplot.set_ylabel('Rank Metric',fontsize=10)
         # try:
         #     ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
         # except ValueError:
@@ -1498,6 +1522,8 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         #                 alpha=0.25)
         # except ValueError:
         #     pass
+
+
 
         #This is the GC content plot
         # ax3 = plt.subplot(gs[2])
@@ -1517,9 +1543,194 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         #                 labelbottom='off')
 
         # ax3.set_ylabel('GC content per kb',fontsize=10)
+
+        #Initiate heatmaps
+        ax7 = plt.subplot(gs[6, 0])
+        ax8 = plt.subplot(gs[6, 1], sharey=ax7)
+        ax9 = plt.subplot(gs[6, 2], sharey=ax7)
+        ax10 = plt.subplot(gs[6, 3], sharey=ax7)
+
+        #Initiate meta plots
+        ax3 = plt.subplot(gs[4:6, 0], sharex=ax7)
+        ax4 = plt.subplot(gs[4:6, 1], sharex=ax8, sharey=ax3)
+        ax5 = plt.subplot(gs[4:6, 2], sharex=ax9, sharey=ax3)
+        ax6 = plt.subplot(gs[4:6, 3], sharex=ax10, sharey=ax3)
+
+        
+
+        xvals = range(-int(largewindow),int(largewindow))
+        q1posprofile1 = meta_profile_dict['q1posprofile1']
+        q1negprofile1 = meta_profile_dict['q1negprofile1']
+        q1posprofile2 = meta_profile_dict['q1posprofile2']
+        q1negprofile2 = meta_profile_dict['q1negprofile2']
+        q2posprofile1 = meta_profile_dict['q2posprofile1']
+        q2negprofile1 = meta_profile_dict['q2negprofile1']
+        q2posprofile2 = meta_profile_dict['q2posprofile2']
+        q2negprofile2 = meta_profile_dict['q2negprofile2']
+        q3posprofile1 = meta_profile_dict['q3posprofile1']
+        q3negprofile1 = meta_profile_dict['q3negprofile1']
+        q3posprofile2 = meta_profile_dict['q3posprofile2']
+        q3negprofile2 = meta_profile_dict['q3negprofile2']
+        q4posprofile1 = meta_profile_dict['q4posprofile1']
+        q4negprofile1 = meta_profile_dict['q4negprofile1']
+        q4posprofile2 = meta_profile_dict['q4posprofile2']
+        q4negprofile2 = meta_profile_dict['q4negprofile2']
+        ylim = [min(q1negprofile1+q1negprofile2+q2negprofile1+q2negprofile2
+                    +q3negprofile1+q3negprofile2+q4negprofile1+q4negprofile2),
+                max(q1posprofile1+q1posprofile2+q2posprofile1+q2posprofile2
+                    +q3posprofile1+q3posprofile2+q4posprofile1+q4posprofile2)]
+
+        # First quartile plot
+        line1, = ax3.plot(xvals,q1posprofile1,color='blue',label=label1)
+        ax3.plot(xvals,q1negprofile1,color='blue')
+        line2, = ax3.plot(xvals,q1posprofile2,color='red',label=label2)
+        ax3.plot(xvals,q1negprofile2,color='red')
+        ax3.legend(loc=2,fontsize='small')
+        ax3.set_title('Q1',fontsize=14)
+        ax3.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='on')
+        ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='on')
+        ax3.set_ylabel('Reads per Millions Mapped',fontsize=10)
+        plt.yticks([-int(largewindow),0,int(largewindow)],
+                    [str(-int(largewindow)/1000.0),'0',\
+                    str(int(largewindow)/1000.0)])
+        ax3.set_ylim(ylim)
+
+
+        # Second quartile plot
+        line1, = ax4.plot(xvals,q2posprofile1,color='blue',label=label1)
+        ax4.plot(xvals,q2negprofile1,color='blue')
+        line2, = ax4.plot(xvals,q2posprofile2,color='red',label=label2)
+        ax4.plot(xvals,q2negprofile2,color='red')
+        # ax2.legend(loc=1)
+        ax4.set_title('Q2',fontsize=14)
+        ax4.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='off')
+        ax4.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
+        ax4.set_ylim(ylim)
+
+        # Second quartile plot
+        line1, = ax5.plot(xvals,q3posprofile1,color='blue',label=label1)
+        ax5.plot(xvals,q3negprofile1,color='blue')
+        line2, = ax5.plot(xvals,q3posprofile2,color='red',label=label2)
+        ax5.plot(xvals,q3negprofile2,color='red')
+        # ax3.legend(loc=1)
+        ax5.set_title('Q3',fontsize=14)
+        ax5.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='off')
+        ax5.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
+        ax5.set_ylim(ylim)
+
+        # Third quartile plot
+        line1, = ax6.plot(xvals,q4posprofile1,color='blue',label=label1)
+        ax6.plot(xvals,q4negprofile1,color='blue')
+        line2, = ax6.plot(xvals,q4posprofile2,color='red',label=label2)
+        ax6.plot(xvals,q4negprofile2,color='red')
+        # ax4.legend(loc=1)
+        ax6.set_title('Q4',fontsize=14)
+        ax6.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='off')
+        ax6.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
+        ax6.set_ylim(ylim)
+
+
+        #Distance distribution heatmaps
+        bins = 100
+        xlim = [int(-largewindow), int(largewindow)]
+        counts,edges = np.histogram(q1_distances, bins=bins)
+        edges        = (edges[1:]+edges[:-1])/2. 
+        print q1_distances[:10]
+        print counts
+
+        norm    = matplotlib.colors.Normalize(vmin=min(counts), 
+                                                vmax=max(counts))
+        cmap    = cm.YlOrRd
+        m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+        colors  = [m.to_rgba(c) for c in counts] 
+        
+        ax7.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+        ax7.set_ylim([0,1])
+        ax7.set_xlim(xlim)
+        ax7.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='off') 
+        ax7.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='on')
+        ax7.set_xlabel('Motif to Region Center Distance (bp)')
+
+
+        counts,edges = np.histogram(q2_distances, bins=bins)
+        edges        = (edges[1:]+edges[:-1])/2. 
+
+        norm    = matplotlib.colors.Normalize(vmin=min(counts), 
+                                                vmax=max(counts))
+        cmap    = cm.YlOrRd
+        m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+        colors  = [m.to_rgba(c) for c in counts] 
+        
+        ax8.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+        ax8.set_ylim([0,1])
+        ax8.set_xlim(xlim)
+        ax8.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='off') 
+        ax8.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='on')
+        ax8.set_xlabel('Motif to Region Center Distance (bp)')
+
+
+        counts,edges = np.histogram(q3_distances, bins=bins)
+        edges        = (edges[1:]+edges[:-1])/2. 
+
+        norm    = matplotlib.colors.Normalize(vmin=min(counts), 
+                                                vmax=max(counts))
+        cmap    = cm.YlOrRd
+        m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+        colors  = [m.to_rgba(c) for c in counts] 
+        
+        ax9.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+        ax9.set_ylim([0,1])
+        ax9.set_xlim(xlim)
+        ax9.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='off') 
+        ax9.tick_params(axis='x', which='both', bottom='off', top='off', 
+                         labelbottom='on')
+        ax9.set_xlabel('Motif to Region Center Distance (bp)')
+
+
+        counts,edges = np.histogram(q3_distances, bins=bins)
+        edges        = (edges[1:]+edges[:-1])/2. 
+
+        norm    = matplotlib.colors.Normalize(vmin=min(counts), 
+                                                vmax=max(counts))
+        cmap    = cm.YlOrRd
+        m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+        colors  = [m.to_rgba(c) for c in counts] 
+        
+        ax10.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+        ax10.set_ylim([0,1])
+        ax10.set_xlim(xlim)
+        ax10.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='off') 
+        ax10.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='on')
+        ax10.set_xlabel('Motif Distance (kb)')
+
+        counts,edges = np.histogram(q4_distances, bins=bins)
+        edges        = (edges[1:]+edges[:-1])/2. 
+
+        #Makes sure that axis labels are properly spaced
+        plt.tight_layout()
+
         if save:
             plt.savefig(os.path.join(figuredir, motif_file
-                    + '_enrichment_plot.png'),dpi=dpi,bbox_inches='tight')
+                    + '_enrichment_plot.png'), dpi=dpi, bbox_inches='tight')
             plt.close()
         else:
             plt.show()
@@ -1529,6 +1740,138 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         # current exception being handled.
         print traceback.print_exc()
         raise e
+#==============================================================================
+
+#==============================================================================
+def distance_heatmap_plot(figuredir=None, motif_file=None, q1_distances=None, 
+                        q2_distances=None, q3_distances=None, 
+                        q4_distances=None, bins=None, dpi=None):
+    '''
+    '''
+    F = plt.figure(figsize=(15.5,1))
+
+    # ax0 = plt.subplot(141)
+    # norm    = matplotlib.colors.Normalize(vmin=min(score), vmax=max(score))
+    # cmap    = cm.Greys
+    # m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+    # colors  = [m.to_rgba(c) for c in score] 
+    # ax0.bar(x,[1 for l in x], edgecolor="", color=colors)
+    # ax0.tick_params(axis='y', which='both', left='off', right='off', 
+    #                 labelleft='off') 
+    # ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
+    #                 labelbottom='off')
+    # ax0.set_xlim(limits)
+    # ax0.set_ylim([0,1])
+    # ax0.set_ylabel('Score', fontsize=10)
+
+    counts,edges = np.histogram(q1_distances, bins=bins)
+    edges        = (edges[1:]+edges[:-1])/2. 
+    # plt.bar(edges, counts, width=(edges[-1]-edges[0])/bins)
+
+    norm    = matplotlib.colors.Normalize(vmin=min(counts), vmax=max(counts))
+    cmap    = cm.YlOrRd
+    m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+    colors  = [m.to_rgba(c) for c in counts] 
+    
+    ax0 = F.add_subplot(141)
+    ax0.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges) , edgecolor=colors)
+    ax0.set_ylim([0,1])
+    # ax0.set_xlim(-1, 1)
+    ax0.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='off') 
+    ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+    ax0.set_xlabel('Motif Distance (kb)')
+
+
+    counts,edges = np.histogram(q2_distances, bins=bins)
+    edges        = (edges[1:]+edges[:-1])/2. 
+    # plt.bar(edges, counts, width=(edges[-1]-edges[0])/bins)
+
+    norm    = matplotlib.colors.Normalize(vmin=min(counts), vmax=max(counts))
+    cmap    = cm.YlOrRd
+    m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+    colors  = [m.to_rgba(c) for c in counts] 
+    
+    ax1 = F.add_subplot(141)
+    ax1.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges) , edgecolor=colors)
+    ax1.set_ylim([0,1])
+    ax1.set_xlim(-1, 1)
+    ax1.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='off') 
+    ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+    ax1.set_xlabel('Motif Distance (kb)')
+
+
+    counts,edges = np.histogram(q3_distances, bins=bins)
+    edges        = (edges[1:]+edges[:-1])/2. 
+    # plt.bar(edges, counts, width=(edges[-1]-edges[0])/bins)
+
+    norm    = matplotlib.colors.Normalize(vmin=min(counts), vmax=max(counts))
+    cmap    = cm.YlOrRd
+    m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+    colors  = [m.to_rgba(c) for c in counts] 
+    
+    ax2 = F.add_subplot(142)
+    ax2.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges) , edgecolor=colors)
+    ax2.set_ylim([0,1])
+    ax2.set_xlim(-1, 1)
+    ax2.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='off') 
+    ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+    ax2.set_xlabel('Motif Distance (kb)')
+
+
+    counts,edges = np.histogram(q3_distances, bins=bins)
+    edges        = (edges[1:]+edges[:-1])/2. 
+    # plt.bar(edges, counts, width=(edges[-1]-edges[0])/bins)
+
+    norm    = matplotlib.colors.Normalize(vmin=min(counts), vmax=max(counts))
+    cmap    = cm.YlOrRd
+    m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+    colors  = [m.to_rgba(c) for c in counts] 
+    
+    ax3 = F.add_subplot(143)
+    ax3.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges) , edgecolor=colors)
+    ax3.set_ylim([0,1])
+    ax3.set_xlim(-1, 1)
+    ax3.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='off') 
+    ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+    ax3.set_xlabel('Motif Distance (kb)')
+
+    counts,edges = np.histogram(q4_distances, bins=bins)
+    edges        = (edges[1:]+edges[:-1])/2. 
+    # plt.bar(edges, counts, width=(edges[-1]-edges[0])/bins)
+
+    norm    = matplotlib.colors.Normalize(vmin=min(counts), vmax=max(counts))
+    cmap    = cm.YlOrRd
+    m       = cm.ScalarMappable(norm=norm, cmap=cmap)
+    colors  = [m.to_rgba(c) for c in counts] 
+    
+    ax4 = F.add_subplot(144)
+    ax4.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges) , edgecolor=colors)
+    ax4.set_ylim([0,1])
+    ax4.set_xlim(-1, 1)
+    ax4.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='off') 
+    ax4.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+    ax4.set_xlabel('Motif Distance (kb)')
+
+
+    plt.savefig(os.path.join(figuredir, motif_file 
+                                        + '_distance_distribution.png'), 
+                dpi=None, bbox_inches='tight')
+    plt.close()
 #==============================================================================
 
 #==============================================================================
@@ -1743,13 +2086,13 @@ def MA_plot(figuredir=None, label1=None, label2=None, POSlist=None,
 #==============================================================================
 
 #==============================================================================
-def meta_eRNA_quartiles(figuredir=None, label1=None, label2=None, logpval=None,
+def meta_eRNA_quartiles(figuredir=None, label1=None, label2=None, 
                         q1label1pos=None, q1label1neg=None, q1label2pos=None,
-                        q1label2neg=None, q23label1pos=None, q23label1neg=None,
-                        q23label2pos=None, q23label2neg=None, q4label1pos=None,
-                        q4label1neg=None, q4label2pos=None, q4label2neg=None, 
-                        q1distancehist=None, q23distancehist=None, 
-                        q4distancehist=None):
+                        q1label2neg=None, q2label1pos=None, q2label1neg=None,
+                        q2label2pos=None, q2label2neg=None, q3label1pos=None, 
+                        q3label1neg=None, q3label2pos=None, q3label2neg=None, 
+                        q4label1pos=None, q4label1neg=None, q4label2pos=None, 
+                        q4label2neg=None, largewindow=None, dpi=None):
     '''This function creates a plot with meta profiles for inputted regions
         of interest. It creates a separate plot for quartiles 1, 2/3, and 4.
         Additionally, under each meta plot it also produces a heatmap histogram
@@ -1786,63 +2129,70 @@ def meta_eRNA_quartiles(figuredir=None, label1=None, label2=None, logpval=None,
     -------
     None
     '''
-    F = plt.figure(figsize=(15.5,6))
+    F = plt.figure(figsize=(15.5,3))
     
-    xvals = range(-int(1500),int(1500))
-
-    gs = gridspec.GridSpec(2, 3, height_ratios=[2, 1, 2, 1, 2, 1])
+    xvals = range(-int(largewindow),int(largewindow))
+    ylim = [min(q1label1neg+q1label2neg+q2label1neg+q2label2neg+q3label1neg
+                +q3label2neg+q4label1neg+q4label2neg),
+            max(q1label1pos+q1label2pos+q2label1pos+q2label2pos+q3label1pos
+            +q3label2pos+q4label1pos+q4label2pos)]
 
     # First quartile plot
-    ax0 = plt.subplot(gs[0])
+    ax0 = plt.subplot(141)
     line1, = ax0.plot(xvals,q1label1pos,color='blue',label=label1)
     ax0.plot(xvals,q1label1neg,color='blue')
     line2, = ax0.plot(xvals,q1label2pos,color='red',label=label2)
     ax0.plot(xvals,q1label2neg,color='red')
-    ax0.legend(loc=1)
-    ax0.set_title('First Quartile',fontsize=14)
+    ax0.legend(loc=2,fontsize='small')
+    ax0.set_title('Q1',fontsize=14)
     ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
     ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax0.set_ylabel('Reads per Millions Mapped',fontsize=14)
     ax0.set_xlabel('Distance to eRNA Origin (bp)')
-
-    ax1 = plt.subplot(gs[1])
-    #Placeholder for heatmap histogram
+    ax0.set_ylim(ylim)
 
 
     # Second quartile plot
-    ax2 = plt.subplot(gs[2])
-    line1, = ax0.plot(xvals,q23label1pos,color='blue',label=label1)
-    ax2.plot(xvals,q23label1neg,color='blue')
-    line2, = ax0.plot(xvals,q23label2pos,color='red',label=label2)
-    ax2.plot(xvals,q23label2neg,color='red')
-    ax2.legend(loc=1)
-    ax2.set_title('Meta Plot over all regions',fontsize=14)
-    ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax2.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax2 = plt.subplot(142)
+    line1, = ax2.plot(xvals,q2label1pos,color='blue',label=label1)
+    ax2.plot(xvals,q2label1neg,color='blue')
+    line2, = ax2.plot(xvals,q2label2pos,color='red',label=label2)
+    ax2.plot(xvals,q2label2neg,color='red')
+    # ax2.legend(loc=1)
+    ax2.set_title('Q2',fontsize=14)
+    ax2.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
+    ax2.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax2.set_xlabel('Distance to eRNA Origin (bp)')
+    ax2.set_ylim(ylim)
 
-    ax3 = plt.subplot(gs[3])
-    # Placeholder for second heatmap histogram
+    # Second quartile plot
+    ax3 = plt.subplot(143)
+    line1, = ax3.plot(xvals,q3label1pos,color='blue',label=label1)
+    ax3.plot(xvals,q3label1neg,color='blue')
+    line2, = ax3.plot(xvals,q3label2pos,color='red',label=label2)
+    ax3.plot(xvals,q3label2neg,color='red')
+    # ax3.legend(loc=1)
+    ax3.set_title('Q3',fontsize=14)
+    ax3.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
+    ax3.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
+    ax3.set_xlabel('Distance to eRNA Origin (bp)')
+    ax3.set_ylim(ylim)
 
     # Third quartile plot
-    ax4 = plt.subplot(gs[4])
-    line1, = ax0.plot(xvals,q4label1pos,color='blue',label=label1)
+    ax4 = plt.subplot(144)
+    line1, = ax4.plot(xvals,q4label1pos,color='blue',label=label1)
     ax4.plot(xvals,q4label1neg,color='blue')
-    line2, = ax0.plot(xvals,q4label2pos,color='red',label=label2)
+    line2, = ax4.plot(xvals,q4label2pos,color='red',label=label2)
     ax4.plot(xvals,q4label2neg,color='red')
-    ax4.legend(loc=1)
-    ax4.set_title('Meta Plot over all regions',fontsize=14)
-    ax4.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax4.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    ax4.set_ylabel('Normalized Read Coverage',fontsize=14)
+    # ax4.legend(loc=1)
+    ax4.set_title('Q4',fontsize=14)
+    ax4.tick_params(axis='y', which='both', left='off', right='off', labelleft='off')
+    ax4.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='off')
     ax4.set_xlabel('Distance to eRNA Origin (bp)')
+    ax4.set_ylim(ylim)
 
-    ax5 = plt.subplot(gs[5])
-    #Placeholder for thid heatmap histogram
-
-    plt.savefig('./test.png',bbox_inches='tight')
-    plt.show()
+    plt.savefig(os.path.join(figuredir, 'meta_plot.png'), dpi=dpi, 
+        bbox_inches='tight')
     plt.cla()
 #==============================================================================
 
@@ -1965,7 +2315,7 @@ def create_summary_html():
     padj_cutoff = config.PADJCUTOFF
     smallwindow = config.SMALLWINDOW
     largewindow = config.LARGEWINDOW
-    plot = config.PLOT
+    plot = config.PLOTALL
     combine = config.COMBINE
     count = config.COUNT
     deseq = config.DESEQ
@@ -2098,7 +2448,7 @@ def create_motif_result_html(TFresults=None):
     outputdir = config.OUTPUTDIR
     padj_cutoff = config.PADJCUTOFF
     singlemotif = config.SINGLEMOTIF
-    plot = config.PLOT
+    plot = config.PLOTALL
 
     #For each TF motif with an PADJ value less than a cutoff, an html file is 
     #created to be used in results.html
@@ -2207,12 +2557,17 @@ def create_motif_result_html(TFresults=None):
                     alt="Enrichment Plot">
             </div>
         </div>
-        <!--<div class="row">
-            <div style="float: left; width 1250px; padding-bottom:50px; \
-                padding-top:50px">
-                <img src="./"""+MOTIF_FILE+"""_meta_eRNA.png" alt="Meta Plot">
+        <div class="row">
+            <div style="float: left; width 1250px">
+                <img src="./meta_plot.png" alt="Meta Plot">
             </div>
-        </div>-->
+        </div>
+        <div class="row">
+            <div style="float: left; width 1250px; padding-bottom:50px">
+                <img src="./"""+MOTIF_FILE+"""_distance_distribution.png" \
+                    alt="Distance Distribution Plot">
+            </div>
+        </div>
         <div class="row">
             <div style="float: right; width: 600px">
                 <p>Forward:</p>
@@ -2321,7 +2676,7 @@ def create_main_results_html(TFresults=None, COMBINEtime=None, COUNTtime=None,
     label1 = config.LABEL1
     label2 = config.LABEL2
     padj_cutoff = config.PADJCUTOFF
-    plot = config.PLOT
+    plot = config.PLOTALL
     combine = config.COMBINE
     count = config.COUNT
     deseq = config.DESEQ
