@@ -1600,11 +1600,10 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         enrichment_gs = gridspec.GridSpecFromSubplotSpec(3, 1, 
                                             subplot_spec=outer_gs[0], 
                                             height_ratios=[3, 1, 1], 
-                                            hspace=.5)
-        fillplot = plt.subplot(enrichment_gs[0])
-        lineplot = plt.subplot(enrichment_gs[1])
-        barplot = plt.subplot(enrichment_gs[2])
-        
+                                            hspace=.1)
+        lineplot = plt.subplot(enrichment_gs[0])
+        barplot = plt.subplot(enrichment_gs[1])
+        fillplot = plt.subplot(enrichment_gs[2])
 
         #This is the enrichment score plot (i.e. line plot)
         # ax0 = plt.subplot(gs[0])
@@ -1615,8 +1614,8 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         lineplot.set_ylabel('Enrichment Score (ES)', fontsize=10)
         lineplot.tick_params(axis='y', which='both', left='on', right='off', 
                         labelleft='on')
-        # lineplot.tick_params(axis='x', which='both', bottom='off', top='off', 
-        #                 labelbottom='off')
+        lineplot.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
         lineplot.set_ylim([0,1])
         lineplot.set_xlim(limits)
 
@@ -1629,8 +1628,8 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         barplot.bar(x,[1 for l in x], edgecolor="", color=colors)
         barplot.tick_params(axis='y', which='both', left='off', right='off', 
                         labelleft='off') 
-        # barplot.tick_params(axis='x', which='both', bottom='off', top='off', 
-        #                 labelbottom='off')
+        barplot.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
         barplot.set_xlim(limits)
         barplot.set_ylim([0,1])
         barplot.set_ylabel('Score', fontsize=10)
@@ -1639,8 +1638,8 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         fillplot.fill_between(xvals,0,logpval,facecolor='grey',edgecolor="")
         fillplot.tick_params(axis='y', which='both', left='on', right='off', 
                         labelleft='on')
-        # fillplot.tick_params(axis='x', which='both', bottom='off', top='off', 
-        #                 labelbottom='on')
+        fillplot.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='on')
         ylim = math.fabs(max([x for x in logpval if -500 < x < 500],key=abs))
         fillplot.set_ylim([-ylim,ylim])
         fillplot.yaxis.set_ticks([int(-ylim),0,int(ylim)])
@@ -1679,7 +1678,7 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
 
         # ax3.set_ylabel('GC content per kb',fontsize=10)
 
-        meta_gs = gridspec.GridSpecFromSubplotSpec(3, 4, subplot_spec=outer_gs[1], hspace=0.5)
+        meta_gs = gridspec.GridSpecFromSubplotSpec(3, 4, subplot_spec=outer_gs[1], hspace=0.1, wspace=0.1)
 
         #Initiate meta plots
         ax3 = plt.subplot(meta_gs[:2, 0])
@@ -1725,7 +1724,7 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         ax3.tick_params(axis='y', which='both', left='off', right='off', 
                         labelleft='on')
         ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='on')
+                        labelbottom='off')
         ax3.set_ylabel('Reads per Millions Mapped',fontsize=10)
         plt.yticks([-int(largewindow),0,int(largewindow)],
                     [str(-int(largewindow)/1000.0),'0',\
@@ -1776,9 +1775,10 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         #Distance distribution heatmaps
         bins = 100
         xlim = [int(-largewindow), int(largewindow)]
-        counts,edges = np.histogram(q1_distances, bins=bins)
+        counts, edges = np.histogram(q1_distances, bins=bins)
+        print q1_distances
         print edges
-        edges        = (edges[1:]+edges[:-1])/2.
+        edges = (edges[1:]+edges[:-1])/2.0
         print counts, edges
 
         norm    = matplotlib.colors.Normalize(vmin=min(counts), 
@@ -1787,8 +1787,9 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         m       = cm.ScalarMappable(norm=norm, cmap=cmap)
         colors  = [m.to_rgba(c) for c in counts] 
         
-        ax7.bar(edges,np.ones((len(edges),)), color=colors, 
-                    width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+        # ax7.bar(edges,np.ones((len(edges),)), color=colors, 
+        #             width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
+        ax7.hist(q1_distances)
         ax7.set_ylim([0,1])
         ax7.set_xlim(xlim)
         ax7.tick_params(axis='y', which='both', left='off', right='off', 
