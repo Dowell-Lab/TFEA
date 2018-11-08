@@ -1596,14 +1596,15 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         #Without GC-Content
         # gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 2])
 
-        outer_gs = gridspec.GridSpec(2, 1)
-        enrichment_gs = gridspec.GridSpecFromSubplotSpec(3, 1, 
+        outer_gs = gridspec.GridSpec(2, 1, height_ratios=[2,1])
+        enrichment_gs = gridspec.GridSpecFromSubplotSpec(4, 1, 
                                             subplot_spec=outer_gs[0], 
-                                            height_ratios=[3, 1, 1], 
+                                            height_ratios=[3, 1, 3, 1], 
                                             hspace=.1)
         lineplot = plt.subplot(enrichment_gs[0])
         barplot = plt.subplot(enrichment_gs[1])
-        fillplot = plt.subplot(enrichment_gs[2])
+        scatterplot = plt.subplot(enrichment_gs[2])
+        fillplot = plt.subplot(enrichment_gs[3])
 
         #This is the enrichment score plot (i.e. line plot)
         # ax0 = plt.subplot(gs[0])
@@ -1621,6 +1622,19 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
 
         #This is the barplot right below the enrichment score line plot
         x = xvals
+        scatterplot.scatter(x,sorted_distances,edgecolor="", color="black", 
+                        s=10, alpha=0.25)
+        scatterplot.tick_params(axis='y', which='both', left='off', right='off', 
+                        labelleft='off') 
+        scatterplot.tick_params(axis='x', which='both', bottom='off', top='off', 
+                        labelbottom='off')
+        plt.yticks([-int(largewindow),0,int(largewindow)],
+                    [str(-int(largewindow)/1000.0),'0',\
+                    str(int(largewindow)/1000.0)])
+        scatterplot.set_xlim(limits)
+        scatterplot.set_ylim([0,1])
+        scatterplot.set_ylabel('Distance (kb)', fontsize=10)
+
         norm    = matplotlib.colors.Normalize(vmin=min(score), vmax=max(score))
         cmap    = cm.Greys
         m       = cm.ScalarMappable(norm=norm, cmap=cmap)
@@ -1678,7 +1692,8 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
 
         # ax3.set_ylabel('GC content per kb',fontsize=10)
 
-        meta_gs = gridspec.GridSpecFromSubplotSpec(3, 4, subplot_spec=outer_gs[1], hspace=0.1, wspace=0.1)
+        meta_gs = gridspec.GridSpecFromSubplotSpec(3, 4, 
+                            subplot_spec=outer_gs[1], hspace=0.1, wspace=0.1)
 
         #Initiate meta plots
         ax3 = plt.subplot(meta_gs[:2, 0])
@@ -1830,7 +1845,7 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         
         ax9.bar(edges,np.ones((len(edges),)), color=colors, 
                     width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
-        ax9.set_ylim([0,1])
+        # ax9.set_ylim([0,1])
         ax9.set_xlim(xlim)
         ax9.tick_params(axis='y', which='both', left='off', right='off', 
                         labelleft='off') 
