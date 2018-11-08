@@ -1269,7 +1269,7 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
         avgnegprofile1 = np.zeros(2*int(largewindow))
         i = 0
         for sortedbamfile in hts_bam1:
-            # mil_map = float(millions_mapped[i])
+            mil_map = float(millions_mapped[i])
             i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
@@ -1297,10 +1297,10 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
             #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile1 = [x+y for x,y in zip(avgposprofile1, tempposprofile)]
             avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
-        # avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
-        # avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
-        avgposprofile1 = [x/rep1number for x in avgposprofile1]
-        avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
+        avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
+        avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
+        # avgposprofile1 = [x/rep1number for x in avgposprofile1]
+        # avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
         posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
         negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
 
@@ -1308,7 +1308,7 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
         avgnegprofile2 = np.zeros(2*int(largewindow))
         i = len(hts_bam1)
         for sortedbamfile in hts_bam2:
-            # mil_map = float(millions_mapped[i])
+            mil_map = float(millions_mapped[i])
             i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
@@ -1336,20 +1336,20 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
             #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
             avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
-        # avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
-        # avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
-        avgposprofile2 = [x/rep2number for x in avgposprofile2]
-        avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
+        avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
+        avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
+        # avgposprofile2 = [x/rep2number for x in avgposprofile2]
+        # avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
         posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
         negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
     
-    mil_map1 = mil_map1/rep1number
-    mil_map2 = mil_map2/rep2number
+    # mil_map1 = mil_map1/rep1number
+    # mil_map2 = mil_map2/rep2number
 
-    posprofile1 = [x/mil_map1 for x in posprofile1]
-    negprofile1 = [x/mil_map1 for x in negprofile1]
-    posprofile2 = [x/mil_map2 for x in posprofile2]
-    negprofile2 = [x/mil_map2 for x in negprofile2]
+    # posprofile1 = [x/mil_map1 for x in posprofile1]
+    # negprofile1 = [x/mil_map1 for x in negprofile1]
+    # posprofile2 = [x/mil_map2 for x in posprofile2]
+    # negprofile2 = [x/mil_map2 for x in negprofile2]
 
 
     return posprofile1, negprofile1, posprofile2, negprofile2
@@ -1389,6 +1389,137 @@ def meta_profile2(regionlist=None, region_file=None, millions_mapped=None,
                 start_in_window = max( start_in_window, 0 )
                 end_in_window = min( end_in_window, 2*halfwinwidth )
                 profile[ start_in_window : end_in_window ] += 1
+
+    import HTSeq as hts
+    regions=list()
+    if regionlist != None and region_file == None:
+        for chrom, start, stop in regionlist:
+            regions.append(
+                hts.GenomicInterval(chrom, int(start), int(stop), '.'))
+    elif region_file != None and regionlist == None:
+        with open(region_file) as F:
+            for line in F:
+                line = line.strip('\n').split('\t')
+                chrom, start, stop = line[:3]
+                regions.append(
+                    hts.GenomicInterval(chrom, int(start), int(stop), '.'))
+    elif region_file == None and regionlist == None:
+        raise NameError("Must input either a regionlist or region_file.")
+    else:
+        raise NameError("Only input one of regionlist or region_file variables.")
+    
+
+    hts_bam1 = list()
+    hts_bam2 = list()
+    for bam in bam1:
+        hts_bam1.append(hts.BAM_Reader(bam))
+    for bam in bam2:
+        hts_bam2.append(hts.BAM_Reader(bam))
+
+    if len(hts_bam1) == 0 or len(hts_bam2) == 0:
+        raise ValueError("One of bam1 or bam2 variables is empty.")
+    # if len(millions_mapped) == 0 or len(millions_mapped) != len(hts_bam1) + len(hts_bam2):
+    #     raise ValueError(("Millions_mapped variable is empty or does not match "
+    #                         "length of bam variables combined."))
+
+
+    posprofile1 = np.zeros(2*int(largewindow))  
+    negprofile1 = np.zeros(2*int(largewindow))
+    posprofile2 = np.zeros(2*int(largewindow))   
+    negprofile2 = np.zeros(2*int(largewindow))
+    rep1number = float(len(hts_bam1))
+    rep2number = float(len(hts_bam2))
+    mil_map1 = 0.0
+    mil_map2 = 0.0
+    for window in regions:
+        avgposprofile1 = np.zeros(2*int(largewindow))
+        avgnegprofile1 = np.zeros(2*int(largewindow))
+        i = 0
+        for sortedbamfile in hts_bam1:
+            mil_map = float(millions_mapped[i])
+            i += 1
+            tempposprofile = np.zeros(2*int(largewindow))
+            tempnegprofile = np.zeros(2*int(largewindow))
+            for almnt in sortedbamfile[ window ]:
+                mil_map1 += 1.0
+                if almnt.iv.strand == '+':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window = almnt.iv.end - window.end \
+                                    + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                if almnt.iv.strand == '-':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+            # pos_sum = np.sum(tempposprofile)
+            # neg_sum = np.sum(tempnegprofile)
+            # if pos_sum != 0:
+            #     tempposprofile = [x/pos_sum for x in tempposprofile]
+            # if neg_sum != 0:
+            #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
+            avgposprofile1 = [x+y for x,y in zip(avgposprofile1, tempposprofile)]
+            avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
+        avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
+        avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
+        # avgposprofile1 = [x/rep1number for x in avgposprofile1]
+        # avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
+        posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
+        negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
+
+        avgposprofile2 = np.zeros(2*int(largewindow))
+        avgnegprofile2 = np.zeros(2*int(largewindow))
+        i = len(hts_bam1)
+        for sortedbamfile in hts_bam2:
+            mil_map = float(millions_mapped[i])
+            i += 1
+            tempposprofile = np.zeros(2*int(largewindow))
+            tempnegprofile = np.zeros(2*int(largewindow))
+            for almnt in sortedbamfile[ window ]:
+                if almnt.iv.strand == '+':
+                    mil_map2 += 1.0
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                if almnt.iv.strand == '-':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+            # pos_sum = np.sum(tempposprofile)
+            # neg_sum = np.sum(tempnegprofile)
+            # if pos_sum != 0:
+            #     tempposprofile = [x/pos_sum for x in tempposprofile]
+            # if neg_sum != 0:
+            #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
+            avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
+            avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
+        avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
+        avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
+        # avgposprofile2 = [x/rep2number for x in avgposprofile2]
+        # avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
+        posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
+        negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
+    
+    # mil_map1 = mil_map1/rep1number
+    # mil_map2 = mil_map2/rep2number
+
+    # posprofile1 = [x/mil_map1 for x in posprofile1]
+    # negprofile1 = [x/mil_map1 for x in negprofile1]
+    # posprofile2 = [x/mil_map2 for x in posprofile2]
+    # negprofile2 = [x/mil_map2 for x in negprofile2]
+
+
+    return posprofile1, negprofile1, posprofile2, negprofile2
 #==============================================================================
 
 #==============================================================================
@@ -1457,7 +1588,7 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         F = plt.figure(figsize=(15.5,12))
         # xvals = range(0, int(len_cumscore))
         xvals = np.linspace(start=0, stop=1, num=len_cumscore)
-        limits = [0,1]
+        limits = [0, 1]
 
         #With GC-Content
         # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
@@ -1465,10 +1596,14 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         #Without GC-Content
         # gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 2])
 
-        gs = gridspec.GridSpec(7, 4)
-        fillplot = plt.subplot(gs[3, :])
-        lineplot = plt.subplot(gs[:2, :], sharex=fillplot)
-        barplot = plt.subplot(gs[2, :], sharex=fillplot)
+        outer_gs = gridspec.GridSpec(2, 1)
+        enrichment_gs = gridspec.GridSpecFromSubplotSpec(3, 1, 
+                                            subplot_spec=outer_gs[0], 
+                                            height_ratios=[3, 1, 1], 
+                                            hspace=.5)
+        fillplot = plt.subplot(enrichment_gs[0])
+        lineplot = plt.subplot(enrichment_gs[1])
+        barplot = plt.subplot(enrichment_gs[2])
         
 
         #This is the enrichment score plot (i.e. line plot)
@@ -1544,19 +1679,19 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
 
         # ax3.set_ylabel('GC content per kb',fontsize=10)
 
-        #Initiate heatmaps
-        ax7 = plt.subplot(gs[6, 0])
-        ax8 = plt.subplot(gs[6, 1], sharey=ax7)
-        ax9 = plt.subplot(gs[6, 2], sharey=ax7)
-        ax10 = plt.subplot(gs[6, 3], sharey=ax7)
+        meta_gs = gridspec.GridSpecFromSubplotSpec(3, 4, subplot_spec=outer_gs[1], hspace=0.5)
 
         #Initiate meta plots
-        ax3 = plt.subplot(gs[4:6, 0], sharex=ax7)
-        ax4 = plt.subplot(gs[4:6, 1], sharex=ax8, sharey=ax3)
-        ax5 = plt.subplot(gs[4:6, 2], sharex=ax9, sharey=ax3)
-        ax6 = plt.subplot(gs[4:6, 3], sharex=ax10, sharey=ax3)
+        ax3 = plt.subplot(meta_gs[:2, 0])
+        ax4 = plt.subplot(meta_gs[:2, 1])
+        ax5 = plt.subplot(meta_gs[:2, 2])
+        ax6 = plt.subplot(meta_gs[:2, 3])
 
-        
+        #Initiate heatmaps
+        ax7 = plt.subplot(meta_gs[2, 0])
+        ax8 = plt.subplot(meta_gs[2, 1])
+        ax9 = plt.subplot(meta_gs[2, 2])
+        ax10 = plt.subplot(meta_gs[2, 3])
 
         xvals = range(-int(largewindow),int(largewindow))
         q1posprofile1 = meta_profile_dict['q1posprofile1']
@@ -1642,9 +1777,9 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         bins = 100
         xlim = [int(-largewindow), int(largewindow)]
         counts,edges = np.histogram(q1_distances, bins=bins)
-        edges        = (edges[1:]+edges[:-1])/2. 
-        print q1_distances[:10]
-        print counts
+        print edges
+        edges        = (edges[1:]+edges[:-1])/2.
+        print counts, edges
 
         norm    = matplotlib.colors.Normalize(vmin=min(counts), 
                                                 vmax=max(counts))

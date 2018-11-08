@@ -733,11 +733,9 @@ def meta_plot(ranked_center_file=None, largewindow=None, bam1=None, bam2=None,
     q4regions = regions[q3:]
 
     #Get millions mapped reads for each bam file
-    # samtools_args = [(bam, tempdir) for bam in bam1+bam2]
-    # p = Pool(cpus)
-    # millions_mapped = p.map(independent_functions.samtools_flagstat, samtools_args)
-
-    millions_mapped = list()
+    samtools_args = [(bam, tempdir) for bam in bam1+bam2]
+    p = Pool(cpus)
+    millions_mapped = p.map(independent_functions.samtools_flagstat, samtools_args)
 
     #Get positive and negative strand profiles for each condition for each 
     # quartile
