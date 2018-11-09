@@ -145,6 +145,8 @@ if config.COUNT:
                                                     tempdir=tempdir, 
                                                     label1=config.LABEL1, 
                                                     label2=config.LABEL2)
+
+    millions_mapped = independent_functions.sum_reads(count_file=count_file)
     print "done"
 elif config.DESEQ:
     #If you don't want to perform multibamcov but still want to perform
@@ -188,7 +190,8 @@ if config.METAPLOT:
                                     bam1=config.BAM1, bam2=config.BAM2, 
                                     tempdir=tempdir, cpus=cpus, 
                                     figuredir=figuredir, label1=config.LABEL1, 
-                                    label2=config.LABEL2, dpi=config.DPI)
+                                    label2=config.LABEL2, dpi=config.DPI,
+                                    millions_mapped=millions_mapped)
     print "done"
 
 #Either perform motif scanning on the fly or use genome-wide motif hits 
@@ -308,7 +311,8 @@ if config.CALCULATE:
                                     smallwindow=config.SMALLWINDOW,
                                     motifdatabase=config.MOTIFDATABASE,
                                     genomefasta=config.GENOMEFASTA, 
-                                    meta_profile_dict=meta_profile_dict)
+                                    meta_profile_dict=meta_profile_dict,
+                                    millions_mapped=millions_mapped)
 #==============================================================================
 
 #Here we simply remove large bed files that are produced within this package. 

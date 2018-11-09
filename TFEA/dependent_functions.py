@@ -308,10 +308,10 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
         q1 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 25)))
         q2 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 50)))
         q3 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 75)))
-        q1_distances = sorted_distances[:q1]
-        q2_distances = sorted_distances[q1:q2]
-        q3_distances = sorted_distances[q2:q3]
-        q4_distances = sorted_distances[q3:]
+        q1_distances = [x for x in sorted_distances[:q1] if x <= largewindow]
+        q2_distances = [x for x in sorted_distances[q1:q2] if x <= largewindow]
+        q3_distances = [x for x in sorted_distances[q2:q3] if x <= largewindow]
+        q4_distances = [x for x in sorted_distances[q3:] if x <= largewindow]
 
         
         #Get log pval to plot for rank metric
@@ -518,7 +518,7 @@ def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
                 padj_cutoff=None, logos=None, figuredir=None,
                 largewindow=None, smallwindow=None, genomefasta=None,
                 motifdatabase=None, label1=None, label2=None, hits=None, 
-                meta_profile_dict=None):
+                meta_profile_dict=None, millions_mapped=None):
     '''This function performs the bulk of transcription factor enrichment
         analysis (TFEA), it does the following:
             1. GC distribution across regions for plotting
@@ -610,7 +610,7 @@ def calculate(tempdir=None, outputdir=None, ranked_center_file=None,
     # p = Pool(cpus)
     # args = [(x,tempdir) for x in bam1+bam2]
     # millions_mapped = p.map(independent_functions.samtools_flagstat,args)
-    millions_mapped = list()
+    # millions_mapped = list()
 
     print "done\nFinding motif hits in regions..."
     if singlemotif == False:
@@ -709,7 +709,7 @@ def bedtools_distance(args):
 #==============================================================================
 def meta_plot(ranked_center_file=None, largewindow=None, bam1=None, bam2=None, 
                 tempdir=None, cpus=None, figuredir=None, label1=None, 
-                label2=None, dpi=None):
+                label2=None, dpi=None, millions_mapped=None):
     regions = list()
     ranks = list()
     with open(ranked_center_file) as F:

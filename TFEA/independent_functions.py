@@ -385,6 +385,22 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
 #==============================================================================
 
 #==============================================================================
+def sum_reads(count_file=None, bam1=config.BAM1, bam2=config.BAM2):
+    '''
+    '''
+    sample_number = (len(bam1)+len(bam2))
+    millions_mapped = [0.0]*sample_number
+    with open(count_file) as F:
+        F.readline()
+        for line in F:
+            line = line.strip('\n').split('\t')
+            [x+float(y) for x,y in zip(millions_mapped,line[-sample_number:])]
+
+    return millions_mapped
+
+#==============================================================================
+
+#==============================================================================
 def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None, 
                         label1=None, label2=None):
     '''Writes an R script within the tempdir directory in TFEA output to run 
@@ -1255,6 +1271,8 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
     #     raise ValueError(("Millions_mapped variable is empty or does not match "
     #                         "length of bam variables combined."))
 
+    print millions_mapped
+
 
     posprofile1 = np.zeros(2*int(largewindow))  
     negprofile1 = np.zeros(2*int(largewindow))
@@ -1262,8 +1280,6 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
     negprofile2 = np.zeros(2*int(largewindow))
     rep1number = float(len(hts_bam1))
     rep2number = float(len(hts_bam2))
-    mil_map1 = 0.0
-    mil_map2 = 0.0
     for window in regions:
         avgposprofile1 = np.zeros(2*int(largewindow))
         avgnegprofile1 = np.zeros(2*int(largewindow))
@@ -1274,21 +1290,20 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
             for almnt in sortedbamfile[ window ]:
-                mil_map1 += 1.0
                 if almnt.iv.strand == '+':
                     start_in_window = almnt.iv.start - window.start
                     end_in_window = almnt.iv.end - window.end \
                                     + 2*int(largewindow)
                     start_in_window = max( start_in_window, 0 )
                     end_in_window = min( end_in_window, 2*int(largewindow) )
-                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0/mil_map
                 if almnt.iv.strand == '-':
                     start_in_window = almnt.iv.start - window.start
                     end_in_window   = almnt.iv.end - window.end \
                                         + 2*int(largewindow)
                     start_in_window = max( start_in_window, 0 )
                     end_in_window = min( end_in_window, 2*int(largewindow) )
-                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0/mil_map
             # pos_sum = np.sum(tempposprofile)
             # neg_sum = np.sum(tempnegprofile)
             # if pos_sum != 0:
@@ -1297,10 +1312,10 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
             #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile1 = [x+y for x,y in zip(avgposprofile1, tempposprofile)]
             avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
-        avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
-        avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
-        # avgposprofile1 = [x/rep1number for x in avgposprofile1]
-        # avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
+        # avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
+        # avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
+        avgposprofile1 = [x/rep1number for x in avgposprofile1]
+        avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
         posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
         negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
 
@@ -1314,20 +1329,19 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
             tempnegprofile = np.zeros(2*int(largewindow))
             for almnt in sortedbamfile[ window ]:
                 if almnt.iv.strand == '+':
-                    mil_map2 += 1.0
                     start_in_window = almnt.iv.start - window.start
                     end_in_window   = almnt.iv.end - window.end \
                                         + 2*int(largewindow)
                     start_in_window = max( start_in_window, 0 )
                     end_in_window = min( end_in_window, 2*int(largewindow) )
-                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0/mil_map
                 if almnt.iv.strand == '-':
                     start_in_window = almnt.iv.start - window.start
                     end_in_window   = almnt.iv.end - window.end \
                                         + 2*int(largewindow)
                     start_in_window = max( start_in_window, 0 )
                     end_in_window = min( end_in_window, 2*int(largewindow) )
-                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0/mil_map
             # pos_sum = np.sum(tempposprofile)
             # neg_sum = np.sum(tempnegprofile)
             # if pos_sum != 0:
@@ -1336,10 +1350,10 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
             #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
             avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
-        avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
-        avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
-        # avgposprofile2 = [x/rep2number for x in avgposprofile2]
-        # avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
+        # avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
+        # avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
+        avgposprofile2 = [x/rep2number for x in avgposprofile2]
+        avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
         posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
         negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
     
@@ -1599,7 +1613,7 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         outer_gs = gridspec.GridSpec(2, 1, height_ratios=[2,1])
         enrichment_gs = gridspec.GridSpecFromSubplotSpec(4, 1, 
                                             subplot_spec=outer_gs[0], 
-                                            height_ratios=[3, 1, 3, 1], 
+                                            height_ratios=[4, 1, 4, 2], 
                                             hspace=.1)
         lineplot = plt.subplot(enrichment_gs[0])
         barplot = plt.subplot(enrichment_gs[1])
@@ -1622,17 +1636,17 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
 
         #This is the barplot right below the enrichment score line plot
         x = xvals
-        scatterplot.scatter(x,sorted_distances,edgecolor="", color="black", 
+        scatterplot.scatter(x, sorted_distances, edgecolor="", color="black", 
                         s=10, alpha=0.25)
         scatterplot.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='off') 
+                        labelleft='on') 
         scatterplot.tick_params(axis='x', which='both', bottom='off', top='off', 
                         labelbottom='off')
         plt.yticks([-int(largewindow),0,int(largewindow)],
                     [str(-int(largewindow)/1000.0),'0',\
                     str(int(largewindow)/1000.0)])
         scatterplot.set_xlim(limits)
-        scatterplot.set_ylim([0,1])
+        lineplot.set_ylim([-int(largewindow),int(largewindow)])
         scatterplot.set_ylabel('Distance (kb)', fontsize=10)
 
         norm    = matplotlib.colors.Normalize(vmin=min(score), vmax=max(score))
@@ -1802,9 +1816,8 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         m       = cm.ScalarMappable(norm=norm, cmap=cmap)
         colors  = [m.to_rgba(c) for c in counts] 
         
-        # ax7.bar(edges,np.ones((len(edges),)), color=colors, 
-        #             width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
-        ax7.hist(q1_distances)
+        ax7.bar(edges,np.ones((len(edges),)), color=colors, 
+                    width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
         ax7.set_ylim([0,1])
         ax7.set_xlim(xlim)
         ax7.tick_params(axis='y', which='both', left='off', right='off', 
@@ -1845,7 +1858,7 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         
         ax9.bar(edges,np.ones((len(edges),)), color=colors, 
                     width=(edges[-1]-edges[0])/len(edges), edgecolor=colors)
-        # ax9.set_ylim([0,1])
+        ax9.set_ylim([0,1])
         ax9.set_xlim(xlim)
         ax9.tick_params(axis='y', which='both', left='off', right='off', 
                         labelleft='off') 
