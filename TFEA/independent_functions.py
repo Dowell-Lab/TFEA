@@ -1285,7 +1285,7 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
         avgnegprofile1 = np.zeros(2*int(largewindow))
         i = 0
         for sortedbamfile in hts_bam1:
-            mil_map = float(millions_mapped[i])
+            mil_map = float(millions_mapped[i])/1000000.0
             i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
@@ -1323,7 +1323,7 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
         avgnegprofile2 = np.zeros(2*int(largewindow))
         i = len(hts_bam1)
         for sortedbamfile in hts_bam2:
-            mil_map = float(millions_mapped[i])
+            mil_map = float(millions_mapped[i])/1000000.0
             i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
@@ -1646,7 +1646,7 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
                     [str(-int(largewindow)/1000.0),'0',\
                     str(int(largewindow)/1000.0)])
         scatterplot.set_xlim(limits)
-        lineplot.set_ylim([-int(largewindow),int(largewindow)])
+        scatterplot.set_ylim([-int(largewindow),int(largewindow)])
         scatterplot.set_ylabel('Distance (kb)', fontsize=10)
 
         norm    = matplotlib.colors.Normalize(vmin=min(score), vmax=max(score))
@@ -1721,95 +1721,92 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         ax9 = plt.subplot(meta_gs[2, 2])
         ax10 = plt.subplot(meta_gs[2, 3])
 
-        xvals = range(-int(largewindow),int(largewindow))
-        q1posprofile1 = meta_profile_dict['q1posprofile1']
-        q1negprofile1 = meta_profile_dict['q1negprofile1']
-        q1posprofile2 = meta_profile_dict['q1posprofile2']
-        q1negprofile2 = meta_profile_dict['q1negprofile2']
-        q2posprofile1 = meta_profile_dict['q2posprofile1']
-        q2negprofile1 = meta_profile_dict['q2negprofile1']
-        q2posprofile2 = meta_profile_dict['q2posprofile2']
-        q2negprofile2 = meta_profile_dict['q2negprofile2']
-        q3posprofile1 = meta_profile_dict['q3posprofile1']
-        q3negprofile1 = meta_profile_dict['q3negprofile1']
-        q3posprofile2 = meta_profile_dict['q3posprofile2']
-        q3negprofile2 = meta_profile_dict['q3negprofile2']
-        q4posprofile1 = meta_profile_dict['q4posprofile1']
-        q4negprofile1 = meta_profile_dict['q4negprofile1']
-        q4posprofile2 = meta_profile_dict['q4posprofile2']
-        q4negprofile2 = meta_profile_dict['q4negprofile2']
-        ylim = [min(q1negprofile1+q1negprofile2+q2negprofile1+q2negprofile2
-                    +q3negprofile1+q3negprofile2+q4negprofile1+q4negprofile2),
-                max(q1posprofile1+q1posprofile2+q2posprofile1+q2posprofile2
-                    +q3posprofile1+q3posprofile2+q4posprofile1+q4posprofile2)]
+        if config.METAPLOT:
+            xvals = range(-int(largewindow),int(largewindow))
+            q1posprofile1 = meta_profile_dict['q1posprofile1']
+            q1negprofile1 = meta_profile_dict['q1negprofile1']
+            q1posprofile2 = meta_profile_dict['q1posprofile2']
+            q1negprofile2 = meta_profile_dict['q1negprofile2']
+            q2posprofile1 = meta_profile_dict['q2posprofile1']
+            q2negprofile1 = meta_profile_dict['q2negprofile1']
+            q2posprofile2 = meta_profile_dict['q2posprofile2']
+            q2negprofile2 = meta_profile_dict['q2negprofile2']
+            q3posprofile1 = meta_profile_dict['q3posprofile1']
+            q3negprofile1 = meta_profile_dict['q3negprofile1']
+            q3posprofile2 = meta_profile_dict['q3posprofile2']
+            q3negprofile2 = meta_profile_dict['q3negprofile2']
+            q4posprofile1 = meta_profile_dict['q4posprofile1']
+            q4negprofile1 = meta_profile_dict['q4negprofile1']
+            q4posprofile2 = meta_profile_dict['q4posprofile2']
+            q4negprofile2 = meta_profile_dict['q4negprofile2']
+            ylim = [min(q1negprofile1+q1negprofile2+q2negprofile1+q2negprofile2
+                        +q3negprofile1+q3negprofile2+q4negprofile1+q4negprofile2),
+                    max(q1posprofile1+q1posprofile2+q2posprofile1+q2posprofile2
+                        +q3posprofile1+q3posprofile2+q4posprofile1+q4posprofile2)]
 
-        # First quartile plot
-        line1, = ax3.plot(xvals,q1posprofile1,color='blue',label=label1)
-        ax3.plot(xvals,q1negprofile1,color='blue')
-        line2, = ax3.plot(xvals,q1posprofile2,color='red',label=label2)
-        ax3.plot(xvals,q1negprofile2,color='red')
-        ax3.legend(loc=2,fontsize='small')
-        ax3.set_title('Q1',fontsize=14)
-        ax3.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='on')
-        ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ax3.set_ylabel('Reads per Millions Mapped',fontsize=10)
-        plt.yticks([-int(largewindow),0,int(largewindow)],
-                    [str(-int(largewindow)/1000.0),'0',\
-                    str(int(largewindow)/1000.0)])
-        ax3.set_ylim(ylim)
+            # First quartile plot
+            line1, = ax3.plot(xvals,q1posprofile1,color='blue',label=label1)
+            ax3.plot(xvals,q1negprofile1,color='blue')
+            line2, = ax3.plot(xvals,q1posprofile2,color='red',label=label2)
+            ax3.plot(xvals,q1negprofile2,color='red')
+            ax3.legend(loc=2,fontsize='small')
+            ax3.set_title('Q1',fontsize=14)
+            ax3.tick_params(axis='y', which='both', left='off', right='off', 
+                            labelleft='on')
+            ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
+                            labelbottom='off')
+            ax3.set_ylabel('Reads per Millions Mapped',fontsize=10)
+            plt.yticks([-int(largewindow),0,int(largewindow)],
+                        [str(-int(largewindow)/1000.0),'0',\
+                        str(int(largewindow)/1000.0)])
+            ax3.set_ylim(ylim)
 
 
-        # Second quartile plot
-        line1, = ax4.plot(xvals,q2posprofile1,color='blue',label=label1)
-        ax4.plot(xvals,q2negprofile1,color='blue')
-        line2, = ax4.plot(xvals,q2posprofile2,color='red',label=label2)
-        ax4.plot(xvals,q2negprofile2,color='red')
-        # ax2.legend(loc=1)
-        ax4.set_title('Q2',fontsize=14)
-        ax4.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='off')
-        ax4.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ax4.set_ylim(ylim)
+            # Second quartile plot
+            line1, = ax4.plot(xvals,q2posprofile1,color='blue',label=label1)
+            ax4.plot(xvals,q2negprofile1,color='blue')
+            line2, = ax4.plot(xvals,q2posprofile2,color='red',label=label2)
+            ax4.plot(xvals,q2negprofile2,color='red')
+            # ax2.legend(loc=1)
+            ax4.set_title('Q2',fontsize=14)
+            ax4.tick_params(axis='y', which='both', left='off', right='off', 
+                            labelleft='off')
+            ax4.tick_params(axis='x', which='both', bottom='off', top='off', 
+                            labelbottom='off')
+            ax4.set_ylim(ylim)
 
-        # Second quartile plot
-        line1, = ax5.plot(xvals,q3posprofile1,color='blue',label=label1)
-        ax5.plot(xvals,q3negprofile1,color='blue')
-        line2, = ax5.plot(xvals,q3posprofile2,color='red',label=label2)
-        ax5.plot(xvals,q3negprofile2,color='red')
-        # ax3.legend(loc=1)
-        ax5.set_title('Q3',fontsize=14)
-        ax5.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='off')
-        ax5.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ax5.set_ylim(ylim)
+            # Third quartile plot
+            line1, = ax5.plot(xvals,q3posprofile1,color='blue',label=label1)
+            ax5.plot(xvals,q3negprofile1,color='blue')
+            line2, = ax5.plot(xvals,q3posprofile2,color='red',label=label2)
+            ax5.plot(xvals,q3negprofile2,color='red')
+            # ax3.legend(loc=1)
+            ax5.set_title('Q3',fontsize=14)
+            ax5.tick_params(axis='y', which='both', left='off', right='off', 
+                            labelleft='off')
+            ax5.tick_params(axis='x', which='both', bottom='off', top='off', 
+                            labelbottom='off')
+            ax5.set_ylim(ylim)
 
-        # Third quartile plot
-        line1, = ax6.plot(xvals,q4posprofile1,color='blue',label=label1)
-        ax6.plot(xvals,q4negprofile1,color='blue')
-        line2, = ax6.plot(xvals,q4posprofile2,color='red',label=label2)
-        ax6.plot(xvals,q4negprofile2,color='red')
-        # ax4.legend(loc=1)
-        ax6.set_title('Q4',fontsize=14)
-        ax6.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='off')
-        ax6.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='off')
-        ax6.set_ylim(ylim)
+            # Fourth quartile plot
+            line1, = ax6.plot(xvals,q4posprofile1,color='blue',label=label1)
+            ax6.plot(xvals,q4negprofile1,color='blue')
+            line2, = ax6.plot(xvals,q4posprofile2,color='red',label=label2)
+            ax6.plot(xvals,q4negprofile2,color='red')
+            # ax4.legend(loc=1)
+            ax6.set_title('Q4',fontsize=14)
+            ax6.tick_params(axis='y', which='both', left='off', right='off', 
+                            labelleft='off')
+            ax6.tick_params(axis='x', which='both', bottom='off', top='off', 
+                            labelbottom='off')
+            ax6.set_ylim(ylim)
 
 
         #Distance distribution heatmaps
         bins = 100
         xlim = [int(-largewindow), int(largewindow)]
         counts, edges = np.histogram(q1_distances, bins=bins)
-        print q1_distances
-        print edges
         edges = (edges[1:]+edges[:-1])/2.0
-        print counts, edges
-
         norm    = matplotlib.colors.Normalize(vmin=min(counts), 
                                                 vmax=max(counts))
         cmap    = cm.YlOrRd
@@ -1829,7 +1826,6 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
 
         counts,edges = np.histogram(q2_distances, bins=bins)
         edges        = (edges[1:]+edges[:-1])/2. 
-
         norm    = matplotlib.colors.Normalize(vmin=min(counts), 
                                                 vmax=max(counts))
         cmap    = cm.YlOrRd
@@ -1849,7 +1845,6 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
 
         counts,edges = np.histogram(q3_distances, bins=bins)
         edges        = (edges[1:]+edges[:-1])/2. 
-
         norm    = matplotlib.colors.Normalize(vmin=min(counts), 
                                                 vmax=max(counts))
         cmap    = cm.YlOrRd
@@ -1867,9 +1862,8 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
         ax9.set_xlabel('Motif to Region Center Distance (bp)')
 
 
-        counts,edges = np.histogram(q3_distances, bins=bins)
+        counts,edges = np.histogram(q4_distances, bins=bins)
         edges        = (edges[1:]+edges[:-1])/2. 
-
         norm    = matplotlib.colors.Normalize(vmin=min(counts), 
                                                 vmax=max(counts))
         cmap    = cm.YlOrRd
@@ -2722,17 +2716,6 @@ def create_motif_result_html(TFresults=None):
             </div>
         </div>
         <div class="row">
-            <div style="float: left; width 1250px">
-                <img src="./meta_plot.png" alt="Meta Plot">
-            </div>
-        </div>
-        <div class="row">
-            <div style="float: left; width 1250px; padding-bottom:50px">
-                <img src="./"""+MOTIF_FILE+"""_distance_distribution.png" \
-                    alt="Distance Distribution Plot">
-            </div>
-        </div>
-        <div class="row">
             <div style="float: right; width: 600px">
                 <p>Forward:</p>
                 <img src="./"""+direct_logo+"""" \
@@ -3101,38 +3084,38 @@ if __name__ == "__main__":
     #                 sigx=sigx, sigy=sigy)
 
     #==================METAeRNA TEST===================
-    # import matplotlib.pyplot as plt
-    # posprofile1, negprofile1, posprofile2, negprofile2 = meta_profile(regionlist=[('chr17', '67603195','67603800')], 
-    #                                                         millions_mapped=[54307224,158978147], 
-    #                                                         largewindow=1500.0, 
-    #                                                         bam1=['../../TFEA_outputs/SRR1105736.fastqbowtie2.sorted.bam'], 
-    #                                                         bam2=['../../TFEA_outputs/SRR1105738.fastqbowtie2.sorted.bam'])
-    # print sum(posprofile1), sum(negprofile1), sum(posprofile2), sum(negprofile2)
+    import matplotlib.pyplot as plt
+    posprofile1, negprofile1, posprofile2, negprofile2 = meta_profile(regionlist=[('chr17', '67603195','67603800')], 
+                                                            millions_mapped=[54307224,158978147], 
+                                                            largewindow=1500.0, 
+                                                            bam1=['../../TFEA_outputs/SRR1105736.fastqbowtie2.sorted.bam'], 
+                                                            bam2=['../../TFEA_outputs/SRR1105738.fastqbowtie2.sorted.bam'])
+    print sum(posprofile1), sum(negprofile1), sum(posprofile2), sum(negprofile2)
 
-    # F = plt.figure(figsize=(15.5,6))
-    # ax0 = plt.subplot(111)
-    # xvals = range(-int(1500),int(1500))
-    # line1, = ax0.plot(xvals,posprofile1,color='blue',label='DMSO')
-    # ax0.plot(xvals,negprofile1,color='blue')
-    # line2, = ax0.plot(xvals,posprofile2,color='red',label='Nutlin')
-    # ax0.plot(xvals,negprofile2,color='red')
-    # ax0.legend(loc=1)
-    # ax0.set_title('Meta Plot over all regions',fontsize=14)
-    # ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    # ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
-    # ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
-    # ax0.set_xlabel('Distance to eRNA Origin (bp)')
-    # plt.savefig('./test.png',bbox_inches='tight')
-    # plt.show()
+    F = plt.figure(figsize=(15.5,6))
+    ax0 = plt.subplot(111)
+    xvals = range(-int(1500),int(1500))
+    line1, = ax0.plot(xvals,posprofile1,color='blue',label='DMSO')
+    ax0.plot(xvals,negprofile1,color='blue')
+    line2, = ax0.plot(xvals,posprofile2,color='red',label='Nutlin')
+    ax0.plot(xvals,negprofile2,color='red')
+    ax0.legend(loc=1)
+    ax0.set_title('Meta Plot over all regions',fontsize=14)
+    ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
+    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax0.set_ylabel('Normalized Read Coverage',fontsize=14)
+    ax0.set_xlabel('Distance to eRNA Origin (bp)')
+    plt.savefig('./test.png',bbox_inches='tight')
+    plt.show()
     # plt.cla()
 
     #==================Enrichment Plot TEST=================
-    import math
-    sorted_distances = np.arange(0,150,10000)
-    cumscore = np.cumsum(sorted_distances)
-    logpval = np.arange(0.0001,1,10000)
-    logpval = [math.exp(-x) for x in logpval]
-    enrichment_plot(largewindow=150.0, smallwindow=15.0, figuredir='../',
-                    cumscore=cumscore, sorted_distances=sorted_distances, logpval=logpval, 
-                    updistancehist=None, downdistancehist=None, 
-                    gc_array=None, dpi=None, save=False)
+    # import math
+    # sorted_distances = np.arange(0,150,10000)
+    # cumscore = np.cumsum(sorted_distances)
+    # logpval = np.arange(0.0001,1,10000)
+    # logpval = [math.exp(-x) for x in logpval]
+    # enrichment_plot(largewindow=150.0, smallwindow=15.0, figuredir='../',
+    #                 cumscore=cumscore, sorted_distances=sorted_distances, logpval=logpval, 
+    #                 updistancehist=None, downdistancehist=None, 
+    #                 gc_array=None, dpi=None, save=False)

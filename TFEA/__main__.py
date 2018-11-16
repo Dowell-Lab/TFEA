@@ -193,7 +193,8 @@ if config.METAPLOT:
                                     label2=config.LABEL2, dpi=config.DPI,
                                     millions_mapped=millions_mapped)
     print "done"
-
+else:
+    meta_profile_dict={}
 #Either perform motif scanning on the fly or use genome-wide motif hits 
 # provided by user
 #==============================================================================
