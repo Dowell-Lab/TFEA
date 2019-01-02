@@ -10,7 +10,7 @@ __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
                 'Robin D. Dowell']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
-__version__ = '3.0'
+__version__ = '4.0'
 #==============================================================================
 #PRIMARY IMPORTS
 #==============================================================================

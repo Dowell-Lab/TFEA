@@ -260,6 +260,24 @@ def getfasta(bedfile=None, genomefasta=None, tempdir=None, outname=None):
 #==============================================================================
 
 #==============================================================================
+def smallfasta_from_fasta(fastafile=None, outname=None, 
+                            smallwindow=config.SMALLWINDOW,
+                            largewindow=config.LARGEWINDOW):
+    with open(outname,'w') as outfile:
+        with open(fastafile) as F:
+            for line in F:
+                if '>' in line:
+                    outfile.write(line)
+                else:
+                    line = line.strip('\n')
+                    start = int(largewindow-smallwindow)
+                    stop = int(largewindow+smallwindow)
+                    outfile.write(line[start:stop] + '\n')
+
+    return outname
+#==============================================================================
+
+#==============================================================================
 def get_bgfile(fastafile=None, tempdir=None):
     '''Obtains a zero order markov background model (used in FIMO) from a fasta
         file. Outputs into the tempdir directory created by TFEA.
@@ -397,7 +415,6 @@ def sum_reads(count_file=None, bam1=config.BAM1, bam2=config.BAM2):
             [x+float(y) for x,y in zip(millions_mapped,line[-sample_number:])]
 
     return millions_mapped
-
 #==============================================================================
 
 #==============================================================================
