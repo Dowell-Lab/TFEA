@@ -17,6 +17,10 @@ optional arguments:
   --sbatch SBATCH  OPTIONAL. Submits an sbatch job. If specified, input an
                    e-mail address.
  ```
+ 
+ # TFEA Pipeline
+ 
+ 
  <br></br>
 # Table of Contents
 1. <A href="#Installation">Installation</A>
