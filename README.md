@@ -19,7 +19,7 @@ optional arguments:
  ```
  
  # TFEA Pipeline
- 
+ ![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/TFEA_Pipeline2.png)
  
  <br></br>
 # Table of Contents
