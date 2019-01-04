@@ -25,14 +25,16 @@ def run(input_file=None, input_type=None, scanner=None, background=None,
         print("Under construction")
     if input_type == 'counts':
         print("Under construction")
+    if input_type == 'ranked regions':
+        print("Under construction")
     if input_type == 'fasta':
-        ranked_list = fasta_input(fasta=input_file, scanner=scanner, 
+        motif_distances = fasta_input(fasta=input_file, scanner=scanner, 
                                     background=background, 
                                     motifs=motifs)
-                                    
-        return ranked_list
-    if input_type == 'ranked_list':
+        return motif_distances
+    if input_type == 'motif distances':
         print("Under construction")
+    
 
     
 #==============================================================================

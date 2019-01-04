@@ -10,7 +10,7 @@ __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
                 'Robin D. Dowell']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
-__version__ = '4.0'
+__version__ = '3.0'
 #==============================================================================
 #PRIMARY IMPORTS
 #==============================================================================
@@ -27,20 +27,24 @@ import preconfig_functions
 srcdirectory = os.path.dirname(os.path.realpath(__file__))
 
 #argparse to add arguments to this python package
-parser = argparse.ArgumentParser(description=("Transcription Factor Enrichment "
-                                    "Analysis (TFEA) takes as input a "
-                                    "configuration file (.ini) and outputs "
-                                    "a folder containing TFEA results."),
-                                usage=("TFEA --config CONFIG.ini [--sbatch "
-                                    "email@address.com]"))
+parser = argparse.ArgumentParser(description='Transcription Factor Enrichment \
+                                    Analysis (TFEA) takes as input a \
+                                    configuration file (.ini) and outputs \
+                                    a folder containing TFEA results.',
+                                usage='TFEA --config CONFIG.ini [--sbatch \
+                                    email@address.com]')
 
-parser.add_argument('--config','-c',default=False, metavar='',help=("REQUIRED. "
-                        "A configuration file containing .ini suffix "
-                        "(ex. config.ini). See example in the examples folder."))
+parser.add_argument('--config','-c',metavar='',help='REQUIRED. A \
+                        configuration file containing .ini suffix \
+                        (ex. config.ini). See example in the examples folder.')
 
-parser.add_argument('--sbatch','-s',default=False,metavar='',help=('OPTIONAL. \
+parser.add_argument('--sbatch','-s',default=False,metavar='',help='OPTIONAL. \
                         Submits an sbatch job. If specified, input an e-mail \
-                        address.'))
+                        address.')
+
+parser.add_argument('--fasta','-fa',default=False,metavar='',help='OPTIONAL. \
+                        Submits an sbatch job. If specified, input an e-mail \
+                        address.')
 
 #Display help message when no args are passed.
 if len(sys.argv) == 1:
@@ -50,6 +54,7 @@ if len(sys.argv) == 1:
 #If user provided arguments, then parse them
 sbatch = parser.parse_args().sbatch
 configfile = parser.parse_args().config
+fastafile = parser.parse_args().fasta
 config_object = configparser.ConfigParser(
                             interpolation=configparser.ExtendedInterpolation())
 config_object.read(configfile)
@@ -138,7 +143,7 @@ COMBINEtime = time.time()-COMBINEtime
 #==============================================================================
 COUNTtime = time.time()
 if config.COUNT:
-    print "Counting reads in regions..."
+    print("Counting reads in regions...")
     count_file = independent_functions.count_reads(bedfile=bedfile, 
                                                     bam1=config.BAM1, 
                                                     bam2=config.BAM2, 
@@ -147,7 +152,7 @@ if config.COUNT:
                                                     label2=config.LABEL2)
 
     millions_mapped = independent_functions.sum_reads(count_file=count_file)
-    print "done"
+    print("done")
 elif config.DESEQ:
     #If you don't want to perform multibamcov but still want to perform
     # DE-Seq, user must provide a count_file
@@ -160,7 +165,7 @@ COUNTtime = time.time()-COUNTtime
 #==============================================================================
 DESEQtime = time.time()
 if config.DESEQ:
-    print "Running DESeq..."
+    print("Running DESeq...")
     deseq_file = dependent_functions.deseq_run(bam1=config.BAM1, 
                                                 bam2=config.BAM2, 
                                                 tempdir=tempdir, 
@@ -172,7 +177,7 @@ if config.DESEQ:
     ranked_center_file = independent_functions.rank_deseqfile(
                                                 deseq_file=deseq_file,
                                                 tempdir=tempdir)
-    print "done"
+    print("done")
 elif config.CALCULATE:
     #If user does not want to perform DE-Seq but still wants TFEA to caluclate
     # TF enrichment, user must provide a ranked_center_file
@@ -183,7 +188,7 @@ DESEQtime = time.time()-DESEQtime
 #Create a meta plot using input regions and input bam files
 #==============================================================================
 if config.METAPLOT:
-    print "Creating meta plots..."
+    print("Creating meta plots...")
     meta_profile_dict = dependent_functions.meta_plot(
                                     ranked_center_file=ranked_center_file, 
                                     largewindow=config.LARGEWINDOW, 
@@ -192,7 +197,7 @@ if config.METAPLOT:
                                     figuredir=figuredir, label1=config.LABEL1, 
                                     label2=config.LABEL2, dpi=config.DPI,
                                     millions_mapped=millions_mapped)
-    print "done"
+    print("done")
 else:
     meta_profile_dict={}
 #Either perform motif scanning on the fly or use genome-wide motif hits 
@@ -327,7 +332,7 @@ if config.CALCULATE:
 #This option can be turned on/off within the config file.
 #==============================================================================
 if not config.TEMP:
-    print "Removing temporary bed files..."
+    print("Removing temporary bed files...")
     files_to_keep = ['count_file.bed', 'DESeq.R', 'DESeq.res.txt', 
                     'DESeq.Rout', 'ranked_file.bed', 'markov_background.txt', 
                     'ranked_file.center.bed', 'ranked_file.center.sorted.bed']
@@ -335,5 +340,5 @@ if not config.TEMP:
         if file1 not in files_to_keep:
              os.remove(os.path.join(tempdir, file1))
 
-print "done"
+print("done")
 #==============================================================================

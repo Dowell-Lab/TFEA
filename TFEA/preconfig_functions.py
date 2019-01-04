@@ -307,7 +307,7 @@ def verify_config_file():
     except NameError:
         raise NameError('DPI variable not found in config.ini file.')
 
-    print "Config file verified, all inputs present and correct type."
+    print("Config file verified, all inputs present and correct type.")
 #==============================================================================
 
 #==============================================================================

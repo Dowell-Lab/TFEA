@@ -745,7 +745,7 @@ def motif_distance_bedtools_closest(ranked_center_file=None, motif_path=None):
 #==============================================================================
 
 #==============================================================================
-def get_motif_names(motifdatabase=None):
+defget_motif_names (motifdatabase=None):
     '''Extracts motif names from a MEME formatted motif database
 
     Parameters
