@@ -82,15 +82,15 @@ config_object.read(configfile)
 #to the --sbatch flag so we know not to remake output directories. If --sbatch 
 #flag not specified, simply make output directories and continue.
 if sbatch == False:
-    output, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
+    outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=True, 
                                                 config_object=config_object)
 elif str(sbatch) == 'SUBMITTED':
-    output, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
+    outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=False, 
                                                 config_object=config_object)
 else:
-    output, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
+    outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=True, 
                                                 config_object=config_object)
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
@@ -111,7 +111,7 @@ else:
 if test:
     preconfig_functions.parse_config(srcdirectory=srcdirectory, 
                                     config_object=config_object,
-                                    output=output,tempdir=tempdir,
+                                    outputdir=outputdir,tempdir=tempdir,
                                     figuredir=figuredir)
 
     preconfig_functions.verify_config_file()
@@ -125,22 +125,22 @@ if test:
 #file is correct (in case a second instance of TFEA is running)
 preconfig_functions.parse_config(srcdirectory=srcdirectory, 
                                     config_object=config_object,
-                                    output=output,tempdir=tempdir,
+                                    outputdir=outputdir,tempdir=tempdir,
                                     figuredir=figuredir)
 
 #Verify config file to make sure user has inputted all necessary variables
 # config_dict = independent_functions.verify_config_object(config=config)
 preconfig_functions.verify_config_file()
 
+#==============================================================================
+#MAIN SCRIPT
+#==============================================================================
+
 #SECONDARY IMPORTS
 #==============================================================================
 from multiprocessing import Pool
 import multiprocessing as mp
 import config
-
-#==============================================================================
-#MAIN SCRIPT
-#==============================================================================
 '''
 '''
 #Calculate how many cpus can be used for later parallelization steps
@@ -341,20 +341,64 @@ SCANNERtime = time.time()-SCANNERtime
     are contained within this enrichment module
 '''
 ENRICHMENTtime = time.time()
-if config.ENRICHMENT:
+if config.ENRICHMENT != False:
+    print("Calculating enrichment...")
     import enrichment_functions
-ENRICHMENTtime = time.time()-ENRICHMENTtime
+    if config.ENRICHMENT == 'auc':
+        auc_keywords = dict(output_type=config.OUTPUT_TYPE, 
+                            permutations=config.PERMUTATIONS)
+        p = Pool(cpus)
+        results = list()
+        for distances in motif_distances:
+            results.append(p.apply_async(enrichment_functions.area_under_curve, 
+                            (distances,), auc_keywords))
+        enrichment_functions.padj_bonferroni(results)
 
+    print("\t","done")
+ENRICHMENTtime = time.time()-ENRICHMENTtime
 
 #OUTPUT module
 #==============================================================================
 '''
 '''
 OUTPUTtime = time.time()
-if config.OUTPUT_TYPE == 'html':
+if config.OUTPUT_TYPE != False:
+    print("Creating output...")
     import output_functions
+    output_functions.txt_output(results=results, outputdir=outputdir, 
+                                enrichment=config.ENRICHMENT)
+    if config.OUTPUT_TYPE == 'html':
+        output_functions.summary_html_output(config_object=config_object, 
+                                                outputdir=outputdir)
+        OUTPUTtime = time.time()-OUTPUTtime
+        module_list = [('COMBINE', config.COMBINE, COMBINEtime), 
+                        ('COUNT', config.COUNT, COUNTtime), 
+                        ('DESEQ', config.DESEQ, DESEQtime), 
+                        ('RANK', config.RANK, RANKtime), 
+                        ('FASTA', config.FASTA, FASTAtime), 
+                        ('SCANNER', config.SCANNER, SCANNERtime), 
+                        ('ENRICHMENT', config.ENRICHMENT, ENRICHMENTtime), 
+                        ('OUTPUT', config.OUTPUT_TYPE, OUTPUTtime)]
+        html_output(results=results, module_list=module_list)
+        
+    print("\t", "done")
+else:
+    print("Warning: OUTPUT_TYPE either not specified or not supported") 
 
-OUTPUTtime = time.time()-OUTPUTtime
+#REMOVE TEMP FILES
+#==============================================================================
+if not config.TEMP:
+    print("Removing temporary bed files...")
+    files_to_keep = ['count_file.bed', 'DESeq.R', 'DESeq.res.txt', 
+                    'DESeq.Rout', 'ranked_file.bed', 'markov_background.txt']
+    for file1 in os.listdir(tempdir):
+        if file1 not in files_to_keep:
+             os.remove(os.path.join(tempdir, file1))
+
+    print("\t", "done")
+#==============================================================================
+#END OF MAIN SCRIPT
+#==============================================================================
 
 
 

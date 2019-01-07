@@ -37,10 +37,10 @@ FIMO_MOTIFS='/scratch/Users/joru1876/TFEA/motif_databases/HOCOMOCOv11_full_MOUSE
 FIMO_BACKGROUND='largewindow'
 HOMER_MOTIFS=''
 GENOMEFASTA='/scratch/Shares/public/genomes/Mus_musculus/UCSC/mm10/Sequence/WholeGenomeFasta/genome.fa'
-GENOMEHITS=''
+GENOMEHITS='/scratch/Shares/dowell/motifs/HOCOMOCO_MOUSE_v11_p1e-4_mm10/'
 SINGLEMOTIF=False
 
-ENRICHMENT=True
+ENRICHMENT='auc'
 PERMUTATIONS=1000
 LARGEWINDOW=150.0
 SMALLWINDOW=15.0
@@ -52,21 +52,12 @@ MOTIF_LOGOS='/scratch/Users/joru1876/TFEA/mouse_logo/'
 PADJCUTOFF=0.001
 PVALCUTOFF=0.01
 
-
-CALCULATE=True
 POOL=True
-SINGLEMOTIF=False
-GENOMEWIDEHITS=False
-FIMO=True
-HOMER=False
 TEMP=False
 METAPLOT=True
 PLOTALL=False
 
-MOTIF_GENOMEWIDE_HITS='/scratch/Shares/dowell/motifs/HOCOMOCO_MOUSE_v11_p1e-4_mm10/'
 
-
-LOGOS='/scratch/Users/joru1876/TFEA/mouse_logo/'
 OUTPUTDIR="/scratch/Users/joru1876/TFEA_files/IRIS/FIMO_SCAN/FIMO_Scan_1e-4_30IFN-30IFNCA_150window"
 TEMPDIR="/scratch/Users/joru1876/TFEA_files/IRIS/FIMO_SCAN/FIMO_Scan_1e-4_30IFN-30IFNCA_150window/temp_files"
 FIGUREDIR="/scratch/Users/joru1876/TFEA_files/IRIS/FIMO_SCAN/FIMO_Scan_1e-4_30IFN-30IFNCA_150window/plots"
