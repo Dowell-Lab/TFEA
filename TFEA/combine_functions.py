@@ -40,16 +40,46 @@ def merge_bed(beds=None, tempdir=None):
     combined_input_merged_bed = os.path.join(tempdir, 
                                                 "combined_input.merge.bed")
 
-    merge_bed_command = "cat " + " ".join(beds) 
+    merge_bed_command = ("cat " + " ".join(beds) 
                         + " | bedtools sort -i stdin | bedtools merge -i stdin > " 
-                        + combined_input_merged_bed
+                        + combined_input_merged_bed)
 
     subprocess.call(merge_bed_command, shell=True)
 
     return combined_input_merged_bed
 
 #==============================================================================
-def tfit_clean_merge(beds=None, tempdir=None, size_cut=500):
+def tfit_remove_small(beds=None, tempdir=None, size_cut=200):
+    '''
+    '''
+    combined_input_merged_bed = os.path.join(tempdir, 
+                                                "combined_input.merge.bed")
+    large_regions = os.path.join(tempdir, 'large_regions.bed')
+    large_regions_file = open(large_regions,'w')
+
+    for bedfile in beds:
+        with open(bedfile) as F:
+            for line in F:
+                if '#' not in line:
+                    chrom,start,stop = line.strip('\n').split('\t')[:3]
+                    start = int(start)
+                    stop = int(stop)
+                    if stop-start >= size_cut:
+                        large_regions_file.write('\t'.join([chrom,str(start),
+                                                            str(stop)]) + '\n')
+
+    large_regions_file.close()
+
+    merge_bed_command = ("bedtools sort -i " + large_regions 
+                        + " | bedtools merge -i stdin > " 
+                        + combined_input_merged_bed)
+
+    subprocess.call(merge_bed_command, shell=True)
+
+    return combined_input_merged_bed
+
+#==============================================================================
+def tfit_clean(beds=None, tempdir=None, size_cut=500):
     '''Takes in a list of bed files outputted by Tfit and for each region in
         each bed file splits the region based on its genomic size and the 
         size_cut variable. The 'large regions' get merged via bedtools, the 
@@ -133,9 +163,9 @@ def tfit_clean_merge(beds=None, tempdir=None, size_cut=500):
                                                 "combined_input.merge.bed")
 
     #Concatenate the large and small regions, sort, and merge
-    command = "cat " + large_regions + " " + small_regions_expanded 
+    command = ("cat " + large_regions + " " + small_regions_expanded 
                 + " | bedtools sort -i stdin | bedtools merge -i stdin > "
-                +  combined_input_merged_bed
+                +  combined_input_merged_bed)
     subprocess.call(command, shell=True)
 
     return combined_input_merged_bed
@@ -195,3 +225,83 @@ def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
     subprocess.call(['bash', '-c', command])
 
     return combined_input_merged_bed
+
+#==============================================================================
+def combine_md(bed1=None, bed2=None, tempdir=None, method=None, size_cut=200, 
+                largewindow=None):
+    md_bedfile1 = os.path.join(tempdir, 'md_bedfile1.bed')
+    md_bedfile2 = os.path.join(tempdir, 'md_bedfile2.bed')
+
+    if method == 'intersect/merge':
+        if len(bed1) > 1:
+            bed1_command = ("bedtools intersect -a "
+                                + bed1[0] 
+                                + " -b " + ' '.join(bed1[1:])
+                                + " > " + md_bedfile1)
+            bed2_command = ("bedtools intersect -a "
+                                + bed2[0] 
+                                + " -b " + ' '.join(bed2[1:])
+                                + " > " + md_bedfile2)
+        else:
+            bed1_command = "cat " + bed1[0] + " > " + md_bedfile1
+            bed2_command = "cat " + bed2[0] + " > " + md_bedfile2
+
+    if method == 'merge all':
+        bed1_command = ("cat " + ' '.join(bed1) 
+            + " | bedtools merge bedtools sort -i stdin | bedtools merge -i stdin > " 
+            + md_bedfile1)
+        bed2_command = ("cat " + ' '.join(bed2) 
+            + " | bedtools merge bedtools sort -i stdin | bedtools merge -i stdin > " 
+            + md_bedfile2)
+
+    if method == 'tfit remove small':
+        for bedfile in bed1+bed2:
+            outfile = os.path.join(tempdir, os.path.basename(bedfile))
+            with open(outfile, 'w') as ofile:
+                with open(bedfile) as F:
+                    for line in F:
+                        if '#' not in line:
+                            chrom,start,stop = line.strip('\n').split('\t')[:3]
+                            start = int(start)
+                            stop = int(stop)
+                            if stop-start >= size_cut:
+                                ofile.write('\t'.join([chrom,str(start),
+                                                        str(stop)]) + '\n')
+        
+        bed1_command = ("cat " + ' '.join([os.path.join(tempdir, os.path.basename(bedfile)) for bedfile in bed1])
+                        + " | bedtools sort -i stdin | bedtools merge -i stdin > " 
+                        + md_bedfile1)
+
+        bed2_command = ("cat " + ' '.join([os.path.join(tempdir, os.path.basename(bedfile)) for bedfile in bed2])
+                        + " | bedtools sort -i stdin | bedtools merge -i stdin > " 
+                        + md_bedfile2)
+    
+
+    subprocess.call(bed1_command, shell=True)
+
+    subprocess.call(bed2_command, shell=True)
+
+    md_centerfile1 = os.path.join(tempdir, 'md_bedfile1.center.bed') 
+    md_centerfile2 = os.path.join(tempdir, 'md_bedfile2.center.bed') 
+    with open(md_bedfile1) as F:
+        with open(md_centerfile1, 'w') as outfile:
+            for line in F:
+                if '#' not in line[0]:
+                    linelist = line.strip('\n').split('\t')
+                    chrom, start, stop = linelist[:3]
+                    rest = linelist[3:]
+                    center = (int(start) + int(stop)) / 2
+                    outfile.write('\t'.join([chrom, str(int(center-largewindow)), str(int(center+largewindow))] + rest) + '\n')
+    
+
+    with open(md_bedfile2) as F:
+        with open(md_centerfile2, 'w') as outfile:
+            for line in F:
+                if '#' not in line[0]:
+                    linelist = line.strip('\n').split('\t')
+                    chrom, start, stop = linelist[:3]
+                    rest = linelist[3:]
+                    center = (int(start) + int(stop)) / 2
+                    outfile.write('\t'.join([chrom, str(int(center-largewindow)), str(int(center+largewindow))] + rest) + '\n')
+
+    return md_centerfile1, md_centerfile2

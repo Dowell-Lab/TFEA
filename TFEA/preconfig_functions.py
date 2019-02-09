@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''This file contains a list of independent functions that do not call other 
     functions
@@ -11,7 +11,6 @@ __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 #==============================================================================
 import os
-import shutil
 #==============================================================================
 #Functions used before 'import config' statement
 #==============================================================================
@@ -43,15 +42,12 @@ def make_out_directories(dirs=False, config_object=None):
         full path to the directory that stores stdout and stderr files
     '''
     #Output directory
-    output = config_object['DATA']['OUTPUT'].strip("'")
-    name = config_object['DATA']['NAME'].strip("'")
+    output = config_object['OUTPUT']['OUTPUT'].strip("'")
+    name = config_object['OUTPUT']['NAME'].strip("'")
     outfoldername = name
     output = os.path.join(output, outfoldername)
     if dirs:
         if not os.path.isdir(output):
-            os.makedirs(output)
-        else:
-            shutil.rmtree(output)
             os.makedirs(output)
 
     #Temporary files will go in this directory
@@ -138,17 +134,88 @@ def verify_config_file():
         When variable is not found within config
     '''
     import config
+
+    #USER INPUTS
+    #==========================================================================
     try:
-        if type(config.COMBINE) != bool:
-            raise TypeError('COMBINE variable must be a boolean.')
+        if type(config.NAME) != str:
+            raise TypeError('NAME variable must be a string.')
     except NameError:
-        raise NameError('COMBINE variable not found in config.ini file.')
+        raise NameError('NAME variable not found in config.ini file.')
 
     try:
+        if type(config.OUTPUT) != str:
+            raise TypeError('OUTPUT variable must be a string.')
+    except NameError:
+        raise NameError('OUTPUT variable not found in config.ini file.')
+
+    try:
+        if type(config.LABEL1) != str:
+            raise TypeError('LABEL1 variable must be a string.')
+    except NameError:
+        raise NameError('LABEL1 variable not found in config.ini file.')
+
+    try:
+        if type(config.LABEL2) != str:
+            raise TypeError('LABEL2 variable must be a string.')
+    except NameError:
+        raise NameError('LABEL2 variable not found in config.ini file.')
+
+    try:
+        if type(config.BED1) != list:
+            raise TypeError('BED1 variable must be a list.')
+    except NameError:
+        raise NameError('BED1 variable not found in config.ini file.')
+    
+    try:
+        if type(config.BED2) != list:
+            raise TypeError('BED2 variable must be a list.')
+    except NameError:
+        raise NameError('BED2 variable not found in config.ini file.')
+
+    try:
+        if type(config.BAM1) != list:
+            raise TypeError('BAM1 variable must be a list.')
+    except NameError:
+        raise NameError('BAM1 variable not found in config.ini file.')
+    
+    try:
+        if type(config.BAM2) != list:
+            raise TypeError('BAM2 variable must be a list.')
+    except NameError:
+        raise NameError('BAM2 variable not found in config.ini file.')
+
+    #COMBINE Module
+    #==========================================================================
+    # try:
+    #     if config.COMBINE != 'merge all' or 'tfit clean' or 'intersect/merge' or 'tfit remove small' or False:
+    #         raise TypeError('Unrecognized option for COMBINE module.')
+    #     elif config.COMBINE == False:
+    #         try:
+    #             if type(config.COMBINE_FILE) != str:
+    #                 raise TypeError('COMBINE_FILE variable must be a string.')
+    #         except NameError:
+    #             raise NameError('COMBINE_FILE must be specified if COMBINE is'
+    #                             'set to False.')
+    # except NameError:
+    #     raise NameError('COMBINE variable not found in config.ini file.')
+
+    #COUNT Module
+    #==========================================================================
+    try:
         if type(config.COUNT) != bool:
-            raise TypeError('COUNT variable must be a boolean.')
+                raise TypeError('COUNT variable must be a boolean.')
+        elif config.COUNT != True:
+            try:
+                if type(config.COUNT_FILE) != str:
+                    raise TypeError('COUNT_FILE variable must be a string.')
+            except NameError:
+                raise NameError('COUNT_FILE must be specified if COUNT is'
+                                'set to False.')
     except NameError:
         raise NameError('COUNT variable not found in config.ini file.')
+
+
 
     try:
         if type(config.DESEQ) != bool:
@@ -156,17 +223,17 @@ def verify_config_file():
     except NameError:
         raise NameError('DESEQ variable not found in config.ini file.')
 
-    try:
-        if type(config.CALCULATE) != bool:
-            raise TypeError('CALCULATE variable must be a boolean.')
-    except NameError:
-        raise NameError('CALCULATE variable not found in config.ini file.')
+    # try:
+    #     if type(config.CALCULATE) != bool:
+    #         raise TypeError('CALCULATE variable must be a boolean.')
+    # except NameError:
+    #     raise NameError('CALCULATE variable not found in config.ini file.')
 
-    try:
-        if type(config.HOMER) != bool:
-            raise TypeError('HOMER variable must be a boolean.')
-    except NameError:
-        raise NameError('HOMER variable not found in config.ini file.')
+    # try:
+    #     if type(config.HOMER) != bool:
+    #         raise TypeError('HOMER variable must be a boolean.')
+    # except NameError:
+    #     raise NameError('HOMER variable not found in config.ini file.')
 
     try:
         if type(config.SINGLEMOTIF) != bool and type(config.SINGLEMOTIF) != str:
@@ -174,17 +241,17 @@ def verify_config_file():
     except NameError:
         raise NameError('SINGLEMOTIF variable not found in config.ini file.')
 
-    try:
-        if type(config.GENOMEWIDEHITS) != bool:
-            raise TypeError('GENOMEWIDEHITS variable must be a boolean.')
-    except NameError:
-        raise NameError('GENOMEWIDEHITS variable not found in config.ini file.')
+    # try:
+    #     if type(config.GENOMEWIDEHITS) != bool:
+    #         raise TypeError('GENOMEWIDEHITS variable must be a boolean.')
+    # except NameError:
+    #     raise NameError('GENOMEWIDEHITS variable not found in config.ini file.')
 
-    try:
-        if type(config.FIMO) != bool:
-            raise TypeError('FIMO variable must be a boolean.')
-    except NameError:
-        raise NameError('FIMO variable not found in config.ini file.')
+    # try:
+    #     if type(config.FIMO) != bool:
+    #         raise TypeError('FIMO variable must be a boolean.')
+    # except NameError:
+    #     raise NameError('FIMO variable not found in config.ini file.')
 
     try:
         if type(config.TEMP) != bool:
@@ -204,46 +271,11 @@ def verify_config_file():
     except NameError:
         raise NameError('METAPLOT variable not found in config.ini file.')
 
-    try:
-        if type(config.OUTPUT) != str:
-            raise TypeError('OUTPUT variable must be a string.')
-    except NameError:
-        raise NameError('OUTPUT variable not found in config.ini file.')
-
-    try:
-        if type(config.BED1) != list:
-            raise TypeError('BED1 variable must be a list.')
-    except NameError:
-        raise NameError('BED1 variable not found in config.ini file.')
     
-    try:
-        if type(config.BED2) != list:
-            raise TypeError('BED2 variable must be a list.')
-    except NameError:
-        raise NameError('BED2 variable not found in config.ini file.')
 
-    try:
-        if type(config.BAM1) != list:
-            raise TypeError('BAM1 variable must be a list.')
-    except NameError:
-        raise NameError('BAM1 variable not found in config.ini file.')
-    try:
-        if type(config.LABEL1) != str:
-            raise TypeError('LABEL1 variable must be a string.')
-    except NameError:
-        raise NameError('LABEL1 variable not found in config.ini file.')
+    
 
-    try:
-        if type(config.BAM2) != list:
-            raise TypeError('BAM2 variable must be a list.')
-    except NameError:
-        raise NameError('BAM2 variable not found in config.ini file.')
-
-    try:
-        if type(config.LABEL2) != str:
-            raise TypeError('LABEL2 variable must be a string.')
-    except NameError:
-        raise NameError('LABEL2 variable not found in config.ini file.')
+    
 
     try:
         if type(config.PADJCUTOFF) != float:
@@ -263,25 +295,25 @@ def verify_config_file():
     except NameError:
         raise NameError('SMALLWINDOW variable not found in config.ini file.')
 
-    if config.FIMO != True:
-        try:
-            if type(config.MOTIF_GENOMEWIDE_HITS) != str:
-                raise TypeError('MOTIF_GENOMEWIDE_HITS variable must be a string.')
-        except NameError:
-            raise NameError('MOTIF_GENOMEWIDE_HITS variable not found in config.ini file.')
-    else:
-        try:
-            if type(config.FIMO_THRESH) != float:
-                raise TypeError('FIMO_THRESH variable must be a float.')
-        except NameError:
-            raise NameError('FIMO_THRESH variable not found in config.ini file.')
+    # if config.FIMO != True:
+    #     try:
+    #         if type(config.MOTIF_GENOMEWIDE_HITS) != str:
+    #             raise TypeError('MOTIF_GENOMEWIDE_HITS variable must be a string.')
+    #     except NameError:
+    #         raise NameError('MOTIF_GENOMEWIDE_HITS variable not found in config.ini file.')
+    # else:
+    #     try:
+    #         if type(config.FIMO_THRESH) != float:
+    #             raise TypeError('FIMO_THRESH variable must be a float.')
+    #     except NameError:
+    #         raise NameError('FIMO_THRESH variable not found in config.ini file.')
 
-    if config.HOMER == True:
-        try:
-            if type(config.HOMER_MOTIF_FILE) != str:
-                raise TypeError('HOMER_MOTIF_FILE variable must be a string.')
-        except NameError:
-            raise NameError('HOMER_MOTIF_FILE variable not found in config.ini file.')
+    # if config.HOMER == True:
+    #     try:
+    #         if type(config.HOMER_MOTIF_FILE) != str:
+    #             raise TypeError('HOMER_MOTIF_FILE variable must be a string.')
+    #     except NameError:
+    #         raise NameError('HOMER_MOTIF_FILE variable not found in config.ini file.')
 
     try:
         if type(config.GENOMEFASTA) != str:
@@ -289,17 +321,17 @@ def verify_config_file():
     except NameError:
         raise NameError('GENOMEFASTA variable not found in config.ini file.')
 
-    try:
-        if type(config.MOTIFDATABASE) != str:
-            raise TypeError('MOTIFDATABASE variable must be a string.')
-    except NameError:
-        raise NameError('MOTIFDATABASE variable not found in config.ini file.')
+    # try:
+    #     if type(config.MOTIFDATABASE) != str:
+    #         raise TypeError('MOTIFDATABASE variable must be a string.')
+    # except NameError:
+    #     raise NameError('MOTIFDATABASE variable not found in config.ini file.')
 
-    try:
-        if type(config.LOGOS) != str:
-            raise TypeError('LOGOS variable must be a string.')
-    except NameError:
-        raise NameError('LOGOS variable not found in config.ini file.')
+    # try:
+    #     if type(config.LOGOS) != str:
+    #         raise TypeError('LOGOS variable must be a string.')
+    # except NameError:
+    #     raise NameError('LOGOS variable not found in config.ini file.')
     
     try:
         if type(config.DPI) != float and config.DPI != None:

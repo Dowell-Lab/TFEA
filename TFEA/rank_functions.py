@@ -80,7 +80,7 @@ def deseq_center(deseq_file=None, tempdir=None):
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
-            center = (int(start)+int(stop))/2
+            center = int((int(start)+int(stop))/2)
             outfile.write(chrom + '\t' + str(center) + '\t' + str(center+1) 
                             + '\t' + '\t'.join(line[3:]) + '\n')
     outfile.close()
@@ -135,20 +135,20 @@ def deseq(deseq_file=None, tempdir=None, largewindow=None):
                 stop = coordinates[1]
                 chrom = chrom.strip('"')
                 stop = stop.strip('"')
-                center = (int(start)+int(stop))/2
-                start = center - largewindow
-                stop = center + largewindow
+                center = int((int(start)+int(stop))/2)
+                start = center - int(largewindow)
+                stop = center + int(largewindow)
                 fc = float(line[fc_index+1])
                 if fc < 1:
-                    down.append((chrom, start, stop, str(fc), pval))
+                    down.append([chrom, str(start), str(stop), str(fc), str(pval)])
                 else:
-                    up.append((chrom, start, stop, str(fc), pval))
+                    up.append([chrom, str(start), str(stop), str(fc), str(pval)])
 
     #Save ranked regions in a bed file (pvalue included)
     ranked_file = os.path.join(tempdir, "ranked_file.bed")
     with open(ranked_file,'w') as outfile:
-        outfile.write('\t'.join(['chrom', 'start', 'stop', 'rank, fc, p-value']) 
-                        + '\n')
+        # outfile.write('\t'.join(['chrom', 'start', 'stop', 'rank, fc, p-value']) 
+        #                 + '\n')
         r=1
         for region in sorted(up, key=lambda x: x[4]):
             outfile.write('\t'.join(region[:3]) 

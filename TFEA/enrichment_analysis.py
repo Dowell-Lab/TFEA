@@ -54,7 +54,6 @@ def AUC_enrichment(ranked_list=None, cutoff=None):
         middledistancehist =  [x for x in ranked_list[int(q1):int(q3)]]
         average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
         score = [math.exp(-float(x)/average_distance) if x <= cutoff else 0.0 for x in ranked_list]
-        print(np.cumsum(score))
         total = float(sum(score))
         
 
@@ -92,7 +91,6 @@ def AUC_enrichment(ranked_list=None, cutoff=None):
         raise e
 
     return auc, p
-#==============================================================================
 
 #==============================================================================
 def AUC_permute(ranked_list=None, trend=None, permutations=1000):
@@ -121,6 +119,20 @@ def AUC_permute(ranked_list=None, trend=None, permutations=1000):
         auc = es - triangle_area
 
     yield auc
+
+
+#==============================================================================
+def md_score(distances1=None, distances2=None, smallwindow=None, 
+                largewindow=None):
+    '''
+    '''
+    md1 = sum([1 if d <= smallwindow else 0 for d in distances1])
+    md2 = sum([1 if d <= smallwindow else 0 for d in distances2])
+    md = md2 - md1
+    total = float(len(distances1) + len(distances2))/2.0
+
+    return md, total
+
 #==============================================================================
 #Testing
 #==============================================================================

@@ -23,7 +23,7 @@ COUNT=True
 COUNT_FILE=''
 
 DESEQ=True
-DESEQ_FILE
+DESEQ_FILE=''
 
 RANK='deseq'
 RANKED_FILE=''
@@ -46,7 +46,7 @@ LARGEWINDOW=150.0
 SMALLWINDOW=15.0
 
 
-OUTPUT_TYPE='html'
+OUTPUT_TYPE='txt'
 DPI=None
 MOTIF_LOGOS='/scratch/Users/joru1876/TFEA/mouse_logo/'
 PADJCUTOFF=0.001
@@ -56,6 +56,7 @@ POOL=True
 TEMP=False
 METAPLOT=True
 PLOTALL=False
+MD=False
 
 
 OUTPUTDIR="/scratch/Users/joru1876/TFEA_files/IRIS/FIMO_SCAN/FIMO_Scan_1e-4_30IFN-30IFNCA_150window"

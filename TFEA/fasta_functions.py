@@ -14,6 +14,7 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 
 #Imports
 #==============================================================================
+import os
 import subprocess
 
 #Functions
@@ -40,9 +41,22 @@ def getfasta(bedfile=None, genomefasta=None, tempdir=None, outname=None):
         fasta format 
     '''
     fasta_file = os.path.join(tempdir, outname)
-    getfasta_command = "bedtools getfasta -name -fi " + genomefasta 
-                        + " -bed " + bedfile
-                        + " -fo " + fasta_file
+    getfasta_command = ["bedtools", "getfasta", "-name",
+                        "-fi", genomefasta, 
+                        "-bed", bedfile,
+                        "-fo", fasta_file]
     subprocess.call(getfasta_command)
 
     return fasta_file
+
+#==============================================================================
+def fasta_linecount(fastafile=None):
+    linecount = 0
+    with open(fastafile) as F:
+        for line in F:
+            if line[0] == '>':
+                linecount += 1
+    
+    return linecount
+            
+#==============================================================================

@@ -14,7 +14,9 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 
 #Imports
 #==============================================================================
+import os
 import math
+import numpy as np
 import matplotlib.pyplot as plt
 
 #Functions
@@ -55,7 +57,6 @@ def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None,
     #If more than 1 replicate, use DE-Seq2
     if (len(bam1) > 1 and len(bam2) > 1):
         outfile = open(os.path.join(tempdir, 'DESeq.R'),'w')
-        outfile.write('sink("' + os.path.join(tempdir,'DESeq.Rout') + '")\n')
         outfile.write('library("DESeq2")\n')
         outfile.write('data <- read.delim("'+count_file+'", sep="\t", \
                         header=TRUE)\n')
