@@ -29,10 +29,12 @@ def area_under_curve(distances, output_type=None, permutations=None):
     #and calculate the absolute distance
     motif = distances[0]
     distances = distances[1:]
-    distances_abs = [abs(x) if x != '.' else x for x in distances]
+    distances_abs = [abs(x)  if x != '.' else x for x in distances]
+
+    hits = len([x for x in distances_abs if x != '.'])
 
     #Filter any TFs/files without any hits
-    if len(distance_abs) == 0:
+    if hits == 0:
         return [motif, 0.0, 0, 1.0]
 
     #Get -exp() of distance and get cumulative scores
@@ -43,7 +45,6 @@ def area_under_curve(distances, output_type=None, permutations=None):
     average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
     
     score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
-    hits = len([x for x in distances if x != '.'])
     total = sum(score)
     if output_type == 'score':
         return score
