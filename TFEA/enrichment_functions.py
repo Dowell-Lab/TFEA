@@ -261,6 +261,13 @@ def md_score(distances, smallwindow=None):
     distances2 = [abs(float(x)) for x in distances2[1:] if x != '.']
     d1_total = float(len(distances1))
     d2_total = float(len(distances2))
+    print(motif)
+    print("distances1: ", distances1[:100])
+    print("md1sum: ", sum([1.0 if d <= smallwindow else 0.0 for d in distances1]))
+    print("md1tot: ", d1_total)
+    print("distances2: ", distances2[:100])
+    print("md2sum: ", sum([1.0 if d <= smallwindow else 0.0 for d in distances2]))
+    print("md2tot: ", d2_total)
     try:
         md1 = sum([1.0 if d <= smallwindow else 0.0 for d in distances1])/d1_total
         md2 = sum([1.0 if d <= smallwindow else 0.0 for d in distances2])/d2_total

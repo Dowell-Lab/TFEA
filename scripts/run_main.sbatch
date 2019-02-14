@@ -4,17 +4,17 @@
 #SBATCH --job-name=TFEA
 
 ###Specify the queue
-#SBATCH -p short
+#SBATCH -p highmem
 
 ###Specify WallTime
-#SBATCH --time=4:00:00
+#SBATCH --time=24:00:00
 
 ### Specify the number of nodes/cores
 #SBATCH --nodes=1
-#SBATCH --ntasks=10
+#SBATCH --ntasks=48
 
 ### Allocate the amount of memory needed
-#SBATCH --mem=50gb
+#SBATCH --mem=200gb
 
 ### Setting to mail when the job is complete
 #SBATCH --error /scratch/Users/rusi2317/e_and_o/%x.err
@@ -26,17 +26,14 @@
 
 ### Load required modules
 module purge
-module load python/2.7.14
+module load python/3.6.3
 module load bedtools/2.25.0
-module load python/2.7.14/matplotlib/1.5.1
-module load python/2.7.14/scipy/0.17.1
-module load python/2.7.14/htseq
-module load python/2.7.14/seaborn
-module load samtools/1.3.1
+module load python/3.6.3/matplotlib/1.5.1
+module load python/3.6.3/scipy/0.17.1
+module load python/3.6.3/numpy/1.14.1
 module load meme/4.12.0
-module load python/2.7.14/pandas/0.18.1
 
 ### now call your program
 
 ### python ${src} --config ${config} --sbatch SUBMITTED
-python ${cmd}
+python3 ${cmd}

@@ -87,7 +87,10 @@ if sbatch == False:
     outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=True, 
                                                 config_object=config_object)
-    shutil.copy2(configfile, outputdir)
+    try:
+        shutil.copy2(configfile, outputdir)
+    except shutil.SameFileError:
+        pass
 elif str(sbatch) == 'SUBMITTED':
     outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=False, 
@@ -96,7 +99,10 @@ else:
     outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=True, 
                                                 config_object=config_object)
-    shutil.copy2(configfile, outputdir)
+    try:
+        shutil.copy2(configfile, outputdir)
+    except shutil.SameFileError:
+        pass
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
     email = str(sbatch)
@@ -203,8 +209,15 @@ if config.COMBINE != False:
                                                     size_cut=200, 
                                                     largewindow=config.LARGEWINDOW)
     print("done")
-elif config.COUNT:
-    bedfile = config.COMBINE_FILE
+else:
+    if config.COUNT:
+        bedfile = config.COMBINE_FILE
+    if config.MD and config.FASTA:
+        try:
+            md_bedfile1 = config.MD_BEDFILE1
+            md_bedfile2 = config.MD_BEDFILE2
+        except:
+            sys.exit(1, "MD module specified without COMBINE module but no MD bed files inputted.")
 COMBINEtime = time.time()-COMBINEtime
 
 #COUNT module
@@ -304,8 +317,15 @@ if config.FASTA:
                                                 outname='md_bedfile2.fa')
     
     print("done")
-elif config.SCANNER != False:
-    fasta_file = config.FASTA_FILE
+else:
+    if config.SCANNER != False:
+        fasta_file = config.FASTA_FILE
+    if config.MD:
+        try:
+            md_fasta1 = config.MD_FASTA1
+            md_fasta2 = config.MD_FASTA2
+        except:
+            sys.exit(1, "MD module specified without FASTA module but no MD fasta files inputted.")
 FASTAtime = time.time()-FASTAtime
 
 #SCANNER module
@@ -322,15 +342,18 @@ if config.SCANNER != False:
         if config.FIMO_BACKGROUND == 'largewindow':
             background_file = scanner_functions.fimo_background_file(
                                 window=int(config.LARGEWINDOW), 
-                                tempdir=tempdir, bedfile=ranked_file)
+                                tempdir=tempdir, bedfile=ranked_file, 
+                                genomefasta=config.GENOMEFASTA, order='1')
         elif config.FIMO_BACKGROUND == 'smallwindow':
             background_file = scanner_functions.fimo_background_file(
                                 window=int(config.SMALLWINDOW), 
-                                tempdir=tempdir, bedfile=ranked_file)
+                                tempdir=tempdir, bedfile=ranked_file, 
+                                genomefasta=config.GENOMEFASTA, order='1')
         elif type(config.FIMO_BACKGROUND) == int:
             background_file = scanner_functions.fimo_background_file(
                                 window=config.FIMO_BACKGROUND, 
-                                tempdir=tempdir, bedfile=ranked_file)
+                                tempdir=tempdir, bedfile=ranked_file, 
+                                genomefasta=config.GENOMEFASTA, order='1')
         elif type(config.FIMO_BACKGROUND) == str:
             background_file = config.FIMO_BACKGROUND
         else:

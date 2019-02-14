@@ -29,17 +29,18 @@ def fimo_background_file(window=None, tempdir=None, bedfile=None,
     outfile = open(background_bed_file,'w')
     with open(bedfile) as F:
         for line in F:
-            chrom, start, stop = line.strip('\n').split('\t')[:3]
+            chrom, start, stop, name = line.strip('\n').split('\t')
             center = (int(start)+int(stop))/2
-            start = center - window
-            stop = center + window
-            outfile.write('\t'.join([chrom, start, stop]))
+            start = int(center - window)
+            stop = int(center + window)
+            outfile.write('\t'.join([chrom, str(start), str(stop), name]) + '\n')
     outfile.close()
-    fasta_file = 'fimo_background.fa'
+    
     fasta_functions.getfasta(bedfile=background_bed_file, 
                                 genomefasta=genomefasta, tempdir=tempdir, 
-                                outname=fasta_file)
+                                outname='fimo_background.fa')
 
+    fasta_file = os.path.join(tempdir, 'fimo_background.fa')
     background_file = fasta_markov(tempdir=tempdir, fastafile=fasta_file, 
                                     order=order)
     
@@ -106,12 +107,12 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
     import fasta_functions
     fimo_out = os.path.join(tempdir, motif + '.fimo.bed')
     if bg_file != None:
-        command = ("fimo --skip-matched-sequence --verbosity 1 --thresh " 
-                    + str(thresh) 
-                    + " --bgfile " + bg_file 
-                    + " --motif " + motif + " " + motifdatabase 
-                    + " " + fasta_file
-                    + " > " + fimo_out)
+        command = ("fimo", "--skip-matched-sequence", 
+                    "--verbosity", "1", 
+                    "--thresh",str(thresh),
+                    "--bgfile", bg_file,
+                    "--motif", motif, 
+                    motifdatabase, fasta_file)
     else:
         # command = ("fimo --skip-matched-sequence --verbosity 1 --thresh " 
         #             + str(thresh) 
