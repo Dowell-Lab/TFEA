@@ -14,7 +14,6 @@ __version__ = '4.0'
 #==============================================================================
 import os
 import sys
-import time
 import shutil
 import argparse
 import subprocess
@@ -75,48 +74,45 @@ config_object.read(configfile)
 '''TFEA creates temporary files (can be saved with the TEMP switch within the
     config file), plots, standard error and out files, and a .txt or 
     .html output. These are all stored within a parent output directory
-    specified within the config file and subdirectories for each class of file.
-    If the specified output directory exists, TFEA will remove that directory 
-    and all its contents and create new directories. 
+    specified within the config file and subdirectories for each class of file.. 
 '''
 #If user specifies the --sbatch flag, then we first create the output 
 #directories then run the sbatch script with the 'SUBMITTED' command submitted 
 #to the --sbatch flag so we know not to remake output directories. If --sbatch 
 #flag not specified, simply make output directories and continue.
-if sbatch == False:
+if sbatch == False: #No flag
     outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=True, 
                                                 config_object=config_object)
     try:
-        shutil.copy2(configfile, outputdir)
+        shutil.copy2(configfile, outputdir) #Copy config file to output
     except shutil.SameFileError:
         pass
-elif str(sbatch) == 'SUBMITTED':
+elif str(sbatch) == 'SUBMITTED': #Internal flag
     outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=False, 
                                                 config_object=config_object)
-else:
+else: #--sbatch specified
     outputdir, tempdir, figuredir, e_and_o = preconfig_functions.make_out_directories(
                                                 dirs=True, 
                                                 config_object=config_object)
     try:
-        shutil.copy2(configfile, outputdir)
+        shutil.copy2(configfile, outputdir) #Copy config file to output
     except shutil.SameFileError:
         pass
     scriptdir = os.path.join(os.path.dirname(srcdirectory), 'scripts')
     script = os.path.join(scriptdir, 'run_main.sbatch')
     email = str(sbatch)
-    os.system("sbatch --error=" + e_and_o + "/%x.err --output=" + e_and_o 
+    subprocess.call("sbatch --error=" + e_and_o + "/%x.err --output=" + e_and_o 
                 + "/%x.out --mail-user=" + email + " --export=cmd='" 
-                + srcdirectory+" --config " + configfile 
-                + " --sbatch SUBMITTED' " + script)
-
+                + srcdirectory + " --config " + configfile 
+                + " --sbatch SUBMITTED' " + script, shell=True)
     sys.exit(("TFEA has been submitted using an sbatch script, use qstat to "
             "check its progress."))
 
 #TEST module
 #==============================================================================
-'''If a user
+'''This module is still under construction...
 '''
 if test:
     preconfig_functions.parse_config(srcdirectory=srcdirectory, 
@@ -129,7 +125,7 @@ if test:
 
 #VERIFICATION OF CONFIG FILE
 #==============================================================================
-'''
+'''This module will run but is still awaiting TFEA inputs to be finalized
 '''
 #This second verification ensures that at time of sbatch submission, the config
 #file is correct (in case a second instance of TFEA is running)
@@ -148,11 +144,23 @@ preconfig_functions.verify_config_file()
 
 #SECONDARY IMPORTS
 #==============================================================================
+import gc
+import time
+import resource
 from multiprocessing import Pool
 import multiprocessing as mp
+
 import config
-'''
-'''
+
+#Set garbage collector debug
+gc.set_debug(gc.DEBUG_LEAK | gc.DEBUG_STATS)
+
+#Debug memory leaks using pympler
+sys.path.insert(0, "/Users/joru1876/.local/lib/python3.6/site-packages/")
+from pympler.tracker import SummaryTracker
+tracker = SummaryTracker()
+tracker.print_diff()
+
 #Calculate how many cpus can be used for later parallelization steps
 cpus = mp.cpu_count()
 if cpus > 64:
@@ -160,7 +168,9 @@ if cpus > 64:
 
 #COMBINE module
 #==============================================================================
-'''
+'''This module is a pre-processing step where a user may specify how to handle
+    multiple bed file inputs. The goal is to arrive at a single bed file to
+    input into subsequent modules.
 '''
 COMBINEtime = time.time()
 if config.COMBINE != False:
@@ -169,46 +179,36 @@ if config.COMBINE != False:
     if config.COMBINE == 'merge all':
         bedfile = combine_functions.merge_bed(beds=config.BED1+config.BED2, 
                                                 tempdir=tempdir)
-        if config.MD:
-            md_bedfile1, md_bedfile2 = combine_functions.combine_md(
-                                                    bed1=config.BED1, 
-                                                    bed2=config.BED2, 
-                                                    tempdir=tempdir, 
-                                                    method=config.COMBINE, 
-                                                    size_cut=200)
+
     elif config.COMBINE == 'tfit clean':
         bedfile = combine_functions.tfit_clean(
                                 beds=config.BED1+config.BED2, tempdir=tempdir)
-        if config.MD:
-            md_bedfile1, md_bedfile2 = combine_functions.combine_md(
-                                                    bed1=config.BED1, 
-                                                    bed2=config.BED2, 
-                                                    tempdir=tempdir, 
-                                                    method=config.COMBINE, 
-                                                    size_cut=200)
+
+    elif config.COMBINE == 'intersect all':
+        bedfile = combine_functions.intersect_all(
+                                beds=config.BED1+config.BED2, tempdir=tempdir)
+
     elif config.COMBINE == 'tfit remove small':
         bedfile = combine_functions.tfit_remove_small(
                                 beds=config.BED1+config.BED2, tempdir=tempdir)
-        if config.MD:
-            md_bedfile1, md_bedfile2 = combine_functions.combine_md(
-                                                    bed1=config.BED1, 
-                                                    bed2=config.BED2, 
-                                                    tempdir=tempdir, 
-                                                    method=config.COMBINE, 
-                                                    size_cut=200)
+
     elif config.COMBINE == 'intersect/merge':
         bedfile = combine_functions.intersect_merge_bed(bed1=config.BED1,
                                                         bed2=config.BED2, 
                                                         tempdir=tempdir)
-        if config.MD:
-            md_bedfile1, md_bedfile2 = combine_functions.combine_md(
-                                                    bed1=config.BED1, 
-                                                    bed2=config.BED2, 
-                                                    tempdir=tempdir, 
-                                                    method=config.COMBINE, 
-                                                    size_cut=200, 
-                                                    largewindow=config.LARGEWINDOW)
+    if config.MD:
+        md_bedfile1, md_bedfile2 = combine_functions.combine_md(
+                                                bed1=config.BED1, 
+                                                bed2=config.BED2, 
+                                                tempdir=tempdir, 
+                                                method=config.COMBINE, 
+                                                size_cut=200, 
+                                                largewindow=config.LARGEWINDOW)
+
+    if os.stat(bedfile).st_size == 0:
+        sys.exit(1, "Error in COMBINE module. Resulting file is empty.")
     print("done")
+    tracker.print_diff()
 else:
     if config.COUNT:
         bedfile = config.COMBINE_FILE
@@ -222,7 +222,7 @@ COMBINEtime = time.time()-COMBINEtime
 
 #COUNT module
 #==============================================================================
-'''
+'''This module simply counts reads over bed files
 '''
 COUNTtime = time.time()
 if config.COUNT:
@@ -238,44 +238,23 @@ if config.COUNT:
     sample_number = (len(config.BAM1)+len(config.BAM2))
     millions_mapped = count_functions.sum_reads(count_file=count_file, 
                                                 sample_number=sample_number)
+    
+    if os.stat(count_file).st_size == 0:
+        sys.exit(1, "Error in COUNT module. Resulting file is empty.")
+        
     print("done")
-elif config.DESEQ:
+    tracker.print_diff()
+elif config.RANK == 'deseq':
     #If you don't want to perform multibamcov but still want to perform
     # DE-Seq, user must provide a count_file
     count_file = config.COUNT_FILE
 COUNTtime = time.time()-COUNTtime
 
-#DESEQ module
-#==============================================================================
-'''
-'''
-DESEQtime = time.time()
-if config.DESEQ:
-    print("Running DESeq...", end=' ', flush=True)
-    import deseq_functions
-    
-    deseq_functions.write_deseq_script(bam1=config.BAM1, bam2=config.BAM2, 
-                                                tempdir=tempdir, 
-                                                count_file=count_file,
-                                                label1=config.LABEL1, 
-                                                label2=config.LABEL2)
-    with open(os.path.join(tempdir, 'DESeq.Rout'), 'w') as stdout:
-        subprocess.call("R < " + os.path.join(tempdir, "DESeq.R") + " --no-save", 
-                        shell=True, stdout=stdout)
-    deseq_file = os.path.join(tempdir, 'DESeq.res.txt')
-
-    # deseq_functions.plot_deseq_MA(deseq_file=deseq_file, label1=config.LABEL1, 
-    #                                 label2=config.LABEL2, figuredir=figuredir)
-    print("done")
-elif config.RANK != False:
-    #If user does not want to perform DE-Seq but still wants TFEA to caluclate
-    # TF enrichment, user must provide a ranked_center_file
-    deseq_file = config.DESEQ_FILE
-DESEQtime = time.time()-DESEQtime
-
 #RANK module
 #==============================================================================
-'''
+'''This module decides how to rank regions within the bed files. If genome
+    hits specified then the ranked output will only contain the center of each
+    region (since we will perform bedtools closest later)
 '''
 RANKtime = time.time()
 if config.RANK != False:
@@ -283,23 +262,36 @@ if config.RANK != False:
         print("Ranking regions...", end=' ', flush=True)
         import rank_functions
         if config.SCANNER == 'genome hits':
-            ranked_file = rank_functions.deseq_center(deseq_file=deseq_file,
-                                                    tempdir=tempdir)
-        else:
-            ranked_file = rank_functions.deseq(deseq_file=deseq_file, 
+            ranked_file = rank_functions.deseq(bam1=config.BAM1, 
+                                                bam2=config.BAM2, 
                                                 tempdir=tempdir, 
-                                                largewindow=config.LARGEWINDOW)
+                                                count_file=count_file,
+                                                label1=config.LABEL1, 
+                                                label2=config.LABEL2,
+                                                largewindow=config.LARGEWINDOW, 
+                                                center=True)
+        else:
+            ranked_file = rank_functions.deseq(bam1=config.BAM1, 
+                                                bam2=config.BAM2, 
+                                                tempdir=tempdir, 
+                                                count_file=count_file,
+                                                label1=config.LABEL1, 
+                                                label2=config.LABEL2, 
+                                                largewindow=config.LARGEWINDOW, 
+                                                center=False)
         print("done")
+        tracker.print_diff()
 elif config.FASTA:
     ranked_file = config.RANKED_FILE
 RANKtime = time.time()-RANKtime
 
 #FASTA module
 #==============================================================================
-'''
+'''This module simply converts bed files to fasta, only used if scanning on
+    the fly with fimo or homer
 '''
 FASTAtime = time.time()
-if config.FASTA:
+if config.FASTA and config.SCANNER != 'genome hits':
     print("Generating fasta file...", end=' ', flush=True)
     import fasta_functions
     fasta_file = fasta_functions.getfasta(bedfile=ranked_file, 
@@ -317,7 +309,8 @@ if config.FASTA:
                                                 outname='md_bedfile2.fa')
     
     print("done")
-else:
+    tracker.print_diff()
+elif config.SCANNER != 'genome hits':
     if config.SCANNER != False:
         fasta_file = config.FASTA_FILE
     if config.MD:
@@ -330,7 +323,7 @@ FASTAtime = time.time()-FASTAtime
 
 #SCANNER module
 #==============================================================================
-'''
+'''This module scans fasta files using fimo or homer
 '''
 SCANNERtime = time.time()
 if config.SCANNER != False:
@@ -369,31 +362,38 @@ if config.SCANNER != False:
                             tempdir=tempdir, motifdatabase=config.FIMO_MOTIFS, 
                             thresh=config.FIMO_THRESH, 
                             largewindow=config.LARGEWINDOW)
-        p = Pool(cpus)
+        p = Pool(processes=cpus, maxtasksperchild=10)
         motif_distances = list()
         for motif in motif_list:
             motif_distances.append(p.apply_async(scanner_functions.fimo, 
                                             (motif,), fimo_keywords).get())
+        p.close()
+        p.join()
+
         if config.MD:
             fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta1, 
                             tempdir=tempdir, motifdatabase=config.FIMO_MOTIFS, 
                             thresh=config.FIMO_THRESH, 
                             largewindow=config.LARGEWINDOW)
-            p = Pool(cpus)
+            p = Pool(processes=cpus, maxtasksperchild=10)
             md_distances1 = list()
             for motif in motif_list:
                 md_distances1.append(p.apply_async(scanner_functions.fimo, 
                                                 (motif,), fimo_keywords).get())
+            p.close()
+            p.join()
             
             fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta2, 
                             tempdir=tempdir, motifdatabase=config.FIMO_MOTIFS, 
                             thresh=config.FIMO_THRESH, 
                             largewindow=config.LARGEWINDOW)
-            p = Pool(cpus)
+            p = Pool(processes=cpus, maxtasksperchild=10)
             md_distances2 = list()
             for motif in motif_list:
                 md_distances2.append(p.apply_async(scanner_functions.fimo, 
                                                 (motif,), fimo_keywords).get())
+            p.close()
+            p.join()
             
 
 
@@ -415,13 +415,61 @@ if config.SCANNER != False:
                                     tempdir=tempdir, 
                                     distance_cutoff=config.LARGEWINDOW)
 
-        p = Pool(cpus)
+        p = Pool(processes=cpus, maxtasksperchild=10)
         motif_distances = list()
         for motif in motif_list:
             motif_distances.append(p.apply_async(
                                         scanner_functions.bedtools_closest,
                                         (motif,), 
                                         bedtools_distance_keywords).get())
+        tracker.print_diff()
+        print("AUC scanning done")
+        p.close()
+        p.join()
+
+        if config.MD:
+            md_bedfile1, md_bedfile2 = combine_functions.combine_md(
+                                                bed1=config.BED1, 
+                                                bed2=config.BED2, 
+                                                tempdir=tempdir, 
+                                                method=config.COMBINE, 
+                                                size_cut=200, 
+                                                largewindow=config.LARGEWINDOW, 
+                                                centerbed=True)
+
+            bedtools_distance_keywords = dict(
+                                    genomehits=config.GENOMEHITS, 
+                                    ranked_center_file=md_bedfile1, 
+                                    tempdir=tempdir, 
+                                    distance_cutoff=config.LARGEWINDOW)
+            p = Pool(processes=cpus, maxtasksperchild=10)
+            md_distances1 = list()
+            for motif in motif_list:
+                md_distances1.append(p.apply_async(
+                                        scanner_functions.bedtools_closest,
+                                        (motif,), 
+                                        bedtools_distance_keywords).get())
+            print("MD1 scanning done")
+            p.close()
+            p.join()
+            
+            bedtools_distance_keywords = dict(
+                                    genomehits=config.GENOMEHITS, 
+                                    ranked_center_file=md_bedfile1, 
+                                    tempdir=tempdir, 
+                                    distance_cutoff=config.LARGEWINDOW)
+
+            p = Pool(processes=cpus, maxtasksperchild=10)
+            md_distances2 = list()
+            for motif in motif_list:
+                md_distances2.append(p.apply_async(
+                                        scanner_functions.bedtools_closest,
+                                        (motif,), 
+                                        bedtools_distance_keywords).get())
+            print("MD1 scanning done")
+            p.close()
+            p.join()
+            
 
     print("done")
 SCANNERtime = time.time()-SCANNERtime
@@ -438,35 +486,58 @@ if config.ENRICHMENT != False:
     if config.ENRICHMENT == 'auc':
         auc_keywords = dict(output_type=config.OUTPUT_TYPE, 
                             permutations=config.PERMUTATIONS)
-        p = Pool(cpus)
+        p = Pool(processes=cpus, maxtasksperchild=10)
         results = list()
         for distances in motif_distances:
             results.append(p.apply_async(enrichment_functions.area_under_curve, 
                             (distances,), auc_keywords).get())
+        p.close()
+        p.join()
+
         enrichment_functions.padj_bonferroni(results)
     elif config.ENRICHMENT == 'anderson-darling':
-        p = Pool(cpus)
+        p = Pool(processes=cpus, maxtasksperchild=10)
         results = list()
         for distances in motif_distances:
             results.append(p.apply_async(enrichment_functions.anderson_darling, 
                             (distances,)).get())
+        p.close()
+        p.join()
+
+    elif config.ENRICHMENT == 'auc_bgcorrect':
+        auc_bgcorrect_keywords = dict(output_type=config.OUTPUT_TYPE, 
+                                        permutations=config.PERMUTATIONS,
+                                        largewindow=config.LARGEWINDOW)
+        p = Pool(processes=cpus, maxtasksperchild=10)
+        results = list()
+        for distances in motif_distances:
+            results.append(p.apply_async(enrichment_functions.area_under_curve_bgcorrect, 
+                            (distances,), auc_bgcorrectkeywords).get())
+        p.close()
+        p.join()
+
+        enrichment_functions.padj_bonferroni(results)
 
 
     if config.MD:
         md_keywords = dict(smallwindow=config.SMALLWINDOW)
-        p = Pool(cpus)
+        p = Pool(processes=cpus, maxtasksperchild=10)
         md_results = list()
         for distances in zip(sorted(md_distances1),sorted(md_distances2)):
             md_results.append(p.apply_async(enrichment_functions.md_score, 
                         (distances,), md_keywords).get())
+        p.close()
+        p.join()
+
         md_results = enrichment_functions.md_score_p(md_results)
+        
 
     print("done")
 ENRICHMENTtime = time.time()-ENRICHMENTtime
 
 #OUTPUT module
 #==============================================================================
-'''
+'''A module to write output to either a txt or html file
 '''
 OUTPUTtime = time.time()
 if config.OUTPUT_TYPE != False:
@@ -474,19 +545,18 @@ if config.OUTPUT_TYPE != False:
     import output_functions
     output_functions.txt_output(results=results, outputdir=outputdir, 
                                 outname='results.txt', header=None, 
-                                sortindex=-1)
+                                sortindex=[-2,-1])
     if config.MD:
         header = ['TF', 'MD-Score', 'Events', 'p-val']
         output_functions.txt_output(results=md_results, outputdir=outputdir, 
                                 outname='md_results.txt', header=header, 
-                                sortindex=-1)
+                                sortindex=[-1])
     if config.OUTPUT_TYPE == 'html':
         output_functions.summary_html_output(config_object=config_object, 
                                                 outputdir=outputdir)
         OUTPUTtime = time.time()-OUTPUTtime
         module_list = [('COMBINE', config.COMBINE, COMBINEtime), 
                         ('COUNT', config.COUNT, COUNTtime), 
-                        ('DESEQ', config.DESEQ, DESEQtime), 
                         ('RANK', config.RANK, RANKtime), 
                         ('FASTA', config.FASTA, FASTAtime), 
                         ('SCANNER', config.SCANNER, SCANNERtime), 
@@ -514,6 +584,19 @@ else:
 #==============================================================================
 
 
+#Functions
+#==============================================================================
+def current_mem_usage():
+    '''Prints current memory usage. Adapted from scripts by Chris Slocum and 
+        Fred Cirera
+    '''
+    suffix = 'B'
+    num = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.
+    for unit in ['','K','M','G','T','P','E','Z']:
+        if abs(num) < 1024.0:
+            print("Memory Usage: %3.1f%s%s" % (num, unit, suffix))
+        num /= 1024.0
+    print("Memory Usage: %.1f%s%s" % (num, 'Y', suffix))
 
 
 # #Create a meta plot using input regions and input bam files

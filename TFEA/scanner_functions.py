@@ -244,6 +244,7 @@ def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score',
         stop = line_list[stop_index]
         distance = ((int(start)+int(stop))/2)-int(largewindow)
         score = line_list[score_index]
+
         if rank not in d:
             d[rank] = [rank, score, distance]
         elif retain == 'score':
@@ -254,6 +255,8 @@ def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score',
             prev_distance = float(d[rank][-1])
             if prev_distance < float(distance):
                 d[rank] = [rank, score, distance]
+
+    
     distances = list()
     for rank in range(1, linecount+1):
         if rank in d:
@@ -283,22 +286,28 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
     '''
     try:
         motif_path = os.path.join(genomehits, motif)
-        bedtools_closest_out = os.path.join(tempdir, motif + '.closestBed.bed')
+        if os.stat(motif_path).st_size == 0:
+            return [motif] + ['.' for i in range(os.stat(ranked_center_file).st_size)]
+        # bedtools_closest_out = os.path.join(tempdir, motif + '.closestBed.bed')
+
+        # command = ("bedtools closest -D ref -t first -a " 
+        #             + ranked_center_file + " -b " + motif_path + " > "
+        #             + bedtools_closest_out)
 
         command = ("bedtools closest -D ref -t first -a " 
-                    + ranked_center_file + " -b " + motif_path + " > "
-                    + bedtools_closest_out)
+                    + ranked_center_file + " -b " + motif_path)
 
-        os.system(command)
+        closest_out = subprocess.check_output(command, shell=True).decode('UTF-8')
         
         distances = list()
-        with open(bedtools_closest_out) as F:
-            for line in F:
-                distance = int(line.strip('\n').split('\t')[-1])
-                if distance <= distance_cutoff:
-                    distances.append(distance)
-                else:
-                    distances.append('.')
+        # with open(bedtools_closest_out) as F:
+        #     for line in F:
+        for line in closest_out.split('\n')[1:-1]:
+            distance = int(line.strip('\n').split('\t')[-1])
+            if distance <= distance_cutoff:
+                distances.append(distance)
+            else:
+                distances.append('.')
 
     except Exception as e:
         # This prints the type, value, and stack trace of the

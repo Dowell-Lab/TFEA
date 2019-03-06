@@ -18,6 +18,7 @@ import os
 import math
 import datetime
 import numpy as np
+import matplotlib.pyplot as plt
 
 #Functions
 #==============================================================================
@@ -28,7 +29,9 @@ def txt_output(results=None, outputdir=None, outname='results.txt',
             outfile.write('\t'.join(header) + '\n')
         elif type(header) == str:
             outfile.write(header + '\n')
-        for values in sorted(results, key=lambda x: x[sortindex]):
+        for index in sortindex:
+            results.sort(key=lambda x: x[index])
+        for values in results:
             outfile.write('\t'.join([str(x) for x in values])+'\n')
 
 #==============================================================================
@@ -533,3 +536,74 @@ def create_motif_result_html(results=None):
             outfile.close()
             PREV_MOTIF = motif
 
+#==============================================================================
+def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None):
+    '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
+    to the figuredir directory created in TFEA output folder
+
+    Parameters
+    ----------
+    deseqfile : string
+        full path to the deseq file (specifically .res.txt)
+
+    label1 : string
+        the name of the treatment or condition corresponding to bam1 list
+
+    label2 : string
+        the name of the treatment or condition corresponding to bam2 list
+
+    figuredir : string
+        full path to figure directory in output directory (created by TFEA)
+
+    Returns
+    -------
+    None
+    '''
+    up_x = list()
+    up_y = list()
+    up_p = list()
+    dn_x = list()
+    dn_y = list()
+    dn_p = list()
+    with open(deseq_file,'r') as F:
+        header = F.readline().strip('\n').split('\t')
+        basemean_index = header.index('"baseMean"')
+        log2fc_index = header.index('"log2FoldChange"')
+        for line in F:
+            line = line.strip('\n').split('\t')
+            try:
+                log2fc = float(line[log2fc_index+1])
+                basemean = math.log(float(line[basemean_index+1]),10)
+                pval = float(line[-2])
+                if log2fc > 0:
+                    up_x.append(basemean)
+                    up_y.append(log2fc)
+                    up_p.append(pval)
+                else:
+                    dn_x.append(basemean)
+                    dn_y.append(log2fc)
+                    dn_p.append(pval)
+            except:
+                pass
+
+    x = [x for _,x in sorted(zip(up_p,up_x))] \
+        + [x for _,x in sorted(zip(dn_p,dn_x),reverse=True)]
+
+    y = [y for _,y in sorted(zip(up_p,up_y))] \
+        + [y for _,y in sorted(zip(dn_p,dn_y),reverse=True)]
+
+    c = plt.cm.RdYlGn(np.linspace(0, 1, len(x)))
+
+    #Creates an MA-Plot of the region expression
+    F = plt.figure(figsize=(7,6))
+    ax = plt.subplot(111)
+    plt.scatter(x=x,y=y,color=c,edgecolor='')
+    ax.set_title("DE-Seq MA-Plot",fontsize=14)
+    ax.set_ylabel("Log2 Fold-Change ("+label2+"/"+label1+")",fontsize=14)
+    ax.set_xlabel("Log10 Average Expression",fontsize=14)
+    ax.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on')
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+    plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.png'),
+                bbox_inches='tight')

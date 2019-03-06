@@ -49,6 +49,52 @@ def merge_bed(beds=None, tempdir=None):
     return combined_input_merged_bed
 
 #==============================================================================
+def intersect_all(beds=None, tempdir=None):
+    '''Concatenates, sorts, and merges (bedtools) a list of bed files. Outputs 
+        into the tempdir directory created by TFEA
+
+    Parameters
+    ----------
+    beds : list or array
+        full paths to bed files (strings)
+        
+    tempdir : string
+        full path to tempdir directory in output directory (created by TFEA)
+
+    Returns
+    -------
+    combined_input_merged_bed : string 
+        full path to a bed file containing the merged regions inputted by the 
+        user 
+    '''
+    combined_input_intersect_bed = os.path.join(tempdir, 
+                                                "combined_input.intersect.bed")
+    
+    if len(beds) > 2:
+        intersect_bed_command = ("bedtools intersect -a " + beds[0] 
+                            + " -b " + beds[1])
+        for bed in beds[2:]:
+            intersect_bed_command = (intersect_bed_command 
+                                    + " | bedtools intersect -a stdin -b "
+                                    + bed)
+    else:
+        intersect_bed_command = ("bedtools intersect -a " + beds[0] 
+                            + " -b " + beds[1])
+
+    intersect_bed_command = (intersect_bed_command + " | bedtools sort -i stdin "
+                            + " | bedtools merge -i stdin > " 
+                            + combined_input_intersect_bed)
+
+    # intersect_bed_command = ("bedtools intersect -a " + beds[0] 
+    #                         + " -b " + " ".join(beds[1:]) 
+    #                         + " | bedtools sort -i stdin | bedtools merge -i stdin > " 
+    #                         + combined_input_intersect_bed)
+
+    subprocess.call(intersect_bed_command, shell=True)
+
+    return combined_input_intersect_bed
+
+#==============================================================================
 def tfit_remove_small(beds=None, tempdir=None, size_cut=200):
     '''
     '''
@@ -228,11 +274,10 @@ def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
 
 #==============================================================================
 def combine_md(bed1=None, bed2=None, tempdir=None, method=None, size_cut=200, 
-                largewindow=None):
+                largewindow=None, centerbed=False):
     md_bedfile1 = os.path.join(tempdir, 'md_bedfile1.bed')
     md_bedfile2 = os.path.join(tempdir, 'md_bedfile2.bed')
-
-    if method == 'intersect/merge':
+    if method == 'intersect/merge' or method == 'intersect all':
         if len(bed1) > 1:
             bed1_command = ("bedtools intersect -a "
                                 + bed1[0] 
@@ -248,10 +293,10 @@ def combine_md(bed1=None, bed2=None, tempdir=None, method=None, size_cut=200,
 
     if method == 'merge all':
         bed1_command = ("cat " + ' '.join(bed1) 
-            + " | bedtools merge bedtools sort -i stdin | bedtools merge -i stdin > " 
+            + " | bedtools sort -i stdin | bedtools merge -i stdin > " 
             + md_bedfile1)
         bed2_command = ("cat " + ' '.join(bed2) 
-            + " | bedtools merge bedtools sort -i stdin | bedtools merge -i stdin > " 
+            + " | bedtools sort -i stdin | bedtools merge -i stdin > " 
             + md_bedfile2)
 
     if method == 'tfit remove small':
@@ -276,32 +321,54 @@ def combine_md(bed1=None, bed2=None, tempdir=None, method=None, size_cut=200,
                         + " | bedtools sort -i stdin | bedtools merge -i stdin > " 
                         + md_bedfile2)
     
-
     subprocess.call(bed1_command, shell=True)
 
     subprocess.call(bed2_command, shell=True)
-
     md_centerfile1 = os.path.join(tempdir, 'md_bedfile1.center.bed') 
     md_centerfile2 = os.path.join(tempdir, 'md_bedfile2.center.bed') 
     with open(md_bedfile1) as F:
         with open(md_centerfile1, 'w') as outfile:
+            rank = 1
             for line in F:
                 if '#' not in line[0]:
                     linelist = line.strip('\n').split('\t')
                     chrom, start, stop = linelist[:3]
-                    rest = linelist[3:]
+                    if len(linelist) > 3:
+                        rest = linelist[3:] + [str(rank)]
+                    else:
+                        rest = [str(rank)]
                     center = (int(start) + int(stop)) / 2
-                    outfile.write('\t'.join([chrom, str(int(center-largewindow)), str(int(center+largewindow))] + rest) + '\n')
+                    if centerbed:
+                        outfile.write('\t'.join([chrom, str(int(center)), str(int(center+1))]) 
+                                    + '\t' + ','.join(rest) + '\n')
+                    else:
+                        outfile.write('\t'.join([chrom, str(int(center-largewindow)), str(int(center+largewindow))]) 
+                                    + '\t' + ','.join(rest) + '\n')
+                    rank += 1
+    md_sortedcenterfile1 = os.path.join(tempdir, 'md_bedfile1.center.sorted.bed')
+    bedtools_sort = "bedtools sort -i " + md_centerfile1 + " > " + md_sortedcenterfile1
+    subprocess.check_output(bedtools_sort, shell=True)
     
-
     with open(md_bedfile2) as F:
         with open(md_centerfile2, 'w') as outfile:
+            rank = 1
             for line in F:
                 if '#' not in line[0]:
                     linelist = line.strip('\n').split('\t')
                     chrom, start, stop = linelist[:3]
-                    rest = linelist[3:]
+                    if len(linelist) > 3:
+                        rest = linelist[3:] + [str(rank)]
+                    else:
+                        rest = [str(rank)]
                     center = (int(start) + int(stop)) / 2
-                    outfile.write('\t'.join([chrom, str(int(center-largewindow)), str(int(center+largewindow))] + rest) + '\n')
-
-    return md_centerfile1, md_centerfile2
+                    if centerbed:
+                        outfile.write('\t'.join([chrom, str(int(center)), str(int(center+1))]) 
+                                    + '\t' + ','.join(rest) + '\n')
+                    else:
+                        outfile.write('\t'.join([chrom, str(int(center-largewindow)), str(int(center+largewindow))]) 
+                                    + '\t' + ','.join(rest) + '\n')                    
+                    rank += 1
+    md_sortedcenterfile2 = os.path.join(tempdir, 'md_bedfile2.center.sorted.bed')
+    bedtools_sort = "bedtools sort -i " + md_centerfile2 + " > " + md_sortedcenterfile2
+    subprocess.check_output(bedtools_sort, shell=True)
+    return md_sortedcenterfile1, md_sortedcenterfile2

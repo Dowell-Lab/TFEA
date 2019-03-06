@@ -42,9 +42,85 @@ def area_under_curve(distances, output_type=None, permutations=None):
     q1 = int(round(len(distances)*.25))
     q3 = int(round(len(distances)*.75))
     middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
-    average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
+    try:
+        average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
+    except ZeroDivisionError:
+        return [motif, 0.0, 0, 1.0]
     
     score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
+    total = sum(score)
+    if output_type == 'score':
+        return score
+
+    binwidth = 1.0/float(len(distances_abs))
+    normalized_score = [(float(x)/total)*binwidth for x in score]
+    cumscore = np.cumsum(normalized_score)
+    trend = np.append(np.arange(0,1,1.0/float(len(cumscore)))[1:], 1.0)
+    trend = [x*binwidth for x in trend]
+
+    #The AUC is the relative to the "random" line
+    auc = np.trapz(cumscore) - np.trapz(trend)
+
+    #Calculate random AUC
+    sim_auc = permute_auc(distances=normalized_score, trend=trend, 
+                            permutations=permutations)
+
+    #Calculate p-value                                                                                                                                                          
+    mu = np.mean(sim_auc)
+    sigma = np.std(sim_auc)
+    p = min(norm.cdf(auc,mu,sigma), 1-norm.cdf(auc,mu,sigma))
+    if math.isnan(p):
+        p = 1.0
+
+    if output_type == 'html':
+        from TFEA import plotting_functions
+        plotting_score = [(float(x)/total) for x in score]
+        plotting_cumscore = np.cumsum(plotting_score)
+        plotting_functions.plot_individual_graphs(plot=None, padj_cutoff=None,
+                            figuredir=None, logos=None, 
+                            largewindow=None, score=None, 
+                            smallwindow=None,
+                            distances_abs=None, sorted_distances=None,
+                            ranks=None, pvals=None, fc=None, 
+                            cumscore=None, motif_file=None, p=None,
+                            simES=None, actualES=None, gc_array=None,
+                            meta_profile_dict=None, label1=None, label2=None)
+    
+    if output_type == 'lineplot_output':
+        plotting_score = [(float(x)/total) for x in score]
+        plotting_cumscore = np.cumsum(plotting_score)
+        return plotting_cumscore
+    
+    if output_type == 'simulation_output':
+        return auc, sim_auc
+
+    return [motif, auc, hits, p]
+
+#==============================================================================
+def area_under_curve_bgcorrect(distances, output_type=None, permutations=None, 
+                                largewindow=None):
+    #sort distances based on the ranks from TF bed file
+    #and calculate the absolute distance
+    motif = distances[0]
+    distances = distances[1:]
+    distances_abs = [abs(x)  if x != '.' else x for x in distances]
+
+    hits = len([x for x in distances_abs if x != '.'])
+
+    #Filter any TFs/files without any hits
+    if hits == 0:
+        return [motif, 0.0, 0, 1.0]
+
+    #Get -exp() of distance and get cumulative scores
+    #Filter distances into quartiles to get middle distribution
+    q1 = int(round(len(distances)*.25))
+    q3 = int(round(len(distances)*.75))
+    middledistancehist = [x for x in distances_abs[int(q1):int(q3)] if x != '.']
+    expectation = np.histogram(middledistancehist, bins=largewindow)
+    expectation_sum = np.sum(expectation)
+    expectation = [x/expectation_sum for x in expectation]
+    
+    score = [1/expectation[x] if x != '.' else 0.0 for x in distances_abs]
     total = sum(score)
     if output_type == 'score':
         return score
@@ -261,13 +337,13 @@ def md_score(distances, smallwindow=None):
     distances2 = [abs(float(x)) for x in distances2[1:] if x != '.']
     d1_total = float(len(distances1))
     d2_total = float(len(distances2))
-    print(motif)
-    print("distances1: ", distances1[:100])
-    print("md1sum: ", sum([1.0 if d <= smallwindow else 0.0 for d in distances1]))
-    print("md1tot: ", d1_total)
-    print("distances2: ", distances2[:100])
-    print("md2sum: ", sum([1.0 if d <= smallwindow else 0.0 for d in distances2]))
-    print("md2tot: ", d2_total)
+    # print(motif)
+    # print("distances1: ", distances1[:100])
+    # print("md1sum: ", sum([1.0 if d <= smallwindow else 0.0 for d in distances1]))
+    # print("md1tot: ", d1_total)
+    # print("distances2: ", distances2[:100])
+    # print("md2sum: ", sum([1.0 if d <= smallwindow else 0.0 for d in distances2]))
+    # print("md2tot: ", d2_total)
     try:
         md1 = sum([1.0 if d <= smallwindow else 0.0 for d in distances1])/d1_total
         md2 = sum([1.0 if d <= smallwindow else 0.0 for d in distances2])/d2_total
@@ -287,7 +363,7 @@ def md_score_p(results):
         md2=float(results[i][2])
         N1=float(results[i][3])
         N2=float(results[i][4])
-        if (N1+N2)/2.0 > 10:
+        if (N1+N2)/2.0 != 0:
             p=((md1*N1)+(md2*N2))/(N1+N2)
             SE=(p*(1-p))*((1/N1)+(1/N2))
             try:
@@ -298,10 +374,6 @@ def md_score_p(results):
             p=min(cdf,1-cdf)*2
             md = md2-md1-mean
             total = N1 + N2
-        else:
-            md = 0
-            total = N1 + N2
-            p = 1.0
         
         results[i] = [motif, md, total, p]
 
