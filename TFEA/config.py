@@ -57,6 +57,7 @@ TEMP=False
 METAPLOT=True
 PLOTALL=False
 MD=False
+DEBUG=True
 
 
 OUTPUTDIR="/scratch/Users/joru1876/TFEA_files/IRIS/FIMO_SCAN/FIMO_Scan_1e-4_30IFN-30IFNCA_150window"

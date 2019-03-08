@@ -1,0 +1,24 @@
+# 1-order Markov frequencies from file /Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA/test_files/fimo_background.fa
+# seqs: 4    min: 10    max: 10    avg: 10.0    sum: 40    alph: RNA
+# order 0
+A 9.981e-01
+C 6.234e-04
+G 6.234e-04
+U 6.234e-04
+# order 1
+AA 9.974e-01
+AC 1.731e-04
+AG 1.731e-04
+AU 1.731e-04
+CA 1.731e-04
+CC 1.731e-04
+CG 1.731e-04
+CU 1.731e-04
+GA 1.731e-04
+GC 1.731e-04
+GG 1.731e-04
+GU 1.731e-04
+UA 1.731e-04
+UC 1.731e-04
+UG 1.731e-04
+UU 1.731e-04

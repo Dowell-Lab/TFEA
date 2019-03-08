@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''This file contains a list of functions associated with outputting a ranked
-    bed file based on some metric.
+'''This module takes as input a count file produced from the COUNT module or 
+    user-defined and ranks regions based on some metric. This script outputs 
+    files necessary to use with the SCANNER module
 '''
 
 #==============================================================================
@@ -16,6 +17,78 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 #==============================================================================
 import os
 import subprocess
+from pathlib import Path
+
+import config
+from exceptions import FileEmptyError, InputError, SubprocessError
+
+#Main Script
+#==============================================================================
+def main(count_file=None, rank=config.RANK, scanner=config.SCANNER, 
+            bam1=config.BAM1, bam2=config.BAM2, tempdir=Path(config.TEMPDIR), 
+            label1=config.LABEL1, label2=config.LABEL2, 
+            largewindow=config.LARGEWINDOW):
+    '''This is the main script of the RANK module which takes as input a
+        count file and bam files and ranks the regions within the count file
+        according to a user specified 
+
+    Parameters
+    ----------
+    count_file : str
+        Full path to a count file. Can be generated with the COUNT module or
+        defined by a user
+    scanner : str
+        Type of scanning to be used in the SCANNER module. If set to 
+        'genome hits', then return the center of regions, otherwise return
+        the full window using largewindow as the half-window size.
+    bam1 : list
+        A list of strings specifying full paths to bam files associated with 
+        a single condition (replicates)
+    bam2 : list
+        A list of strings specifying full paths to bam files associated with 
+        a single condition (replicates)
+    tempdir : str
+        Full path to a directory where files will be saved
+    label1 : str
+        An informative label for the condition corresponding to files within
+        bam1. Used to add a header line to the count file for downstream
+        DE-Seq analysis.
+    label2 : str
+        An informative label for the condition corresponding to files within
+        bam2. Used to add a header line to the count file for downstream
+        DE-Seq analysis.
+    largewindow : int
+        Half-length of window size to use when generating md-score related
+        bed files
+
+    Returns
+    -------
+    ranked_file : str
+        Full path to a count file that contains the counts over regions within
+        inputted bed files for all inputted bam files
+
+    Raises
+    ------
+    FileEmptyError
+        If any resulting file is empty
+    '''
+    if rank == 'deseq':
+        if scanner == 'genome hits':
+            ranked_file = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
+                                    count_file=count_file, label1=label1, 
+                                    label2=label2, largewindow=largewindow, 
+                                    center=True)
+        else:
+            ranked_file = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
+                                count_file=count_file, label1=label1, 
+                                label2=label2, largewindow=largewindow, 
+                                center=False)
+    else:
+        raise InputError("RANK option not recognized.")
+    if os.stat(ranked_file).st_size == 0:
+        raise FileEmptyError("Error in RANK module. Resulting file is empty.")
+
+    return ranked_file
 
 #Functions
 #==============================================================================
@@ -54,89 +127,88 @@ def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None,
     '''
     #If more than 1 replicate, use DE-Seq2
     if (len(bam1) > 1 and len(bam2) > 1):
-        outfile = open(os.path.join(tempdir, 'DESeq.R'),'w')
-        outfile.write('library("DESeq2")\n')
-        outfile.write('data <- read.delim("'+count_file+'", sep="\t", \
-                        header=TRUE)\n')
-        outfile.write('countsTable <- subset(data, select=c('
+        Rfile = open(tempdir / 'DESeq.R','w')
+        Rfile.write('''library("DESeq2")
+data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
+countsTable <- subset(data, select=c('''
                 +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
-                +'))\n')
+                +'''))
 
-        outfile.write('rownames(countsTable) <- data$region\n')
-        outfile.write('conds <- as.data.frame(c(' 
+rownames(countsTable) <- data$region
+conds <- as.data.frame(c(''' 
                         + ', '.join(['"'+label1+'"']*len(bam1)) 
                         + ', ' 
                         + ', '.join(['"'+label2+'"']*len(bam2)) 
-                        + '))\n')
+                        + '''))
 
-        outfile.write('colnames(conds) <- c("treatment")\n')
-        outfile.write('ddsFullCountTable <- DESeqDataSetFromMatrix(\
-                                                    countData = countsTable, \
-                                                    colData = conds, \
-                                                    design = ~ treatment)\n')
+colnames(conds) <- c("treatment")
+ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable,
+                                            colData = conds,
+                                            design = ~ treatment)
 
-        outfile.write('dds <- DESeq(ddsFullCountTable)\n')
-        outfile.write('res1 <- results(dds,alpha = 0.05, \
-                                        contrast=c("treatment",\
-                                                        "'+label2+'",\
-                                                        "'+label1+'"))\
-                                                        \n')
+dds <- DESeq(ddsFullCountTable)
+res1 <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
+                                                            "'''+label1+'''"))
 
-        outfile.write('resShrink <- lfcShrink(dds, res = res1, \
-                                                contrast = c("treatment",\
-                                                "'+label2+'",\
-                                                "'+label1+'"))\n')
+resShrink <- lfcShrink(dds, res = res1, contrast = c("treatment", "'''+label2+'''",
+                                                                "'''+label1+'''"))
 
-        outfile.write('resShrink$fc <- 2^(resShrink$log2FoldChange)\n')
-        outfile.write('res <- resShrink[c(1:3,7,4:6)]\n')
-        outfile.write('write.table(res, file = "'
-                        + os.path.join(tempdir,'DESeq.res.txt') 
-                        + '", append = FALSE, sep= "\t" )\n')
-        # outfile.write('sink()')
+resShrink$fc <- 2^(resShrink$log2FoldChange)
+res <- resShrink[c(1:3,7,4:6)]
+write.table(res, file = "''' + (tempdir / 'DESeq.res.txt').as_posix() + '''", append = FALSE, sep= "\t" )
+sink()''')
     else:
-        outfile = open(os.path.join(tempdir, 'DESeq.R'),'w')
-        outfile.write('sink("'+os.path.join(tempdir, 'DESeq.Rout') + '")\n')
-        outfile.write('library("DESeq")\n')
-        outfile.write('data <- read.delim("'+count_file+'", sep="\t", \
+        Rfile = open(tempdir /  'DESeq.R','w')
+        Rfile.write('sink("' + tempdir /  'DESeq.Rout' + '")\n')
+        Rfile.write('library("DESeq")\n')
+        Rfile.write('data <- read.delim("'+count_file+'", sep="\t", \
                         header=TRUE)\n')
 
-        outfile.write('countsTable <- subset(data, select=c('
+        Rfile.write('countsTable <- subset(data, select=c('
             +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
             +'))\n')
 
-        outfile.write('rownames(countsTable) <- data$region\n')
-        outfile.write('conds <- c(' + ', '.join(['"'+label1+'"']*len(bam1)) 
+        Rfile.write('rownames(countsTable) <- data$region\n')
+        Rfile.write('conds <- c(' + ', '.join(['"'+label1+'"']*len(bam1)) 
                         + ', ' 
                         + ', '.join(['"'+label2+'"']*len(bam2)) 
                         + ')\n')
 
-        outfile.write('cds <- newCountDataSet( countsTable, conds )\n')
-        outfile.write('cds <- estimateSizeFactors( cds )\n')
-        outfile.write('sizeFactors(cds)\n')                                                               
-        outfile.write('cds <- estimateDispersions( cds ,method="blind", \
+        Rfile.write('cds <- newCountDataSet( countsTable, conds )\n')
+        Rfile.write('cds <- estimateSizeFactors( cds )\n')
+        Rfile.write('sizeFactors(cds)\n')                                                               
+        Rfile.write('cds <- estimateDispersions( cds ,method="blind", \
                         sharingMode="fit-only")\n')
 
-        outfile.write('res <- nbinomTest( cds, "'+label1+'", "'+label2+'" )\n')
-        outfile.write('rownames(res) <- res$id\n')                      
-        outfile.write('write.table(res, file = "'
+        Rfile.write('res <- nbinomTest( cds, "'+label1+'", "'+label2+'" )\n')
+        Rfile.write('rownames(res) <- res$id\n')                      
+        Rfile.write('write.table(res, file = "'
                         + os.path.join(tempdir,'DESeq.res.txt') 
                         + '", append = FALSE, sep= "\t" )\n')
 
-        # outfile.write('sink()')
-    outfile.close()
+        # Rfile.write('sink()')
+    Rfile.close()
 
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
             label2=None, largewindow=None, center=False):
-        #Write the DE-Seq R script
+    #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                         count_file=count_file, label1=label1, label2=label2)
 
     #Execute the DE-Seq R script
-    with open(os.path.join(tempdir, 'DESeq.Rout'), 'w') as stdout:
-        subprocess.call("R < " + os.path.join(tempdir, "DESeq.R") + " --no-save", 
-                        shell=True, stdout=stdout, stderr=stdout)
-    deseq_file = os.path.join(tempdir, 'DESeq.res.txt')
+    # with open(tempdir / 'DESeq.Rout', 'w') as stdout:
+    deseqR = tempdir / "DESeq.R"
+    deseqout = tempdir / 'DESeq.Rout'
+    deseq_file = tempdir / 'DESeq.res.txt'
+    with open(deseqout, 'w') as output:
+        exitcode = subprocess.run(["Rscript", "--vanilla", deseqR], stdout=output, 
+                            stderr=output)
+    if exitcode.returncode != 0:
+        errormessage = deseqout.read_text()
+        if 'Error' in errormessage:
+            printmessage = errormessage[errormessage.index('Error'):]
+        raise SubprocessError(printmessage)
 
     if center:
         ranked_file = deseq_parse_center(deseq_file=deseq_file, tempdir=tempdir)
@@ -193,7 +265,7 @@ def deseq_parse_center(deseq_file=None, tempdir=None):
                     up.append((chrom,start,stop,pval,str(fc)))
 
     #Save ranked regions in a bed file (pvalue included)
-    outfile = open(os.path.join(tempdir, "ranked_file.bed"),'w')
+    outfile = open(tempdir / "ranked_file.bed",'w')
     r=1
     for region in sorted(up, key=lambda x: x[3]):
         outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
@@ -204,8 +276,8 @@ def deseq_parse_center(deseq_file=None, tempdir=None):
     outfile.close()
 
     #Get center base for each region
-    outfile = open(os.path.join(tempdir, "ranked_file.center.bed"),'w')
-    with open(os.path.join(tempdir, "ranked_file.bed")) as F:
+    outfile = open(tempdir / "ranked_file.center.bed",'w')
+    with open(tempdir / "ranked_file.bed") as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
@@ -214,13 +286,12 @@ def deseq_parse_center(deseq_file=None, tempdir=None):
                             + '\t' + '\t'.join(line[3:]) + '\n')
     outfile.close()
 
+    with open(tempdir / "ranked_file.center.sorted.bed", 'w') as output:
+        subprocess.run(["bedtools", "sort", 
+                        "-i", tempdir / "ranked_file.center.bed"], 
+                        stdout=output, check=True)
 
-    os.system("sort -k1,1 -k2,2n " 
-                + os.path.join(tempdir, "ranked_file.center.bed") 
-                + " > " 
-                + os.path.join(tempdir, "ranked_file.center.sorted.bed"))
-
-    ranked_center_file = os.path.join(tempdir, "ranked_file.center.sorted.bed")
+    ranked_center_file = tempdir / "ranked_file.center.sorted.bed"
 
     return ranked_center_file
 
@@ -275,7 +346,7 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None):
                     up.append([chrom, str(start), str(stop), str(fc), str(pval)])
 
     #Save ranked regions in a bed file (pvalue included)
-    ranked_file = os.path.join(tempdir, "ranked_file.bed")
+    ranked_file = tempdir / "ranked_file.bed"
     with open(ranked_file,'w') as outfile:
         # outfile.write('\t'.join(['chrom', 'start', 'stop', 'rank, fc, p-value']) 
         #                 + '\n')

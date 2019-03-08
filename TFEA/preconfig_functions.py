@@ -10,7 +10,7 @@ __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 #==============================================================================
-import os
+import pathlib
 #==============================================================================
 #Functions used before 'import config' statement
 #==============================================================================
@@ -42,34 +42,31 @@ def make_out_directories(dirs=False, config_object=None):
         full path to the directory that stores stdout and stderr files
     '''
     #Output directory
-    output = config_object['OUTPUT']['OUTPUT'].strip("'")
+    output = pathlib.Path(config_object['OUTPUT']['OUTPUT'].strip("'"))
     name = config_object['OUTPUT']['NAME'].strip("'")
     outfoldername = name
-    output = os.path.join(output, outfoldername)
+    output = output / outfoldername
+
+    #Make parent output directory
     if dirs:
-        if not os.path.isdir(output):
-            os.makedirs(output)
+        output.mkdir(exist_ok=True)
 
     #Temporary files will go in this directory
-    tempdir = os.path.join(output, 'temp_files')
+    tempdir = output / 'temp_files'
     if dirs:
-        if not os.path.isdir(tempdir):
-            os.makedirs(tempdir)
+        tempdir.mkdir(exist_ok=True)
 
     #Error and out files will go in this directory
-    e_and_o = os.path.join(output, 'e_and_o')
+    e_and_o = output / 'e_and_o'
     if dirs:
-        if not os.path.isdir(e_and_o):
-            os.makedirs(e_and_o)
-
+        e_and_o.mkdir(exist_ok=True)
 
     #Directory where plots used in html file will be stored.
-    figuredir = os.path.join(output, 'plots')
+    figuredir = output / 'plots'
     if dirs:
-        if not os.path.isdir(figuredir):
-            os.makedirs(figuredir)
+        figuredir.mkdir(exist_ok=True)
 
-    return output,tempdir,figuredir,e_and_o
+    return output, tempdir, figuredir, e_and_o
 #==============================================================================
 
 #==============================================================================
@@ -100,14 +97,14 @@ def parse_config(srcdirectory=None, config_object=None, outputdir=None,
     -------
     None
     '''
-    outfile =  open(os.path.join(srcdirectory,'config.py'),'w')
+    outfile =  open(srcdirectory / 'config.py','w')
     for key in config_object:
         for item in config_object[key]:
             outfile.write(item.upper()+'='+config_object[key][item]+'\n')
 
-    outfile.write('OUTPUTDIR="'+outputdir+'"\n')
-    outfile.write('TEMPDIR="'+tempdir+'"\n')
-    outfile.write('FIGUREDIR="'+figuredir+'"\n')
+    outfile.write('OUTPUTDIR="'+outputdir.as_posix()+'"\n')
+    outfile.write('TEMPDIR="'+tempdir.as_posix()+'"\n')
+    outfile.write('FIGUREDIR="'+figuredir.as_posix()+'"\n')
     
     outfile.close()
 #==============================================================================

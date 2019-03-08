@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''This file contains a list of functions associated with outputting a ranked
-    bed file based on some metric.
+'''This module calculates enrichment statistics for TF motifs across inputted
+    regions of interest. This module takes as input the output of the SCANNER
+    module. It outputs a list of lists with enrichment statistics including
+    a p-value.
 '''
 
 #==============================================================================
@@ -22,9 +24,111 @@ import math
 from scipy.stats import norm
 from scipy.stats import anderson_ksamp
 
+import config
+import multiprocess
+
+#Main Script
+#==============================================================================
+def main(motif_distances=None, md_distances1=None, md_distances2=None, 
+        enrichment=config.ENRICHMENT, output_type=config.OUTPUT_TYPE, 
+        permutations=config.PERMUTATIONS, debug=config.DEBUG, 
+        largewindow=config.LARGEWINDOW, smallwindow=config.SMALLWINDOW, 
+        md=config.MD):
+    '''This is the main script of the ENRICHMENT module. It takes as input
+        a list of distances outputted from the SCANNER module and calculates
+        an enrichment score, a p-value, and in some instances an adjusted 
+        p-value for each motif.
+    
+    Parameters
+    ----------
+    motif_distances : list of lists
+        A list containing a list for each motif scanned. For each motif, the 
+        list begins with the motif name as a string and is followed by int
+        values corresponding to the motif distance for each region (ranked). A
+        '.' value means the motif was not within the given region
+    md_distances1 : list of lists
+        A list containing a list for each motif scanned. For each motif, the 
+        list begins with the motif name as a string and is followed by int
+        values corresponding to the motif distance for each region (ranked). A
+        '.' value means the motif was not within the given region
+    md_distances2 : list of lists
+        A list containing a list for each motif scanned. For each motif, the 
+        list begins with the motif name as a string and is followed by int
+        values corresponding to the motif distance for each region (ranked). A
+        '.' value means the motif was not within the given region
+    enrichment : str
+        The type of enrichment analysis to perform
+    output_type : str
+        Determines what some functions will output. At this point, this is mostly
+        intended for debug purposes.
+    permutations : int
+        Number of random shuffling permutations to perform to calculate a 
+        p-value
+    debug : boolean
+        Whether to print debug statements specifically within the multiprocess
+        module
+    largewindow : int
+        A distance cutoff value used within auc_bgcorrect
+    smallwindow : int
+        A distance cutoff value used within the md score analysis
+    
+    Returns
+    -------
+    results : list of lists
+        A list of lists corresponding to enrichment statistics for each motif
+    md_results : list of lists
+        A list of lists corresponding to md-score statistics for each motif
+    '''
+    if enrichment == 'auc':
+        auc_keywords = dict(output_type=output_type, 
+                            permutations=permutations)
+        results = multiprocess.main(function=area_under_curve, 
+                                    args=motif_distances, kwargs=auc_keywords,
+                                    debug=debug)
+
+        padj_bonferroni(results)
+    elif enrichment == 'anderson-darling':
+        p = Pool(processes=cpus, maxtasksperchild=10)
+        results = list()
+        for distances in motif_distances:
+            results.append(p.apply_async(anderson_darling, 
+                            (distances,)).get())
+        p.close()
+        p.join()
+
+    elif enrichment == 'auc_bgcorrect':
+        auc_bgcorrect_keywords = dict(output_type=output_type, 
+                                        permutations=permutations,
+                                        largewindow=largewindow)
+        results = multiprocess.main(function=area_under_curve_bgcorrect, 
+                                    args=motif_distances, 
+                                    kwargs=auc_bgcorrect_keywords,
+                                    debug=debug)
+
+        padj_bonferroni(results)
+
+    if md:
+        md_keywords = dict(smallwindow=smallwindow)
+        md_results = multiprocess.main(function=md_score, 
+                        args=zip(sorted(md_distances1),sorted(md_distances2)), 
+                        kwargs=md_keywords,
+                        debug=debug)
+
+        md_results = enrichment_functions.md_score_p(md_results)
+
+        return results, md_results
+    
+    return results
+
 #Functions
 #==============================================================================
 def area_under_curve(distances, output_type=None, permutations=None):
+    '''Calculates an enrichment score using the area under the curve. This
+        method is not as sensitive to artifacts as other methods. It works well
+        as an asymmetry detector and will be good at picking up cases where
+        most of the motif localization changes happen at the most differentially
+        transcribed regions.
+    '''
     #sort distances based on the ranks from TF bed file
     #and calculate the absolute distance
     motif = distances[0]
@@ -171,6 +275,10 @@ def area_under_curve_bgcorrect(distances, output_type=None, permutations=None,
 
 #==============================================================================
 def max_GSEA(distances, output_type=None, permutations=None, cutoff=None):
+    '''Takes the max of the enrichment curve. This method is good at detecting
+        significant motif instances in a row. It is susceptible to instances
+        where a motif appears generally throughout all regions.
+    '''
     motif = distances[0]
     distances = [x if x != '.' else cutoff+1 for x in distances[1:]]
     hits = [1 if abs(x) < cutoff else -1 for x in distances]

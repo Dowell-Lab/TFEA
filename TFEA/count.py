@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''This file contains a list of functions associated with combining regions
-    of interest (replicates/conditions) in a user-specified way
+'''This file contains a list of functions associated with counting reads that 
+    map to inputted regions
 '''
 
 #==============================================================================
@@ -16,6 +16,62 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 #==============================================================================
 import os
 import subprocess
+from pathlib import Path
+
+import config
+from exceptions import FileEmptyError
+
+#Main Script
+#==============================================================================
+def main(bedfile=None, bam1=config.BAM1, bam2=config.BAM2, 
+            tempdir=Path(config.TEMPDIR), label1=config.LABEL1, 
+            label2=config.LABEL2):
+    '''This is the main script of the COUNT module which takes as input a
+        bedfile and bam files and counts reads over the bed regions
+
+    Parameters
+    ----------
+    bedfile : str
+        Full path to a bedfile. Can be generated with the COMBINE module or
+        defined by a user
+    bam1 : list
+        A list of strings specifying full paths to bam files associated with 
+        a single condition (replicates)
+    bam2 : list
+        A list of strings specifying full paths to bam files associated with 
+        a single condition (replicates)
+    tempdir : str
+        Full path to a directory where files will be saved
+    label1 : str
+        An informative label for the condition corresponding to files within
+        bam1. Used to add a header line to the count file for downstream
+        DE-Seq analysis.
+    label2 : str
+        An informative label for the condition corresponding to files within
+        bam2. Used to add a header line to the count file for downstream
+        DE-Seq analysis.
+
+    Returns
+    -------
+    count_file : str
+        Full path to a count file that contains the counts over regions within
+        inputted bed files for all inputted bam files
+
+    Raises
+    ------
+    FileEmptyError
+        If any resulting file is empty
+    '''
+    count_file = count_reads(bedfile=bedfile, bam1=bam1, bam2=bam2, 
+                            tempdir=tempdir, label1=label1, label2=label2)
+    sample_number = (len(bam1)+len(bam2))
+    millions_mapped = sum_reads(count_file=count_file, 
+                                sample_number=sample_number)
+    
+    if os.stat(count_file).st_size == 0:
+        raise FileEmptyError("Error in COUNT module. Resulting file is empty.")
+        
+    return count_file
 
 #Functions
 #==============================================================================
@@ -53,19 +109,21 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
     '''
     #This os.system call runs bedtools multicov to count reads in all specified
     #BAMs for given regions in BED
-    os.system("bedtools multicov -bams " + " ".join(bam1) + " " 
-                + " ".join(bam2) + " -bed " + bedfile + " > " 
-                + os.path.join(tempdir, "count_file.bed"))
+    count_file = tempdir / "count_file.bed"
+    multicov_command = ["bedtools", "multicov", 
+                        "-bams"] + bam1+bam2 + ["-bed", bedfile]
+    with open(count_file, 'w') as outfile:
+        subprocess.run(multicov_command, stdout=outfile, check=True)
 
     #This section adds a header to the count_file and reformats it to remove 
     #excess information and add a column with the region for later use
-    count_file = os.path.join(tempdir, "count_file.header.bed")
-    outfile = open(count_file,'w')
+    count_file_header = tempdir / "count_file.header.bed"
+    outfile = open(count_file_header, 'w')
     outfile.write("chrom\tstart\tstop\tregion\t" 
                     + '\t'.join([label1]*len(bam1)) + "\t" 
                     + '\t'.join([label2]*len(bam2)) + "\n")
 
-    with open(os.path.join(tempdir, "count_file.bed")) as F:
+    with open(count_file) as F:
         for line in F:
             line = line.strip('\n').split('\t')
             chrom,start,stop = line[:3]
@@ -73,8 +131,8 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
             outfile.write('\t'.join([chrom,start,stop]) + "\t" 
                             + chrom + ":" + start + "-" + stop + "\t"
                             + '\t'.join(counts) + "\n")
-
-    return count_file
+    outfile.close()
+    return count_file_header
 
 #==============================================================================
 def sum_reads(count_file=None, sample_number=None):

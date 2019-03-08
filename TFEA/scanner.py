@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''This file contains a list of functions associated with outputting a ranked
-    bed file based on some metric.
+'''This module outputs a list of motif distances to inputted regions for all
+    desired TF motifs. This ouptut can be used in the ENRICHMENT module to 
+    calculate motif enrichment within input regions.
 '''
 
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
+__author__ = 'Jonathan D. Rubin'
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
                 'Robin D. Dowell']
 __maintainer__ = 'Jonathan D. Rubin'
@@ -17,15 +18,212 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 import os
 import subprocess
 import traceback
+from pathlib import Path
 
-import fasta_functions
+import config
+import fasta
+import multiprocess
+from exceptions import FileEmptyError, InputError, OutputError, SubprocessError
 
+#Main Script
+#==============================================================================
+def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None, 
+        scanner=config.SCANNER, md=config.MD, largewindow=config.LARGEWINDOW,
+        smallwindow=config.SMALLWINDOW, genomehits=config.GENOMEHITS, 
+        fimo_background=config.FIMO_BACKGROUND, genomefasta=config.GENOMEFASTA, 
+        tempdir=Path(config.TEMPDIR), fimo_motifs=config.FIMO_MOTIFS, 
+        singlemotif=config.SINGLEMOTIF, fimo_thresh=config.FIMO_THRESH,
+        debug=config.DEBUG):
+    '''This is the main script of the SCANNER module. It returns motif distances
+        to regions of interest by either scanning fasta files on the fly using
+        fimo or homer or by using bedtools closest on a center bed file and 
+        a database of bed files corresponding to motif hits across the genome
+
+    Parameters
+    ----------
+    fasta_file : str
+        Full path to a fasta file
+    md_fasta1 : str
+        Full path to a fasta file corresponding to a single condition. Only 
+        required if md score analysis desired
+    md_fasta2 : str
+        Full path to a fasta file corresponding to a single condition. Only 
+        required if md score analysis desired
+    ranked_file : str
+        Full path to a ranked bed file used in calculating background for 
+        fimo scanning. Only necessary if fimo scanning desired
+    scanner : str
+        Scanning method desired
+    md : boolean
+        Whether md score analysis is desired. If True, requires bed files for
+        each condition. These can be generated in the COMBINE module.
+    largewindow : int
+        Half-length of total window size to use when defining cutoffs for 
+        how far out to measure motif distances
+    smallwindow : int
+        Half-length of window size to use when defining cutoffs for significant
+        motif hits
+    genomehits : str
+        Full path to a folder containing bed files of motif hits across the 
+        genome
+    fimo_background : int, str, or boolean
+        Defines whether to use a background file when performing fimo motif
+        scanning. A user can specify any int for window size, smallwindow, 
+        largewindow, or False if not desired.
+    genomefasta : str
+        Full path to a fasta file for desired genome
+    tempdir : str
+        Full path to a directory where files will be saved
+    fimo_motifs : str
+        Full path to a .meme formatted motif database
+    singlemotif : str or boolean
+        Whether to perform scanning on only a subset of motifs. A user can
+        specify a single motif or a ',' separated list of motifs.
+    fimo_thresh : str
+        A float formatted as a string to be used when calling fimo to specify
+        the p-value cutoff threshold
+    debug : boolean
+        Whether to print debug statements specifically within the multiprocess
+        module
+        
+
+    Returns
+    -------
+    motif_distances : list of lists
+        A list containing a list for each motif scanned. For each motif, the 
+        list begins with the motif name as a string and is followed by int
+        values corresponding to the motif distance for each region (ranked). A
+        '.' value means the motif was not within the given region
+    md_distances1 : list of lists
+        A list containing a list for each motif scanned. For each motif, the 
+        list begins with the motif name as a string and is followed by int
+        values corresponding to the motif distance for each region (ranked). A
+        '.' value means the motif was not within the given region
+    md_distances2 : list of lists
+        A list containing a list for each motif scanned. For each motif, the 
+        list begins with the motif name as a string and is followed by int
+        values corresponding to the motif distance for each region (ranked). A
+        '.' value means the motif was not within the given region
+
+    Raises
+    ------
+    InputError
+        If an unknown scanner option is specified
+    '''
+    #FIMO
+    if scanner == 'fimo':
+        #Get background file, if none desired set to 'None'
+        if fimo_background == 'largewindow':
+            background_file = fimo_background_file(
+                                window=int(largewindow), 
+                                tempdir=tempdir, bedfile=ranked_file, 
+                                genomefasta=genomefasta, order='1')
+        elif fimo_background == 'smallwindow':
+            background_file = fimo_background_file(
+                                window=int(smallwindow), 
+                                tempdir=tempdir, bedfile=ranked_file, 
+                                genomefasta=genomefasta, order='1')
+        elif type(fimo_background) == int:
+            background_file = fimo_background_file(
+                                window=fimo_background, 
+                                tempdir=tempdir, bedfile=ranked_file, 
+                                genomefasta=genomefasta, order='1')
+        elif type(fimo_background) == str:
+            background_file = fimo_background
+        else:
+            background_file = None
+
+        #Get motifs to scan through
+        if singlemotif != False:
+            motif_list = singlemotif.split(',')
+        else:
+            motif_list = fimo_motif_names(motifdatabase=fimo_motifs)
+
+        #Perform fimo on desired motifs
+        fimo_keywords = dict(bg_file=background_file, fasta_file=fasta_file, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+
+        motif_distances = multiprocess.main(function=fimo, args=motif_list, 
+                                            kwargs=fimo_keywords, debug=debug)
+
+        #FIMO for md score fasta files
+        if md:
+            fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta1, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+            md_distances1 = multiprocess.main(function=fimo, args=motif_list, 
+                                                kwargs=fimo_keywords, 
+                                                debug=debug)
+            
+            fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta2, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+            md_distances2 = multiprocess.main(function=fimo, args=motif_list, 
+                                                kwargs=fimo_keywords, 
+                                                debug=debug)
+
+            return motif_distances, md_distances1, md_distances2
+            
+    #HOMER
+    elif scanner== 'homer':
+        raise InputError("Homer scanning is not supported at this time.")
+
+    #GENOME HITS
+    elif scanner == 'genome hits':
+        #Get motifs to analyze
+        if singlemotif == False:
+            motif_list = os.listdir(genomehits)
+        else:
+            motif_list = [os.path.join(genomehits, motif) for motif in singlemotif.split(',')]
+
+        #Perform bedtools closest to get distances
+        bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                            ranked_center_file=ranked_file, 
+                                            tempdir=tempdir, 
+                                            distance_cutoff=largewindow)
+        
+        motif_distances = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug)
+
+        #GENOME HITS for md score bed files
+        if md:
+            bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                                ranked_center_file=md_bedfile1, 
+                                                tempdir=tempdir, 
+                                                distance_cutoff=largewindow)
+
+            md_distances1 = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug)
+            
+            bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                                ranked_center_file=md_bedfile1, 
+                                                tempdir=tempdir, 
+                                                distance_cutoff=largewindow)
+
+            md_distances2 = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug)
+
+            return motif_distances, md_distances1, md_distances2
+    else:
+        raise InputError("SCANNER option not recognized.")
+            
+    return motif_distances
 
 #Functions
 #==============================================================================
 def fimo_background_file(window=None, tempdir=None, bedfile=None, 
                             genomefasta=None, order=None):
-    background_bed_file = os.path.join(tempdir, "fimo_background.bed")
+    background_bed_file = tempdir / "fimo_background.bed"
     outfile = open(background_bed_file,'w')
     with open(bedfile) as F:
         for line in F:
@@ -36,11 +234,11 @@ def fimo_background_file(window=None, tempdir=None, bedfile=None,
             outfile.write('\t'.join([chrom, str(start), str(stop), name]) + '\n')
     outfile.close()
     
-    fasta_functions.getfasta(bedfile=background_bed_file, 
+    fasta.getfasta(bedfile=background_bed_file, 
                                 genomefasta=genomefasta, tempdir=tempdir, 
                                 outname='fimo_background.fa')
 
-    fasta_file = os.path.join(tempdir, 'fimo_background.fa')
+    fasta_file = tempdir / 'fimo_background.fa'
     background_file = fasta_markov(tempdir=tempdir, fastafile=fasta_file, 
                                     order=order)
     
@@ -68,10 +266,14 @@ def fasta_markov(tempdir=None, fastafile=None, order=None):
     -------
     None
     '''
-    markov_background = os.path.join(tempdir, "markov_background.txt")
-    os.system("fasta-get-markov -m " + order + " " + fastafile +
-              " > " + markov_background)
-
+    markov_background = tempdir / "markov_background.txt"
+    try:
+        with open(markov_background, 'w') as output:
+            subprocess.run(["fasta-get-markov", "-m", order, fastafile],
+                            stdout=output, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        raise SubprocessError(e.stderr.decode())
+        
     return markov_background
 
 #==============================================================================
@@ -104,7 +306,6 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
         full path to where fimo output which is stored within the tempdir 
         directory.
     '''
-    import fasta_functions
     fimo_out = os.path.join(tempdir, motif + '.fimo.bed')
     if bg_file != None:
         command = ("fimo", "--skip-matched-sequence", 
@@ -114,26 +315,25 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
                     "--motif", motif, 
                     motifdatabase, fasta_file)
     else:
-        # command = ("fimo --skip-matched-sequence --verbosity 1 --thresh " 
-        #             + str(thresh) 
-        #             + " --motif " + motif + " " + motifdatabase 
-        #             + " " + fasta_file
-        #             + " > " + fimo_out)
         command = ("fimo", "--skip-matched-sequence", 
                     "--verbosity", "1", 
                     "--thresh",str(thresh),
                     "--motif", motif, 
                     motifdatabase, fasta_file)
-    with open(os.devnull, 'w') as devnull:
-        # subprocess.call(command, shell=True, stderr=devnull)
-        fimo_out = subprocess.check_output(command, stderr=devnull).decode('UTF-8')
 
-    fasta_linecount = fasta_functions.fasta_linecount(fastafile=fasta_file)
+    try:
+        fimo_out = subprocess.check_output(command, stderr=subprocess.PIPE).decode('UTF-8')
+    except subprocess.CalledProcessError as e:
+        raise SubprocessError(e.stderr.decode())
+
+    fasta_linecount = fasta.fasta_linecount(fastafile=fasta_file)
     # distances = fimo_parse(fimo_file=fimo_out, largewindow=largewindow, 
     #                         linecount=fasta_linecount)
     distances = fimo_parse_stdout(fimo_stdout=fimo_out, 
                                     largewindow=largewindow, 
                                     linecount=fasta_linecount)
+
+    del fimo_out
 
     return [motif] + distances
 
