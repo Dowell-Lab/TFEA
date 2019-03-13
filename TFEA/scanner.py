@@ -28,10 +28,11 @@ from exceptions import FileEmptyError, InputError, OutputError, SubprocessError
 #Main Script
 #==============================================================================
 def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None, 
+        md_bedfile1=None, md_bedfile2=None, 
         scanner=config.SCANNER, md=config.MD, largewindow=config.LARGEWINDOW,
-        smallwindow=config.SMALLWINDOW, genomehits=config.GENOMEHITS, 
-        fimo_background=config.FIMO_BACKGROUND, genomefasta=config.GENOMEFASTA, 
-        tempdir=Path(config.TEMPDIR), fimo_motifs=config.FIMO_MOTIFS, 
+        smallwindow=config.SMALLWINDOW, genomehits=Path(config.GENOMEHITS), 
+        fimo_background=config.FIMO_BACKGROUND, genomefasta=Path(config.GENOMEFASTA), 
+        tempdir=Path(config.TEMPDIR), fimo_motifs=Path(config.FIMO_MOTIFS), 
         singlemotif=config.SINGLEMOTIF, fimo_thresh=config.FIMO_THRESH,
         debug=config.DEBUG):
     '''This is the main script of the SCANNER module. It returns motif distances
@@ -204,7 +205,7 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
                                             debug=debug)
             
             bedtools_distance_keywords = dict(genomehits=genomehits, 
-                                                ranked_center_file=md_bedfile1, 
+                                                ranked_center_file=md_bedfile2, 
                                                 tempdir=tempdir, 
                                                 distance_cutoff=largewindow)
 
@@ -306,11 +307,11 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
         full path to where fimo output which is stored within the tempdir 
         directory.
     '''
-    fimo_out = os.path.join(tempdir, motif + '.fimo.bed')
+    fimo_out = tempdir / (motif+'.fimo.bed')
     if bg_file != None:
         command = ("fimo", "--skip-matched-sequence", 
                     "--verbosity", "1", 
-                    "--thresh",str(thresh),
+                    "--thresh", str(thresh),
                     "--bgfile", bg_file,
                     "--motif", motif, 
                     motifdatabase, fasta_file)
@@ -485,7 +486,7 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
         full path to where the sorted motif distance file was outputted
     '''
     try:
-        motif_path = os.path.join(genomehits, motif)
+        motif_path = genomehits / motif
         if os.stat(motif_path).st_size == 0:
             return [motif] + ['.' for i in range(os.stat(ranked_center_file).st_size)]
         # bedtools_closest_out = os.path.join(tempdir, motif + '.closestBed.bed')
@@ -494,20 +495,27 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
         #             + ranked_center_file + " -b " + motif_path + " > "
         #             + bedtools_closest_out)
 
-        command = ("bedtools closest -D ref -t first -a " 
-                    + ranked_center_file + " -b " + motif_path)
-
-        closest_out = subprocess.check_output(command, shell=True).decode('UTF-8')
+        command = ("bedtools", "closest", "-D", "ref", "-t", "first", "-a", 
+                    ranked_center_file, "-b", motif_path)
+        closest_out = tempdir / (motif + 'closest.bed')
+        try:
+            # closest_out = subprocess.check_output(command, stderr=subprocess.PIPE).decode('UTF-8')
+            closest_out.write_bytes(subprocess.check_output(command, stderr=subprocess.PIPE))
+        except subprocess.CalledProcessError as e:
+            raise SubprocessError(e.stderr.decode())
+        
         
         distances = list()
-        # with open(bedtools_closest_out) as F:
-        #     for line in F:
-        for line in closest_out.split('\n')[1:-1]:
-            distance = int(line.strip('\n').split('\t')[-1])
-            if distance <= distance_cutoff:
-                distances.append(distance)
-            else:
-                distances.append('.')
+        with open(closest_out) as F:
+            for line in F:
+        # for line in closest_out.split('\n')[1:-1]:
+                distance = int(line.strip('\n').split('\t')[-1])
+                if distance <= distance_cutoff:
+                    distances.append(distance)
+                else:
+                    distances.append('.')
+
+        closest_out.unlink()
 
     except Exception as e:
         # This prints the type, value, and stack trace of the

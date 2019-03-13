@@ -14,6 +14,7 @@ __version__ = '4.0'
 #==============================================================================
 import os
 import sys
+import time
 import shutil
 import pathlib
 import argparse
@@ -118,18 +119,27 @@ else: #--sbatch specified
     scriptdir = srcdirectory.parent / 'scripts'
     script = scriptdir / 'run_main.sbatch'
     email = str(sbatch)
+    error_file = e_and_o / 'TFEA.err'
+    # error_file.unlink()
     try:
-        print(srcdirectory.as_posix())
-        subprocess.run(["sbatch", "--error=" + (e_and_o / "%x.err").as_posix(), 
-                        "--output=" + (e_and_o / "%x.out").as_posix(), 
-                        "--mail-user=" + email, 
-                        "--export=cmd=" + srcdirectory.as_posix() 
-                        + " --config " + configfile + " --sbatch SUBMITTED", 
-                        script], stderr=subprocess.PIPE, check=True)
+        sbatch_out = subprocess.run(["sbatch", 
+                            "--error=" + (e_and_o / "%x.err").as_posix(), 
+                            "--output=" + (e_and_o / "%x.out").as_posix(), 
+                            "--mail-user=" + email, 
+                            "--export=cmd=" + srcdirectory.as_posix() 
+                            + " --config " + configfile + " --sbatch SUBMITTED", 
+                            script], stderr=subprocess.PIPE, 
+                            stdout=subprocess.PIPE, check=True)
     except subprocess.CalledProcessError as e:
         raise SubprocessError(e.stderr.decode())
-    sys.exit(("TFEA has been submitted using an sbatch script. \nIt can be "
-            "monitored using 'tail -f " + (e_and_o / 'TFEA.out').as_posix() + "'"))
+    
+    (tempdir / 'jobid.txt').write_text(sbatch_out.stdout.decode().split()[-1])
+    print(("TFEA has been submitted using an sbatch script. \nIt can be "
+            "monitored using:\ntail -f " + error_file.as_posix()))
+    # while not error_file.exists():
+    #     time.sleep(0.1)
+    # subprocess.run(["tail", "-f", "--pid=" + jobid, e_and_o / 'TFEA.err'])
+    sys.exit()
 
 #VERIFICATION OF CONFIG FILE
 #==============================================================================
@@ -162,11 +172,6 @@ import config
 import multiprocess
 from exceptions import InputError
 
-#Calculate how many cpus can be used for later parallelization steps
-cpus = mp.cpu_count()
-if cpus > 64:
-    cpus = 64
-
 #Print multiprocessing information to stderr
 if config.DEBUG:
     mp.log_to_stderr()
@@ -181,15 +186,17 @@ if config.DEBUG:
 '''
 COMBINEtime = time.time()
 if config.COMBINE != False:
-    print("Combining Regions...", end=' ', flush=True)
+    print("Combining Regions...", end=' ', flush=True, file=sys.stderr)
     import combine
     if config.MD:
         bedfile, md_bedfile1, md_bedfile2 = combine.main() #Main COMBINE function
     else:
         bedfile = combine.main() #Main COMBINE without MD specified
+        md_bedfile1 = None
+        md_bedfile2 = None
     
     COMBINEtime = time.time()-COMBINEtime
-    print("done in: " + str(datetime.timedelta(seconds=int(COMBINEtime))))
+    print("done in: " + str(datetime.timedelta(seconds=int(COMBINEtime))), file=sys.stderr)
 else: #If COMBINE switch turned off, then check config file for necessary files
     if config.COUNT:
         bedfile = config.COMBINE_FILE
@@ -201,7 +208,7 @@ else: #If COMBINE switch turned off, then check config file for necessary files
             raise InputError("MD module specified without COMBINE module but no MD bed files inputted.")
     COMBINEtime = time.time()-COMBINEtime
 if config.DEBUG:
-    print("End of COMBINE module: ", file=sys.stderr)
+    # print("End of COMBINE module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #COUNT module
@@ -210,11 +217,11 @@ if config.DEBUG:
 '''
 COUNTtime = time.time()
 if config.COUNT:
-    print("Counting reads in regions...", end=' ', flush=True)
+    print("Counting reads in regions...", end=' ', flush=True, file=sys.stderr)
     import count
     count_file = count.main(bedfile=bedfile) #Main COUNT function
     COUNTtime = time.time()-COUNTtime
-    print("done in: " + str(datetime.timedelta(seconds=int(COUNTtime))))
+    print("done in: " + str(datetime.timedelta(seconds=int(COUNTtime))), file=sys.stderr)
 elif config.RANK == 'deseq':
     try:
         count_file = config.COUNT_FILE
@@ -224,7 +231,7 @@ elif config.RANK == 'deseq':
 else:
     COUNTtime = time.time()-COUNTtime
 if config.DEBUG:
-    print("End of COUNT module: ", file=sys.stderr)
+    # print("End of COUNT module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #RANK module
@@ -235,11 +242,11 @@ if config.DEBUG:
 '''
 RANKtime = time.time()
 if config.RANK != False:
-    print("Ranking regions...", end=' ', flush=True)
+    print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
     import rank
     ranked_file = rank.main(count_file=count_file)
     RANKtime = time.time()-RANKtime
-    print("done in: " + str(datetime.timedelta(seconds=int(RANKtime))))
+    print("done in: " + str(datetime.timedelta(seconds=int(RANKtime))), file=sys.stderr)
 elif config.FASTA:
     try:
         ranked_file = config.RANKED_FILE
@@ -249,7 +256,7 @@ elif config.FASTA:
 else:
     RANKtime = time.time()-RANKtime
 if config.DEBUG:
-    print("End of RANK module: ", file=sys.stderr)
+    # print("End of RANK module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #FASTA module
@@ -259,7 +266,7 @@ if config.DEBUG:
 '''
 FASTAtime = time.time()
 if config.FASTA and config.SCANNER != 'genome hits':
-    print("Generating fasta file...", end=' ', flush=True)
+    print("Generating fasta file...", end=' ', flush=True, file=sys.stderr)
     import fasta
     if config.MD:
         fasta_file, md_fasta1, md_fasta2 = fasta.main(ranked_file=ranked_file, 
@@ -268,7 +275,7 @@ if config.FASTA and config.SCANNER != 'genome hits':
     else:
         fasta_file = fasta.main(ranked_file=ranked_file)
     FASTAtime = time.time()-FASTAtime
-    print("done in: " + str(datetime.timedelta(seconds=int(RANKtime))))
+    print("done in: " + str(datetime.timedelta(seconds=int(RANKtime))), file=sys.stderr)
 elif config.SCANNER != 'genome hits':
     if config.SCANNER != False:
         try:
@@ -283,10 +290,12 @@ elif config.SCANNER != 'genome hits':
             raise InputError("MD module specified without FASTA module but MD_FASTA1 and MD_FASTA2 not provided.")
     FASTAtime = time.time()-FASTAtime
 else:
-    fasta_file=None
+    fasta_file = None
+    md_fasta1 = None
+    md_fasta2 = None
     FASTAtime = time.time()-FASTAtime
 if config.DEBUG:
-    print("End of FASTA module: ", file=sys.stderr)
+    # print("End of FASTA module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #SCANNER module
@@ -298,23 +307,25 @@ if config.DEBUG:
 '''
 SCANNERtime = time.time()
 if config.SCANNER != False:
-    print("Scanning regions using " + config.SCANNER + "...", end=' ', flush=True)
+    print("Scanning regions using " + config.SCANNER + "...", end=' ', flush=True, file=sys.stderr)
     import scanner
     if config.MD:
         motif_distances, md_distances1, md_distances2 = scanner.main(
                                                         fasta_file=fasta_file, 
                                                         md_fasta1=md_fasta1, 
                                                         md_fasta2=md_fasta2, 
+                                                        md_bedfile1=md_bedfile1,
+                                                        md_bedfile2=md_bedfile2,
                                                         ranked_file=ranked_file)
     else:
         motif_distances = scanner.main(fasta_file=fasta_file,  
                                         ranked_file=ranked_file)
     SCANNERtime = time.time()-SCANNERtime
-    print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))))
+    print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
 else:
     SCANNERtime = time.time()-SCANNERtime
 if config.DEBUG:
-    print("End of SCANNER module: ", file=sys.stderr)
+    # print("End of SCANNER module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
     
 #ENRICHMENT module
@@ -324,7 +335,7 @@ if config.DEBUG:
 '''
 ENRICHMENTtime = time.time()
 if config.ENRICHMENT != False:
-    print("Calculating enrichment...", end=' ', flush=True)
+    print("Calculating enrichment...", end=' ', flush=True, file=sys.stderr)
     import enrichment
     if config.MD:
         results, md_results = enrichment.main(motif_distances=motif_distances, 
@@ -333,11 +344,11 @@ if config.ENRICHMENT != False:
     else:
         results = enrichment.main(motif_distances=motif_distances)
     ENRICHMENTtime = time.time()-ENRICHMENTtime
-    print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))))
+    print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
 else:
     ENRICHMENTtime = time.time()-ENRICHMENTtime
 if config.DEBUG:
-    print("End of ENRICHMENT module: ", file=sys.stderr)
+    # print("End of ENRICHMENT module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #OUTPUT module
@@ -346,7 +357,7 @@ if config.DEBUG:
 '''
 OUTPUTtime = time.time()
 if config.OUTPUT_TYPE != False:
-    print("Creating output...", end=' ', flush=True)
+    print("Creating output...", end=' ', flush=True, file=sys.stderr)
     import output_functions
     output_functions.txt_output(results=results, outputdir=outputdir, 
                                 outname='results.txt', header=None, 
@@ -356,10 +367,10 @@ if config.OUTPUT_TYPE != False:
         output_functions.txt_output(results=md_results, outputdir=outputdir, 
                                 outname='md_results.txt', header=header, 
                                 sortindex=[-1])
+    OUTPUTtime = time.time()-OUTPUTtime
     if config.OUTPUT_TYPE == 'html':
         output_functions.summary_html_output(config_object=config_object, 
                                                 outputdir=outputdir)
-        OUTPUTtime = time.time()-OUTPUTtime
         module_list = [('COMBINE', config.COMBINE, COMBINEtime), 
                         ('COUNT', config.COUNT, COUNTtime), 
                         ('RANK', config.RANK, RANKtime), 
@@ -369,9 +380,13 @@ if config.OUTPUT_TYPE != False:
                         ('OUTPUT', config.OUTPUT_TYPE, OUTPUTtime)]
         output_functions.html_output(results=results, module_list=module_list)
         
-    print("done")
+    print("done in: " + str(datetime.timedelta(seconds=int(OUTPUTtime))), file=sys.stderr)
+    if config.DEBUG:
+        multiprocess.current_mem_usage()
 else:
     raise InputError("Warning: OUTPUT_TYPE either not specified or not supported") 
+
+print("TFEA done.", file=sys.stderr)
 
 #REMOVE TEMP FILES
 #==============================================================================

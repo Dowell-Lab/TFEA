@@ -74,7 +74,8 @@ def main(bed1=config.BED1, bed2=config.BED2, method=config.COMBINE,
         bedfile = tfit_clean(beds=bed1+bed2, tempdir=tempdir)
 
     elif method == 'intersect all':
-        bedfile = intersect_all(beds=bed1+bed2, tempdir=tempdir)
+        bedfile = intersect_all(beds=bed1+bed2, tempdir=tempdir, 
+                                outname='combined_intersect.bed')
 
     elif method == 'tfit remove small':
         bedfile = tfit_remove_small(beds=bed1+bed2, tempdir=tempdir)
@@ -163,22 +164,21 @@ def merge_bed(beds=None, tempdir=None):
     return combined_input_merged_bed
 
 #==============================================================================
-def intersect_all(beds=None, tempdir=None):
-    '''Concatenates, sorts, and merges (bedtools) a list of bed files. Outputs 
-        into the tempdir directory created by TFEA
+def intersect_all(beds=None, tempdir=None, outname=None):
+    '''Intersects, sorts, and merges a list of bed files
 
     Parameters
     ----------
     beds : list or array
-        full paths to bed files (strings)
+        Full paths to bed files
         
     tempdir : string
-        full path to tempdir directory in output directory (created by TFEA)
+        Full path to tempdir directory in output directory (created by TFEA)
 
     Returns
     -------
-    combined_input_merged_bed : string 
-        full path to a bed file containing the merged regions inputted by the 
+    combined_input_intersect_bed : string 
+        full path to a bed file containing the intersected regions inputted by the 
         user 
     '''
     # combined_input_intersect_bed = os.path.join(tempdir, 
@@ -207,7 +207,7 @@ def intersect_all(beds=None, tempdir=None):
     # subprocess.call(intersect_bed_command, shell=True)
 
     #Define output file
-    combined_input_intersect_bed = tempdir / "combined_input.intersect.bed"
+    combined_input_intersect_bed = tempdir / outname
     
     #Perform all intersects
     if len(beds) > 2:
@@ -394,6 +394,7 @@ def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
         full path to a bed file containing the merged regions inputted by the 
         user 
     '''
+#This section uses shell=True
     # #Define the output file
     # combined_input_merged_bed = os.path.join(tempdir, 
     #                                             "combined_input.merge.bed")
@@ -425,11 +426,99 @@ def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
     # #Need to use subprocess here because this command is bash not sh
     # subprocess.call(['bash', '-c', command])
 
+#THIS Section attempts to use subprocess Popen commands
+    # #Define the output file
+    # combined_input_intersect_bed = tempdir / "combined_input.intersectmerge.bed"
+
+    # #Create a pipe for the cat command to feed the stdout of each intersect command
+    # process_cat = subprocess.Popen(["cat"], stdin=subprocess.PIPE, 
+    #                                         stdout=subprocess.PIPE)
+
+    # if len(bed1) > 1:
+    #     #Build command to perform bedtools intersect on condition1 beds
+    #     processes1 = [subprocess.Popen(["bedtools", "intersect", 
+    #                                     "-a", bed1[0], 
+    #                                     "-b", bed1[1]], 
+    #                                     stdout=subprocess.PIPE)]
+    #     for i, bed in enumerate(bed1[2:-1]):
+    #         processes1.append(subprocess.Popen(["bedtools", "intersect", 
+    #                                             "-a", "stdin", 
+    #                                             "-b", bed], 
+    #                                             stdin=processes1[i].stdout,
+    #                                             stdout=subprocess.PIPE))
+    #     processes1.append(subprocess.Popen(["bedtools", "intersect", 
+    #                                             "-a", "stdin", 
+    #                                             "-b", bed1[-1]], 
+    #                                             stdin=processes1[-1].stdout,
+    #                                             stdout=process_cat.stdin))
+    # else:
+    #     processes1 = [subprocess.Popen(["cat", bed1[0]], 
+    #                                     stdout=process_cat.stdin)]
+
+    # if len(bed2) > 1:
+    #     #Build command to perform bedtools intersect on condition1 beds
+    #     processes2 = [subprocess.Popen(["bedtools", "intersect", 
+    #                                     "-a", bed2[0], 
+    #                                     "-b", bed2[1]], 
+    #                                     stdout=subprocess.PIPE)]
+    #     for i, bed in enumerate(bed2[2:-1]):
+    #         processes2.append(subprocess.Popen(["bedtools", "intersect", 
+    #                                             "-a", "stdin", 
+    #                                             "-b", bed], 
+    #                                             stdin=processes2[i].stdout,
+    #                                             stdout=subprocess.PIPE))
+    #     processes2.append(subprocess.Popen(["bedtools", "intersect", 
+    #                                             "-a", "stdin", 
+    #                                             "-b", bed2[-1]], 
+    #                                             stdin=processes2[-1].stdout,
+    #                                             stdout=process_cat.stdin))
+    # else:
+    #     processes2 = [subprocess.Popen(["cat", bed2[0]], 
+    #                                     stdout=process_cat.stdin)]
+
+    # #Specify commands to sort and merge resulting intersected file
+    # sort = ["bedtools", "sort", "-i", "stdin"]
+    # merge = ["bedtools", "merge", "-i", "stdin"]
+
+    # #Create a process for each command to run
+    # process_sort = subprocess.Popen(sort, stdin=subprocess.PIPE,
+    #                                 stdout=subprocess.PIPE)
+    # process_merge = subprocess.Popen(merge, stdin=subprocess.PIPE, 
+    #                                 stdout=subprocess.PIPE)
+
+    # # Allow process_merge to receive a SIGPIPE if upstream processes exit.
+    # if len(processes1) > 1:
+    #     [process.stdout.close() for process in processes1[:-1]]
+    # if len(processes2) > 1:
+    #     [process.stdout.close() for process in processes2[:-1]]
+
+    # [process.wait() for process in processes1+processes2]
+    
+    # # print(process_cat.communicate()[0].decode()[:10])
+    # # print(process_sort.communicate()[0].decode()[:10])
+    # # process_cat.stdout().close()
+    # # process_sort.stdout().close()
+    # cat_out = process_cat.communicate()[0]
+    # process_cat.wait()
+    # sort_out = process_sort.communicate(input=cat_out)[0]
+    # process_sort.wait()
+    # combined_input_intersect_bed.write_bytes(process_merge.communicate(input=sort_out)[0])
+    # # print(process_merge.communicate(process_sort.communicate(process_cat.communicate()[0])[0])[0])
+    # # combined_input_intersect_bed.write_bytes(process_merge.communicate(process_sort.communicate(process_cat.communicate()[0])[0])[0])
+    # # print(process_merge.communicate()[0])
+
+    # #Make sure all process stop running
+    # # [process.wait() for process in processes1+processes2]
+    # # process_cat.wait()
+    # # process_sort.wait()
+    # # process_merge.wait()
+
+#This section uses temp files
     #Define the output file
     combined_input_intersect_bed = tempdir / "combined_input.intersectmerge.bed"
 
+    #Build command to perform bedtools intersect on condition1 beds
     if len(bed1) > 1:
-        #Build command to perform bedtools intersect on condition1 beds
         processes1 = [subprocess.Popen(["bedtools", "intersect", 
                                         "-a", bed1[0], 
                                         "-b", bed1[1]], 
@@ -440,22 +529,26 @@ def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
                                                 "-b", bed], 
                                                 stdin=processes1[i].stdout,
                                                 stdout=subprocess.PIPE))
-        bed1_intersect = tempdir / "bed1.intersect.bed"
-        with open(bed1_intersect, 'w') as output:
-            processes1.append(subprocess.Popen(["bedtools", "intersect", 
+        processes1.append(subprocess.Popen(["bedtools", "intersect", 
                                                 "-a", "stdin", 
                                                 "-b", bed1[-1]], 
                                                 stdin=processes1[-1].stdout,
-                                                stdout=output))
+                                                stdout=subprocess.PIPE))
     else:
         processes1 = [subprocess.Popen(["cat", bed1[0]], 
-                                        stdout=process_cat.stdin)]
+                                        stdout=subprocess.PIPE)]
+    
+    #Execute intersect command, write to a temporary file
+    if len(processes1) > 1:
+        [process.stdout.close() for process in processes1[:-1]]
+    intersect1 = tempdir / "combined_input.intersect1.bed"
+    intersect1.write_bytes(processes1[-1].communicate()[0])
 
+    #Build command to perform bedtools intersect on condition1 beds
     if len(bed2) > 1:
-        #Build command to perform bedtools intersect on condition1 beds
         processes2 = [subprocess.Popen(["bedtools", "intersect", 
-                                        "-a", bed1[0], 
-                                        "-b", bed1[1]], 
+                                        "-a", bed2[0], 
+                                        "-b", bed2[1]], 
                                         stdout=subprocess.PIPE)]
         for i, bed in enumerate(bed2[2:-1]):
             processes2.append(subprocess.Popen(["bedtools", "intersect", 
@@ -463,37 +556,38 @@ def intersect_merge_bed(bed1=None, bed2=None, tempdir=None):
                                                 "-b", bed], 
                                                 stdin=processes2[i].stdout,
                                                 stdout=subprocess.PIPE))
-        bed2_intersect = tempdir / "bed2.intersect.bed"
-        with open(bed2_intersect, 'w') as output:
-            processes2.append(subprocess.Popen(["bedtools", "intersect", 
+        processes2.append(subprocess.Popen(["bedtools", "intersect", 
                                                 "-a", "stdin", 
                                                 "-b", bed2[-1]], 
                                                 stdin=processes2[-1].stdout,
-                                                stdout=output))
+                                                stdout=subprocess.PIPE))
     else:
         processes2 = [subprocess.Popen(["cat", bed2[0]], 
-                                        stdout=process_cat.stdin)]
+                                        stdout=subprocess.PIPE)]
+    
+    #Execute intersect command, write to a temporary file
+    if len(processes2) > 1:
+        [process.stdout.close() for process in processes2[:-1]]
+    intersect2 = tempdir / "combined_input.intersect2.bed"
+    intersect2.write_bytes(processes2[-1].communicate()[0])
 
-    #Specify commands to sort and merge resulting intersected file
-    cat = ["cat", bed1_intersect, bed2_intersect]
+    #Specify commands to cat, sort, and merge resulting intersected files
+    cat = ["cat", intersect1, intersect2]
     sort = ["bedtools", "sort", "-i", "stdin"]
     merge = ["bedtools", "merge", "-i", "stdin"]
 
     #Create a process for each command to run
     process_cat = subprocess.Popen(cat, stdout=subprocess.PIPE)
-    process_sort = subprocess.Popen(sort, stdin=process_cat.stdin,
-                                    stdout=subprocess.PIPE)
-    process_merge = subprocess.Popen(merge, stdin=process_sort.stdin, 
-                                    stdout=subprocess.PIPE)
+    process_sort = subprocess.Popen(sort, stdin=process_cat.stdout, 
+                                        stdout=subprocess.PIPE)
+    process_merge = subprocess.Popen(merge, stdin=process_sort.stdout, 
+                                        stdout=subprocess.PIPE)
 
     # Allow process_merge to receive a SIGPIPE if upstream processes exit.
-    if len(processes1) > 1:
-        [process.stdout.close() for process in processes1[:-1]]
-    if len(processes2) > 1:
-        [process.stdout.close() for process in processes2[:-1]]
-    
     process_cat.stdout.close()
     process_sort.stdout.close()
+
+    #Write output to file
     combined_input_intersect_bed.write_bytes(process_merge.communicate()[0])
 
     #Make sure all process stop running
@@ -603,4 +697,5 @@ def combine_md(bed1=None, bed2=None, tempdir=None, method=None, size_cut=200,
     md_sortedcenterfile2 = os.path.join(tempdir, 'md_bedfile2.center.sorted.bed')
     bedtools_sort = "bedtools sort -i " + md_centerfile2 + " > " + md_sortedcenterfile2
     subprocess.check_output(bedtools_sort, shell=True)
-    return md_sortedcenterfile1, md_sortedcenterfile2
+
+    return Path(md_sortedcenterfile1), Path(md_sortedcenterfile2)

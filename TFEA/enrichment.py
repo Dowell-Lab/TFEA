@@ -114,7 +114,7 @@ def main(motif_distances=None, md_distances1=None, md_distances2=None,
                         kwargs=md_keywords,
                         debug=debug)
 
-        md_results = enrichment_functions.md_score_p(md_results)
+        md_results = md_score_p(md_results)
 
         return results, md_results
     
@@ -129,75 +129,80 @@ def area_under_curve(distances, output_type=None, permutations=None):
         most of the motif localization changes happen at the most differentially
         transcribed regions.
     '''
-    #sort distances based on the ranks from TF bed file
-    #and calculate the absolute distance
-    motif = distances[0]
-    distances = distances[1:]
-    distances_abs = [abs(x)  if x != '.' else x for x in distances]
-
-    hits = len([x for x in distances_abs if x != '.'])
-
-    #Filter any TFs/files without any hits
-    if hits == 0:
-        return [motif, 0.0, 0, 1.0]
-
-    #Get -exp() of distance and get cumulative scores
-    #Filter distances into quartiles to get middle distribution
-    q1 = int(round(len(distances)*.25))
-    q3 = int(round(len(distances)*.75))
-    middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
     try:
-        average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
-    except ZeroDivisionError:
-        return [motif, 0.0, 0, 1.0]
-    
-    score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
-    total = sum(score)
-    if output_type == 'score':
-        return score
+        #sort distances based on the ranks from TF bed file
+        #and calculate the absolute distance
+        motif = distances[0]
+        distances = distances[1:]
+        distances_abs = [abs(x)  if x != '.' else x for x in distances]
 
-    binwidth = 1.0/float(len(distances_abs))
-    normalized_score = [(float(x)/total)*binwidth for x in score]
-    cumscore = np.cumsum(normalized_score)
-    trend = np.append(np.arange(0,1,1.0/float(len(cumscore)))[1:], 1.0)
-    trend = [x*binwidth for x in trend]
+        hits = len([x for x in distances_abs if x != '.'])
 
-    #The AUC is the relative to the "random" line
-    auc = np.trapz(cumscore) - np.trapz(trend)
+        #Filter any TFs/files without any hits
+        if hits == 0:
+            return [motif, 0.0, 0, 1.0]
 
-    #Calculate random AUC
-    sim_auc = permute_auc(distances=normalized_score, trend=trend, 
-                            permutations=permutations)
+        #Get -exp() of distance and get cumulative scores
+        #Filter distances into quartiles to get middle distribution
+        q1 = int(round(len(distances)*.25))
+        q3 = int(round(len(distances)*.75))
+        middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
+        try:
+            average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
+        except ZeroDivisionError:
+            return [motif, 0.0, 0, 1.0]
+        
+        score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
+        total = sum(score)
+        if output_type == 'score':
+            return score
 
-    #Calculate p-value                                                                                                                                                          
-    mu = np.mean(sim_auc)
-    sigma = np.std(sim_auc)
-    p = min(norm.cdf(auc,mu,sigma), 1-norm.cdf(auc,mu,sigma))
-    if math.isnan(p):
-        p = 1.0
+        binwidth = 1.0/float(len(distances_abs))
+        normalized_score = [(float(x)/total)*binwidth for x in score]
+        cumscore = np.cumsum(normalized_score)
+        trend = np.append(np.arange(0,1,1.0/float(len(cumscore)))[1:], 1.0)
+        trend = [x*binwidth for x in trend]
 
-    if output_type == 'html':
-        from TFEA import plotting_functions
-        plotting_score = [(float(x)/total) for x in score]
-        plotting_cumscore = np.cumsum(plotting_score)
-        plotting_functions.plot_individual_graphs(plot=None, padj_cutoff=None,
-                            figuredir=None, logos=None, 
-                            largewindow=None, score=None, 
-                            smallwindow=None,
-                            distances_abs=None, sorted_distances=None,
-                            ranks=None, pvals=None, fc=None, 
-                            cumscore=None, motif_file=None, p=None,
-                            simES=None, actualES=None, gc_array=None,
-                            meta_profile_dict=None, label1=None, label2=None)
-    
-    if output_type == 'lineplot_output':
-        plotting_score = [(float(x)/total) for x in score]
-        plotting_cumscore = np.cumsum(plotting_score)
-        return plotting_cumscore
-    
-    if output_type == 'simulation_output':
-        return auc, sim_auc
+        #The AUC is the relative to the "random" line
+        auc = np.trapz(cumscore) - np.trapz(trend)
 
+        #Calculate random AUC
+        sim_auc = permute_auc(distances=normalized_score, trend=trend, 
+                                permutations=permutations)
+
+        #Calculate p-value                                                                                                                                                          
+        mu = np.mean(sim_auc)
+        sigma = np.std(sim_auc)
+        p = min(norm.cdf(auc,mu,sigma), 1-norm.cdf(auc,mu,sigma))
+        if math.isnan(p):
+            p = 1.0
+
+        if output_type == 'html':
+            from TFEA import plotting_functions
+            plotting_score = [(float(x)/total) for x in score]
+            plotting_cumscore = np.cumsum(plotting_score)
+            plotting_functions.plot_individual_graphs(plot=None, padj_cutoff=None,
+                                figuredir=None, logos=None, 
+                                largewindow=None, score=None, 
+                                smallwindow=None,
+                                distances_abs=None, sorted_distances=None,
+                                ranks=None, pvals=None, fc=None, 
+                                cumscore=None, motif_file=None, p=None,
+                                simES=None, actualES=None, gc_array=None,
+                                meta_profile_dict=None, label1=None, label2=None)
+        
+        if output_type == 'lineplot_output':
+            plotting_score = [(float(x)/total) for x in score]
+            plotting_cumscore = np.cumsum(plotting_score)
+            return plotting_cumscore
+        
+        if output_type == 'simulation_output':
+            return auc, sim_auc
+    except Exception as e:
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        print(traceback.print_exc())
+        raise e
     return [motif, auc, hits, p]
 
 #==============================================================================
