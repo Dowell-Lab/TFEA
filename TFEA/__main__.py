@@ -116,7 +116,7 @@ else: #--sbatch specified
         shutil.copy2(configfile, outputdir) #Copy config file to output
     except shutil.SameFileError:
         pass
-    scriptdir = srcdirectory.parent / 'scripts'
+    scriptdir = srcdirectory.parent / 'cluster_scripts'
     script = scriptdir / 'run_main.sbatch'
     email = str(sbatch)
     error_file = e_and_o / 'TFEA.err'

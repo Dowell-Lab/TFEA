@@ -185,7 +185,8 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
         bedtools_distance_keywords = dict(genomehits=genomehits, 
                                             ranked_center_file=ranked_file, 
                                             tempdir=tempdir, 
-                                            distance_cutoff=largewindow)
+                                            distance_cutoff=largewindow, 
+                                            rank_index=5)
         
         motif_distances = multiprocess.main(function=bedtools_closest, 
                                             args=motif_list, 
@@ -470,7 +471,7 @@ def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score',
 
 #==============================================================================
 def bedtools_closest(motif, genomehits=None, ranked_center_file=None, 
-                        tempdir=None, distance_cutoff=None):
+                        tempdir=None, distance_cutoff=None, rank_index=None):
     '''Calculates nearest motif hit from a bed file. TFEA provides this 
         function with a bed file containing the center of the inputted regions.
 
@@ -489,33 +490,35 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
         motif_path = genomehits / motif
         if os.stat(motif_path).st_size == 0:
             return [motif] + ['.' for i in range(os.stat(ranked_center_file).st_size)]
-        # bedtools_closest_out = os.path.join(tempdir, motif + '.closestBed.bed')
-
-        # command = ("bedtools closest -D ref -t first -a " 
-        #             + ranked_center_file + " -b " + motif_path + " > "
-        #             + bedtools_closest_out)
 
         command = ("bedtools", "closest", "-D", "ref", "-t", "first", "-a", 
                     ranked_center_file, "-b", motif_path)
-        closest_out = tempdir / (motif + 'closest.bed')
+        closest_out = tempdir / (motif + '.closest.bed')
+
+        # import sys
+        # print(' '.join(command) + ' > ' + closest_out.as_posix(), file=sys.stderr)
+
         try:
-            # closest_out = subprocess.check_output(command, stderr=subprocess.PIPE).decode('UTF-8')
             closest_out.write_bytes(subprocess.check_output(command, stderr=subprocess.PIPE))
         except subprocess.CalledProcessError as e:
             raise SubprocessError(e.stderr.decode())
         
         
         distances = list()
+        ranks = list()
         with open(closest_out) as F:
             for line in F:
-        # for line in closest_out.split('\n')[1:-1]:
-                distance = int(line.strip('\n').split('\t')[-1])
+                linelist = line.strip('\n').split('\t')
+                distance = int(linelist[-1])
+                if rank_index != None:
+                    ranks.append(int(linelist[rank_index]))
                 if distance <= distance_cutoff:
                     distances.append(distance)
                 else:
                     distances.append('.')
-
-        closest_out.unlink()
+        if rank_index != None:
+            distances = [x for i,x in sorted(zip(ranks,distances))]
+        # closest_out.unlink()
 
     except Exception as e:
         # This prints the type, value, and stack trace of the

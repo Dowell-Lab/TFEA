@@ -57,6 +57,8 @@ def main(function=None, args=None, kwargs=None, debug=False):
     # p = mp.Pool()
     # results = list()
         results = p.starmap(helper, [(function, arg, kwargs, debug) for arg in args])
+        p.close()
+        p.join()
         
     # for i, arg in enumerate(args):
     #     results.append(p.apply_async(function, (arg,), kwargs).get())
