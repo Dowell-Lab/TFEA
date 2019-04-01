@@ -29,7 +29,7 @@ import multiprocess
 
 #Main Script
 #==============================================================================
-def main(motif_distances=None, md_distances1=None, md_distances2=None, 
+def tfea(motif_distances=None, md_distances1=None, md_distances2=None, 
         enrichment=config.ENRICHMENT, output_type=config.OUTPUT_TYPE, 
         permutations=config.PERMUTATIONS, debug=config.DEBUG, 
         largewindow=config.LARGEWINDOW, smallwindow=config.SMALLWINDOW, 
@@ -107,18 +107,19 @@ def main(motif_distances=None, md_distances1=None, md_distances2=None,
 
         padj_bonferroni(results)
 
-    if md:
-        md_keywords = dict(smallwindow=smallwindow)
-        md_results = multiprocess.main(function=md_score, 
-                        args=zip(sorted(md_distances1),sorted(md_distances2)), 
-                        kwargs=md_keywords,
-                        debug=debug)
-
-        md_results = md_score_p(md_results)
-
-        return results, md_results
-    
     return results
+
+def md(md_distances1=None, md_distances2=None, output_type=config.OUTPUT_TYPE, 
+        debug=config.DEBUG, smallwindow=config.SMALLWINDOW):
+    md_keywords = dict(smallwindow=smallwindow)
+    md_results = multiprocess.main(function=md_score, 
+                    args=zip(sorted(md_distances1),sorted(md_distances2)), 
+                    kwargs=md_keywords,
+                    debug=debug)
+
+    md_results = md_score_p(md_results)
+
+    return md_results
 
 #Functions
 #==============================================================================
@@ -181,9 +182,12 @@ def area_under_curve(distances, output_type=None, permutations=None):
             from TFEA import plotting_functions
             plotting_score = [(float(x)/total) for x in score]
             plotting_cumscore = np.cumsum(plotting_score)
-            plotting_functions.plot_individual_graphs(plot=None, padj_cutoff=None,
-                                figuredir=None, logos=None, 
-                                largewindow=None, score=None, 
+            plotting_functions.plot_individual_graphs(plot=config.PLOTALL, 
+                                padj_cutoff=config.PADJCUTOFF,
+                                figuredir=config.FIGUREDIR, 
+                                logos=config.MOTIF_LOGOS, 
+                                largewindow=config.LARGEWINDOW, 
+                                score=plotting_score, 
                                 smallwindow=None,
                                 distances_abs=None, sorted_distances=None,
                                 ranks=None, pvals=None, fc=None, 
@@ -192,7 +196,7 @@ def area_under_curve(distances, output_type=None, permutations=None):
                                 meta_profile_dict=None, label1=None, label2=None)
         
         if output_type == 'lineplot_output':
-            plotting_score = [(float(x)/total) for x in score]
+            plotting_score = [0] + [(float(x)/total) for x in score]
             plotting_cumscore = np.cumsum(plotting_score)
             return plotting_cumscore
         

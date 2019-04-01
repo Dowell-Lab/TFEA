@@ -89,7 +89,7 @@ class TestMain(unittest.TestCase):
         self.assertEqual(len(ranked_file.read_text().strip('\n').split('\n')), 11)
 
     def test_fasta(self):
-        fasta_file = fasta.main(ranked_file=self.ranked_file, md=False, 
+        fasta_file = fasta.main(ranked_file=self.ranked_file, 
             genomefasta=self.genomefasta, tempdir=self.testdir)
         self.assertEqual(len(fasta_file.read_text().strip('\n').split('\n')), 8)
 

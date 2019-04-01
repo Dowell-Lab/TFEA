@@ -136,9 +136,6 @@ else: #--sbatch specified
     (tempdir / 'jobid.txt').write_text(sbatch_out.stdout.decode().split()[-1])
     print(("TFEA has been submitted using an sbatch script. \nIt can be "
             "monitored using:\ntail -f " + error_file.as_posix()))
-    # while not error_file.exists():
-    #     time.sleep(0.1)
-    # subprocess.run(["tail", "-f", "--pid=" + jobid, e_and_o / 'TFEA.err'])
     sys.exit()
 
 #VERIFICATION OF CONFIG FILE
@@ -159,6 +156,7 @@ preconfig_functions.verify_config_file()
 #==============================================================================
 #MAIN SCRIPT
 #==============================================================================
+print("TFEA start: ", file=sys.stderr)
 
 #SECONDARY IMPORTS
 #==============================================================================
@@ -175,7 +173,6 @@ from exceptions import InputError
 #Print multiprocessing information to stderr
 if config.DEBUG:
     mp.log_to_stderr()
-    print("TFEA start: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #COMBINE module
@@ -208,7 +205,6 @@ else: #If COMBINE switch turned off, then check config file for necessary files
             raise InputError("MD module specified without COMBINE module but no MD bed files inputted.")
     COMBINEtime = time.time()-COMBINEtime
 if config.DEBUG:
-    # print("End of COMBINE module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #COUNT module
@@ -231,7 +227,6 @@ elif config.RANK == 'deseq':
 else:
     COUNTtime = time.time()-COUNTtime
 if config.DEBUG:
-    # print("End of COUNT module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #RANK module
@@ -245,18 +240,27 @@ if config.RANK != False:
     print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
     import rank
     ranked_file = rank.main(count_file=count_file)
+    if config.MDD:
+        mdd_bedfile1, mdd_bedfile2 = rank.create_mdd_files(
+                                                    ranked_file=ranked_file,
+                                                    tempdir=config.TEMPDIR,
+                                                    percent=0.2)
     RANKtime = time.time()-RANKtime
     print("done in: " + str(datetime.timedelta(seconds=int(RANKtime))), file=sys.stderr)
 elif config.FASTA:
     try:
         ranked_file = config.RANKED_FILE
+        mdd_bedfile1 = config.MDD_BEDFILE1
+        mdd_bedfile2 = config.MDD_BEDFILE2
     except:
         raise InputError("FASTA conversion specified but RANK module set to False and RANKED_FILE is missing.")
     RANKtime = time.time()-RANKtime
 else:
+    ranked_file = None
+    mdd_bedfile1 = None
+    mdd_bedfile2 = None
     RANKtime = time.time()-RANKtime
 if config.DEBUG:
-    # print("End of RANK module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #FASTA module
@@ -268,12 +272,13 @@ FASTAtime = time.time()
 if config.FASTA and config.SCANNER != 'genome hits':
     print("Generating fasta file...", end=' ', flush=True, file=sys.stderr)
     import fasta
+    fasta_file = fasta.main(ranked_file=ranked_file, outname='ranked_file.fa')
     if config.MD:
-        fasta_file, md_fasta1, md_fasta2 = fasta.main(ranked_file=ranked_file, 
-                                                        md_bedfile1=md_bedfile1, 
-                                                        md_bedfile2=md_bedfile2)
-    else:
-        fasta_file = fasta.main(ranked_file=ranked_file)
+        md_fasta1 = fasta.main(ranked_file=md_bedfile1, outname='md1_fasta.fa')
+        md_fasta2 = fasta.main(ranked_file=md_bedfile2, outname='md2_fasta.fa')
+    if config.MDD:
+        mdd_fasta1 = fasta.main(ranked_file=mdd_bedfile1, outname='mdd1_fasta.fa')
+        mdd_fasta2 = fasta.main(ranked_file=mdd_bedfile2, outname='mdd2_fasta.fa')
     FASTAtime = time.time()-FASTAtime
     print("done in: " + str(datetime.timedelta(seconds=int(RANKtime))), file=sys.stderr)
 elif config.SCANNER != 'genome hits':
@@ -293,9 +298,10 @@ else:
     fasta_file = None
     md_fasta1 = None
     md_fasta2 = None
+    mdd_fasta1 = None
+    mdd_fasta2 = None
     FASTAtime = time.time()-FASTAtime
 if config.DEBUG:
-    # print("End of FASTA module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #SCANNER module
@@ -309,23 +315,30 @@ SCANNERtime = time.time()
 if config.SCANNER != False:
     print("Scanning regions using " + config.SCANNER + "...", end=' ', flush=True, file=sys.stderr)
     import scanner
-    if config.MD:
-        motif_distances, md_distances1, md_distances2 = scanner.main(
-                                                        fasta_file=fasta_file, 
-                                                        md_fasta1=md_fasta1, 
-                                                        md_fasta2=md_fasta2, 
-                                                        md_bedfile1=md_bedfile1,
-                                                        md_bedfile2=md_bedfile2,
-                                                        ranked_file=ranked_file)
-    else:
-        motif_distances = scanner.main(fasta_file=fasta_file,  
+    motif_distances = scanner.main(fasta_file=fasta_file,  
                                         ranked_file=ranked_file)
+    if config.MD:
+        # motif_distances, md_distances1, md_distances2 = scanner.main(
+        #                                                 fasta_file=fasta_file, 
+        #                                                 md_fasta1=md_fasta1, 
+        #                                                 md_fasta2=md_fasta2, 
+        #                                                 md_bedfile1=md_bedfile1,
+        #                                                 md_bedfile2=md_bedfile2,
+        #                                                 ranked_file=ranked_file)
+        md_distances1 = scanner.main(fasta_file=md_fasta1,  
+                                        ranked_file=md_bedfile1)
+        md_distances2 = scanner.main(fasta_file=md_fasta2,  
+                                        ranked_file=md_bedfile2)
+    if config.MDD:
+        mdd_distances1 = scanner.main(fasta_file=mdd_fasta1,  
+                                        ranked_file=mdd_bedfile1)
+        mdd_distances2 = scanner.main(fasta_file=mdd_fasta2,  
+                                        ranked_file=mdd_bedfile2)
     SCANNERtime = time.time()-SCANNERtime
     print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
 else:
     SCANNERtime = time.time()-SCANNERtime
 if config.DEBUG:
-    # print("End of SCANNER module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
     
 #ENRICHMENT module
@@ -337,18 +350,18 @@ ENRICHMENTtime = time.time()
 if config.ENRICHMENT != False:
     print("Calculating enrichment...", end=' ', flush=True, file=sys.stderr)
     import enrichment
+    results = enrichment.tfea(motif_distances=motif_distances)
     if config.MD:
-        results, md_results = enrichment.main(motif_distances=motif_distances, 
-                                                md_distances1=md_distances1, 
-                                                md_distances2=md_distances2)
-    else:
-        results = enrichment.main(motif_distances=motif_distances)
+        md_results = enrichment.md(md_distances1=md_distances1, 
+                                    md_distances2=md_distances2)
+    if config.MDD:
+        mdd_results = enrichment.md(md_distances1=mdd_distances1, 
+                                    md_distances2=mdd_distances2)
     ENRICHMENTtime = time.time()-ENRICHMENTtime
     print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
 else:
     ENRICHMENTtime = time.time()-ENRICHMENTtime
 if config.DEBUG:
-    # print("End of ENRICHMENT module: ", file=sys.stderr)
     multiprocess.current_mem_usage()
 
 #OUTPUT module
@@ -358,19 +371,23 @@ if config.DEBUG:
 OUTPUTtime = time.time()
 if config.OUTPUT_TYPE != False:
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    import output_functions
-    output_functions.txt_output(results=results, outputdir=outputdir, 
-                                outname='results.txt', header=None, 
-                                sortindex=[-2,-1])
+    import output
+    output.txt_output(results=results, outname='results.txt', 
+                        sortindex=[-2,-1])
     if config.MD:
         header = ['TF', 'MD-Score', 'Events', 'p-val']
-        output_functions.txt_output(results=md_results, outputdir=outputdir, 
-                                outname='md_results.txt', header=header, 
-                                sortindex=[-1])
+        output.txt_output(results=md_results, outname='md_results.txt', 
+                            header=header, sortindex=[-1])
+    if config.MDD:
+        header = ['TF', 'MD-Score', 'Events', 'p-val']
+        output.txt_output(results=mdd_results, outname='mdd_results.txt', 
+                            header=header, sortindex=[-1])
     OUTPUTtime = time.time()-OUTPUTtime
+    if config.OUTPUT_TYPE == 'plots':
+        output.plot_output()
     if config.OUTPUT_TYPE == 'html':
-        output_functions.summary_html_output(config_object=config_object, 
-                                                outputdir=outputdir)
+        output.summary_html_output(config_object=config_object, 
+                                    outputdir=outputdir)
         module_list = [('COMBINE', config.COMBINE, COMBINEtime), 
                         ('COUNT', config.COUNT, COUNTtime), 
                         ('RANK', config.RANK, RANKtime), 
@@ -378,7 +395,7 @@ if config.OUTPUT_TYPE != False:
                         ('SCANNER', config.SCANNER, SCANNERtime), 
                         ('ENRICHMENT', config.ENRICHMENT, ENRICHMENTtime), 
                         ('OUTPUT', config.OUTPUT_TYPE, OUTPUTtime)]
-        output_functions.html_output(results=results, module_list=module_list)
+        output.html_output(results=results, module_list=module_list)
         
     print("done in: " + str(datetime.timedelta(seconds=int(OUTPUTtime))), file=sys.stderr)
     if config.DEBUG:

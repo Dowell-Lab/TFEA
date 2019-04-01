@@ -27,7 +27,7 @@ from exceptions import FileEmptyError, InputError, SubprocessError
 def main(count_file=None, rank=config.RANK, scanner=config.SCANNER, 
             bam1=config.BAM1, bam2=config.BAM2, tempdir=Path(config.TEMPDIR), 
             label1=config.LABEL1, label2=config.LABEL2, 
-            largewindow=config.LARGEWINDOW):
+            largewindow=config.LARGEWINDOW, mdd=config.MDD):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -60,18 +60,25 @@ def main(count_file=None, rank=config.RANK, scanner=config.SCANNER,
     largewindow : int
         Half-length of window size to use when generating md-score related
         bed files
+    mdd : boolean
+        a switch which determines whether to create bed files for mdd analysis
 
     Returns
     -------
     ranked_file : str
-        Full path to a count file that contains the counts over regions within
-        inputted bed files for all inputted bam files
+        Full path to a ranked file that contains regions ranked based on 
+        DE-Seq p-value
+    mdd_bedfile1 : str
+        Full path to a bed file with regions for mdd analysis
+    mdd_bedfile2 : str
+        Full path to a bed file with regions for mdd analysis
 
     Raises
     ------
     FileEmptyError
         If any resulting file is empty
     '''
+    ranked_file = None
     if rank == 'deseq':
         if scanner == 'genome hits':
             ranked_file = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
@@ -147,14 +154,11 @@ ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable,
                                             design = ~ treatment)
 
 dds <- DESeq(ddsFullCountTable)
-res1 <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
+res <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
                                                             "'''+label1+'''"))
+res$fc <- 2^(res$log2FoldChange)
+res <- res[c(1:3,7,4:6)]
 
-resShrink <- lfcShrink(dds, res = res1, contrast = c("treatment", "'''+label2+'''",
-                                                                "'''+label1+'''"))
-
-resShrink$fc <- 2^(resShrink$log2FoldChange)
-res <- resShrink[c(1:3,7,4:6)]
 write.table(res, file = "''' + (tempdir / 'DESeq.res.txt').as_posix() + '''", append = FALSE, sep= "\t" )
 sink()''')
     else:
@@ -363,3 +367,69 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None):
             r += 1
 
     return ranked_file
+
+#==============================================================================
+def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None):
+    '''This function creates bed files to be used with motif displacement
+        differential (mdd) calculation. It separates a 'ranked_file' which
+        contains regions ranked by differential expression via DE-Seq
+
+    Parameters
+    ----------
+    ranked_file : str
+        a file containing regions ranked on p-value obtained from DE-Seq
+    percent : float
+        if not 'None', percentage cutoff used to separate bed files
+    pval : float
+        if not 'None', pval cutoff value used to separate bed files
+    tempdir : str
+        full path to a temporary directory to store files
+
+    Returns
+    -------
+    mdd_bedfile1 : str
+        full path to a file containing bed regions associated with 
+        non-differentially transcribed regions
+    mdd_bedfile2 : str
+        full path to a file containing bed regions associated with 
+        differentially transcribed regions
+    '''
+    mdd_bedfile1 = Path(tempdir) / 'mdd_bedfile1.bed'
+    mdd_bedfile2 = Path(tempdir) / 'mdd_bedfile2.bed'
+    regions = list()
+    with open(ranked_file) as F:
+        for line in F:
+            chrom, start, stop, rank_values = line.strip('\n').split('\t')
+            fc, pval, rank = rank_values.split(',')
+            fc = float(fc)
+            pval = float(pval)
+            rank = int(rank)
+            regions.append((chrom, start, stop, fc, pval, rank))
+    regions = sorted(regions, key=lambda x: x[-2])
+    if percent != None:
+        index = int(len(regions) * percent)
+        mdd1_regions = regions[index:]
+        mdd2_regions = regions[:index]
+    elif pval_cut != None:
+        mdd1_regions = [region for region in regions if region[-2] >= pval_cut]
+        mdd2_regions = [region for region in regions if region[-2] < pval_cut]
+    else:
+        raise InputError("No cutoff value specified for creating mdd bed files")
+
+    with open(mdd_bedfile1, 'w') as ofile1:
+        rank1 = 1
+        for region1 in mdd1_regions:
+            ofile1.write('\t'.join([x for x in region1[:3]]) 
+                        + '\t' + ','.join([str(x) for x in region1[3:-1]] + [str(rank1)])
+                        + '\n')
+            rank1 += 1
+
+    with open(mdd_bedfile2, 'w') as ofile2:
+        rank2 = 1
+        for region2 in mdd2_regions:
+            ofile2.write('\t'.join([x for x in region2[:3]]) 
+                        + '\t' + ','.join([str(x) for x in region2[3:-1]] + [str(rank2)])
+                        + '\n')
+            rank2 += 1
+
+    return mdd_bedfile1, mdd_bedfile2

@@ -23,8 +23,8 @@ from exceptions import FileEmptyError, SubprocessError
 
 #Main Script
 #==============================================================================
-def main(ranked_file=None, md_bedfile1=None, md_bedfile2=None, md=config.MD, 
-            genomefasta=config.GENOMEFASTA, tempdir=Path(config.TEMPDIR)):
+def main(ranked_file=None, outname=None, genomefasta=config.GENOMEFASTA, 
+            tempdir=Path(config.TEMPDIR)):
     '''The main script of the FASTA module. Takes as input a bed file (must
         be ranked if downstream TFEA desired) and converts it to a fasta file.
         Can take input from the RANK module.
@@ -33,15 +33,6 @@ def main(ranked_file=None, md_bedfile1=None, md_bedfile2=None, md=config.MD,
     ----------
     ranked_file : str
         Full path to a ranked bed file
-    md_bedfile1 : str
-        Full path to a bed file corresponding to a single condition. Only 
-        required if md score analysis desired
-    md_bedfile2 : str
-        Full path to a bed file corresponding to a single condition. Only 
-        required if md score analysis desired
-    md : boolean
-        Whether md score analysis is desired. If True, requires bed files for
-        each condition. These can be generated in the COMBINE module.
     genomefasta : str
         Full path to a fasta file for desired genome
     tempdir : str
@@ -64,19 +55,9 @@ def main(ranked_file=None, md_bedfile1=None, md_bedfile2=None, md=config.MD,
         If any resulting file is empty
     '''
     fasta_file = getfasta(bedfile=ranked_file, genomefasta=genomefasta, 
-                            tempdir=tempdir, outname='fasta_file.fa')
+                            tempdir=tempdir, outname=outname)
     if os.stat(fasta_file).st_size == 0:
         raise FileEmptyError("Error in FASTA module. Resulting fasta file is empty.")
-
-    if md:
-        md_fasta1 = getfasta(bedfile=md_bedfile1, genomefasta=genomefasta, 
-                                tempdir=tempdir, outname='md_bedfile1.fa')
-        md_fasta2 = getfasta(bedfile=md_bedfile2, genomefasta=genomefasta, 
-                                tempdir=tempdir, outname='md_bedfile2.fa')
-        if os.stat(md_fasta1).st_size == 0 or os.stat(md_fasta2).st_size == 0:
-            raise FileEmptyError("Error in FASTA module. Resulting md fasta file is empty.")
-        
-        return fasta_file, md_fasta1, md_fasta2
     
     return fasta_file
 

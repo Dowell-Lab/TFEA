@@ -150,24 +150,24 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
                                             kwargs=fimo_keywords, debug=debug)
 
         #FIMO for md score fasta files
-        if md:
-            fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta1, 
-                            tempdir=tempdir, motifdatabase=fimo_motifs, 
-                            thresh=fimo_thresh, 
-                            largewindow=largewindow)
-            md_distances1 = multiprocess.main(function=fimo, args=motif_list, 
-                                                kwargs=fimo_keywords, 
-                                                debug=debug)
+        # if md:
+        #     fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta1, 
+        #                     tempdir=tempdir, motifdatabase=fimo_motifs, 
+        #                     thresh=fimo_thresh, 
+        #                     largewindow=largewindow)
+        #     md_distances1 = multiprocess.main(function=fimo, args=motif_list, 
+        #                                         kwargs=fimo_keywords, 
+        #                                         debug=debug)
             
-            fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta2, 
-                            tempdir=tempdir, motifdatabase=fimo_motifs, 
-                            thresh=fimo_thresh, 
-                            largewindow=largewindow)
-            md_distances2 = multiprocess.main(function=fimo, args=motif_list, 
-                                                kwargs=fimo_keywords, 
-                                                debug=debug)
+        #     fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta2, 
+        #                     tempdir=tempdir, motifdatabase=fimo_motifs, 
+        #                     thresh=fimo_thresh, 
+        #                     largewindow=largewindow)
+        #     md_distances2 = multiprocess.main(function=fimo, args=motif_list, 
+        #                                         kwargs=fimo_keywords, 
+        #                                         debug=debug)
 
-            return motif_distances, md_distances1, md_distances2
+        #     return motif_distances, md_distances1, md_distances2
             
     #HOMER
     elif scanner== 'homer':
@@ -194,28 +194,28 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
                                             debug=debug)
 
         #GENOME HITS for md score bed files
-        if md:
-            bedtools_distance_keywords = dict(genomehits=genomehits, 
-                                                ranked_center_file=md_bedfile1, 
-                                                tempdir=tempdir, 
-                                                distance_cutoff=largewindow)
+        # if md:
+        #     bedtools_distance_keywords = dict(genomehits=genomehits, 
+        #                                         ranked_center_file=md_bedfile1, 
+        #                                         tempdir=tempdir, 
+        #                                         distance_cutoff=largewindow)
 
-            md_distances1 = multiprocess.main(function=bedtools_closest, 
-                                            args=motif_list, 
-                                            kwargs=bedtools_distance_keywords, 
-                                            debug=debug)
+        #     md_distances1 = multiprocess.main(function=bedtools_closest, 
+        #                                     args=motif_list, 
+        #                                     kwargs=bedtools_distance_keywords, 
+        #                                     debug=debug)
             
-            bedtools_distance_keywords = dict(genomehits=genomehits, 
-                                                ranked_center_file=md_bedfile2, 
-                                                tempdir=tempdir, 
-                                                distance_cutoff=largewindow)
+        #     bedtools_distance_keywords = dict(genomehits=genomehits, 
+        #                                         ranked_center_file=md_bedfile2, 
+        #                                         tempdir=tempdir, 
+        #                                         distance_cutoff=largewindow)
 
-            md_distances2 = multiprocess.main(function=bedtools_closest, 
-                                            args=motif_list, 
-                                            kwargs=bedtools_distance_keywords, 
-                                            debug=debug)
+        #     md_distances2 = multiprocess.main(function=bedtools_closest, 
+        #                                     args=motif_list, 
+        #                                     kwargs=bedtools_distance_keywords, 
+        #                                     debug=debug)
 
-            return motif_distances, md_distances1, md_distances2
+        #     return motif_distances, md_distances1, md_distances2
     else:
         raise InputError("SCANNER option not recognized.")
             
@@ -364,7 +364,7 @@ def fimo_motif_names(motifdatabase=None):
     return motif_list
 
 #==============================================================================
-def fimo_parse(fimo_file=None, largewindow=None, retain='score', 
+def fimo_parse(fimo_file=None, largewindow=None, retain='distance', 
                 linecount=None):
     '''Parses a fimo output file and writes into a new file that is formatted
         in a way that can be parsed within existing TFEA functions
@@ -531,7 +531,7 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
 #TESTS
 #==============================================================================
 if __name__ == "__main__":
-    import scanner_functions
+    import scanner
     motif='P53_HUMAN.H11MO.0.A'
     fasta_file = './test/random_10.fa'
     motifdatabase = './motif_databases/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme'

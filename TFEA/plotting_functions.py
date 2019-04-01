@@ -18,7 +18,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-
 #Functions
 #==============================================================================
 def plot_individual_graphs(plot=None, padj_cutoff=None,
@@ -237,6 +236,10 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
     cumscore : list
         the cumulative score of the running sum as we walk through the ranked
         regions
+
+    score : list
+        a list of fimo hit scores to use in shading an optional bar plot within
+        the enrichment plot
 
     sorted_distances : list or array
         a sorted (based on rank) list of motif distances. Negative corresponds

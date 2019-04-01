@@ -20,9 +20,30 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
+import config
+
+#Main Script
+#==============================================================================
+def main(results=None, md_results1=None, md_results2=None, module_list=None):
+    output.txt_output(results=results, outname='results.txt', 
+                        sortindex=[-2,-1])
+    if config.MD:
+        header = ['TF', 'MD-Score', 'Events', 'p-val']
+        output.txt_output(results=md_results, outname='md_results.txt', 
+                            header=header, sortindex=[-1])
+    OUTPUTtime = time.time()-OUTPUTtime
+    if config.OUTPUT_TYPE == 'plots':
+        output.plot_output()
+    if config.OUTPUT_TYPE == 'html':
+        output.plot_output()
+        output.summary_html_output(config_object=config_object, 
+                                    outputdir=outputdir)
+        output.html_output(results=results, module_list=module_list)
+
+
 #Functions
 #==============================================================================
-def txt_output(results=None, outputdir=None, outname='results.txt', 
+def txt_output(results=None, outputdir=config.OUTPUTDIR, outname='results.txt', 
                 header=None, sortindex=None):
     with open(os.path.join(outputdir, outname), 'w') as outfile:
         if type(header) == list:
@@ -33,6 +54,150 @@ def txt_output(results=None, outputdir=None, outname='results.txt',
             results.sort(key=lambda x: x[index])
         for values in results:
             outfile.write('\t'.join([str(x) for x in values])+'\n')
+
+#==============================================================================
+def plot_output(motif_distances=None, plot=config.PLOTALL, padj_cutoff=config.PADJCUTOFF,
+                            figuredir=config.FIGUREDIR, logos=config.MOTIF_LOGOS, 
+                            largewindow=config.LARGEWINDOW,
+                            smallwindow=config.SMALLWINDOW, 
+                            ranks=None, pvals=None, fc=None, 
+                            cumscore=None, motif_file=None, p=None,
+                            simES=None, actualES=None, gc_array=None,
+                            meta_profile_dict=None, label1=None, label2=None):
+    '''This function generates all TFEA related graphs for an individual motif
+
+    Parameters
+    ----------
+    plot : boolean
+        switch to determine whether all motifs are plotted or just significant
+        ones
+    
+    padj_cutoff : float
+        the cutoff value that determines signficance. This is technically
+        evaluated against the non-adjusted p-value since p-adj has not been
+        calculated yet at this point
+    
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    logos : string
+        full path to a directory containing meme logos. These are copied to the
+        output directory to be displayed in the html results.
+
+    largewindow : float
+        a user specified larger window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    smallwindow : float
+        a user specified smaller window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    distances_abs : list or array
+        a sorted (based on rank) list of absolute motif to region center 
+        distances
+
+    sorted_distances : list or array
+        a sorted (based on rank) list of motif distances. Negative corresponds
+        to upstream of region
+
+    ranks : list or array
+        a list of ranks that correspond to each region of interest. The ranking
+        comes from DE-Seq p-value
+
+    pvals : list or array
+        a list of DE-Seq p-values for all regions
+
+    p : float
+        the p-value of the given motif based on simulations
+
+    simES : list
+        a list of simulated 'enrichment' scores calculated by randomizing
+        region rank
+
+    actualES : float
+        the observed 'enchrichment' score. Can be calculated in many different
+        ways..
+
+    gc_array : list
+        an array of gc richness of regions of interest. It is recommended that
+        this array be no larger than 1000 bins.
+
+    Returns
+    -------
+    None
+    '''
+    import config
+    #Only plot things if user selects to plot all or if the p-value is less than
+    #the cutoff
+    if plot or p < padj_cutoff:
+        if config.SCANNER == 'homer':
+            pass
+        else:
+            #Get motif logos from logo directory
+            os.system("scp '" + logos 
+                        + motif_file.strip('.sorted.distance.bed').strip('HO_') 
+                        + "_direct.png' " + figuredir)
+
+            os.system("scp '" + logos 
+                        + motif_file.strip('.sorted.distance.bed').strip('HO_') 
+                        + "_revcomp.png' " + figuredir)
+        
+
+        #Filter distances into quartiles for plotting purposes
+        q1 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 25)))
+        q2 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 50)))
+        q3 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 75)))
+        q1_distances = [x for x in sorted_distances[:q1] if x <= largewindow]
+        q2_distances = [x for x in sorted_distances[q1:q2] if x <= largewindow]
+        q3_distances = [x for x in sorted_distances[q2:q3] if x <= largewindow]
+        q4_distances = [x for x in sorted_distances[q3:] if x <= largewindow]
+
+        
+        #Get log pval to plot for rank metric
+        sorted_pval = [x for _,x in sorted(zip(ranks, pvals))]
+        sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
+        logpval = list()
+        for x,y in zip(sorted_pval,sorted_fc):
+            try:
+                if y < 1:
+                    logpval.append(math.log(x,10))
+                else:
+                    logpval.append(-math.log(x,10))
+            except:
+                logpval.append(0.0)
+
+        #Plot the enrichment plot
+        enrichment_plot(largewindow=largewindow,
+                            smallwindow=smallwindow,
+                            figuredir=figuredir,
+                            cumscore=cumscore, 
+                            sorted_distances=sorted_distances, 
+                            logpval=logpval,  
+                            gc_array=gc_array, score=score, 
+                            motif_file=motif_file, 
+                            q1_distances=q1_distances, 
+                            q2_distances=q2_distances, 
+                            q3_distances=q3_distances, 
+                            q4_distances=q4_distances,
+                            meta_profile_dict=meta_profile_dict,
+                            dpi=None, label1=label1, 
+                            label2=label2)
+
+        #Plot the simulation plot
+        simulation_plot(figuredir=figuredir, simES=simES, actualES=actualES,
+                        motif_file=motif_file)
+
+        # #Plot the distance distribution histograms plot
+        # independent_functions.meta_plot(figuredir=figuredir, 
+        #                                     meta_profile_dict=meta_profile_dict,
+        #                                     motif_file=motif_file, 
+        #                                     q1_distances=q1_distances, 
+        #                                     q2_distances=q2_distances, 
+        #                                     q3_distances=q3_distances, 
+        #                                     q4_distances=q4_distances, 
+        #                                     bins=100, 
+        #                                     dpi=None)
 
 #==============================================================================
 def html_output(results=None, module_list=None, columns=None):
@@ -607,3 +772,163 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None):
                     labelbottom='on')
     plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.png'),
                 bbox_inches='tight')
+
+#==============================================================================
+def enrichment_plot(motif_distance, 
+                    largewindow=None, figuredir=None, outname=None,
+                    cumscore=None, sorted_distances=None, logpval=None, 
+                    dpi=None, save=True):
+    '''This function plots the TFEA enrichment plot.
+
+    Parameters
+    ----------
+    largewindow : float
+        a user specified larger window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    smallwindow : float
+        a user specified smaller window used for plotting purposes and to do
+        some calculations regarding the user-provided regions of interest
+
+    figuredir : string
+        the full path to the figuredir within the ouptut directory containing
+        all figures and plots
+
+    cumscore : list
+        the cumulative score of the running sum as we walk through the ranked
+        regions
+
+    score : list
+        a list of fimo hit scores to use in shading an optional bar plot within
+        the enrichment plot
+
+    sorted_distances : list or array
+        a sorted (based on rank) list of motif distances. Negative corresponds
+        to upstream of region
+
+    logpval : list or array
+        a way to visualize the ranking of the regions of interest. It is
+        the log10 of the p-value with the sign (positive or negative) based on
+        whether the fold change of the region is over 1 or less than 1.
+
+    updistancehist : list or array
+        the first quartile of ranked regions. These are presumably higher in
+        condition1
+
+    downdistancehist : list or array
+        the fourth quartile of ranked regions. These are presumably higher in
+        condition2
+
+    gc_array : list
+        an array of gc richness of regions of interest. It is recommended that
+        this array be no larger than 1000 bins.
+
+    motif_file : string
+        the name of the motif thats associated with all the input data. Used 
+        for figure naming purposes.
+
+    Returns
+    -------
+    None
+    '''
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import matplotlib.cm as cm
+    import matplotlib.gridspec as gridspec
+    import traceback
+
+    import config
+    dpi = config.DPI
+    try:
+        #Begin plotting section
+        motif = motif_distance[0]
+        len_cumscore = float(len(cumscore))
+        F = plt.figure(figsize=(15.5,12))
+        xvals = np.linspace(start=0, stop=1, num=len_cumscore)
+        limits = [0, 1]
+
+        #With GC-Content
+        # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
+
+        #Without GC-Content
+        # gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 2])
+
+        outer_gs = gridspec.GridSpec(2, 1, height_ratios=[2,1])
+        enrichment_gs = gridspec.GridSpecFromSubplotSpec(4, 1, 
+                                            subplot_spec=outer_gs[0], 
+                                            height_ratios=[4, 1, 4, 2], 
+                                            hspace=.1)
+        lineplot = plt.subplot(enrichment_gs[0])
+        barplot = plt.subplot(enrichment_gs[1])
+        scatterplot = plt.subplot(enrichment_gs[2])
+        fillplot = plt.subplot(enrichment_gs[3])
+        figure_title = motif.strip('.bed') + ' Enrichment Plot'
+        lineplot(title=figure_title, ax=lineplot, xvals=xvals, yvals=cumscore, 
+                    xlimits=limits)
+        scatterplot(ax=scatterplot, xvals=xvals, yvals=sorted_distances, 
+                    xlimits=None, largewindow=largewindow)
+        fillplot(ax=fillplot, xvals=xvals, yvals=logpval, xlimits=limits, 
+                ylimits=None)
+
+        #Makes sure that axis labels are properly spaced
+        plt.tight_layout()
+
+        if save:
+            plt.savefig(os.path.join(figuredir, outname + motif + '.png'), 
+                        dpi=dpi, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show()
+    except Exception as e:
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        print(traceback.print_exc())
+        raise e
+
+#==============================================================================
+def enrichment_lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
+    #This is the enrichment score plot (i.e. line plot)
+    # ax0 = plt.subplot(gs[0])
+    ax.plot(xvals,yvals,color='green')
+    ax.plot([0, 1],[0, 1], '--', alpha=0.75)
+    ax.set_title(title, fontsize=14)
+    ax.set_ylabel('Enrichment Score (ES)', fontsize=10)
+    ax.tick_params(axis='y', which='both', left='on', right='off', 
+                    labelleft='on')
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='off')
+    ax.set_ylim([0,1])
+    ax.set_xlim(xlimits)
+
+#==============================================================================
+def motifhit_scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None):
+    import matplotlib.pyplot as plt
+    #This is the barplot right below the enrichment score line plot
+    ax.scatter(xvals, yvals, edgecolor="", color="black", 
+                    s=10, alpha=0.25)
+    ax.tick_params(axis='y', which='both', left='off', right='off', 
+                    labelleft='on') 
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='off')
+    plt.yticks([-int(largewindow),0,int(largewindow)],
+                [str(-int(largewindow)/1000.0),'0',\
+                str(int(largewindow)/1000.0)])
+    ax.set_xlim(xlimits)
+    ax.set_ylim([-int(largewindow),int(largewindow)])
+    ax.set_ylabel('Distance (kb)', fontsize=10)
+
+#==============================================================================
+def ranking_fillplot(ax=None, xvals=None, yvals=None, xlimits=None):
+    #This is the rank metric fill plot
+    ax.fill_between(xvals,0,yvals,facecolor='grey',edgecolor="")
+    ax.tick_params(axis='y', which='both', left='on', right='off', 
+                    labelleft='on')
+    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
+                    labelbottom='on')
+    ylim = math.fabs(max([x for x in yvals if -500 < x < 500],key=abs))
+    ax.set_ylim(ylimits)
+    ax.yaxis.set_ticks([int(-ylim),0,int(ylim)])
+    ax.set_xlim(xlimits)
+    ax.set_xlabel('Relative Rank (n='+str(len(xvals))+')', 
+                    fontsize=14)
+    ax.set_ylabel('Rank Metric',fontsize=10)

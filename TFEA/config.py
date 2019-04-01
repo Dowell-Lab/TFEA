@@ -57,6 +57,7 @@ TEMP=False
 METAPLOT=True
 PLOTALL=False
 MD=False
+MDD=False
 DEBUG=True
 
 
