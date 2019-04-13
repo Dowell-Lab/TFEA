@@ -105,7 +105,7 @@ def current_mem_usage():
     '''
     suffix = 'B'
     # num = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    job = (Path(config.TEMPDIR) / 'jobid.txt').read_text().strip('\n')
+    job = (config.vars.TEMPDIR / 'jobid.txt').read_text().strip('\n')
     num = subprocess.check_output(["sstat", "--format=maxRSS", "-j", job+'.batch']).decode('UTF-8').split('\n')[-2].strip()
     unit = num[-1]
     if unit == 'K':

@@ -23,8 +23,8 @@ from exceptions import FileEmptyError, SubprocessError
 
 #Main Script
 #==============================================================================
-def main(ranked_file=None, outname=None, genomefasta=config.GENOMEFASTA, 
-            tempdir=Path(config.TEMPDIR)):
+def main(ranked_file=None, outname=None, genomefasta=config.vars.GENOMEFASTA, 
+            tempdir=config.vars.TEMPDIR):
     '''The main script of the FASTA module. Takes as input a bed file (must
         be ranked if downstream TFEA desired) and converts it to a fasta file.
         Can take input from the RANK module.

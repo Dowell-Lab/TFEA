@@ -16,18 +16,22 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 #Imports
 #==============================================================================
 import os
+import sys
+import time
+import datetime
 import subprocess
 from pathlib import Path
 
 import config
-from exceptions import FileEmptyError, InputError, SubprocessError
+import exceptions
 
 #Main Script
 #==============================================================================
-def main(count_file=None, rank=config.RANK, scanner=config.SCANNER, 
-            bam1=config.BAM1, bam2=config.BAM2, tempdir=Path(config.TEMPDIR), 
-            label1=config.LABEL1, label2=config.LABEL2, 
-            largewindow=config.LARGEWINDOW, mdd=config.MDD):
+def main(combined_file=config.vars.COMBINED_FILE, rank=config.vars.RANK, scanner=config.vars.SCANNER, 
+            bam1=config.vars.BAM1, bam2=config.vars.BAM2, tempdir=config.vars.TEMPDIR, 
+            label1=config.vars.LABEL1, label2=config.vars.LABEL2, 
+            largewindow=config.vars.LARGEWINDOW, mdd=config.vars.MDD, 
+            mdd_bedfile1=config.vars.MDD_BEDFILE1, mdd_bedfile2=config.vars.MDD_BEDFILE2):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -78,26 +82,138 @@ def main(count_file=None, rank=config.RANK, scanner=config.SCANNER,
     FileEmptyError
         If any resulting file is empty
     '''
-    ranked_file = None
-    if rank == 'deseq':
-        if scanner == 'genome hits':
-            ranked_file = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
-                                    count_file=count_file, label1=label1, 
-                                    label2=label2, largewindow=largewindow, 
-                                    center=True)
-        else:
-            ranked_file = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
-                                count_file=count_file, label1=label1, 
-                                label2=label2, largewindow=largewindow, 
-                                center=False)
-    else:
-        raise InputError("RANK option not recognized.")
-    if os.stat(ranked_file).st_size == 0:
-        raise FileEmptyError("Error in RANK module. Resulting file is empty.")
+    config.vars.RANKtime = time.time()
+    print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
 
-    return ranked_file
+    #Begin by counting reads from bam files over the combined_file produced
+    # by the combine module
+    count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
+                            tempdir=tempdir, label1=label1, label2=label2)
+    sample_number = (len(bam1)+len(bam2))
+    millions_mapped = sum_reads(count_file=count_file, 
+                                sample_number=sample_number)
+    
+    if os.stat(count_file).st_size == 0:
+        raise exceptions.FileEmptyError("Error in RANK module. Counting failed.")
+
+    if rank == 'deseq' or rank == 'fc':
+        ranked_file = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
+                            count_file=count_file, label1=label1, 
+                            label2=label2, largewindow=largewindow, rank=rank)
+    else:
+        raise exceptions.InputError("RANK option not recognized.")
+    if os.stat(ranked_file).st_size == 0:
+        raise exceptions.FileEmptyError("Error in RANK module. DE-Seq running or parsing failed.")
+
+    config.vars.RANKED_FILE = ranked_file
+
+    if config.vars.MDD and (not mdd_bedfile1 or not mdd_bedfile2):
+        mdd_bedfile1, mdd_bedfile2 = create_mdd_files(ranked_file=ranked_file,
+                                                        tempdir=tempdir,
+                                                        percent=0.2)
+        if os.stat(mdd_bedfile1).st_size == 0 or os.stat(mdd_bedfile2).st_size == 0:
+            raise exceptions.FileEmptyError("Error in RANK module. MDD bed file creation failed.")
+        if not mdd_bedfile1:
+            config.vars.MDD_BEDFILE1 = mdd_bedfile1
+        if not mdd_bedfile2:
+            config.vars.MDD_BEDFILE2 = mdd_bedfile2
+                        
+    config.vars.RANKtime = time.time()-config.vars.RANKtime
+    print("done in: " + str(datetime.timedelta(seconds=int(config.vars.RANKtime))), file=sys.stderr)
+
+    if config.vars.DEBUG:
+        multiprocess.current_mem_usage()
 
 #Functions
+#==============================================================================
+def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None, 
+                label2=None):
+    '''Counts reads across regions in a given bed file using bam files inputted
+        by a user
+
+    Parameters
+    ----------
+    bedfile : string
+        full path to a bed file containing full regions of interest which will 
+        be counted using bedtools multicov
+
+    bam1 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    bam2 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    label1 : string
+        the name of the treatment or condition corresponding to bam1 list
+
+    label2 : string
+        the name of the treatment or condition corresponding to bam2 list
+
+    Returns
+    -------
+    None
+    '''
+    #This os.system call runs bedtools multicov to count reads in all specified
+    #BAMs for given regions in BED
+    count_file = tempdir / "count_file.bed"
+    multicov_command = ["bedtools", "multicov", 
+                        "-bams"] + bam1+bam2 + ["-bed", bedfile]
+    with open(count_file, 'w') as outfile:
+        subprocess.run(multicov_command, stdout=outfile, check=True)
+
+    #This section adds a header to the count_file and reformats it to remove 
+    #excess information and add a column with the region for later use
+    count_file_header = tempdir / "count_file.header.bed"
+    outfile = open(count_file_header, 'w')
+    outfile.write("chrom\tstart\tstop\tregion\t" 
+                    + '\t'.join([label1]*len(bam1)) + "\t" 
+                    + '\t'.join([label2]*len(bam2)) + "\n")
+
+    with open(count_file) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            chrom,start,stop = line[:3]
+            counts = line[-(len(bam1)+len(bam2)):]
+            outfile.write('\t'.join([chrom,start,stop]) + "\t" 
+                            + chrom + ":" + start + "-" + stop + "\t"
+                            + '\t'.join(counts) + "\n")
+    outfile.close()
+    return count_file_header
+
+#==============================================================================
+def sum_reads(count_file=None, sample_number=None):
+    '''This function calculates millions mapped reads to regions of interest
+        to be used later for normalization of meta plot
+    
+    Parameters
+    ----------
+    count_file : string
+        The full path to a count file containing reads mapping to regions of
+        interest
+    
+    sample_number : int
+        The total number of samples
+
+    Returns
+    -------
+    millions_mapped : list
+        A list of ints that corresponds to the number of millions mapped per
+        sample in the order that appears in the count_file (by column)
+    '''
+    millions_mapped = [0.0]*sample_number
+    with open(count_file) as F:
+        F.readline()
+        for line in F:
+            line = line.strip('\n').split('\t')
+            [x+float(y) for x,y in zip(millions_mapped,line[-sample_number:])]
+
+    return millions_mapped
+
 #==============================================================================
 def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None, 
                         label1=None, label2=None):
@@ -195,7 +311,7 @@ sink()''')
 
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
-            label2=None, largewindow=None, center=False):
+            label2=None, largewindow=None, rank=None):
     #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                         count_file=count_file, label1=label1, label2=label2)
@@ -212,95 +328,15 @@ def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None,
         errormessage = deseqout.read_text()
         if 'Error' in errormessage:
             printmessage = errormessage[errormessage.index('Error'):]
-        raise SubprocessError(printmessage)
+        raise exceptions.SubprocessError(printmessage)
 
-    if center:
-        ranked_file = deseq_parse_center(deseq_file=deseq_file, tempdir=tempdir)
-    else:
-        ranked_file = deseq_parse(deseq_file=deseq_file, tempdir=tempdir, 
-                                    largewindow=largewindow)
+    ranked_file = deseq_parse(deseq_file=deseq_file, tempdir=tempdir, 
+                                largewindow=largewindow, rank=rank)
 
     return ranked_file
 
 #==============================================================================
-def deseq_parse_center(deseq_file=None, tempdir=None):
-    '''This function parses a DE-seq output file and creates a new file with 
-        the center of each region ranked by p-value 
-    
-    Parameters
-    ----------
-    deseq_file : string
-        full path to a DE-Seq output file
-    
-    tempdir : string
-        full path to the tempdir directory in the output directory (created by 
-        TFEA)
-        
-    Returns
-    -------
-    ranked_center_file : string
-        full path to a bed file that contains the center of regions of interest
-        ranked via DE-Seq p-value
-    '''
-    up = list()
-    down = list()
-    with open(deseq_file) as F:
-        header = F.readline().strip('\n').split('\t')
-        fc_index = [i for i in range(len(header)) 
-                    if header[i]=='"fc"' or header[i]=='"foldChange"'][0]
-        for line in F:
-            line = line.strip('\n').split('\t')
-            if line[fc_index+1] != 'NA':
-                try:
-                    pval = format(float(line[-2]),'.12f')
-                except ValueError:
-                    pval = format(1.0,'.12f')
-                region = line[0].split(':')
-                chrom = region[0]
-                coordinates = region[1].split('-')
-                start = coordinates[0]
-                stop = coordinates[1]
-                chrom = chrom.strip('"')
-                stop = stop.strip('"')
-                fc = float(line[fc_index+1])
-                if fc < 1:
-                    down.append((chrom,start,stop,pval,str(fc)))
-                else:
-                    up.append((chrom,start,stop,pval,str(fc)))
-
-    #Save ranked regions in a bed file (pvalue included)
-    outfile = open(tempdir / "ranked_file.bed",'w')
-    r=1
-    for region in sorted(up, key=lambda x: x[3]):
-        outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
-        r += 1
-    for region in sorted(down, key=lambda x: x[3], reverse=True):
-        outfile.write('\t'.join(region) + '\t' + str(r) + '\n')
-        r += 1
-    outfile.close()
-
-    #Get center base for each region
-    outfile = open(tempdir / "ranked_file.center.bed",'w')
-    with open(tempdir / "ranked_file.bed") as F:
-        for line in F:
-            line = line.strip('\n').split('\t')
-            chrom,start,stop = line[:3]
-            center = int((int(start)+int(stop))/2)
-            outfile.write(chrom + '\t' + str(center) + '\t' + str(center+1) 
-                            + '\t' + '\t'.join(line[3:]) + '\n')
-    outfile.close()
-
-    with open(tempdir / "ranked_file.center.sorted.bed", 'w') as output:
-        subprocess.run(["bedtools", "sort", 
-                        "-i", tempdir / "ranked_file.center.bed"], 
-                        stdout=output, check=True)
-
-    ranked_center_file = tempdir / "ranked_file.center.sorted.bed"
-
-    return ranked_center_file
-
-#==============================================================================
-def deseq_parse(deseq_file=None, tempdir=None, largewindow=None):
+def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
     '''This function parses a DE-seq output file and creates a new file with 
         the center of each region ranked by p-value 
     
@@ -352,19 +388,26 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None):
     #Save ranked regions in a bed file (pvalue included)
     ranked_file = tempdir / "ranked_file.bed"
     with open(ranked_file,'w') as outfile:
-        # outfile.write('\t'.join(['chrom', 'start', 'stop', 'rank, fc, p-value']) 
-        #                 + '\n')
+        outfile.write('\t'.join(['chrom', 'start', 'stop', 'rank, fc, p-value']) 
+                        + '\n')
         r=1
-        for region in sorted(up, key=lambda x: x[4]):
-            outfile.write('\t'.join(region[:3]) 
-                        + '\t' + ','.join(region[3:]+[str(r)]) 
-                        + '\n')
-            r += 1
-        for region in sorted(down, key=lambda x: x[4], reverse=True):
-            outfile.write('\t'.join(region[:3]) 
-                        + '\t' + ','.join(region[3:]+[str(r)]) 
-                        + '\n')
-            r += 1
+        if rank == 'deseq':
+            for region in sorted(up, key=lambda x: x[4]):
+                outfile.write('\t'.join(region[:3]) 
+                            + '\t' + ','.join(region[3:]+[str(r)]) 
+                            + '\n')
+                r += 1
+            for region in sorted(down, key=lambda x: x[4], reverse=True):
+                outfile.write('\t'.join(region[:3]) 
+                            + '\t' + ','.join(region[3:]+[str(r)]) 
+                            + '\n')
+                r += 1
+        elif rank == 'fc':
+            for region in sorted(up+down, key=lambda x: x[3], reverse=True):
+                outfile.write('\t'.join(region[:3]) 
+                            + '\t' + ','.join(region[3:]+[str(r)]) 
+                            + '\n')
+                r += 1
 
     return ranked_file
 
@@ -394,8 +437,8 @@ def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None
         full path to a file containing bed regions associated with 
         differentially transcribed regions
     '''
-    mdd_bedfile1 = Path(tempdir) / 'mdd_bedfile1.bed'
-    mdd_bedfile2 = Path(tempdir) / 'mdd_bedfile2.bed'
+    mdd_bedfile1 = tempdir / 'mdd_bedfile1.bed'
+    mdd_bedfile2 = tempdir / 'mdd_bedfile2.bed'
     regions = list()
     with open(ranked_file) as F:
         for line in F:
@@ -414,7 +457,7 @@ def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None
         mdd1_regions = [region for region in regions if region[-2] >= pval_cut]
         mdd2_regions = [region for region in regions if region[-2] < pval_cut]
     else:
-        raise InputError("No cutoff value specified for creating mdd bed files")
+        raise exceptions.InputError("No cutoff value specified for creating mdd bed files")
 
     with open(mdd_bedfile1, 'w') as ofile1:
         rank1 = 1

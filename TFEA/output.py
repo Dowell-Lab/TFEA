@@ -24,26 +24,43 @@ import config
 
 #Main Script
 #==============================================================================
-def main(results=None, md_results1=None, md_results2=None, module_list=None):
+def main(results=config.vars.RESULTS, md_results=config.vars.MD_RESULTS, mdd_results=config.vars.MDD_RESULTS):
+    config.vars.OUTPUTtime = time.time()
+    print("Creating output...", end=' ', flush=True, file=sys.stderr)
     output.txt_output(results=results, outname='results.txt', 
                         sortindex=[-2,-1])
-    if config.MD:
+    if config.vars.MD:
         header = ['TF', 'MD-Score', 'Events', 'p-val']
         output.txt_output(results=md_results, outname='md_results.txt', 
                             header=header, sortindex=[-1])
-    OUTPUTtime = time.time()-OUTPUTtime
-    if config.OUTPUT_TYPE == 'plots':
+    if config.vars.MDD:
+        header = ['TF', 'MD-Score', 'Events', 'p-val']
+        output.txt_output(results=mdd_results, outname='mdd_results.txt', 
+                            header=header, sortindex=[-1])
+    config.vars.OUTPUTtime = time.time()-config.vars.OUTPUTtime
+    if config.vars.OUTPUT_TYPE == 'plots':
         output.plot_output()
-    if config.OUTPUT_TYPE == 'html':
-        output.plot_output()
+    if config.vars.OUTPUT_TYPE == 'html':
         output.summary_html_output(config_object=config_object, 
                                     outputdir=outputdir)
+        module_list = [('COMBINE', config.vars.COMBINE, config.vars.COMBINEtime), 
+                        ('COUNT', config.vars.COUNT, config.vars.COUNTtime), 
+                        ('RANK', config.vars.RANK, config.vars.RANKtime), 
+                        ('FASTA', config.vars.FASTA, config.vars.FASTAtime), 
+                        ('SCANNER', config.vars.SCANNER, config.vars.SCANNERtime), 
+                        ('ENRICHMENT', config.vars.ENRICHMENT, config.vars.ENRICHMENTtime), 
+                        ('OUTPUT', config.vars.OUTPUT_TYPE, config.vars.OUTPUTtime)]
         output.html_output(results=results, module_list=module_list)
+        
+    print("done in: " + str(datetime.timedelta(seconds=int(config.vars.OUTPUTtime))), file=sys.stderr)
+
+    if config.vars.DEBUG:
+        multiprocess.current_mem_usage()
 
 
 #Functions
 #==============================================================================
-def txt_output(results=None, outputdir=config.OUTPUTDIR, outname='results.txt', 
+def txt_output(results=None, outputdir=config.vars.OUTPUTDIR, outname='results.txt', 
                 header=None, sortindex=None):
     with open(os.path.join(outputdir, outname), 'w') as outfile:
         if type(header) == list:
@@ -56,10 +73,10 @@ def txt_output(results=None, outputdir=config.OUTPUTDIR, outname='results.txt',
             outfile.write('\t'.join([str(x) for x in values])+'\n')
 
 #==============================================================================
-def plot_output(motif_distances=None, plot=config.PLOTALL, padj_cutoff=config.PADJCUTOFF,
-                            figuredir=config.FIGUREDIR, logos=config.MOTIF_LOGOS, 
-                            largewindow=config.LARGEWINDOW,
-                            smallwindow=config.SMALLWINDOW, 
+def plot_output(motif_distances=None, plot=config.vars.PLOTALL, padj_cutoff=config.vars.PADJCUTOFF,
+                            figuredir=config.vars.FIGUREDIR, logos=config.vars.MOTIF_LOGOS, 
+                            largewindow=config.vars.LARGEWINDOW,
+                            smallwindow=config.vars.SMALLWINDOW, 
                             ranks=None, pvals=None, fc=None, 
                             cumscore=None, motif_file=None, p=None,
                             simES=None, actualES=None, gc_array=None,
@@ -131,7 +148,7 @@ def plot_output(motif_distances=None, plot=config.PLOTALL, padj_cutoff=config.PA
     #Only plot things if user selects to plot all or if the p-value is less than
     #the cutoff
     if plot or p < padj_cutoff:
-        if config.SCANNER == 'homer':
+        if config.vars.SCANNER == 'homer':
             pass
         else:
             #Get motif logos from logo directory
@@ -280,11 +297,11 @@ def html_output(results=None, module_list=None, columns=None):
     '''
     #Using a config file
     import config
-    outputdir = config.OUTPUTDIR
-    label1 = config.LABEL1
-    label2 = config.LABEL2
-    padj_cutoff = config.PADJCUTOFF
-    plot = config.PLOTALL
+    outputdir = config.vars.OUTPUTDIR
+    label1 = config.vars.LABEL1
+    label2 = config.vars.LABEL2
+    padj_cutoff = config.vars.PADJCUTOFF
+    plot = config.vars.PLOTALL
 
     outfile = open(os.path.join(outputdir, 'results.html'),'w')
     outfile.write("""<!DOCTYPE html>
@@ -419,7 +436,7 @@ def html_output(results=None, module_list=None, columns=None):
         <table> 
             <tr>
                 <th>TF Motif</th>
-                <th>ENRICHMENT("""+config.ENRICHMENT+""")</th>
+                <th>ENRICHMENT("""+config.vars.ENRICHMENT+""")</th>
                 <th>P-value</th>
                 <th>PADJ</th>
                 <th>HITS</th>
@@ -568,10 +585,10 @@ def create_motif_result_html(results=None):
     '''
     #Using a config file
     import config
-    outputdir = config.OUTPUTDIR
-    padj_cutoff = config.PADJCUTOFF
-    singlemotif = config.SINGLEMOTIF
-    plot = config.PLOTALL
+    outputdir = config.vars.OUTPUTDIR
+    padj_cutoff = config.vars.PADJCUTOFF
+    singlemotif = config.vars.SINGLEMOTIF
+    plot = config.vars.PLOTALL
 
     #For each TF motif with an PADJ value less than a cutoff, an html file is 
     #created to be used in results.html
@@ -838,7 +855,7 @@ def enrichment_plot(motif_distance,
     import traceback
 
     import config
-    dpi = config.DPI
+    dpi = config.vars.DPI
     try:
         #Begin plotting section
         motif = motif_distance[0]

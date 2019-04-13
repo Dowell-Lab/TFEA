@@ -23,9 +23,9 @@ from exceptions import FileEmptyError
 
 #Main Script
 #==============================================================================
-def main(bedfile=None, bam1=config.BAM1, bam2=config.BAM2, 
-            tempdir=Path(config.TEMPDIR), label1=config.LABEL1, 
-            label2=config.LABEL2):
+def main(bedfile=None, bam1=config.vars.BAM1, bam2=config.vars.BAM2, 
+            tempdir=config.vars.TEMPDIR, label1=config.vars.LABEL1, 
+            label2=config.vars.LABEL2):
     '''This is the main script of the COUNT module which takes as input a
         bedfile and bam files and counts reads over the bed regions
 

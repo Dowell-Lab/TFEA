@@ -18,6 +18,8 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 #==============================================================================
 import os
 import math
+import time
+import datetime
 import traceback
 import numpy as np
 import math
@@ -29,11 +31,13 @@ import multiprocess
 
 #Main Script
 #==============================================================================
-def tfea(motif_distances=None, md_distances1=None, md_distances2=None, 
-        enrichment=config.ENRICHMENT, output_type=config.OUTPUT_TYPE, 
-        permutations=config.PERMUTATIONS, debug=config.DEBUG, 
-        largewindow=config.LARGEWINDOW, smallwindow=config.SMALLWINDOW, 
-        md=config.MD):
+def main(motif_distances=config.vars.MOTIF_DISTANCES, 
+        md_distances1=config.vars.MD_DISTANCES1, md_distances2=config.vars.MD_DISTANCES2, 
+        mdd_distances1=config.vars.MDD_DISTANCES1, mdd_distances2=config.vars.MDD_DISTANCES2, 
+        enrichment=config.vars.ENRICHMENT, output_type=config.vars.OUTPUT_TYPE, 
+        permutations=config.vars.PERMUTATIONS, debug=config.vars.DEBUG, 
+        largewindow=config.vars.LARGEWINDOW, smallwindow=config.vars.SMALLWINDOW, 
+        md=config.vars.MD):
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -79,6 +83,8 @@ def tfea(motif_distances=None, md_distances1=None, md_distances2=None,
     md_results : list of lists
         A list of lists corresponding to md-score statistics for each motif
     '''
+    ENRICHMENTtime = time.time()
+    print("Calculating enrichment...", end=' ', flush=True, file=sys.stderr)
     if enrichment == 'auc':
         auc_keywords = dict(output_type=output_type, 
                             permutations=permutations)
@@ -107,10 +113,26 @@ def tfea(motif_distances=None, md_distances1=None, md_distances2=None,
 
         padj_bonferroni(results)
 
-    return results
+    if md:
+        md_results = md(md_distances1=md_distances1, md_distances2=md_distances2)
+        config.vars.MD_RESULTS = md_results
+    if mdd:
+        mdd_results =  md(md_distances1=mdd_distances1, md_distances2=mdd_distances2)
+        config.vars.MDD_RESULTS = mdd_results
 
-def md(md_distances1=None, md_distances2=None, output_type=config.OUTPUT_TYPE, 
-        debug=config.DEBUG, smallwindow=config.SMALLWINDOW):
+
+    config.vars.RESULTS = results
+
+
+    ENRICHMENTtime = time.time()-ENRICHMENTtime
+    print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
+
+    if config.vars.DEBUG:
+        multiprocess.current_mem_usage()
+
+#==============================================================================
+def md(md_distances1=None, md_distances2=None, output_type=config.vars.OUTPUT_TYPE, 
+        debug=config.vars.DEBUG, smallwindow=config.vars.SMALLWINDOW):
     md_keywords = dict(smallwindow=smallwindow)
     md_results = multiprocess.main(function=md_score, 
                     args=zip(sorted(md_distances1),sorted(md_distances2)), 
@@ -182,11 +204,11 @@ def area_under_curve(distances, output_type=None, permutations=None):
             from TFEA import plotting_functions
             plotting_score = [(float(x)/total) for x in score]
             plotting_cumscore = np.cumsum(plotting_score)
-            plotting_functions.plot_individual_graphs(plot=config.PLOTALL, 
-                                padj_cutoff=config.PADJCUTOFF,
-                                figuredir=config.FIGUREDIR, 
-                                logos=config.MOTIF_LOGOS, 
-                                largewindow=config.LARGEWINDOW, 
+            plotting_functions.plot_individual_graphs(plot=config.vars.PLOTALL, 
+                                padj_cutoff=config.vars.PADJCUTOFF,
+                                figuredir=config.vars.FIGUREDIR, 
+                                logos=config.vars.MOTIF_LOGOS, 
+                                largewindow=config.vars.LARGEWINDOW, 
                                 score=plotting_score, 
                                 smallwindow=None,
                                 distances_abs=None, sorted_distances=None,

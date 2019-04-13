@@ -15,26 +15,21 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 
 #Imports
 #==============================================================================
-import os
+import sys
+import time
+import datetime
 import subprocess
-import traceback
 from pathlib import Path
 
+from pybedtools import BedTool
+from pybedtools import featurefuncs
+
 import config
-import fasta
 import multiprocess
-from exceptions import FileEmptyError, InputError, OutputError, SubprocessError
 
 #Main Script
 #==============================================================================
-def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None, 
-        md_bedfile1=None, md_bedfile2=None, 
-        scanner=config.SCANNER, md=config.MD, largewindow=config.LARGEWINDOW,
-        smallwindow=config.SMALLWINDOW, genomehits=Path(config.GENOMEHITS), 
-        fimo_background=config.FIMO_BACKGROUND, genomefasta=Path(config.GENOMEFASTA), 
-        tempdir=Path(config.TEMPDIR), fimo_motifs=Path(config.FIMO_MOTIFS), 
-        singlemotif=config.SINGLEMOTIF, fimo_thresh=config.FIMO_THRESH,
-        debug=config.DEBUG):
+def main():
     '''This is the main script of the SCANNER module. It returns motif distances
         to regions of interest by either scanning fasta files on the fly using
         fimo or homer or by using bedtools closest on a center bed file and 
@@ -86,7 +81,6 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
     debug : boolean
         Whether to print debug statements specifically within the multiprocess
         module
-        
 
     Returns
     -------
@@ -111,6 +105,65 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
     InputError
         If an unknown scanner option is specified
     '''
+    import config
+    # fasta_file=config.vars.FASTA_FILE, md_fasta1=config.vars.MD_FASTA1, 
+    # md_fasta2=config.vars.MD_FASTA2, ranked_file=config.vars.RANKED_FILE, 
+    # md_bedfile1=config.vars.MD_BEDFILE1, md_bedfile2=config.vars.MD_BEDFILE2, 
+    # scanner=config.vars.SCANNER, md=config.vars.MD, largewindow=config.vars.LARGEWINDOW,
+    # smallwindow=config.vars.SMALLWINDOW, genomehits=config.vars.GENOMEHITS, 
+    # fimo_background=config.vars.FIMO_BACKGROUND, genomefasta=config.vars.GENOMEFASTA, 
+    # tempdir=config.vars.TEMPDIR, fimo_motifs=config.vars.FIMO_MOTIFS, 
+    # singlemotif=config.vars.SINGLEMOTIF, fimo_thresh=config.vars.FIMO_THRESH,
+    # debug=config.vars.DEBUG, mdd=config.vars.MDD
+
+    fasta_file=config.vars.FASTA_FILE
+    md_fasta1=config.vars.MD_FASTA1 
+    md_fasta2=config.vars.MD_FASTA2 
+    ranked_file=config.vars.RANKED_FILE
+    md_bedfile1=config.vars.MD_BEDFILE1
+    md_bedfile2=config.vars.MD_BEDFILE2 
+    scanner=config.vars.SCANNER
+    md=config.vars.MD
+    largewindow=config.vars.LARGEWINDOW
+    smallwindow=config.vars.SMALLWINDOW
+    genomehits=config.vars.GENOMEHITS
+    fimo_background=config.vars.FIMO_BACKGROUND
+    genomefasta=config.vars.GENOMEFASTA
+    tempdir=config.vars.TEMPDIR
+    fimo_motifs=config.vars.FIMO_MOTIFS
+    singlemotif=config.vars.SINGLEMOTIF
+    fimo_thresh=config.vars.FIMO_THRESH
+    debug=config.vars.DEBUG
+    mdd=config.vars.MDD
+
+
+    SCANNERtime = time.time()
+    print("Scanning regions using " + scanner + "...", end=' ', flush=True, file=sys.stderr)
+
+    if not fasta_file and scanner != 'genome hits':
+        fasta_file = getfasta(bedfile=ranked_file, genomefasta=genomefasta, 
+                                tempdir=tempdir, outname='ranked_file.fa')
+        if os.stat(fasta_file).st_size == 0:
+            raise exceptions.FileEmptyError("Error in SCANNER module. Converting RANKED_FILE to fasta failed.")
+    if config.vars.MD:
+        if not md_fasta1:
+            md_fasta1 = getfasta(bedfile=md_bedfile1, genomefasta=genomefasta, 
+                                tempdir=tempdir, outname='md1_fasta.fa')
+        if not md_fasta2:
+            md_fasta2 = getfasta(bedfile=md_bedfile2, genomefasta=genomefasta, 
+                                tempdir=tempdir, outname='md2_fasta.fa')
+        if os.stat(md_fasta1).st_size == 0 or os.stat(md_fasta2).st_size == 0:
+            raise exceptions.FileEmptyError("Error in SCANNER module. Converting MD bedfiles to fasta failed.")
+    if config.vars.MDD:
+        if not mdd_fasta1:
+            mdd_fasta1 = getfasta(bedfile=md_bedfile1, genomefasta=genomefasta, 
+                                tempdir=tempdir, outname='mdd1_fasta.fa')
+        if not mdd_fasta2:
+            mdd_fasta2 = getfasta(bedfile=md_bedfile2, genomefasta=genomefasta, 
+                                tempdir=tempdir, outname='mdd2_fasta.fa')
+        if os.stat(mdd_fasta1).st_size == 0 or os.stat(mdd_fasta2).st_size == 0:
+            raise exceptions.FileEmptyError("Error in SCANNER module. Converting MDD bedfiles to fasta failed.")
+
     #FIMO
     if scanner == 'fimo':
         #Get background file, if none desired set to 'None'
@@ -150,28 +203,48 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
                                             kwargs=fimo_keywords, debug=debug)
 
         #FIMO for md score fasta files
-        # if md:
-        #     fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta1, 
-        #                     tempdir=tempdir, motifdatabase=fimo_motifs, 
-        #                     thresh=fimo_thresh, 
-        #                     largewindow=largewindow)
-        #     md_distances1 = multiprocess.main(function=fimo, args=motif_list, 
-        #                                         kwargs=fimo_keywords, 
-        #                                         debug=debug)
+        if md:
+            fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta1, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+            md_distances1 = multiprocess.main(function=fimo, args=motif_list, 
+                                                kwargs=fimo_keywords, 
+                                                debug=debug)
             
-        #     fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta2, 
-        #                     tempdir=tempdir, motifdatabase=fimo_motifs, 
-        #                     thresh=fimo_thresh, 
-        #                     largewindow=largewindow)
-        #     md_distances2 = multiprocess.main(function=fimo, args=motif_list, 
-        #                                         kwargs=fimo_keywords, 
-        #                                         debug=debug)
+            fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta2, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+            md_distances2 = multiprocess.main(function=fimo, args=motif_list, 
+                                                kwargs=fimo_keywords, 
+                                                debug=debug)
+            config.vars.MD_DISTANCES1 = md_distances1
+            config.vars.MD_DISTANCES2 = md_distances2
+        
+        if mdd:
+            fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta1, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+            mdd_distances1 = multiprocess.main(function=fimo, args=motif_list, 
+                                                kwargs=fimo_keywords, 
+                                                debug=debug)
+            
+            fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta2, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+            mdd_distances2 = multiprocess.main(function=fimo, args=motif_list, 
+                                                kwargs=fimo_keywords, 
+                                                debug=debug)
 
-        #     return motif_distances, md_distances1, md_distances2
+            config.vars.MDD_DISTANCES1 = mdd_distances1
+            config.vars.MDD_DISTANCES2 = mdd_distances2
             
     #HOMER
     elif scanner== 'homer':
-        raise InputError("Homer scanning is not supported at this time.")
+        raise exceptions.InputError("Homer scanning is not supported at this time.")
 
     #GENOME HITS
     elif scanner == 'genome hits':
@@ -182,6 +255,7 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
             motif_list = [os.path.join(genomehits, motif) for motif in singlemotif.split(',')]
 
         #Perform bedtools closest to get distances
+        ranked_file = get_center(bedfile=ranked_file, outname=ranked_file)
         bedtools_distance_keywords = dict(genomehits=genomehits, 
                                             ranked_center_file=ranked_file, 
                                             tempdir=tempdir, 
@@ -194,40 +268,122 @@ def main(fasta_file=None, md_fasta1=None, md_fasta2=None, ranked_file=None,
                                             debug=debug)
 
         #GENOME HITS for md score bed files
-        # if md:
-        #     bedtools_distance_keywords = dict(genomehits=genomehits, 
-        #                                         ranked_center_file=md_bedfile1, 
-        #                                         tempdir=tempdir, 
-        #                                         distance_cutoff=largewindow)
+        if md:
+            md_bedfile1 = get_center(bedfile=md_bedfile1, outname=md_bedfile1)
+            bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                                ranked_center_file=md_bedfile1, 
+                                                tempdir=tempdir, 
+                                                distance_cutoff=largewindow)
 
-        #     md_distances1 = multiprocess.main(function=bedtools_closest, 
-        #                                     args=motif_list, 
-        #                                     kwargs=bedtools_distance_keywords, 
-        #                                     debug=debug)
-            
-        #     bedtools_distance_keywords = dict(genomehits=genomehits, 
-        #                                         ranked_center_file=md_bedfile2, 
-        #                                         tempdir=tempdir, 
-        #                                         distance_cutoff=largewindow)
+            md_distances1 = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug)
 
-        #     md_distances2 = multiprocess.main(function=bedtools_closest, 
-        #                                     args=motif_list, 
-        #                                     kwargs=bedtools_distance_keywords, 
-        #                                     debug=debug)
+            md_bedfile2 = get_center(bedfile=md_bedfile2, outname=md_bedfile2)
+            bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                                ranked_center_file=md_bedfile2, 
+                                                tempdir=tempdir, 
+                                                distance_cutoff=largewindow)
 
-        #     return motif_distances, md_distances1, md_distances2
+            md_distances2 = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug)
+
+            config.vars.MD_DISTANCES1 = md_distances1
+            config.vars.MD_DISTANCES2 = md_distances2
+        if mdd:
+            mdd_bedfile1 = get_center(bedfile=md_bedfile1, outname=md_bedfile1)
+            bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                                ranked_center_file=md_bedfile1, 
+                                                tempdir=tempdir, 
+                                                distance_cutoff=largewindow)
+
+            mdd_distances1 = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug)
+
+            mdd_bedfile2 = get_center(bedfile=md_bedfile2, outname=md_bedfile2)
+            bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                                ranked_center_file=md_bedfile2, 
+                                                tempdir=tempdir, 
+                                                distance_cutoff=largewindow)
+
+            mdd_distances2 = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug)
+
+            config.vars.MDD_DISTANCES1 = mdd_distances1
+            config.vars.MDD_DISTANCES2 = mdd_distances2
     else:
-        raise InputError("SCANNER option not recognized.")
+        raise exceptions.InputError("SCANNER option not recognized.")
             
-    return motif_distances
+    config.vars.MOTIF_DISTANCES = motif_distances
+
+    SCANNERtime = time.time()-SCANNERtime
+    print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
+
+    if config.vars.DEBUG:
+        multiprocess.current_mem_usage()
 
 #Functions
+#==============================================================================
+def getfasta(bedfile=None, genomefasta=None, tempdir=None, outname=None):
+    '''Converts a bed file to a fasta file using bedtools. Outputs into the 
+        tempdir directory created by TFEA.
+
+    Parameters
+    ----------
+    bedfile : string
+        full path to a bed file
+
+    genomefasta : string
+        full path to a fasta file for the genome of interest
+        
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    Returns
+    -------
+    ranked_file_fasta : string 
+        full path to a fasta file containing the inputted bed file regions in 
+        fasta format 
+    '''
+    fasta_file = tempdir / outname
+    getfasta_command = ["bedtools", "getfasta", "-name",
+                        "-fi", genomefasta, 
+                        "-bed", bedfile,
+                        "-fo", fasta_file]
+    
+    try:
+        subprocess.run(getfasta_command, check=True, 
+                        stdout=subprocess.PIPE, 
+                        stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        raise SubprocessError(e.stderr.decode())
+
+    return fasta_file
+
+#==============================================================================
+def fasta_linecount(fastafile=None):
+    linecount = 0
+    with open(fastafile) as F:
+        for line in F:
+            if line[0] == '>':
+                linecount += 1
+    
+    return linecount
+            
 #==============================================================================
 def fimo_background_file(window=None, tempdir=None, bedfile=None, 
                             genomefasta=None, order=None):
     background_bed_file = tempdir / "fimo_background.bed"
     outfile = open(background_bed_file,'w')
     with open(bedfile) as F:
+        F.readline()
         for line in F:
             chrom, start, stop, name = line.strip('\n').split('\t')
             center = (int(start)+int(stop))/2
@@ -236,7 +392,7 @@ def fimo_background_file(window=None, tempdir=None, bedfile=None,
             outfile.write('\t'.join([chrom, str(start), str(stop), name]) + '\n')
     outfile.close()
     
-    fasta.getfasta(bedfile=background_bed_file, 
+    getfasta(bedfile=background_bed_file, 
                                 genomefasta=genomefasta, tempdir=tempdir, 
                                 outname='fimo_background.fa')
 
@@ -328,12 +484,10 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
     except subprocess.CalledProcessError as e:
         raise SubprocessError(e.stderr.decode())
 
-    fasta_linecount = fasta.fasta_linecount(fastafile=fasta_file)
-    # distances = fimo_parse(fimo_file=fimo_out, largewindow=largewindow, 
-    #                         linecount=fasta_linecount)
+    fasta_count = fasta_linecount(fastafile=fasta_file)
     distances = fimo_parse_stdout(fimo_stdout=fimo_out, 
                                     largewindow=largewindow, 
-                                    linecount=fasta_linecount)
+                                    linecount=fasta_count)
 
     del fimo_out
 
@@ -528,19 +682,24 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
 
     return [motif] + distances
 
-#TESTS
 #==============================================================================
-if __name__ == "__main__":
-    import scanner
-    motif='P53_HUMAN.H11MO.0.A'
-    fasta_file = './test/random_10.fa'
-    motifdatabase = './motif_databases/HOCOMOCOv11_full_HUMAN_mono_meme_format.meme'
-    tempdir='./test'
-    thresh=0.0001
-    fimo_out = os.path.join(tempdir, motif + '.fimo.bed')
+def get_center(bedfile=None, outname=None):
+    '''This function takes a bed file and returns the center for all regions
+        in the bed file.
 
-    results = scanner_functions.fimo(motif, fasta_file=fasta_file, 
-                                    tempdir=tempdir, motifdatabase=motifdatabase, 
-                                    thresh=thresh, largewindow=1500)
+    Parameters
+    ----------
+    bedfile : str
+        full path to a bed file
+    outname : str
+        full path to the output centered bed file
 
-    print(results)
+    Returns
+    -------
+    outname : str
+        full path to the output centered bed file
+    '''
+    outbed = BedTool(bedfile).each(featurefuncs.center).sort()
+    outbed.saveas(outname)
+
+    return outname
