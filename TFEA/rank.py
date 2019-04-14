@@ -388,7 +388,7 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
     #Save ranked regions in a bed file (pvalue included)
     ranked_file = tempdir / "ranked_file.bed"
     with open(ranked_file,'w') as outfile:
-        outfile.write('\t'.join(['chrom', 'start', 'stop', 'rank, fc, p-value']) 
+        outfile.write('\t'.join(['#chrom', 'start', 'stop', 'rank, fc, p-value']) 
                         + '\n')
         r=1
         if rank == 'deseq':
@@ -442,12 +442,13 @@ def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None
     regions = list()
     with open(ranked_file) as F:
         for line in F:
-            chrom, start, stop, rank_values = line.strip('\n').split('\t')
-            fc, pval, rank = rank_values.split(',')
-            fc = float(fc)
-            pval = float(pval)
-            rank = int(rank)
-            regions.append((chrom, start, stop, fc, pval, rank))
+            if line[0] != '#':
+                chrom, start, stop, rank_values = line.strip('\n').split('\t')
+                fc, pval, rank = rank_values.split(',')
+                fc = float(fc)
+                pval = float(pval)
+                rank = int(rank)
+                regions.append((chrom, start, stop, fc, pval, rank))
     regions = sorted(regions, key=lambda x: x[-2])
     if percent != None:
         index = int(len(regions) * percent)
@@ -460,6 +461,7 @@ def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None
         raise exceptions.InputError("No cutoff value specified for creating mdd bed files")
 
     with open(mdd_bedfile1, 'w') as ofile1:
+        ofile1.write('\t'.join(['#chrom', 'start', 'stop', 'fc,pval,oldrank', 'rank']) + '\n')
         rank1 = 1
         for region1 in mdd1_regions:
             ofile1.write('\t'.join([x for x in region1[:3]]) 
@@ -468,6 +470,7 @@ def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None
             rank1 += 1
 
     with open(mdd_bedfile2, 'w') as ofile2:
+        ofile2.write('\t'.join(['#chrom', 'start', 'stop', 'fc,pval,oldrank', 'rank']) + '\n')
         rank2 = 1
         for region2 in mdd2_regions:
             ofile2.write('\t'.join([x for x in region2[:3]]) 

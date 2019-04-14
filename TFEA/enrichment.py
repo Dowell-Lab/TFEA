@@ -17,6 +17,7 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 #Imports
 #==============================================================================
 import os
+import sys
 import math
 import time
 import datetime
@@ -31,13 +32,7 @@ import multiprocess
 
 #Main Script
 #==============================================================================
-def main(motif_distances=config.vars.MOTIF_DISTANCES, 
-        md_distances1=config.vars.MD_DISTANCES1, md_distances2=config.vars.MD_DISTANCES2, 
-        mdd_distances1=config.vars.MDD_DISTANCES1, mdd_distances2=config.vars.MDD_DISTANCES2, 
-        enrichment=config.vars.ENRICHMENT, output_type=config.vars.OUTPUT_TYPE, 
-        permutations=config.vars.PERMUTATIONS, debug=config.vars.DEBUG, 
-        largewindow=config.vars.LARGEWINDOW, smallwindow=config.vars.SMALLWINDOW, 
-        md=config.vars.MD):
+def main():
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -83,11 +78,30 @@ def main(motif_distances=config.vars.MOTIF_DISTANCES,
     md_results : list of lists
         A list of lists corresponding to md-score statistics for each motif
     '''
+    # motif_distances=config.vars.MOTIF_DISTANCES, 
+    #     md_distances1=config.vars.MD_DISTANCES1, md_distances2=config.vars.MD_DISTANCES2, 
+    #     mdd_distances1=config.vars.MDD_DISTANCES1, mdd_distances2=config.vars.MDD_DISTANCES2, 
+    #     enrichment=config.vars.ENRICHMENT, output_type=config.vars.OUTPUT_TYPE, 
+    #     permutations=config.vars.PERMUTATIONS, debug=config.vars.DEBUG, 
+    #     largewindow=config.vars.LARGEWINDOW, smallwindow=config.vars.SMALLWINDOW, 
+    #     md=config.vars.MD
+    import config
+    motif_distances=config.vars.MOTIF_DISTANCES
+    md_distances1=config.vars.MD_DISTANCES1
+    md_distances2=config.vars.MD_DISTANCES2 
+    mdd_distances1=config.vars.MDD_DISTANCES1
+    mdd_distances2=config.vars.MDD_DISTANCES2
+    enrichment=config.vars.ENRICHMENT
+    permutations=config.vars.PERMUTATIONS
+    debug=config.vars.DEBUG
+    largewindow=config.vars.LARGEWINDOW
+    smallwindow=config.vars.SMALLWINDOW
+    md=config.vars.MD
+    mdd = config.vars.MDD
     ENRICHMENTtime = time.time()
     print("Calculating enrichment...", end=' ', flush=True, file=sys.stderr)
     if enrichment == 'auc':
-        auc_keywords = dict(output_type=output_type, 
-                            permutations=permutations)
+        auc_keywords = dict(permutations=permutations)
         results = multiprocess.main(function=area_under_curve, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug)
@@ -103,8 +117,7 @@ def main(motif_distances=config.vars.MOTIF_DISTANCES,
         p.join()
 
     elif enrichment == 'auc_bgcorrect':
-        auc_bgcorrect_keywords = dict(output_type=output_type, 
-                                        permutations=permutations,
+        auc_bgcorrect_keywords = dict(permutations=permutations,
                                         largewindow=largewindow)
         results = multiprocess.main(function=area_under_curve_bgcorrect, 
                                     args=motif_distances, 
@@ -114,10 +127,10 @@ def main(motif_distances=config.vars.MOTIF_DISTANCES,
         padj_bonferroni(results)
 
     if md:
-        md_results = md(md_distances1=md_distances1, md_distances2=md_distances2)
+        md_results = calculate_md(md_distances1=md_distances1, md_distances2=md_distances2)
         config.vars.MD_RESULTS = md_results
     if mdd:
-        mdd_results =  md(md_distances1=mdd_distances1, md_distances2=mdd_distances2)
+        mdd_results =  calculate_md(md_distances1=mdd_distances1, md_distances2=mdd_distances2)
         config.vars.MDD_RESULTS = mdd_results
 
 
@@ -125,14 +138,17 @@ def main(motif_distances=config.vars.MOTIF_DISTANCES,
 
 
     ENRICHMENTtime = time.time()-ENRICHMENTtime
-    print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
+    print("done in: " + str(datetime.timedelta(seconds=int(ENRICHMENTtime))), file=sys.stderr)
 
     if config.vars.DEBUG:
         multiprocess.current_mem_usage()
 
 #==============================================================================
-def md(md_distances1=None, md_distances2=None, output_type=config.vars.OUTPUT_TYPE, 
-        debug=config.vars.DEBUG, smallwindow=config.vars.SMALLWINDOW):
+def calculate_md(md_distances1=None, md_distances2=None):
+
+    import config
+    debug = config.vars.DEBUG
+    smallwindow=config.vars.SMALLWINDOW
     md_keywords = dict(smallwindow=smallwindow)
     md_results = multiprocess.main(function=md_score, 
                     args=zip(sorted(md_distances1),sorted(md_distances2)), 

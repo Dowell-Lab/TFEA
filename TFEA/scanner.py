@@ -15,6 +15,7 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 
 #Imports
 #==============================================================================
+import os
 import sys
 import time
 import datetime
@@ -26,6 +27,7 @@ from pybedtools import featurefuncs
 
 import config
 import multiprocess
+import exceptions
 
 #Main Script
 #==============================================================================
@@ -119,6 +121,8 @@ def main():
     fasta_file=config.vars.FASTA_FILE
     md_fasta1=config.vars.MD_FASTA1 
     md_fasta2=config.vars.MD_FASTA2 
+    mdd_fasta1=config.vars.MDD_FASTA1 
+    mdd_fasta2=config.vars.MDD_FASTA2 
     ranked_file=config.vars.RANKED_FILE
     md_bedfile1=config.vars.MD_BEDFILE1
     md_bedfile2=config.vars.MD_BEDFILE2 
@@ -294,9 +298,9 @@ def main():
             config.vars.MD_DISTANCES1 = md_distances1
             config.vars.MD_DISTANCES2 = md_distances2
         if mdd:
-            mdd_bedfile1 = get_center(bedfile=md_bedfile1, outname=md_bedfile1)
+            mdd_bedfile1 = get_center(bedfile=mdd_bedfile1, outname=mdd_bedfile1)
             bedtools_distance_keywords = dict(genomehits=genomehits, 
-                                                ranked_center_file=md_bedfile1, 
+                                                ranked_center_file=mdd_bedfile1, 
                                                 tempdir=tempdir, 
                                                 distance_cutoff=largewindow)
 
@@ -305,9 +309,9 @@ def main():
                                             kwargs=bedtools_distance_keywords, 
                                             debug=debug)
 
-            mdd_bedfile2 = get_center(bedfile=md_bedfile2, outname=md_bedfile2)
+            mdd_bedfile2 = get_center(bedfile=mdd_bedfile2, outname=mdd_bedfile2)
             bedtools_distance_keywords = dict(genomehits=genomehits, 
-                                                ranked_center_file=md_bedfile2, 
+                                                ranked_center_file=mdd_bedfile2, 
                                                 tempdir=tempdir, 
                                                 distance_cutoff=largewindow)
 
@@ -363,7 +367,7 @@ def getfasta(bedfile=None, genomefasta=None, tempdir=None, outname=None):
                         stdout=subprocess.PIPE, 
                         stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
-        raise SubprocessError(e.stderr.decode())
+        raise exceptions.SubprocessError(e.stderr.decode())
 
     return fasta_file
 
@@ -430,7 +434,7 @@ def fasta_markov(tempdir=None, fastafile=None, order=None):
             subprocess.run(["fasta-get-markov", "-m", order, fastafile],
                             stdout=output, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
-        raise SubprocessError(e.stderr.decode())
+        raise exceptions.SubprocessError(e.stderr.decode())
         
     return markov_background
 
@@ -482,7 +486,7 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
     try:
         fimo_out = subprocess.check_output(command, stderr=subprocess.PIPE).decode('UTF-8')
     except subprocess.CalledProcessError as e:
-        raise SubprocessError(e.stderr.decode())
+        raise exceptions.SubprocessError(e.stderr.decode())
 
     fasta_count = fasta_linecount(fastafile=fasta_file)
     distances = fimo_parse_stdout(fimo_stdout=fimo_out, 
@@ -655,7 +659,7 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
         try:
             closest_out.write_bytes(subprocess.check_output(command, stderr=subprocess.PIPE))
         except subprocess.CalledProcessError as e:
-            raise SubprocessError(e.stderr.decode())
+            raise exceptions.SubprocessError(e.stderr.decode())
         
         
         distances = list()

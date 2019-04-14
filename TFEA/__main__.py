@@ -82,6 +82,8 @@ process_inputs.create_directories(srcdirectory=srcdirectory)
 #SECONDARY IMPORTS
 #==============================================================================
 import config
+import multiprocess
+import multiprocessing as mp
 
 #Print starting statements
 #==============================================================================

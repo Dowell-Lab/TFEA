@@ -79,7 +79,7 @@ def read_arguments():
                         dest='CONFIG')
     inputs.add_argument('--sbatch','-s', help=("Submits an sbatch (slurm) job. "
                         "If specified, input an e-mail address."), dest='SBATCH')
-    inputs.add_argument('--test','-t', action='store_true', 
+    inputs.add_argument('--test','-t', action='store_true', default=None,
                         help="Performs unit testing", dest='TEST')
 
     # Processed inputs if a user desires to run TFEA from a specific point
@@ -103,10 +103,10 @@ def read_arguments():
                                                 'MD-Score analysis')
     secondary_inputs.add_argument('--md', help=("Switch that controls whether "
                                     "to perform MD analysis."), 
-                                    action='store_true', dest='MD')
+                                    action='store_true', dest='MD', default=None)
     secondary_inputs.add_argument('--mdd', help=("Switch that controls whether "
                                     "to perform differential MD analysis."), 
-                                    action='store_true', dest='MDD')
+                                    action='store_true', dest='MDD', default=None)
     secondary_inputs.add_argument('--md_bedfile1', help=("A bed file for MD-Score "
                                     "analysis associated with condition 1."), 
                                     dest='MD_BEDFILE1')
@@ -156,7 +156,8 @@ def read_arguments():
                                     "enrichment"), choices=['auc', 
                                     'auc_bgcorrect'], dest='ENRICHMENT')
     module_switches.add_argument('--debug', help=("Print memory usage to stderr"), 
-                                    action='store_true', dest='DEBUG')
+                                    action='store_true', dest='DEBUG', 
+                                    default=None)
     
     # Fasta Options
     fasta_options = parser.add_argument_group('Fasta Options', ('Options for '
@@ -217,7 +218,8 @@ def read_arguments():
                                     "value that determines some plotting output."), 
                                     dest='PVALCUTOFF')
     output_options.add_argument('--textOnly', help="Suppress html output.", 
-                                    action='store_true', dest='TEXTONLY')
+                                    action='store_true', dest='TEXTONLY', 
+                                    default=None)
 
     #Set default arguments and possible options or types
     # Notes: 
@@ -447,6 +449,14 @@ def verify_arguments(parser=None):
     config.vars.SCANNERtime = 0
     config.vars.ENRICHMENTtime = 0
     config.vars.OUTPUTtime = 0
+    config.vars.MD_DISTANCES1 = []
+    config.vars.MD_DISTANCES2 = []
+    config.vars.MDD_DISTANCES1 = []
+    config.vars.MDD_DISTANCES2 = []
+    config.vars.RESULTS = []
+    config.vars.MD_RESULTS = []
+    config.vars.MDD_RESULTS = []
+
 
     #Verify combine module
     if not config.vars.COMBINE:
@@ -529,14 +539,16 @@ def create_directories(srcdirectory=None):
 
 #==============================================================================
 def write_rerun(args=None, outputdir=None):
-    with open(outputdir / 'rerun.sh', 'w') as outfile:
-        outfile.write(' '.join(args))
-    try:
+    if '--config' in args:
         configfile = args[args.index('--config')+1]
+        args[args.index('--config')+1] = (outputdir / Path(configfile).name).as_posix()
         try:
             shutil.copy2(configfile, outputdir) #Copy config file to output
         except shutil.SameFileError:
             pass
-    except ValueError:
-        pass
+    
+    with open(outputdir / 'rerun.sh', 'w') as outfile:
+        outfile.write('python3 ' + Path(__file__).absolute().parent.as_posix() + ' ' 
+                        + ' '.join(args[1:]))
+    
 

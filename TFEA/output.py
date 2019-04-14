@@ -15,7 +15,9 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 #Imports
 #==============================================================================
 import os
+import sys
 import math
+import time
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,33 +26,32 @@ import config
 
 #Main Script
 #==============================================================================
-def main(results=config.vars.RESULTS, md_results=config.vars.MD_RESULTS, mdd_results=config.vars.MDD_RESULTS):
+def main(results=config.vars.RESULTS, md_results=config.vars.MD_RESULTS, 
+        mdd_results=config.vars.MDD_RESULTS):
     config.vars.OUTPUTtime = time.time()
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    output.txt_output(results=results, outname='results.txt', 
+    txt_output(results=results, outname='results.txt', 
                         sortindex=[-2,-1])
     if config.vars.MD:
         header = ['TF', 'MD-Score', 'Events', 'p-val']
-        output.txt_output(results=md_results, outname='md_results.txt', 
+        txt_output(results=md_results, outname='md_results.txt', 
                             header=header, sortindex=[-1])
     if config.vars.MDD:
         header = ['TF', 'MD-Score', 'Events', 'p-val']
-        output.txt_output(results=mdd_results, outname='mdd_results.txt', 
+        txt_output(results=mdd_results, outname='mdd_results.txt', 
                             header=header, sortindex=[-1])
     config.vars.OUTPUTtime = time.time()-config.vars.OUTPUTtime
-    if config.vars.OUTPUT_TYPE == 'plots':
-        output.plot_output()
-    if config.vars.OUTPUT_TYPE == 'html':
-        output.summary_html_output(config_object=config_object, 
-                                    outputdir=outputdir)
-        module_list = [('COMBINE', config.vars.COMBINE, config.vars.COMBINEtime), 
-                        ('COUNT', config.vars.COUNT, config.vars.COUNTtime), 
-                        ('RANK', config.vars.RANK, config.vars.RANKtime), 
-                        ('FASTA', config.vars.FASTA, config.vars.FASTAtime), 
-                        ('SCANNER', config.vars.SCANNER, config.vars.SCANNERtime), 
-                        ('ENRICHMENT', config.vars.ENRICHMENT, config.vars.ENRICHMENTtime), 
-                        ('OUTPUT', config.vars.OUTPUT_TYPE, config.vars.OUTPUTtime)]
-        output.html_output(results=results, module_list=module_list)
+    # if not config.vars.TEXTONLY:
+    #     output.summary_html_output(config_object=config_object, 
+    #                                 outputdir=outputdir)
+    #     module_list = [('COMBINE', config.vars.COMBINE, config.vars.COMBINEtime), 
+    #                     ('COUNT', config.vars.COUNT, config.vars.COUNTtime), 
+    #                     ('RANK', config.vars.RANK, config.vars.RANKtime), 
+    #                     ('FASTA', config.vars.FASTA, config.vars.FASTAtime), 
+    #                     ('SCANNER', config.vars.SCANNER, config.vars.SCANNERtime), 
+    #                     ('ENRICHMENT', config.vars.ENRICHMENT, config.vars.ENRICHMENTtime), 
+    #                     ('OUTPUT', config.vars.OUTPUT_TYPE, config.vars.OUTPUTtime)]
+    #     output.html_output(results=results, module_list=module_list)
         
     print("done in: " + str(datetime.timedelta(seconds=int(config.vars.OUTPUTtime))), file=sys.stderr)
 
@@ -60,7 +61,7 @@ def main(results=config.vars.RESULTS, md_results=config.vars.MD_RESULTS, mdd_res
 
 #Functions
 #==============================================================================
-def txt_output(results=None, outputdir=config.vars.OUTPUTDIR, outname='results.txt', 
+def txt_output(results=None, outputdir=config.vars.OUTPUT, outname='results.txt', 
                 header=None, sortindex=None):
     with open(os.path.join(outputdir, outname), 'w') as outfile:
         if type(header) == list:
@@ -73,148 +74,148 @@ def txt_output(results=None, outputdir=config.vars.OUTPUTDIR, outname='results.t
             outfile.write('\t'.join([str(x) for x in values])+'\n')
 
 #==============================================================================
-def plot_output(motif_distances=None, plot=config.vars.PLOTALL, padj_cutoff=config.vars.PADJCUTOFF,
-                            figuredir=config.vars.FIGUREDIR, logos=config.vars.MOTIF_LOGOS, 
-                            largewindow=config.vars.LARGEWINDOW,
-                            smallwindow=config.vars.SMALLWINDOW, 
-                            ranks=None, pvals=None, fc=None, 
-                            cumscore=None, motif_file=None, p=None,
-                            simES=None, actualES=None, gc_array=None,
-                            meta_profile_dict=None, label1=None, label2=None):
-    '''This function generates all TFEA related graphs for an individual motif
+# def plot_output(motif_distances=None, plot=config.vars.PLOTALL, padj_cutoff=config.vars.PADJCUTOFF,
+#                             figuredir=config.vars.FIGUREDIR, logos=config.vars.MOTIF_LOGOS, 
+#                             largewindow=config.vars.LARGEWINDOW,
+#                             smallwindow=config.vars.SMALLWINDOW, 
+#                             ranks=None, pvals=None, fc=None, 
+#                             cumscore=None, motif_file=None, p=None,
+#                             simES=None, actualES=None, gc_array=None,
+#                             meta_profile_dict=None, label1=None, label2=None):
+#     '''This function generates all TFEA related graphs for an individual motif
 
-    Parameters
-    ----------
-    plot : boolean
-        switch to determine whether all motifs are plotted or just significant
-        ones
+#     Parameters
+#     ----------
+#     plot : boolean
+#         switch to determine whether all motifs are plotted or just significant
+#         ones
     
-    padj_cutoff : float
-        the cutoff value that determines signficance. This is technically
-        evaluated against the non-adjusted p-value since p-adj has not been
-        calculated yet at this point
+#     padj_cutoff : float
+#         the cutoff value that determines signficance. This is technically
+#         evaluated against the non-adjusted p-value since p-adj has not been
+#         calculated yet at this point
     
-    figuredir : string
-        the full path to the figuredir within the ouptut directory containing
-        all figures and plots
+#     figuredir : string
+#         the full path to the figuredir within the ouptut directory containing
+#         all figures and plots
 
-    logos : string
-        full path to a directory containing meme logos. These are copied to the
-        output directory to be displayed in the html results.
+#     logos : string
+#         full path to a directory containing meme logos. These are copied to the
+#         output directory to be displayed in the html results.
 
-    largewindow : float
-        a user specified larger window used for plotting purposes and to do
-        some calculations regarding the user-provided regions of interest
+#     largewindow : float
+#         a user specified larger window used for plotting purposes and to do
+#         some calculations regarding the user-provided regions of interest
 
-    smallwindow : float
-        a user specified smaller window used for plotting purposes and to do
-        some calculations regarding the user-provided regions of interest
+#     smallwindow : float
+#         a user specified smaller window used for plotting purposes and to do
+#         some calculations regarding the user-provided regions of interest
 
-    distances_abs : list or array
-        a sorted (based on rank) list of absolute motif to region center 
-        distances
+#     distances_abs : list or array
+#         a sorted (based on rank) list of absolute motif to region center 
+#         distances
 
-    sorted_distances : list or array
-        a sorted (based on rank) list of motif distances. Negative corresponds
-        to upstream of region
+#     sorted_distances : list or array
+#         a sorted (based on rank) list of motif distances. Negative corresponds
+#         to upstream of region
 
-    ranks : list or array
-        a list of ranks that correspond to each region of interest. The ranking
-        comes from DE-Seq p-value
+#     ranks : list or array
+#         a list of ranks that correspond to each region of interest. The ranking
+#         comes from DE-Seq p-value
 
-    pvals : list or array
-        a list of DE-Seq p-values for all regions
+#     pvals : list or array
+#         a list of DE-Seq p-values for all regions
 
-    p : float
-        the p-value of the given motif based on simulations
+#     p : float
+#         the p-value of the given motif based on simulations
 
-    simES : list
-        a list of simulated 'enrichment' scores calculated by randomizing
-        region rank
+#     simES : list
+#         a list of simulated 'enrichment' scores calculated by randomizing
+#         region rank
 
-    actualES : float
-        the observed 'enchrichment' score. Can be calculated in many different
-        ways..
+#     actualES : float
+#         the observed 'enchrichment' score. Can be calculated in many different
+#         ways..
 
-    gc_array : list
-        an array of gc richness of regions of interest. It is recommended that
-        this array be no larger than 1000 bins.
+#     gc_array : list
+#         an array of gc richness of regions of interest. It is recommended that
+#         this array be no larger than 1000 bins.
 
-    Returns
-    -------
-    None
-    '''
-    import config
-    #Only plot things if user selects to plot all or if the p-value is less than
-    #the cutoff
-    if plot or p < padj_cutoff:
-        if config.vars.SCANNER == 'homer':
-            pass
-        else:
-            #Get motif logos from logo directory
-            os.system("scp '" + logos 
-                        + motif_file.strip('.sorted.distance.bed').strip('HO_') 
-                        + "_direct.png' " + figuredir)
+#     Returns
+#     -------
+#     None
+#     '''
+#     import config
+#     #Only plot things if user selects to plot all or if the p-value is less than
+#     #the cutoff
+#     if plot or p < padj_cutoff:
+#         if config.vars.SCANNER == 'homer':
+#             pass
+#         else:
+#             #Get motif logos from logo directory
+#             os.system("scp '" + logos 
+#                         + motif_file.strip('.sorted.distance.bed').strip('HO_') 
+#                         + "_direct.png' " + figuredir)
 
-            os.system("scp '" + logos 
-                        + motif_file.strip('.sorted.distance.bed').strip('HO_') 
-                        + "_revcomp.png' " + figuredir)
+#             os.system("scp '" + logos 
+#                         + motif_file.strip('.sorted.distance.bed').strip('HO_') 
+#                         + "_revcomp.png' " + figuredir)
         
 
-        #Filter distances into quartiles for plotting purposes
-        q1 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 25)))
-        q2 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 50)))
-        q3 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 75)))
-        q1_distances = [x for x in sorted_distances[:q1] if x <= largewindow]
-        q2_distances = [x for x in sorted_distances[q1:q2] if x <= largewindow]
-        q3_distances = [x for x in sorted_distances[q2:q3] if x <= largewindow]
-        q4_distances = [x for x in sorted_distances[q3:] if x <= largewindow]
+#         #Filter distances into quartiles for plotting purposes
+#         q1 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 25)))
+#         q2 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 50)))
+#         q3 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 75)))
+#         q1_distances = [x for x in sorted_distances[:q1] if x <= largewindow]
+#         q2_distances = [x for x in sorted_distances[q1:q2] if x <= largewindow]
+#         q3_distances = [x for x in sorted_distances[q2:q3] if x <= largewindow]
+#         q4_distances = [x for x in sorted_distances[q3:] if x <= largewindow]
 
         
-        #Get log pval to plot for rank metric
-        sorted_pval = [x for _,x in sorted(zip(ranks, pvals))]
-        sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
-        logpval = list()
-        for x,y in zip(sorted_pval,sorted_fc):
-            try:
-                if y < 1:
-                    logpval.append(math.log(x,10))
-                else:
-                    logpval.append(-math.log(x,10))
-            except:
-                logpval.append(0.0)
+#         #Get log pval to plot for rank metric
+#         sorted_pval = [x for _,x in sorted(zip(ranks, pvals))]
+#         sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
+#         logpval = list()
+#         for x,y in zip(sorted_pval,sorted_fc):
+#             try:
+#                 if y < 1:
+#                     logpval.append(math.log(x,10))
+#                 else:
+#                     logpval.append(-math.log(x,10))
+#             except:
+#                 logpval.append(0.0)
 
-        #Plot the enrichment plot
-        enrichment_plot(largewindow=largewindow,
-                            smallwindow=smallwindow,
-                            figuredir=figuredir,
-                            cumscore=cumscore, 
-                            sorted_distances=sorted_distances, 
-                            logpval=logpval,  
-                            gc_array=gc_array, score=score, 
-                            motif_file=motif_file, 
-                            q1_distances=q1_distances, 
-                            q2_distances=q2_distances, 
-                            q3_distances=q3_distances, 
-                            q4_distances=q4_distances,
-                            meta_profile_dict=meta_profile_dict,
-                            dpi=None, label1=label1, 
-                            label2=label2)
+#         #Plot the enrichment plot
+#         enrichment_plot(largewindow=largewindow,
+#                             smallwindow=smallwindow,
+#                             figuredir=figuredir,
+#                             cumscore=cumscore, 
+#                             sorted_distances=sorted_distances, 
+#                             logpval=logpval,  
+#                             gc_array=gc_array, score=score, 
+#                             motif_file=motif_file, 
+#                             q1_distances=q1_distances, 
+#                             q2_distances=q2_distances, 
+#                             q3_distances=q3_distances, 
+#                             q4_distances=q4_distances,
+#                             meta_profile_dict=meta_profile_dict,
+#                             dpi=None, label1=label1, 
+#                             label2=label2)
 
-        #Plot the simulation plot
-        simulation_plot(figuredir=figuredir, simES=simES, actualES=actualES,
-                        motif_file=motif_file)
+#         #Plot the simulation plot
+#         simulation_plot(figuredir=figuredir, simES=simES, actualES=actualES,
+#                         motif_file=motif_file)
 
-        # #Plot the distance distribution histograms plot
-        # independent_functions.meta_plot(figuredir=figuredir, 
-        #                                     meta_profile_dict=meta_profile_dict,
-        #                                     motif_file=motif_file, 
-        #                                     q1_distances=q1_distances, 
-        #                                     q2_distances=q2_distances, 
-        #                                     q3_distances=q3_distances, 
-        #                                     q4_distances=q4_distances, 
-        #                                     bins=100, 
-        #                                     dpi=None)
+#         # #Plot the distance distribution histograms plot
+#         # independent_functions.meta_plot(figuredir=figuredir, 
+#         #                                     meta_profile_dict=meta_profile_dict,
+#         #                                     motif_file=motif_file, 
+#         #                                     q1_distances=q1_distances, 
+#         #                                     q2_distances=q2_distances, 
+#         #                                     q3_distances=q3_distances, 
+#         #                                     q4_distances=q4_distances, 
+#         #                                     bins=100, 
+#         #                                     dpi=None)
 
 #==============================================================================
 def html_output(results=None, module_list=None, columns=None):
