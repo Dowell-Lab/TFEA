@@ -14,16 +14,18 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 
 #Imports
 #==============================================================================
-from os import getpid
+import os
 import multiprocessing as mp
 import subprocess
+import resource
 import sys
-import config
 from pathlib import Path
 from contextlib import closing
+
+import config
 #Main Script
 #==============================================================================
-def main(function=None, args=None, kwargs=None, debug=False):
+def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=None):
     '''This is the main script of the multiprocessing module. It is written
         to simplify code in other modules. It performs parallel processing
         using python's built-in multiprocessing module on a function given
@@ -48,17 +50,54 @@ def main(function=None, args=None, kwargs=None, debug=False):
         function
     '''
     # #Get max number of cpus, max out at 64
-    cpus = mp.cpu_count()
-    if cpus > 64:
-        cpus = 64
-    # p = mp.Pool(processes=cpus)
-    # with closing(mp.Pool(processes=cpus)) as p:
-    with mp.get_context("spawn").Pool() as p:
-    # p = mp.Pool()
-    # results = list()
-        results = p.starmap(helper, [(function, arg, kwargs, debug) for arg in args])
+    # cpus = mp.cpu_count()
+    # if cpus > 64:
+    #     cpus = 64
+    # if debug:
+    #     print('CPUs:', cpus)
+
+    #Method 1
+    # #with closing(mp.Pool(processes=cpus)) as p:
+    # with mp.get_context("spawn").Pool(maxtasksperchild=10, processes=cpus) as p:
+    #     results = p.starmap(helper, [(function, arg, kwargs, debug, i, jobid) for i, arg in enumerate(args, 1)])
+    #     p.close()
+    #     p.join()
+
+    #Method 2 
+    with mp.Pool(processes=cpus) as p:
+        results = list()
+        print(f'\t Completed: 0/{len(args)} ', end=' ', file=sys.stderr)
+        # print_in_place(f'\t Completed: 0/{len(args)} ', file=sys.stderr)
+        for i, x in enumerate(p.imap_unordered(helper_single, [(function, arg, kwargs, debug) for arg in args]), 1):
+            # sys.stderr.write("\033[K")
+            # sys.stderr.write(f'\r\t Completed: {i}/{len(args)} ')
+            # sys.stderr.flush()
+            print(f'\r\t Completed: {i}/{len(args)} ', end=' ', flush=True, file=sys.stderr)
+            # print_in_place(f'\t Completed: {i}/{len(args)} ', file=sys.stderr)
+            if debug:
+                current_mem_usage(jobid, end=' ')
+                # current_mem_usage(jobid, in_place=True)
+            results.append(x)
         p.close()
         p.join()
+    print('', file=sys.stderr)
+
+    #Method 3
+    # with mp.get_context("spawn").Pool(maxtasksperchild=10, processes=cpus) as p:
+    #     results = p.imap_unordered(helper_single, [(function, arg, kwargs, debug, i, jobid) for i, arg in enumerate(args, 1)])
+    #     print('\n', end=' ', file=sys.stderr)
+    #     for i in range(len(args)):
+    #         results.next()
+    #         sys.stderr.write("\033[K")
+    #         sys.stderr.write(f'\r\tCompleted: {i}/{len(args)} ')
+    #         sys.stderr.flush()
+    #         if debug:
+    #             current_mem_usage(jobid, end=' ', flush=True)
+    #     p.close()
+    #     p.join()
+    #     p.terminate()
+
+    
         
     # for i, arg in enumerate(args):
     #     results.append(p.apply_async(function, (arg,), kwargs).get())
@@ -71,7 +110,9 @@ def main(function=None, args=None, kwargs=None, debug=False):
 
     return results
 
-def helper(function, arg, kwargs, debug):
+#Functions
+#==============================================================================
+def helper(function, arg, kwargs, debug, i, jobid):
     '''This function serves to unpack keyword arguments provided to this module
         and feed it in appropriately to the desired function
 
@@ -83,6 +124,12 @@ def helper(function, arg, kwargs, debug):
         A positional argument to pass to function
     kwargs : dict
         keyword arguments to pass to function
+    debug : boolean
+        whether to print debug statements
+    i : int
+        the process number
+    jobid : int
+        the slurm pid
 
     Returns
     -------
@@ -91,33 +138,91 @@ def helper(function, arg, kwargs, debug):
         arguments.
     '''
     if debug:
-        print("Process", getpid(), "running", function.__name__, file=sys.stderr)
-        current_mem_usage()
+        print(f"Process #{i}, pid:{os.getpid()} running {function.__name__}",
+                file=sys.stderr)
+        current_mem_usage(jobid)
     result = function(arg, **kwargs)
+    if debug:
+        # print("Process", os.getpid(), 
+        #         "finished", function.__name__, file=sys.stderr)
+        print(f"Process #{i}, pid:{os.getpid()} finished {function.__name__}",
+                file=sys.stderr)
 
     return result
 
-#Functions
 #==============================================================================
-def current_mem_usage():
-    '''Prints current memory usage. Adapted from scripts by Chris Slocum and 
-        Fred Cirera
+def helper_single(args):
+    '''This function serves to unpack keyword arguments provided to this module
+        and feed it in appropriately to the desired function. Different than
+        helper in that it takes a single argument.
+
+    Parameters
+    ----------
+    args : tuple
+        Contains all necessary arguments to run helper_single
+
+    Returns
+    -------
+    result : object
+        The result of running the function with given argument and keyword
+        arguments.
     '''
-    suffix = 'B'
-    # num = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    job = (config.vars.TEMPDIR / 'jobid.txt').read_text().strip('\n')
-    num = subprocess.check_output(["sstat", "--format=maxRSS", "-j", job+'.batch']).decode('UTF-8').split('\n')[-2].strip()
-    unit = num[-1]
-    if unit == 'K':
-        byte = float(num.strip('K'))*1024.0
-    elif unit == 'M':
-        byte = float(num.strip('M'))*1024.0*1024.0
-    elif unit == 'G':
-        byte = float(num.strip('G'))*1024.0*1024.0*1024.0
-    for unit in ['','K','M','G','T','P','E','Z']:
-        if abs(byte) < 1024.0:
-            print("Memory Usage: %3.1f%s%s" % (byte, unit, suffix), file=sys.stderr)
-            return
-        byte /= 1024.0
-    print("Memory Usage: %.1f%s%s" % (byte, 'Y', suffix), file=sys.stderr)
+    function, arg, kwargs, debug = args
+    # if debug:
+    #     print(f"Process #{i}, pid:{os.getpid()} running {function.__name__}",
+    #             file=sys.stderr)
+    #     current_mem_usage(jobid)
+    result = function(arg, **kwargs)
+    # if debug:
+    #     # print("Process", os.getpid(), 
+    #     #         "finished", function.__name__, file=sys.stderr)
+    #     print(f"Process #{i}, pid:{os.getpid()} finished {function.__name__}",
+    #             file=sys.stderr)
+
+    return result
+
+#==============================================================================
+def current_mem_usage(jobid, in_place=False, **kwargs):
+    '''Prints current memory usage. Adapted from scripts by Chris Slocum and 
+        Fred Cirera. Additional kwargs are passed to print function
+    '''
+    if jobid != None:
+        suffix = 'B'
+        # num = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        # jobid = (config.vars.TEMPDIR / 'jobid.txt').read_text().strip('\n')
+        num = subprocess.check_output(["sstat", "--format=maxRSS", "-j", jobid+'.batch']).decode('UTF-8').split('\n')[-2].strip()
+        unit = num[-1]
+        if unit == 'K':
+            byte = float(num.strip('K'))*1024.0
+        elif unit == 'M':
+            byte = float(num.strip('M'))*1024.0*1024.0
+        elif unit == 'G':
+            byte = float(num.strip('G'))*1024.0*1024.0*1024.0
+        for unit in ['','K','M','G','T','P','E','Z']:
+            if abs(byte) < 1024.0:
+                if in_place:
+                    print_in_place("(Memory Usage: %3.1f%s%s)" % (byte, unit, suffix), file=sys.stderr)
+                else:
+                    print("(Memory Usage: %3.1f%s%s)" % (byte, unit, suffix), file=sys.stderr, **kwargs)
+                return
+            byte /= 1024.0
+        if in_place:
+            print_in_place("(Memory Usage: %.1f%s%s)" % (byte, 'Y', suffix), file=sys.stderr)
+        else:
+            print("(Memory Usage: %.1f%s%s)" % (byte, 'Y', suffix), file=sys.stderr, **kwargs)
     return
+
+#==============================================================================
+def print_in_place(string, offset, file=None):
+    '''Writes a string to a file, then relocates pointer to position before
+        writing the string
+    '''
+    # offset = len(string)
+    # file.write(string)
+    # new_position = file.tell()
+    # print(new_position, offset)
+    # file.seek(new_position-offset,0)
+
+    current_position = file.tell()
+    file.seek(current_position-offset,0)
+    file.write(string)

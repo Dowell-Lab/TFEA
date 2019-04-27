@@ -23,6 +23,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import config
+import multiprocess
 
 #Main Script
 #==============================================================================
@@ -30,14 +31,15 @@ def main(results=config.vars.RESULTS, md_results=config.vars.MD_RESULTS,
         mdd_results=config.vars.MDD_RESULTS):
     config.vars.OUTPUTtime = time.time()
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
+    header = ['#TF', 'AUC', 'Events', 'p-val', 'p-adj']
     txt_output(results=results, outname='results.txt', 
                         sortindex=[-2,-1])
     if config.vars.MD:
-        header = ['TF', 'MD-Score', 'Events', 'p-val']
+        header = ['#TF', 'MD-Score', 'Events', 'p-val']
         txt_output(results=md_results, outname='md_results.txt', 
                             header=header, sortindex=[-1])
     if config.vars.MDD:
-        header = ['TF', 'MD-Score', 'Events', 'p-val']
+        header = ['#TF', 'MD-Score', 'Events', 'p-val']
         txt_output(results=mdd_results, outname='mdd_results.txt', 
                             header=header, sortindex=[-1])
     config.vars.OUTPUTtime = time.time()-config.vars.OUTPUTtime
@@ -56,7 +58,7 @@ def main(results=config.vars.RESULTS, md_results=config.vars.MD_RESULTS,
     print("done in: " + str(datetime.timedelta(seconds=int(config.vars.OUTPUTtime))), file=sys.stderr)
 
     if config.vars.DEBUG:
-        multiprocess.current_mem_usage()
+        multiprocess.current_mem_usage(config.vars.JOBID)
 
 
 #Functions

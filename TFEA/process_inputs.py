@@ -218,8 +218,13 @@ def read_arguments():
                                     "value that determines some plotting output."), 
                                     dest='PVALCUTOFF')
     output_options.add_argument('--textOnly', help="Suppress html output.", 
-                                    action='store_true', dest='TEXTONLY', 
-                                    default=None)
+                                    action='store_true', dest='TEXTONLY')
+
+    misc_options = parser.add_argument_group('Miscellaneous Options', 'Other options.')
+    misc_options.add_argument('--processes', help=("Number of processes to run "
+                                "in parallel. Note: Increasing this value will "
+                                "significantly increase memory footprint. "
+                                "Default: 10"), dest='CPUS')
 
     #Set default arguments and possible options or types
     # Notes: 
@@ -286,7 +291,8 @@ def read_arguments():
                     'DPI': [None, [str, int]], 
                     'PADJCUTOFF': [0.001, [float]], 
                     'PVALCUTOFF': [0.01, [float]], 
-                    'TEXTONLY': [False, [bool]]}
+                    'TEXTONLY': [False, [bool]],
+                    'CPUS': [10, [int]]}
 
     #Save default arguments in config
     import config
@@ -328,22 +334,22 @@ def make_out_directories(create=False):
 
     #Make parent output directory
     if create:
-        output.mkdir(exist_ok=True)
+        output.mkdir(exist_ok=True, parents=True)
 
     #Temporary files will go in this directory
     tempdir = output / 'temp_files'
     if create:
-        tempdir.mkdir(exist_ok=True)
+        tempdir.mkdir(exist_ok=True, parents=True)
 
     #Error and out files will go in this directory
     e_and_o = output / 'e_and_o'
     if create:
-        e_and_o.mkdir(exist_ok=True)
+        e_and_o.mkdir(exist_ok=True, parents=True)
 
     #Directory where plots used in html file will be stored.
     figuredir = output / 'plots'
     if create:
-        figuredir.mkdir(exist_ok=True)
+        figuredir.mkdir(exist_ok=True, parents=True)
 
     config.vars.TEMPDIR = tempdir
     config.vars.FIGUREDIR = figuredir
@@ -463,10 +469,10 @@ def verify_arguments(parser=None):
         if not config.vars.COMBINED_FILE and config.vars.RANK:
             raise exceptions.InputError('COMBINE module switched off but RANK module switched on without a COMBINED_FILE')
         if config.vars.MD:
-            if not config.vars.MD_BEDFILE1:
-                raise exceptions.InputError('COMBINE module switched off but MD module switched on without MD_BEDFILE1')
-            if not config.vars.MD_BEDFILE2:
-                raise exceptions.InputError('COMBINE module switched off but MD module switched on without MD_BEDFILE2')
+            if not config.vars.MD_BEDFILE1 and not config.vars.MD_FASTA1:
+                raise exceptions.InputError('COMBINE module switched off but MD module switched on without MD_BEDFILE1 or MD_FASTA1')
+            if not config.vars.MD_BEDFILE2 and not config.vars.MD_FASTA2:
+                raise exceptions.InputError('COMBINE module switched off but MD module switched on without MD_BEDFILE2 or MD_FASTA2')
     else:
         if not config.vars.BED1:
             raise exceptions.InputError('COMBINE module switched on but BED1 not specified')
@@ -478,10 +484,10 @@ def verify_arguments(parser=None):
         if not config.vars.RANKED_FILE and not config.vars.FASTA_FILE and config.vars.scanner == 'fimo':
             raise exceptions.InputError('SCANNER module set to "fimo" but RANK module switched off without RANKED_FILE or FASTA_FILE')
         if config.vars.MDD:
-            if not config.vars.MDD_BEDFILE1:
-                raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE1')
-            if not config.vars.MDD_BEDFILE2:
-                raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE2')
+            if not config.vars.MDD_BEDFILE1 and not config.vars.MDD_FASTA1:
+                raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE1 or MDD_FASTA1')
+            if not config.vars.MDD_BEDFILE2 and not config.vars.MDD_FASTA2:
+                raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE2 or MDD_FASTA2')
     else:
         if not config.vars.BED1:
             raise exceptions.InputError('RANK module switched on but BED1 not specified')
@@ -510,15 +516,17 @@ def create_directories(srcdirectory=None):
     if config.vars.SBATCH == False: #No sbatch flag
         make_out_directories(create=True)
         write_rerun(args=sys.argv, outputdir=config.vars.OUTPUT)
-    elif str(config.vars.SBATCH ) == 'SUBMITTED': #Internal flag
+        config.vars.JOBID = None
+    elif str(config.vars.SBATCH) == 'SUBMITTED': #Internal flag
         make_out_directories(create=False)
+        config.vars.JOBID = (config.vars.TEMPDIR / 'jobid.txt').read_text().strip('\n')
     else: #--sbatch specified
         make_out_directories(create=True)
         write_rerun(args=sys.argv, outputdir=config.vars.OUTPUT)
         scriptdir = srcdirectory.parent / 'cluster_scripts'
         script = scriptdir / 'run_main.sbatch'
         email = str(config.vars.SBATCH)
-        error_file = config.vars.E_AND_O / 'TFEA.err'
+        error_file = config.vars.E_AND_O / ('TFEA_'+config.vars.OUTPUT.name+'.err')
         args = sys.argv
         args[args.index('--sbatch')+1] = 'SUBMITTED'
         try:
@@ -527,6 +535,7 @@ def create_directories(srcdirectory=None):
                                 "--output=" + (config.vars.E_AND_O / "%x.out").as_posix(), 
                                 "--mail-user=" + email, 
                                 "--export=cmd=" + ' '.join(args), 
+                                "--job-name=TFEA_" + config.vars.OUTPUT.name, 
                                 script], stderr=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, check=True)
         except subprocess.CalledProcessError as e:

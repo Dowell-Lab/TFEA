@@ -4,25 +4,24 @@
 #SBATCH --job-name=TFEA
 
 ###Specify the queue
-#SBATCH -p highmem
+#SBATCH -p short
 
 ###Specify WallTime
 #SBATCH --time=24:00:00
 
 ### Specify the number of nodes/cores
-#SBATCH --nodes=1
-#SBATCH --ntasks=48
+#SBATCH --ntasks=10
 
 ### Allocate the amount of memory needed
-#SBATCH --mem=200gb
+#SBATCH --mem=10gb
 
 ### Setting to mail when the job is complete
-#SBATCH --error /scratch/Users/rusi2317/e_and_o/%x.err
-#SBATCH --output /scratch/Users/rusi2317/e_and_o/%x.out
+#SBATCH --error /scratch/Users/joru1876/e_and_o/%x.err
+#SBATCH --output /scratch/Users/joru1876/e_and_o/%x.out
 
 ### Set your email address
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=rutendo.sigauke@ucdenver.edu
+#SBATCH --mail-user=joru1876@colorado.edu
 
 ### Load required modules
 module purge

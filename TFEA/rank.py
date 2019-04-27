@@ -27,17 +27,17 @@ import exceptions
 
 #Main Script
 #==============================================================================
-def main(combined_file=config.vars.COMBINED_FILE, rank=config.vars.RANK, scanner=config.vars.SCANNER, 
-            bam1=config.vars.BAM1, bam2=config.vars.BAM2, tempdir=config.vars.TEMPDIR, 
-            label1=config.vars.LABEL1, label2=config.vars.LABEL2, 
-            largewindow=config.vars.LARGEWINDOW, mdd=config.vars.MDD, 
-            mdd_bedfile1=config.vars.MDD_BEDFILE1, mdd_bedfile2=config.vars.MDD_BEDFILE2):
+def main(use_config=True, combined_file=None, rank=None, scanner=None, 
+            bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
+            largewindow=None, mdd=None, mdd_bedfile1=None, mdd_bedfile2=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
 
     Parameters
     ----------
+    use_config : boolean
+        Whether to use a config module to assign variables.
     count_file : str
         Full path to a count file. Can be generated with the COUNT module or
         defined by a user
@@ -82,6 +82,19 @@ def main(combined_file=config.vars.COMBINED_FILE, rank=config.vars.RANK, scanner
     FileEmptyError
         If any resulting file is empty
     '''
+    if use_config:
+        combined_file=config.vars.COMBINED_FILE
+        rank=config.vars.RANK
+        scanner=config.vars.SCANNER
+        bam1=config.vars.BAM1
+        bam2=config.vars.BAM2
+        tempdir=config.vars.TEMPDIR
+        label1=config.vars.LABEL1
+        label2=config.vars.LABEL2
+        largewindow=config.vars.LARGEWINDOW
+        mdd=config.vars.MDD 
+        mdd_bedfile1=config.vars.MDD_BEDFILE1
+        mdd_bedfile2=config.vars.MDD_BEDFILE2
     config.vars.RANKtime = time.time()
     print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
 
@@ -113,16 +126,16 @@ def main(combined_file=config.vars.COMBINED_FILE, rank=config.vars.RANK, scanner
                                                         percent=0.2)
         if os.stat(mdd_bedfile1).st_size == 0 or os.stat(mdd_bedfile2).st_size == 0:
             raise exceptions.FileEmptyError("Error in RANK module. MDD bed file creation failed.")
-        if not mdd_bedfile1:
+        if not config.vars.MDD_BEDFILE1:
             config.vars.MDD_BEDFILE1 = mdd_bedfile1
-        if not mdd_bedfile2:
+        if not config.vars.MDD_BEDFILE2:
             config.vars.MDD_BEDFILE2 = mdd_bedfile2
                         
     config.vars.RANKtime = time.time()-config.vars.RANKtime
     print("done in: " + str(datetime.timedelta(seconds=int(config.vars.RANKtime))), file=sys.stderr)
 
     if config.vars.DEBUG:
-        multiprocess.current_mem_usage()
+        multiprocess.current_mem_usage(config.vars.JOBID)
 
 #Functions
 #==============================================================================

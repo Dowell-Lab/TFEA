@@ -31,7 +31,12 @@ import exceptions
 
 #Main Script
 #==============================================================================
-def main():
+def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None, 
+            ranked_file=None, md_bedfile1=None, md_bedfile2=None, 
+            scanner=None, md=None, largewindow=None, smallwindow=None, 
+            genomehits=None, fimo_background=None, genomefasta=None, 
+            tempdir=None, fimo_motifs=None, singlemotif=None, fimo_thresh=None,
+            debug=None, mdd=None):
     '''This is the main script of the SCANNER module. It returns motif distances
         to regions of interest by either scanning fasta files on the fly using
         fimo or homer or by using bedtools closest on a center bed file and 
@@ -39,6 +44,8 @@ def main():
 
     Parameters
     ----------
+    use_config : boolean
+        Whether to use a config module to assign variables.
     fasta_file : str
         Full path to a fasta file
     md_fasta1 : str
@@ -107,42 +114,36 @@ def main():
     InputError
         If an unknown scanner option is specified
     '''
-    import config
-    # fasta_file=config.vars.FASTA_FILE, md_fasta1=config.vars.MD_FASTA1, 
-    # md_fasta2=config.vars.MD_FASTA2, ranked_file=config.vars.RANKED_FILE, 
-    # md_bedfile1=config.vars.MD_BEDFILE1, md_bedfile2=config.vars.MD_BEDFILE2, 
-    # scanner=config.vars.SCANNER, md=config.vars.MD, largewindow=config.vars.LARGEWINDOW,
-    # smallwindow=config.vars.SMALLWINDOW, genomehits=config.vars.GENOMEHITS, 
-    # fimo_background=config.vars.FIMO_BACKGROUND, genomefasta=config.vars.GENOMEFASTA, 
-    # tempdir=config.vars.TEMPDIR, fimo_motifs=config.vars.FIMO_MOTIFS, 
-    # singlemotif=config.vars.SINGLEMOTIF, fimo_thresh=config.vars.FIMO_THRESH,
-    # debug=config.vars.DEBUG, mdd=config.vars.MDD
-
-    fasta_file=config.vars.FASTA_FILE
-    md_fasta1=config.vars.MD_FASTA1 
-    md_fasta2=config.vars.MD_FASTA2 
-    mdd_fasta1=config.vars.MDD_FASTA1 
-    mdd_fasta2=config.vars.MDD_FASTA2 
-    ranked_file=config.vars.RANKED_FILE
-    md_bedfile1=config.vars.MD_BEDFILE1
-    md_bedfile2=config.vars.MD_BEDFILE2 
-    scanner=config.vars.SCANNER
-    md=config.vars.MD
-    largewindow=config.vars.LARGEWINDOW
-    smallwindow=config.vars.SMALLWINDOW
-    genomehits=config.vars.GENOMEHITS
-    fimo_background=config.vars.FIMO_BACKGROUND
-    genomefasta=config.vars.GENOMEFASTA
-    tempdir=config.vars.TEMPDIR
-    fimo_motifs=config.vars.FIMO_MOTIFS
-    singlemotif=config.vars.SINGLEMOTIF
-    fimo_thresh=config.vars.FIMO_THRESH
-    debug=config.vars.DEBUG
-    mdd=config.vars.MDD
+    if use_config:
+        fasta_file=config.vars.FASTA_FILE
+        md_fasta1=config.vars.MD_FASTA1 
+        md_fasta2=config.vars.MD_FASTA2 
+        mdd_fasta1=config.vars.MDD_FASTA1 
+        mdd_fasta2=config.vars.MDD_FASTA2 
+        ranked_file=config.vars.RANKED_FILE
+        md_bedfile1=config.vars.MD_BEDFILE1
+        md_bedfile2=config.vars.MD_BEDFILE2 
+        mdd_bedfile1=config.vars.MDD_BEDFILE1
+        mdd_bedfile2=config.vars.MDD_BEDFILE2 
+        scanner=config.vars.SCANNER
+        md=config.vars.MD
+        largewindow=config.vars.LARGEWINDOW
+        smallwindow=config.vars.SMALLWINDOW
+        genomehits=config.vars.GENOMEHITS
+        fimo_background=config.vars.FIMO_BACKGROUND
+        genomefasta=config.vars.GENOMEFASTA
+        tempdir=config.vars.TEMPDIR
+        fimo_motifs=config.vars.FIMO_MOTIFS
+        singlemotif=config.vars.SINGLEMOTIF
+        fimo_thresh=config.vars.FIMO_THRESH
+        debug=config.vars.DEBUG
+        mdd=config.vars.MDD
+        cpus = config.vars.CPUS
+        jobid = config.vars.JOBID
 
 
     SCANNERtime = time.time()
-    print("Scanning regions using " + scanner + "...", end=' ', flush=True, file=sys.stderr)
+    print("Scanning regions using " + scanner + "...", flush=True, file=sys.stderr)
 
     if not fasta_file and scanner != 'genome hits':
         fasta_file = getfasta(bedfile=ranked_file, genomefasta=genomefasta, 
@@ -160,18 +161,20 @@ def main():
             raise exceptions.FileEmptyError("Error in SCANNER module. Converting MD bedfiles to fasta failed.")
     if config.vars.MDD:
         if not mdd_fasta1:
-            mdd_fasta1 = getfasta(bedfile=md_bedfile1, genomefasta=genomefasta, 
+            mdd_fasta1 = getfasta(bedfile=mdd_bedfile1, genomefasta=genomefasta, 
                                 tempdir=tempdir, outname='mdd1_fasta.fa')
         if not mdd_fasta2:
-            mdd_fasta2 = getfasta(bedfile=md_bedfile2, genomefasta=genomefasta, 
+            mdd_fasta2 = getfasta(bedfile=mdd_bedfile2, genomefasta=genomefasta, 
                                 tempdir=tempdir, outname='mdd2_fasta.fa')
         if os.stat(mdd_fasta1).st_size == 0 or os.stat(mdd_fasta2).st_size == 0:
             raise exceptions.FileEmptyError("Error in SCANNER module. Converting MDD bedfiles to fasta failed.")
 
     #FIMO
-    if scanner == 'fimo':
+    # if scanner == 'fimo':
         #Get background file, if none desired set to 'None'
-        if fimo_background == 'largewindow':
+        if fasta_file and fimo_background:
+            background_file = fasta_markov(tempdir=tempdir, fastafile=fasta_file, order='1')
+        elif fimo_background == 'largewindow':
             background_file = fimo_background_file(
                                 window=int(largewindow), 
                                 tempdir=tempdir, bedfile=ranked_file, 
@@ -198,23 +201,27 @@ def main():
             motif_list = fimo_motif_names(motifdatabase=fimo_motifs)
 
         #Perform fimo on desired motifs
+        print("\tTFEA:", file=sys.stderr)
         fimo_keywords = dict(bg_file=background_file, fasta_file=fasta_file, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
                             thresh=fimo_thresh, 
                             largewindow=largewindow)
 
         motif_distances = multiprocess.main(function=fimo, args=motif_list, 
-                                            kwargs=fimo_keywords, debug=debug)
+                                            kwargs=fimo_keywords, debug=debug, 
+                                            jobid=jobid, cpus=cpus)
 
         #FIMO for md score fasta files
         if md:
+            print("\tMD:", file=sys.stderr)
             fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta1, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
                             thresh=fimo_thresh, 
                             largewindow=largewindow)
             md_distances1 = multiprocess.main(function=fimo, args=motif_list, 
                                                 kwargs=fimo_keywords, 
-                                                debug=debug)
+                                                debug=debug, jobid=jobid, 
+                                                cpus=cpus)
             
             fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta2, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
@@ -222,18 +229,21 @@ def main():
                             largewindow=largewindow)
             md_distances2 = multiprocess.main(function=fimo, args=motif_list, 
                                                 kwargs=fimo_keywords, 
-                                                debug=debug)
+                                                debug=debug, jobid=jobid,
+                                                cpus=cpus)
             config.vars.MD_DISTANCES1 = md_distances1
             config.vars.MD_DISTANCES2 = md_distances2
         
         if mdd:
+            print("\tMDD:", file=sys.stderr)
             fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta1, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
                             thresh=fimo_thresh, 
                             largewindow=largewindow)
             mdd_distances1 = multiprocess.main(function=fimo, args=motif_list, 
                                                 kwargs=fimo_keywords, 
-                                                debug=debug)
+                                                debug=debug, jobid=jobid,
+                                                cpus=cpus)
             
             fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta2, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
@@ -241,7 +251,8 @@ def main():
                             largewindow=largewindow)
             mdd_distances2 = multiprocess.main(function=fimo, args=motif_list, 
                                                 kwargs=fimo_keywords, 
-                                                debug=debug)
+                                                debug=debug, jobid=jobid,
+                                                cpus=cpus)
 
             config.vars.MDD_DISTANCES1 = mdd_distances1
             config.vars.MDD_DISTANCES2 = mdd_distances2
@@ -269,7 +280,8 @@ def main():
         motif_distances = multiprocess.main(function=bedtools_closest, 
                                             args=motif_list, 
                                             kwargs=bedtools_distance_keywords, 
-                                            debug=debug)
+                                            debug=debug, jobid=jobid,
+                                            cpus=cpus)
 
         #GENOME HITS for md score bed files
         if md:
@@ -282,7 +294,8 @@ def main():
             md_distances1 = multiprocess.main(function=bedtools_closest, 
                                             args=motif_list, 
                                             kwargs=bedtools_distance_keywords, 
-                                            debug=debug)
+                                            debug=debug, jobid=jobid,
+                                            cpus=cpus)
 
             md_bedfile2 = get_center(bedfile=md_bedfile2, outname=md_bedfile2)
             bedtools_distance_keywords = dict(genomehits=genomehits, 
@@ -293,7 +306,8 @@ def main():
             md_distances2 = multiprocess.main(function=bedtools_closest, 
                                             args=motif_list, 
                                             kwargs=bedtools_distance_keywords, 
-                                            debug=debug)
+                                            debug=debug, jobid=jobid,
+                                            cpus=cpus)
 
             config.vars.MD_DISTANCES1 = md_distances1
             config.vars.MD_DISTANCES2 = md_distances2
@@ -307,7 +321,8 @@ def main():
             mdd_distances1 = multiprocess.main(function=bedtools_closest, 
                                             args=motif_list, 
                                             kwargs=bedtools_distance_keywords, 
-                                            debug=debug)
+                                            debug=debug, jobid=jobid,
+                                            cpus=cpus)
 
             mdd_bedfile2 = get_center(bedfile=mdd_bedfile2, outname=mdd_bedfile2)
             bedtools_distance_keywords = dict(genomehits=genomehits, 
@@ -318,7 +333,8 @@ def main():
             mdd_distances2 = multiprocess.main(function=bedtools_closest, 
                                             args=motif_list, 
                                             kwargs=bedtools_distance_keywords, 
-                                            debug=debug)
+                                            debug=debug, jobid=jobid,
+                                            cpus=cpus)
 
             config.vars.MDD_DISTANCES1 = mdd_distances1
             config.vars.MDD_DISTANCES2 = mdd_distances2
@@ -331,7 +347,7 @@ def main():
     print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
 
     if config.vars.DEBUG:
-        multiprocess.current_mem_usage()
+        multiprocess.current_mem_usage(config.vars.JOBID)
 
 #Functions
 #==============================================================================
@@ -357,7 +373,7 @@ def getfasta(bedfile=None, genomefasta=None, tempdir=None, outname=None):
         fasta format 
     '''
     fasta_file = tempdir / outname
-    getfasta_command = ["bedtools", "getfasta", "-name",
+    getfasta_command = ["bedtools", "getfasta",
                         "-fi", genomefasta, 
                         "-bed", bedfile,
                         "-fo", fasta_file]
@@ -380,6 +396,16 @@ def fasta_linecount(fastafile=None):
                 linecount += 1
     
     return linecount
+
+#==============================================================================
+def fasta_names(fastafile=None):
+    names = list()
+    with open(fastafile) as F:
+        for line in F:
+            if line[0] == '>':
+                names.append(line[1:].strip('\n'))
+    
+    return names
             
 #==============================================================================
 def fimo_background_file(window=None, tempdir=None, bedfile=None, 
@@ -488,10 +514,12 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
     except subprocess.CalledProcessError as e:
         raise exceptions.SubprocessError(e.stderr.decode())
 
-    fasta_count = fasta_linecount(fastafile=fasta_file)
+    # fasta_count = fasta_linecount(fastafile=fasta_file)
+    names = fasta_names(fastafile=fasta_file)
     distances = fimo_parse_stdout(fimo_stdout=fimo_out, 
                                     largewindow=largewindow, 
-                                    linecount=fasta_count)
+                                    names=names)
+                                    # linecount=fasta_count)
 
     del fimo_out
 
@@ -585,7 +613,7 @@ def fimo_parse(fimo_file=None, largewindow=None, retain='distance',
 
 #==============================================================================
 def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score', 
-                        linecount=None):
+                        names=None):
     '''
     '''
     d = dict()
@@ -598,29 +626,26 @@ def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score',
         score_index = header.index('score')
     for item in lines[1:-1]: #To remove header and empty last line in output
         line_list = item.split('\t')
-        rank = line_list[name_index].split(',')[-1]
-        rank = int(float(rank))
+        id = line_list[name_index]
         start = line_list[start_index]
         stop = line_list[stop_index]
         distance = ((int(start)+int(stop))/2)-int(largewindow)
         score = line_list[score_index]
-
-        if rank not in d:
-            d[rank] = [rank, score, distance]
+        if id not in d:
+            d[id] = [score, distance]
         elif retain == 'score':
-            prev_score = float(d[rank][-2])
+            prev_score = float(d[id][0])
             if prev_score < float(score):
-                d[rank] = [rank, score, distance]
+                d[id] = [score, distance]
         elif retain == 'distance':
-            prev_distance = float(d[rank][-1])
+            prev_distance = float(d[id][1])
             if prev_distance < float(distance):
-                d[rank] = [rank, score, distance]
+                d[id] = [score, distance]
 
-    
     distances = list()
-    for rank in range(1, linecount+1):
-        if rank in d:
-            distances.append(d[rank][-1])
+    for name in names:
+        if name in d:
+            distances.append(d[name][1])
         else:
             distances.append('.')
 

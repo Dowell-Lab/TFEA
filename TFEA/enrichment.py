@@ -32,7 +32,10 @@ import multiprocess
 
 #Main Script
 #==============================================================================
-def main():
+def main(use_config=True, motif_distances=None, md_distances1=None, 
+            md_distances2=None, mdd_distances1=None, mdd_distances2=None, 
+            enrichment=None, output_type=None, permutations=None, debug=None, 
+            largewindow=None, smallwindow=None, md=None, cpus=None):
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -40,6 +43,8 @@ def main():
     
     Parameters
     ----------
+    use_config : boolean
+        Whether to use a config module to assign variables.
     motif_distances : list of lists
         A list containing a list for each motif scanned. For each motif, the 
         list begins with the motif name as a string and is followed by int
@@ -78,33 +83,30 @@ def main():
     md_results : list of lists
         A list of lists corresponding to md-score statistics for each motif
     '''
-    # motif_distances=config.vars.MOTIF_DISTANCES, 
-    #     md_distances1=config.vars.MD_DISTANCES1, md_distances2=config.vars.MD_DISTANCES2, 
-    #     mdd_distances1=config.vars.MDD_DISTANCES1, mdd_distances2=config.vars.MDD_DISTANCES2, 
-    #     enrichment=config.vars.ENRICHMENT, output_type=config.vars.OUTPUT_TYPE, 
-    #     permutations=config.vars.PERMUTATIONS, debug=config.vars.DEBUG, 
-    #     largewindow=config.vars.LARGEWINDOW, smallwindow=config.vars.SMALLWINDOW, 
-    #     md=config.vars.MD
-    import config
-    motif_distances=config.vars.MOTIF_DISTANCES
-    md_distances1=config.vars.MD_DISTANCES1
-    md_distances2=config.vars.MD_DISTANCES2 
-    mdd_distances1=config.vars.MDD_DISTANCES1
-    mdd_distances2=config.vars.MDD_DISTANCES2
-    enrichment=config.vars.ENRICHMENT
-    permutations=config.vars.PERMUTATIONS
-    debug=config.vars.DEBUG
-    largewindow=config.vars.LARGEWINDOW
-    smallwindow=config.vars.SMALLWINDOW
-    md=config.vars.MD
-    mdd = config.vars.MDD
+    if use_config:
+        motif_distances=config.vars.MOTIF_DISTANCES
+        md_distances1=config.vars.MD_DISTANCES1
+        md_distances2=config.vars.MD_DISTANCES2 
+        mdd_distances1=config.vars.MDD_DISTANCES1
+        mdd_distances2=config.vars.MDD_DISTANCES2
+        enrichment=config.vars.ENRICHMENT
+        permutations=config.vars.PERMUTATIONS
+        debug=config.vars.DEBUG
+        largewindow=config.vars.LARGEWINDOW
+        smallwindow=config.vars.SMALLWINDOW
+        md=config.vars.MD
+        mdd = config.vars.MDD
+        cpus = config.vars.CPUS
+        jobid = config.vars.JOBID
+
     ENRICHMENTtime = time.time()
-    print("Calculating enrichment...", end=' ', flush=True, file=sys.stderr)
+    print("Calculating enrichment...", flush=True, file=sys.stderr)
     if enrichment == 'auc':
+        print('TFEA:', file=sys.stderr)
         auc_keywords = dict(permutations=permutations)
         results = multiprocess.main(function=area_under_curve, 
                                     args=motif_distances, kwargs=auc_keywords,
-                                    debug=debug)
+                                    debug=debug, jobid=jobid, cpus=cpus)
 
         padj_bonferroni(results)
     elif enrichment == 'anderson-darling':
@@ -122,15 +124,21 @@ def main():
         results = multiprocess.main(function=area_under_curve_bgcorrect, 
                                     args=motif_distances, 
                                     kwargs=auc_bgcorrect_keywords,
-                                    debug=debug)
+                                    debug=debug, jobid=jobid, cpus=cpus)
 
         padj_bonferroni(results)
 
     if md:
-        md_results = calculate_md(md_distances1=md_distances1, md_distances2=md_distances2)
+        print('MD:', file=sys.stderr)
+        md_results = calculate_md(md_distances1=md_distances1, 
+                                    md_distances2=md_distances2, 
+                                    jobid=jobid, cpus=cpus)
         config.vars.MD_RESULTS = md_results
     if mdd:
-        mdd_results =  calculate_md(md_distances1=mdd_distances1, md_distances2=mdd_distances2)
+        print('MDD:', file=sys.stderr)
+        mdd_results =  calculate_md(md_distances1=mdd_distances1, 
+                                        md_distances2=mdd_distances2, 
+                                        jobid=jobid, cpus=cpus)
         config.vars.MDD_RESULTS = mdd_results
 
 
@@ -141,19 +149,18 @@ def main():
     print("done in: " + str(datetime.timedelta(seconds=int(ENRICHMENTtime))), file=sys.stderr)
 
     if config.vars.DEBUG:
-        multiprocess.current_mem_usage()
+        multiprocess.current_mem_usage(config.vars.JOBID)
 
 #==============================================================================
-def calculate_md(md_distances1=None, md_distances2=None):
-
+def calculate_md(md_distances1=None, md_distances2=None, jobid=None, cpus=None):
     import config
     debug = config.vars.DEBUG
     smallwindow=config.vars.SMALLWINDOW
     md_keywords = dict(smallwindow=smallwindow)
     md_results = multiprocess.main(function=md_score, 
-                    args=zip(sorted(md_distances1),sorted(md_distances2)), 
+                    args=list(zip(sorted(md_distances1),sorted(md_distances2))), 
                     kwargs=md_keywords,
-                    debug=debug)
+                    debug=debug, jobid=jobid, cpus=cpus)
 
     md_results = md_score_p(md_results)
 
@@ -528,58 +535,8 @@ def md_score_p(results):
             cdf=norm.cdf(z,0,1)
             p=min(cdf,1-cdf)*2
             md = md2-md1-mean
-            total = N1 + N2
+            total = (N1 + N2)/2.0
         
         results[i] = [motif, md, total, p]
 
     return results
-
-#TESTS
-#==============================================================================
-if __name__ == "__main__":
-    import numpy as np
-    from TFEA import enrichment_functions
-
-    distances = [x for x in range(900, 1000)] + ['.' for x in range(40)]
-    np.random.shuffle(distances)
-    distances = [1 for x in range(20)] + distances
-    distances = ['test'] + distances
-    # results = enrichment_functions.max_GSEA(distances, output_type=None, 
-    #                                         permutations=1000, cutoff=150)
-    # print(results)
-
-    # results = enrichment_functions.area_under_curve(distances, 
-    #                                             output_type='score', 
-    #                                             permutations=1000)
-    
-
-    distances_reverse = ['reverse'] + [x for x in reversed(distances[1:])]
-
-    # results_rev = enrichment_functions.area_under_curve(distances, 
-                                                # output_type='score', 
-                                                # permutations=1000)
-
-    # results = anderson_darling(distances)
-    # results_rev = anderson_darling(distances_reverse)
-    # print(results, results_rev)
-
-    results = md_score([distances, distances], smallwindow=150)
-    # results = ['motif', 0.1, 0.2, 1500, 1500]
-    # results = md_score_p([results])
-    print(results)
-
-
-    # # results_rev = [x for x in reversed(results_rev)]
-    # for i in range(len(results)):
-    #     if results[i] != results_rev[-(i+1)]:
-    #         print(results[i], results_rev[-(i+1)])
-
-    # print(np.sum(results), np.sum(results_rev), np.sum([x for x in reversed(results)]))
-
-    # print(results)
-    # print(results_rev)
-    # print(results == [x for x in reversed(results_rev)])
-    # print(set(results) - set([x for x in reversed(results_rev)]))
-    # print(set([x for x in reversed(results_rev)]) - set(results))
-
-    # print(lineplot_output)

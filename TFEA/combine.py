@@ -28,14 +28,15 @@ import exceptions
 
 #Main Script
 #==============================================================================
-def main(bed1=config.vars.BED1, bed2=config.vars.BED2, method=config.vars.COMBINE, 
-        tempdir=config.vars.TEMPDIR, md=config.vars.MD, largewindow=config.vars.LARGEWINDOW,
-        scanner=config.vars.SCANNER):
+def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None, 
+        md=None, largewindow=None, scanner=None):
     '''This is the main script of the combine function that is called within
         TFEA. Default arguments are assigned to variables within config.vars.
 
     Parameters
     ----------
+    use_config : boolean
+        Whether to use a config module to assign variables.
     bed1 : list
         A list of strings specifying full paths to bed files corresponding to
         a single condition (replicates)
@@ -65,6 +66,14 @@ def main(bed1=config.vars.BED1, bed2=config.vars.BED2, method=config.vars.COMBIN
     FileEmptyError
         If any resulting file is empty
     '''
+    if use_config:
+        bed1=config.vars.BED1
+        bed2=config.vars.BED2
+        method=config.vars.COMBINE
+        tempdir=config.vars.TEMPDIR
+        md=config.vars.MD
+        largewindow=config.vars.LARGEWINDOW
+        scanner=config.vars.SCANNER
     config.vars.COMBINEtime = time.time()
     print("Combining Regions...", end=' ', flush=True, file=sys.stderr)
 
@@ -79,12 +88,14 @@ def main(bed1=config.vars.BED1, bed2=config.vars.BED2, method=config.vars.COMBIN
         if md:
             md_bedfile1 = tempdir / "md_bedfile1.merge.bed"
             md_bedfile2 = tempdir / "md_bedfile2.merge.bed"
-            md_merged_bed1 = merge_bed(beds=bed1).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
-            md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
-            # md_merged_bed1.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile1)
-            md_merged_bed1.saveas(md_bedfile1)
-            # md_merged_bed2.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
-            md_merged_bed2.saveas(md_bedfile2)
+            # md_merged_bed1 = merge_bed(beds=bed1).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
+            # md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
+            md_merged_bed1 = merge_bed(beds=bed1).each(featurefuncs.extend_fields, 4)
+            md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4)
+            md_merged_bed1.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile1)
+            # md_merged_bed1.saveas(md_bedfile1)
+            md_merged_bed2.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
+            # md_merged_bed2.saveas(md_bedfile2)
 
     elif method == 'tfit clean':
         # combined_file = tfit_clean(beds=bed1+bed2, tempdir=tempdir)
@@ -153,10 +164,10 @@ def main(bed1=config.vars.BED1, bed2=config.vars.BED2, method=config.vars.COMBIN
             md_bedfile2 = tempdir / "md_bedfile2.intersect.bed"
             md_intersected_bed1 = intersect_bed(beds=bed1).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
             md_intersected_bed2 = intersect_bed(beds=bed2).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
-            # md_intersected_bed1.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile1)
-            md_intersected_bed1.saveas(md_bedfile1)
-            # md_intersected_bed2.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
-            md_intersected_bed2.saveas(md_bedfile2)
+            md_intersected_bed1.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile1)
+            # md_intersected_bed1.saveas(md_bedfile1)
+            md_intersected_bed2.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
+            # md_intersected_bed2.saveas(md_bedfile2)
 
     #Check to make sure no files are empty
     if os.stat(combined_file).st_size == 0:
@@ -179,7 +190,7 @@ def main(bed1=config.vars.BED1, bed2=config.vars.BED2, method=config.vars.COMBIN
             file=sys.stderr)
 
     if config.vars.DEBUG:
-        multiprocess.current_mem_usage()
+        multiprocess.current_mem_usage(config.vars.JOBID)
 
 #Functions
 #==============================================================================
