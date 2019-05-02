@@ -3,19 +3,168 @@ Transcription Factor Enrichment Analysis (TFEA)
   
 ```
 TFEA --help
-python TFEA/ --help
+usage: TFEA [-h] [--output OUTPUT] [--bed1 [BED1]] [--bed2 [BED2]]
+            [--bam1 [BAM1]] [--bam2 [BAM2]] [--label1 LABEL1]
+            [--label2 LABEL2] [--config CONFIG] [--sbatch SBATCH] [--test]
+            [--combined_file COMBINED_FILE] [--ranked_file RANKED_FILE]
+            [--fasta_file FASTA_FILE] [--md] [--mdd]
+            [--md_bedfile1 MD_BEDFILE1] [--md_bedfile2 MD_BEDFILE2]
+            [--mdd_bedfile1 MDD_BEDFILE1] [--mdd_bedfile2 MDD_BEDFILE2]
+            [--md_fasta1 MD_FASTA1] [--md_fasta2 MD_FASTA2]
+            [--mdd_fasta1 MDD_FASTA1] [--mdd_fasta2 MDD_FASTA2]
+            [--combine {intersect/merge,merge all,tfit clean,tfit remove small,False}]
+            [--rank {deseq,fc,False}] [--fasta {True,False}]
+            [--scanner {fimo,genome hits}] [--enrichment {auc,auc_bgcorrect}]
+            [--debug] [--genomefasta GENOMEFASTA] [--fimo_thresh FIMO_THRESH]
+            [--fimo_motifs FIMO_MOTIFS] [--fimo_background FIMO_BACKGROUND]
+            [--genomehits GENOMEHITS] [--singlemotif SINGLEMOTIF]
+            [--permutations PERMUTATIONS] [--largewindow LARGEWINDOW]
+            [--smallwindow SMALLWINDOW] [--dpi DPI] [--padjcutoff PADJCUTOFF]
+            [--pvalcutoff PVALCUTOFF] [--textOnly] [--processes CPUS]
 
-usage: TFEA --config CONFIG.ini [--sbatch email@address.com]
-
-Transcription Factor Enrichment Analysis (TFEA) takes as input a configuration
-file (.ini) and outputs a folder containing TFEA results.
+Transcription Factor Enrichment Analysis (TFEA)
 
 optional arguments:
-  -h, --help       show this help message and exit
-  --config CONFIG  REQUIRED. A configuration file containing .ini suffix (ex.
-                   config.ini). See example in the examples folder.
-  --sbatch SBATCH  OPTIONAL. Submits an sbatch job. If specified, input an
-                   e-mail address.
+  -h, --help            show this help message and exit
+
+Main Inputs:
+  Inputs required for full pipeline
+
+  --output OUTPUT, -o OUTPUT
+                        Full path to output directory. If it exists, overwrite
+                        its contents.
+  --bed1 [BED1]         Bed files associated with condition 1
+  --bed2 [BED2]         Bed files associated with condition 2
+  --bam1 [BAM1]         Sorted bam files associated with condition 1
+  --bam2 [BAM2]         Sorted bam files associated with condition 2
+  --label1 LABEL1       An informative label for condition 1
+  --label2 LABEL2       An informative label for condition 2
+  --config CONFIG, -c CONFIG
+                        A configuration file that a user may use instead of
+                        specifying flags. Command line flags will overwrite
+                        options within the config file. See examples in the
+                        config_files folder.
+  --sbatch SBATCH, -s SBATCH
+                        Submits an sbatch (slurm) job. If specified, input an
+                        e-mail address.
+  --test, -t            Performs unit testing
+
+Processed Inputs:
+  Input options for pre-processed data
+
+  --combined_file COMBINED_FILE
+                        A single bed file combining regions of interest.
+  --ranked_file RANKED_FILE
+                        A bed file containing each regions rank as the 4th
+                        column.
+  --fasta_file FASTA_FILE
+                        A fasta file containing sequences to be analyzed,
+                        ranked by the user.
+
+Secondary Analysis Inputs:
+  Input options for performing MD-Score and Differential MD-Score analysis
+
+  --md                  Switch that controls whether to perform MD analysis.
+  --mdd                 Switch that controls whether to perform differential
+                        MD analysis.
+  --md_bedfile1 MD_BEDFILE1
+                        A bed file for MD-Score analysis associated with
+                        condition 1.
+  --md_bedfile2 MD_BEDFILE2
+                        A bed file for MD-Score analysis associated with
+                        condition 2.
+  --mdd_bedfile1 MDD_BEDFILE1
+                        A bed file for Differential MD-Score analysis
+                        associated with condition 1.
+  --mdd_bedfile2 MDD_BEDFILE2
+                        A bed file for Differential MD-Score analysis
+                        associated with condition 2.
+  --md_fasta1 MD_FASTA1
+                        A fasta file for MD-Score analysis associated with
+                        condition 1.
+  --md_fasta2 MD_FASTA2
+                        A fasta file for MD-Score analysis associated with
+                        condition 2.
+  --mdd_fasta1 MDD_FASTA1
+                        A fasta file for Differential MD-Score analysis
+                        associated with condition 1.
+  --mdd_fasta2 MDD_FASTA2
+                        A fasta file for Differential MD-Score analysis
+                        associated with condition 2.
+
+Module Switches:
+  Switches for different modules
+
+  --combine {intersect/merge,merge all,tfit clean,tfit remove small,False}
+                        Method for combining input bed files
+  --rank {deseq,fc,False}
+                        Method for ranking combined bed file
+  --fasta {True,False}  Swtich that determines whether converting to fasta is
+                        performed.
+  --scanner {fimo,genome hits}
+                        Method for scanning fasta files for motifs
+  --enrichment {auc,auc_bgcorrect}
+                        Method for calculating enrichment
+  --debug               Print memory usage to stderr
+
+Fasta Options:
+  Options for performing conversion of bed to fasta
+
+  --genomefasta GENOMEFASTA
+                        Genomic fasta file
+
+Scanner Options:
+  Options for performing motif scanning
+
+  --fimo_thresh FIMO_THRESH
+                        P-value threshold for calling FIMO motif hits
+  --fimo_motifs FIMO_MOTIFS
+                        Full path to a .meme formatted motif databse file.
+                        Some databases included in motif_databases folder.
+  --fimo_background FIMO_BACKGROUND
+                        Options for choosing mononucleotide background
+                        distribution to use with FIMO. {'largewindow',
+                        'smallwindow', int, file}
+  --genomehits GENOMEHITS
+                        A folder containing bed files with pre-calculated
+                        motif hits to a genome. For use with 'genome hits'
+                        scanner option.
+  --singlemotif SINGLEMOTIF
+                        Option to run analysis on a subset of motifs within
+                        specified motif database or genome hits. Can be a
+                        single motif or a comma-separated list of motifs.
+
+Enrichment Options:
+  Options for performing enrichment analysis
+
+  --permutations PERMUTATIONS
+                        Number of permutations to perfrom for calculating
+                        p-value.
+  --largewindow LARGEWINDOW
+                        The size (bp) of a large window around input regions
+                        that captures background.
+  --smallwindow SMALLWINDOW
+                        The size (bp) of a small window arount input regions
+                        that captures signal.
+
+Output Options:
+  Options for the output.
+
+  --dpi DPI             Resolution of output figures.
+  --padjcutoff PADJCUTOFF
+                        A p-adjusted cutoff value that determines some
+                        plotting output.
+  --pvalcutoff PVALCUTOFF
+                        A p-value cutoff value that determines some plotting
+                        output.
+  --textOnly            Suppress html output.
+
+Miscellaneous Options:
+  Other options.
+
+  --processes CPUS      Number of processes to run in parallel. Note:
+                        Increasing this value will significantly increase
+                        memory footprint. Default: 10
  ```
  
  # TFEA Pipeline
