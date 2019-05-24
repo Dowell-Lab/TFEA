@@ -196,7 +196,7 @@ To install, this package:
 ```
 git clone https://github.com/jdrubin91/TFEA.git
 cd /full/path/to/TFEA/
-pip install .
+pip3 install .
 ```
 
 TFEA can then be run from anywhere, try:
@@ -209,7 +209,7 @@ Alternatively, TFEA can be run without installation using:
 
 ```
 cd /full/path/to/TFEA/
-python TFEA/ --help
+python3 TFEA/ --help
 ```
 
 <br></br>
