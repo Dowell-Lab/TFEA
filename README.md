@@ -308,11 +308,11 @@ Before running TFEA, make sure you have the following installed on your machine
   
   ```
   module load python/2.7.14
+  module load python/3.6.3
   module load bedtools/2.25.0
-  module load python/2.7.14/matplotlib/1.5.1
-  module load python/2.7.14/scipy/0.17.1
-  module load python/2.7.14/htseq
-  module load samtools/1.3.1
+  module load python/3.6.3/matplotlib/1.5.1
+  module load python/3.6.3/scipy/0.17.1
+  module load python/3.6.3/numpy/1.14.1
   module load meme/4.12.0
   ```
 
@@ -396,7 +396,7 @@ If you desire to run TFEA on your local machine, make sure you have the required
 Once all dependencies are installed, TFEA can be run using:
 
   ```bash
-  python src/ --config CONFIG.ini
+  python3 TFEA/ --config CONFIG.ini
   ```
 
 <br></br>
@@ -405,7 +405,7 @@ Once all dependencies are installed, TFEA can be run using:
 Submitting jobs through the slurm scheduler is supported. To use this module:
 
   ```bash
-  python src/ --config CONFIG.ini --sbatch email@address.com
+  python3 TFEA/ --config CONFIG.ini --sbatch email@address.com
   ```
 
 
@@ -425,10 +425,10 @@ Node configuration can be changed within scripts/run_main.sbatch. See here the s
 
   ### Specify the number of nodes/cores
   #SBATCH --nodes=1
-  #SBATCH --ntasks=64
+  #SBATCH --ntasks=10
 
   ### Allocate the amount of memory needed
-  #SBATCH --mem=500gb
+  #SBATCH --mem=50gb
 
   ### Set error and output locations. These will be automatically updated to the output directory.
   #SBATCH --error /scratch/Users/user/e_and_o/%x.err
@@ -440,20 +440,19 @@ Node configuration can be changed within scripts/run_main.sbatch. See here the s
 
   ### Load required modules
   module purge
-  module load python/2.7.14
+  module load python/3.6.3
   module load bedtools/2.25.0
-  module load python/2.7.14/matplotlib/1.5.1
-  module load python/2.7.14/scipy/0.17.1
-  module load python/2.7.14/htseq
-  module load samtools/1.3.1
+  module load python/3.6.3/matplotlib/1.5.1
+  module load python/3.6.3/scipy/0.17.1
+  module load python/3.6.3/numpy/1.14.1
   module load meme/4.12.0
 
   ### now call your program
 
-  python ${src} --config ${config} --sbatch SUBMITTED
+  python3 ${cmd}
   ```
 **NOTE:** For TFEA to properly run a job, the python call within the sbatch script:
->python ${src} --config ${config} --sbatch SUBMITTED
+>python3 ${cmd}
 
 **MUST NOT BE CHANGED**
 
