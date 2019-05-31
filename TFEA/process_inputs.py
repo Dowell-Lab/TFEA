@@ -19,7 +19,7 @@ import argparse
 import subprocess
 from pathlib import Path
 
-import exceptions
+from TFEA import exceptions
 
 #Classes
 #==============================================================================
@@ -58,15 +58,15 @@ def read_arguments():
                                         'Inputs required for full pipeline')
     inputs.add_argument('--output', '-o', help=("Full path to output directory. "
                         "If it exists, overwrite its contents."), dest='OUTPUT')
-    inputs.add_argument('--bed1', nargs='?', help=("Bed files associated with "
+    inputs.add_argument('--bed1', nargs='*', help=("Bed files associated with "
                         "condition 1"), dest='BED1')
-    inputs.add_argument('--bed2', nargs='?', help=("Bed files associated with "
+    inputs.add_argument('--bed2', nargs='*', help=("Bed files associated with "
                         "condition 2"), dest='BED2')
-    inputs.add_argument('--bam1', nargs='?', help=("Sorted bam files "
-                        "associated with condition 1"), 
+    inputs.add_argument('--bam1', nargs='*', help=("Sorted bam files "
+                        "associated with condition 1. Must be indexed."), 
                         dest='BAM1')
-    inputs.add_argument('--bam2', nargs='?', help=("Sorted bam files "
-                        "associated with condition 2"), 
+    inputs.add_argument('--bam2', nargs='*', help=("Sorted bam files "
+                        "associated with condition 2. Must be indexed."), 
                         dest='BAM2')
     inputs.add_argument('--label1', help=("An informative label for "
                         "condition 1"), dest='LABEL1')
@@ -135,6 +135,12 @@ def read_arguments():
                                     "Differential MD-Score analysis associated "
                                     "with condition 2."), 
                                     dest='MDD_FASTA2')
+    secondary_inputs.add_argument('--mdd_pval', help=("P-value cutoff for "
+                                    "retaining differential regions"), 
+                                    dest='MDD_PVAL')
+    secondary_inputs.add_argument('--mdd_percent', help=("Percentage cutoff for "
+                                    "retaining differential regions"),
+                                     dest='MDD_PERCENT')
 
     # Module switches
     module_switches = parser.add_argument_group('Module Switches', 
@@ -146,9 +152,6 @@ def read_arguments():
     module_switches.add_argument('--rank', help=("Method for ranking combined "
                                     "bed file"), choices=['deseq', 'fc', False], 
                                     dest='RANK')
-    module_switches.add_argument('--fasta', help=("Swtich that determines "
-                                    "whether converting to fasta is performed."),
-                                    choices=[True, False], dest='FASTA')
     module_switches.add_argument('--scanner', help=("Method for scanning fasta "
                                     "files for motifs"), choices=['fimo', 
                                     'genome hits'], dest='SCANNER')
@@ -156,8 +159,7 @@ def read_arguments():
                                     "enrichment"), choices=['auc', 
                                     'auc_bgcorrect'], dest='ENRICHMENT')
     module_switches.add_argument('--debug', help=("Print memory usage to stderr"), 
-                                    action='store_true', dest='DEBUG', 
-                                    default=None)
+                                    action='store_true', dest='DEBUG')
     
     # Fasta Options
     fasta_options = parser.add_argument_group('Fasta Options', ('Options for '
@@ -217,8 +219,12 @@ def read_arguments():
     output_options.add_argument('--pvalcutoff', help=("A p-value cutoff "
                                     "value that determines some plotting output."), 
                                     dest='PVALCUTOFF')
-    output_options.add_argument('--textOnly', help="Suppress html output.", 
-                                    action='store_true', dest='TEXTONLY')
+    output_options.add_argument('--plotall', help=("Plot graphs for all motifs."
+                                    "This will make TFEA run much slower and"
+                                    "will result in a large output folder."), 
+                                    action='store_true', dest='PLOTALL')
+    output_options.add_argument('--outputtype', help="Suppress html output.", 
+                                    choices=['txt', 'html'], dest='OUTPUT_TYPE')
 
     misc_options = parser.add_argument_group('Miscellaneous Options', 'Other options.')
     misc_options.add_argument('--processes', help=("Number of processes to run "
@@ -236,17 +242,17 @@ def read_arguments():
     #       CORRECT:
     #       -------
     #       'FIMO_BACKGROUND': 'largewindow', [int, str] 
-    #       if FIMO_BACKGROUND = 'largewindow':
+    #       if FIMO_BACKGROUND == 'largewindow':
     #           int(FIMO_BACKGROUND) results in error so str(FIMO_BACKGROUND)
-    #       if FIMO_BACKGROUND = 5:
+    #       if FIMO_BACKGROUND == 5:
     #           int(FIMO_BACKGROUND) is fine
     #
     #       INCORRECT:
     #       ---------
     #       'FIMO_BACKGROUND': 'largewindow', [str, int] 
-    #       if 'FIMO_BACKGROUND' = 'largewindow':
+    #       if FIMO_BACKGROUND == 'largewindow':
     #           str(FIMO_BACKGROUND) is fine
-    #       if FIMO_BACKGROUND = 5:
+    #       if FIMO_BACKGROUND == 5:
     #           str(FIMO_BACKGROUND) is fine so FIMO_BACKGROUND = '5' instead of FIMO_BACKGROUND = 5
     #
     # 3. The bool type is very permissive so if value is True/False, it is 
@@ -274,6 +280,8 @@ def read_arguments():
                     'MD_FASTA2': [False, [Path, bool]],
                     'MDD_FASTA1': [False, [Path, bool]],
                     'MDD_FASTA2': [False, [Path, bool]],
+                    'MDD_PVAL': [0.2, [float, bool]],
+                    'MDD_PERCENT': [False, [float, bool]],
                     'COMBINE': ['intersect/merge', [str, bool]],
                     'RANK': ['deseq', [str, bool]],
                     'SCANNER': ['fimo', [str, bool]],
@@ -291,11 +299,12 @@ def read_arguments():
                     'DPI': [None, [str, int]], 
                     'PADJCUTOFF': [0.001, [float]], 
                     'PVALCUTOFF': [0.01, [float]], 
-                    'TEXTONLY': [False, [bool]],
-                    'CPUS': [10, [int]]}
+                    'OUTPUT_TYPE': ['txt', [str]],
+                    'CPUS': [10, [int]], 
+                    'PLOTALL': [False, [bool]]}
 
     #Save default arguments in config
-    import config
+    from TFEA import config
     config.arg_defaults = arg_defaults
 
     return parser
@@ -328,7 +337,7 @@ def make_out_directories(create=False):
     e_and_o : string
         full path to the directory that stores stdout and stderr files
     '''
-    import config
+    from TFEA import config
     #Output directory
     output = config.vars.OUTPUT
 
@@ -400,7 +409,7 @@ def verify_arguments(parser=None):
     InputError
         When missing or conflicting input
     '''
-    import config
+    from TFEA import config
     #If a config file is specified, parse its arguments
     configfile_dict = dict()
     configfile = parser.parse_args().CONFIG
@@ -512,11 +521,11 @@ def verify_arguments(parser=None):
 
 #==============================================================================
 def create_directories(srcdirectory=None):
-    import config
+    from TFEA import config
     if config.vars.SBATCH == False: #No sbatch flag
         make_out_directories(create=True)
         write_rerun(args=sys.argv, outputdir=config.vars.OUTPUT)
-        config.vars.JOBID = None
+        config.vars.JOBID = 0
     elif str(config.vars.SBATCH) == 'SUBMITTED': #Internal flag
         make_out_directories(create=False)
         config.vars.JOBID = (config.vars.TEMPDIR / 'jobid.txt').read_text().strip('\n')

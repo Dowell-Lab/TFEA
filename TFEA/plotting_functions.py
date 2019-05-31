@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-'''This file contains functions that plot results of enrichment analysis
+'''This module contains all scripts that plot anything. No exceptions.s
 '''
 #==============================================================================
 __author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
@@ -8,7 +8,6 @@ __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
                 'Robin D. Dowell']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
-__version__ = '4.0'
 
 #Imports
 #==============================================================================
@@ -17,14 +16,16 @@ import math
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+import matplotlib.gridspec as gridspec
 
 #Functions
 #==============================================================================
-def plot_individual_graphs(plot=None, padj_cutoff=None,
+def plot_individual_graphs(use_config=True, distances=None, plot=None, padj_cutoff=None,
                             figuredir=None, logos=None, 
                             largewindow=None, score=None, 
                             smallwindow=None,
-                            distances_abs=None, sorted_distances=None,
+                            distances_abs=None,
                             ranks=None, pvals=None, fc=None, 
                             cumscore=None, motif_file=None, p=None,
                             simES=None, actualES=None, gc_array=None,
@@ -92,7 +93,15 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
     -------
     None
     '''
-    import config
+    if use_config:
+        from TFEA import config
+        pvals = config.vars.pvals
+        millions_mapped = config.vars.MILLIONS_MAPPED
+        plot=config.vars.PLOTALL 
+        padj_cutoff=config.vars.PADJCUTOFF
+        figuredir=config.vars.FIGUREDIR 
+        logos=config.vars.MOTIF_LOGOS 
+        largewindow=config.vars.LARGEWINDOW
     #Only plot things if user selects to plot all or if the pvalue is less than
     #the cutoff
     if plot or p < padj_cutoff:
@@ -110,13 +119,13 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
         
 
         #Filter distances into quartiles for plotting purposes
-        q1 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 25)))
-        q2 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 50)))
-        q3 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 75)))
-        q1_distances = [x for x in sorted_distances[:q1] if x <= largewindow]
-        q2_distances = [x for x in sorted_distances[q1:q2] if x <= largewindow]
-        q3_distances = [x for x in sorted_distances[q2:q3] if x <= largewindow]
-        q4_distances = [x for x in sorted_distances[q3:] if x <= largewindow]
+        q1 = int(round(np.percentile(np.arange(1, len(distances),1), 25)))
+        q2 = int(round(np.percentile(np.arange(1, len(distances),1), 50)))
+        q3 = int(round(np.percentile(np.arange(1, len(distances),1), 75)))
+        q1_distances = [x for x in distances[:q1] if x <= largewindow]
+        q2_distances = [x for x in distances[q1:q2] if x <= largewindow]
+        q3_distances = [x for x in distances[q2:q3] if x <= largewindow]
+        q4_distances = [x for x in distances[q3:] if x <= largewindow]
 
         
         #Get log pval to plot for rank metric
@@ -165,8 +174,8 @@ def plot_individual_graphs(plot=None, padj_cutoff=None,
         #                                     dpi=None)
 
 #==============================================================================
-def plot_global_graphs(padj_cutoff=None, label1=None, label2=None, 
-                        figuredir=None, TFresults=None):
+def plot_global_graphs(results, padj_cutoff=None, label1=None, label2=None, 
+                        figuredir=None):
     '''This function plots graphs that are displayed on the main results.html 
         filethat correspond to results relating to all analyzed TFs.
 
@@ -182,11 +191,11 @@ def plot_global_graphs(padj_cutoff=None, label1=None, label2=None,
         same as input with an additional p-adjusted value appended to each TF
     '''
 
-    ESlist = [i[1] for i in TFresults]
-    NESlist = [i[2] for i in TFresults]
-    PVALlist = [i[3] for i in TFresults]
-    POSlist = [i[4] for i in TFresults]
-    PADJlist = [i[5] for i in TFresults]
+    ESlist = [i[1] for i in results]
+    NESlist = [i[2] for i in results]
+    PVALlist = [i[3] for i in results]
+    POSlist = [i[4] for i in results]
+    PADJlist = [i[5] for i in results]
 
     POSlist = [math.log(x,10) if x > 0 else 0.0 for x in POSlist]
 
@@ -213,7 +222,7 @@ def plot_global_graphs(padj_cutoff=None, label1=None, label2=None,
 def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
                     cumscore=None, sorted_distances=None, logpval=None, 
                     updistancehist=None, downdistancehist=None, 
-                    gc_array=None, motif_file=None, dpi=None, save=True, 
+                    gc_array=None, motif_file=None, dpi=None, 
                     score=None, q1_distances=None, q2_distances=None, 
                     q3_distances=None, q4_distances=None, 
                     meta_profile_dict=None, label1=None, label2=None):
@@ -270,60 +279,42 @@ def enrichment_plot(largewindow=None, smallwindow=None, figuredir=None,
     -------
     None
     '''
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
-    import matplotlib.gridspec as gridspec
-    import traceback
+    #Begin plotting section
+    len_cumscore = float(len(cumscore))
+    F = plt.figure(figsize=(15.5,12))
+    # xvals = range(0, int(len_cumscore))
+    xvals = np.linspace(start=0, stop=1, num=len_cumscore)
+    limits = [0, 1]
 
-    import config
-    dpi = config.DPI
-    try:
-        #Begin plotting section
-        len_cumscore = float(len(cumscore))
-        F = plt.figure(figsize=(15.5,12))
-        # xvals = range(0, int(len_cumscore))
-        xvals = np.linspace(start=0, stop=1, num=len_cumscore)
-        limits = [0, 1]
+    #With GC-Content
+    # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
 
-        #With GC-Content
-        # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
+    #Without GC-Content
+    # gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 2])
 
-        #Without GC-Content
-        # gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 2])
+    outer_gs = gridspec.GridSpec(2, 1, height_ratios=[2,1])
+    enrichment_gs = gridspec.GridSpecFromSubplotSpec(4, 1, 
+                                        subplot_spec=outer_gs[0], 
+                                        height_ratios=[4, 1, 4, 2], 
+                                        hspace=.1)
+    lineplot = plt.subplot(enrichment_gs[0])
+    barplot = plt.subplot(enrichment_gs[1])
+    scatterplot = plt.subplot(enrichment_gs[2])
+    fillplot = plt.subplot(enrichment_gs[3])
+    figure_title = motif_file.split('.bed')[0] + ' Enrichment Plot'
+    lineplot(title=figure_title, ax=lineplot, xvals=xvals, yvals=cumscore, 
+                xlimits=limits)
+    scatterplot(ax=scatterplot, xvals=xvals, yvals=sorted_distances, 
+                xlimits=None, largewindow=largewindow)
+    barplot(ax=barplot, xvals=xvals, colorarray=score, xlimits=limits)
+    fillplot(ax=fillplot, xvals=xvals, yvals=logpval, xlimits=limits, 
+            ylimits=None)
 
-        outer_gs = gridspec.GridSpec(2, 1, height_ratios=[2,1])
-        enrichment_gs = gridspec.GridSpecFromSubplotSpec(4, 1, 
-                                            subplot_spec=outer_gs[0], 
-                                            height_ratios=[4, 1, 4, 2], 
-                                            hspace=.1)
-        lineplot = plt.subplot(enrichment_gs[0])
-        barplot = plt.subplot(enrichment_gs[1])
-        scatterplot = plt.subplot(enrichment_gs[2])
-        fillplot = plt.subplot(enrichment_gs[3])
-        figure_title = motif_file.split('.bed')[0] + ' Enrichment Plot'
-        lineplot(title=figure_title, ax=lineplot, xvals=xvals, yvals=cumscore, 
-                    xlimits=limits)
-        scatterplot(ax=scatterplot, xvals=xvals, yvals=sorted_distances, 
-                    xlimits=None, largewindow=largewindow)
-        barplot(ax=barplot, xvals=xvals, colorarray=score, xlimits=limits)
-        fillplot(ax=fillplot, xvals=xvals, yvals=logpval, xlimits=limits, 
-                ylimits=None)
-
-        #Makes sure that axis labels are properly spaced
-        plt.tight_layout()
-
-        if save:
-            plt.savefig(os.path.join(figuredir, motif_file
-                    + '_enrichment_plot.png'), dpi=dpi, bbox_inches='tight')
-            plt.close()
-        else:
-            plt.show()
-    except Exception as e:
-        # This prints the type, value, and stack trace of the
-        # current exception being handled.
-        print(traceback.print_exc())
-        raise e
+    #Makes sure that axis labels are properly spaced
+    plt.tight_layout()
+    plt.savefig(os.path.join(figuredir, motif_file
+            + '_enrichment_plot.png'), dpi=dpi, bbox_inches='tight')
+    plt.close()
 
 #==============================================================================
 def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
@@ -333,8 +324,8 @@ def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
     ax.plot([0, 1],[0, 1], '--', alpha=0.75)
     ax.set_title(title, fontsize=14)
     ax.set_ylabel('Enrichment Score (ES)', fontsize=10)
-    ax.tick_params(axis='y', which='both', left='on', right='off', 
-                    labelleft='on')
+    ax.tick_params(axis='y', which='both', left=True, right='off', 
+                    labelleft=True)
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
                     labelbottom='off')
     ax.set_ylim([0,1])
@@ -347,7 +338,7 @@ def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None)
     ax.scatter(xvals, yvals, edgecolor="", color="black", 
                     s=10, alpha=0.25)
     ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on') 
+                    labelleft=True) 
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
                     labelbottom='off')
     plt.yticks([-int(largewindow),0,int(largewindow)],
@@ -379,10 +370,10 @@ def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
 def fillplot(ax=None, xvals=None, yvals=None, xlimits=None):
     #This is the rank metric fill plot
     ax.fill_between(xvals,0,yvals,facecolor='grey',edgecolor="")
-    ax.tick_params(axis='y', which='both', left='on', right='off', 
-                    labelleft='on')
+    ax.tick_params(axis='y', which='both', left=True, right='off', 
+                    labelleft=True)
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ylim = math.fabs(max([x for x in yvals if -500 < x < 500],key=abs))
     ax.set_ylim(ylimits)
     ax.yaxis.set_ticks([int(-ylim),0,int(ylim)])
@@ -414,8 +405,8 @@ def leftover_plotting_scripts():
     #             [str(-int(largewindow)/1000.0),'0',\
     #             str(int(largewindow)/1000.0)])
 
-    # ax3.tick_params(axis='y', which='both', left='on', right='off', 
-    #                 labelleft='on')
+    # ax3.tick_params(axis='y', which='both', left=True, right='off', 
+    #                 labelleft=True)
 
     # ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
     #                 labelbottom='off')
@@ -468,7 +459,7 @@ def leftover_plotting_scripts():
         ax3.legend(loc=2,fontsize='small')
         ax3.set_title('Q1',fontsize=14)
         ax3.tick_params(axis='y', which='both', left='off', right='off', 
-                        labelleft='on')
+                        labelleft=True)
         ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
                         labelbottom='off')
         ax3.set_ylabel('Reads per Millions Mapped',fontsize=10)
@@ -536,7 +527,7 @@ def leftover_plotting_scripts():
     ax7.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax7.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ax7.set_xlabel('Motif to Region Center Distance (bp)')
 
 
@@ -555,7 +546,7 @@ def leftover_plotting_scripts():
     ax8.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax8.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ax8.set_xlabel('Motif to Region Center Distance (bp)')
 
 
@@ -574,7 +565,7 @@ def leftover_plotting_scripts():
     ax9.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax9.tick_params(axis='x', which='both', bottom='off', top='off', 
-                        labelbottom='on')
+                        labelbottom=True)
     ax9.set_xlabel('Motif to Region Center Distance (bp)')
 
 
@@ -593,7 +584,7 @@ def leftover_plotting_scripts():
     ax10.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax10.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ax10.set_xlabel('Motif Distance (kb)')
 
     counts,edges = np.histogram(q4_distances, bins=bins)
@@ -642,7 +633,7 @@ def distance_heatmap_plot(figuredir=None, motif_file=None, q1_distances=None,
     ax0.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax0.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ax0.set_xlabel('Motif Distance (kb)')
 
 
@@ -663,7 +654,7 @@ def distance_heatmap_plot(figuredir=None, motif_file=None, q1_distances=None,
     ax1.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax1.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ax1.set_xlabel('Motif Distance (kb)')
 
 
@@ -684,7 +675,7 @@ def distance_heatmap_plot(figuredir=None, motif_file=None, q1_distances=None,
     ax2.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax2.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ax2.set_xlabel('Motif Distance (kb)')
 
 
@@ -705,7 +696,7 @@ def distance_heatmap_plot(figuredir=None, motif_file=None, q1_distances=None,
     ax3.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax3.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ax3.set_xlabel('Motif Distance (kb)')
 
     counts,edges = np.histogram(q4_distances, bins=bins)
@@ -725,7 +716,7 @@ def distance_heatmap_plot(figuredir=None, motif_file=None, q1_distances=None,
     ax4.tick_params(axis='y', which='both', left='off', right='off', 
                     labelleft='off') 
     ax4.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
     ax4.set_xlabel('Motif Distance (kb)')
 
 
@@ -752,15 +743,15 @@ def simulation_plot(ax=None, simulated=None, observed=None, title=None):
 
     ax.set_ylim([0,(1.05*height)+5])
     ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
+                    labelleft=True)
 
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
 
     if title != None:
         plt.title(title,fontsize=14)
     ax.set_ylabel('Number of Simulations',fontsize=14)
-    ax.set_xlabel('Enrichment',fontsize=14)
+    ax.set_xlabel('Area Under the Curve (AUC)',fontsize=14)
 #==============================================================================
 
 #==============================================================================
@@ -816,10 +807,10 @@ def moustache_plot(figuredir=None, ESlist=None, PADJlist=None, sigx=None,
     ax.set_xlim([-xlimit,xlimit])
     ax.set_ylim([0,ylimit])
     ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
+                    labelleft=True)
 
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
 
     plt.savefig(os.path.join(figuredir, 'TFEA_Results_Moustache_Plot.png'), 
                     dpi=dpi, bbox_inches='tight')
@@ -855,10 +846,10 @@ def pval_histogram_plot(figuredir=None, PVALlist=None):
     ax.set_xlabel("P-value",fontsize=14)
     ax.set_ylabel("Count",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
+                    labelleft=True)
 
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
 
     plt.savefig(os.path.join(figuredir, 'TFEA_Pval_Histogram.png'),
                     bbox_inches='tight')
@@ -912,10 +903,10 @@ def MA_plot(figuredir=None, label1=None, label2=None, POSlist=None,
 
     ax.set_xlabel("Motif Hits Log10",fontsize=14)
     ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
+                    labelleft=True)
 
     ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+                    labelbottom=True)
 
     plt.savefig(os.path.join(figuredir, 'TFEA_NES_MA_Plot.png'),
                 bbox_inches='tight')
@@ -983,8 +974,8 @@ def meta_eRNA_quartiles(figuredir=None, label1=None, label2=None,
     ax0.plot(xvals,q1label2neg,color='red')
     ax0.legend(loc=2,fontsize='small')
     ax0.set_title('Q1',fontsize=14)
-    ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft='on')
-    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom='on')
+    ax0.tick_params(axis='y', which='both', left='off', right='off', labelleft=True)
+    ax0.tick_params(axis='x', which='both', bottom='off', top='off', labelbottom=True)
     ax0.set_ylabel('Reads per Millions Mapped',fontsize=14)
     ax0.set_xlabel('Distance to eRNA Origin (bp)')
     ax0.set_ylim(ylim)

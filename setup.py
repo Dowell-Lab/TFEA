@@ -15,6 +15,7 @@ setup(name='tfea',
           'argparse',
           'matplotlib',
           'scipy',
-          'numpy'
+          'numpy',
+          'pybedtools'
       ],
       zip_safe=False)

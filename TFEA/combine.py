@@ -22,14 +22,14 @@ from pathlib import Path
 
 from pybedtools import BedTool, featurefuncs
 
-import config
-import multiprocess
-import exceptions
+from TFEA import config
+from TFEA import multiprocess
+from TFEA import exceptions
 
 #Main Script
 #==============================================================================
 def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None, 
-        md=None, largewindow=None, scanner=None):
+        md=None, largewindow=None, scanner=None, debug=False):
     '''This is the main script of the combine function that is called within
         TFEA. Default arguments are assigned to variables within config.vars.
 
@@ -59,13 +59,14 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
 
     Returns
     -------
-    None - Assigns varaibles within config
+    None - Assigns varaibles within config if use_config set to True
 
     Raises
     ------
     FileEmptyError
         If any resulting file is empty
     '''
+    start_time = time.time()
     if use_config:
         bed1=config.vars.BED1
         bed2=config.vars.BED2
@@ -74,10 +75,8 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         md=config.vars.MD
         largewindow=config.vars.LARGEWINDOW
         scanner=config.vars.SCANNER
-    config.vars.COMBINEtime = time.time()
+        debug = config.vars.DEBUG
     print("Combining Regions...", end=' ', flush=True, file=sys.stderr)
-
-    combined_file = config.vars.COMBINED_FILE
 
     #Merge all bed regions, for MD merge condition replicates
     if method == 'merge all':
@@ -145,9 +144,9 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
             md_merged_bed1 = merge_bed(beds=bed1)
             md_merged_bed2 = merge_bed(beds=bed2)
             # md_merged_bed1.filter(lambda b: b.stop - b.start > size_cut).each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile1)
-            md_merged_bed1.filter(lambda b: b.stop - b.start > size_cu.saveas(combined_file))
+            md_merged_bed1.filter(lambda b: b.stop - b.start > size_cut).saveas(combined_file)
             # md_merged_bed2.filter(lambda b: b.stop - b.start > size_cut).each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
-            md_merged_bed2.filter(lambda b: b.stop - b.start > size_cu.saveas(combined_file))
+            md_merged_bed2.filter(lambda b: b.stop - b.start > size_cut).saveas(combined_file)
         
 
     #Intersect replicates, merge conditions. For MD intersect condition replicates
@@ -176,20 +175,23 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
     if md:
         if os.stat(md_bedfile1).st_size == 0 or os.stat(md_bedfile2).st_size == 0:
             raise exceptions.FileEmptyError("Error in COMBINE module. Resulting md bed file is empty.")
-
-        #Assign MD_BEDFILE variables in config
-        config.vars.MD_BEDFILE1 = md_bedfile1 
-        config.vars.MD_BEDFILE2 = md_bedfile2
+        if use_config:
+            #Assign MD_BEDFILE variables in config
+            config.vars.MD_BEDFILE1 = md_bedfile1 
+            config.vars.MD_BEDFILE2 = md_bedfile2
 
     #Assign COMBINED_FILE variable in config
-    config.vars.COMBINED_FILE = combined_file
+    if use_config:
+        config.vars.COMBINED_FILE = combined_file
     
     #Record time, print
-    config.vars.COMBINEtime = time.time()-config.vars.COMBINEtime
-    print("done in: " + str(datetime.timedelta(seconds=int(config.vars.COMBINEtime))), 
+    total_time = time.time() - start_time
+    if use_config:
+        config.vars.COMBINEtime = total_time
+    print("done in: " + str(datetime.timedelta(seconds=int(total_time))), 
             file=sys.stderr)
 
-    if config.vars.DEBUG:
+    if debug:
         multiprocess.current_mem_usage(config.vars.JOBID)
 
 #Functions

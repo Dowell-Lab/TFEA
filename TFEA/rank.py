@@ -22,14 +22,19 @@ import datetime
 import subprocess
 from pathlib import Path
 
-import config
-import exceptions
+from pybedtools import BedTool
+import HTSeq as hts
+import numpy as np
+
+from TFEA import exceptions
+from TFEA import multiprocess
 
 #Main Script
 #==============================================================================
 def main(use_config=True, combined_file=None, rank=None, scanner=None, 
             bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
-            largewindow=None, mdd=None, mdd_bedfile1=None, mdd_bedfile2=None):
+            largewindow=None, mdd=None, mdd_bedfile1=None, mdd_bedfile2=None, 
+            debug=False, jobid=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -82,7 +87,9 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
     FileEmptyError
         If any resulting file is empty
     '''
+    start_time = time.time()
     if use_config:
+        from TFEA import config
         combined_file=config.vars.COMBINED_FILE
         rank=config.vars.RANK
         scanner=config.vars.SCANNER
@@ -95,7 +102,10 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         mdd=config.vars.MDD 
         mdd_bedfile1=config.vars.MDD_BEDFILE1
         mdd_bedfile2=config.vars.MDD_BEDFILE2
-    config.vars.RANKtime = time.time()
+        mdd_pval=config.vars.MDD_PVAL
+        mdd_percent=config.vars.MDD_PERCENT
+        debug = config.vars.DEBUG
+        jobid = config.vars.JOBID
     print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
 
     #Begin by counting reads from bam files over the combined_file produced
@@ -106,36 +116,50 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
     millions_mapped = sum_reads(count_file=count_file, 
                                 sample_number=sample_number)
     
+    
     if os.stat(count_file).st_size == 0:
         raise exceptions.FileEmptyError("Error in RANK module. Counting failed.")
 
     if rank == 'deseq' or rank == 'fc':
-        ranked_file = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
-                            count_file=count_file, label1=label1, 
-                            label2=label2, largewindow=largewindow, rank=rank)
+        ranked_file, pvals, fcs = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
+                                    count_file=count_file, label1=label1, 
+                                    label2=label2, largewindow=largewindow, 
+                                    rank=rank)
+        q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
+        meta_profile = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
+                            bam1=bam1, bam2=bam2, millions_mapped=millions_mapped, 
+                            largewindow=largewindow)
     else:
         raise exceptions.InputError("RANK option not recognized.")
     if os.stat(ranked_file).st_size == 0:
         raise exceptions.FileEmptyError("Error in RANK module. DE-Seq running or parsing failed.")
 
-    config.vars.RANKED_FILE = ranked_file
+    if use_config:
+        config.vars.RANKED_FILE = ranked_file
+        config.vars.PVALS = pvals
+        config.vars.FCS = fcs
+        config.vars.META_PROFILE = meta_profile
 
-    if config.vars.MDD and (not mdd_bedfile1 or not mdd_bedfile2):
+    if mdd and (not mdd_bedfile1 or not mdd_bedfile2):
         mdd_bedfile1, mdd_bedfile2 = create_mdd_files(ranked_file=ranked_file,
                                                         tempdir=tempdir,
-                                                        percent=0.2)
+                                                        percent=mdd_percent,
+                                                        pval_cut=mdd_pval)
         if os.stat(mdd_bedfile1).st_size == 0 or os.stat(mdd_bedfile2).st_size == 0:
             raise exceptions.FileEmptyError("Error in RANK module. MDD bed file creation failed.")
-        if not config.vars.MDD_BEDFILE1:
-            config.vars.MDD_BEDFILE1 = mdd_bedfile1
-        if not config.vars.MDD_BEDFILE2:
-            config.vars.MDD_BEDFILE2 = mdd_bedfile2
-                        
-    config.vars.RANKtime = time.time()-config.vars.RANKtime
-    print("done in: " + str(datetime.timedelta(seconds=int(config.vars.RANKtime))), file=sys.stderr)
+        if use_config:
+            if not config.vars.MDD_BEDFILE1:
+                config.vars.MDD_BEDFILE1 = mdd_bedfile1
+            if not config.vars.MDD_BEDFILE2:
+                config.vars.MDD_BEDFILE2 = mdd_bedfile2
+    
+    total_time = time.time() - start_time
+    if use_config:
+        config.vars.RANKtime = total_time
+    print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
-    if config.vars.DEBUG:
-        multiprocess.current_mem_usage(config.vars.JOBID)
+    if debug:
+        multiprocess.current_mem_usage(jobid)
 
 #Functions
 #==============================================================================
@@ -174,16 +198,24 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
     #This os.system call runs bedtools multicov to count reads in all specified
     #BAMs for given regions in BED
     count_file = tempdir / "count_file.bed"
+
+    #pybedtools implementation (incomplete)
+    # pybed_count = BedTool(bedfile.as_posix()).multi_bam_coverage(bams=bam1+bam2)
+    # pybed_count.saveas(count_file, trackline=("#chrom\tstart\tstop\tregion\t" 
+    #                                             + '\t'.join([label1]*len(bam1)) + "\t" 
+    #                                             + '\t'.join([label2]*len(bam2)) + "\n"))
+
+    #Bedtools implementation
     multicov_command = ["bedtools", "multicov", 
                         "-bams"] + bam1+bam2 + ["-bed", bedfile]
     with open(count_file, 'w') as outfile:
         subprocess.run(multicov_command, stdout=outfile, check=True)
 
-    #This section adds a header to the count_file and reformats it to remove 
-    #excess information and add a column with the region for later use
+    # This section adds a header to the count_file and reformats it to remove 
+    # excess information and add a column with the region for later use
     count_file_header = tempdir / "count_file.header.bed"
     outfile = open(count_file_header, 'w')
-    outfile.write("chrom\tstart\tstop\tregion\t" 
+    outfile.write("#chrom\tstart\tstop\tregion\t" 
                     + '\t'.join([label1]*len(bam1)) + "\t" 
                     + '\t'.join([label2]*len(bam2)) + "\n")
 
@@ -223,7 +255,7 @@ def sum_reads(count_file=None, sample_number=None):
         F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
-            [x+float(y) for x,y in zip(millions_mapped,line[-sample_number:])]
+            [x+float(y) for x,y in zip(millions_mapped,line[-1*sample_number:])]
 
     return millions_mapped
 
@@ -288,38 +320,34 @@ res <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
 res$fc <- 2^(res$log2FoldChange)
 res <- res[c(1:3,7,4:6)]
 
-write.table(res, file = "''' + (tempdir / 'DESeq.res.txt').as_posix() + '''", append = FALSE, sep= "\t" )
+write.table(res, file = "'''    + (tempdir / 'DESeq.res.txt').as_posix() 
+                                + '''", append = FALSE, sep= "\t" )
 sink()''')
     else:
         Rfile = open(tempdir /  'DESeq.R','w')
-        Rfile.write('sink("' + tempdir /  'DESeq.Rout' + '")\n')
-        Rfile.write('library("DESeq")\n')
-        Rfile.write('data <- read.delim("'+count_file+'", sep="\t", \
-                        header=TRUE)\n')
+        Rfile.write('''library("DESeq")
+data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
 
-        Rfile.write('countsTable <- subset(data, select=c('
+countsTable <- subset(data, select=c('''
             +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
-            +'))\n')
+            +'''))
 
-        Rfile.write('rownames(countsTable) <- data$region\n')
-        Rfile.write('conds <- c(' + ', '.join(['"'+label1+'"']*len(bam1)) 
-                        + ', ' 
-                        + ', '.join(['"'+label2+'"']*len(bam2)) 
-                        + ')\n')
+rownames(countsTable) <- data$region
+conds <- c('''  + ', '.join(['"'+label1+'"']*len(bam1)) 
+                + ', ' 
+                + ', '.join(['"'+label2+'"']*len(bam2)) 
+                + ''')
 
-        Rfile.write('cds <- newCountDataSet( countsTable, conds )\n')
-        Rfile.write('cds <- estimateSizeFactors( cds )\n')
-        Rfile.write('sizeFactors(cds)\n')                                                               
-        Rfile.write('cds <- estimateDispersions( cds ,method="blind", \
-                        sharingMode="fit-only")\n')
+cds <- newCountDataSet( countsTable, conds )
+cds <- estimateSizeFactors( cds )
+sizeFactors(cds)                                                               
+cds <- estimateDispersions( cds ,method="blind", \
+                        sharingMode="fit-only")
 
-        Rfile.write('res <- nbinomTest( cds, "'+label1+'", "'+label2+'" )\n')
-        Rfile.write('rownames(res) <- res$id\n')                      
-        Rfile.write('write.table(res, file = "'
-                        + os.path.join(tempdir,'DESeq.res.txt') 
-                        + '", append = FALSE, sep= "\t" )\n')
-
-        # Rfile.write('sink()')
+res <- nbinomTest( cds, "'''+label1+'''", "'''+label2+'''" )
+rownames(res) <- res$id                      
+write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt') 
+                                + '''", append = FALSE, sep= "\t" )''')
     Rfile.close()
 
 #==============================================================================
@@ -400,6 +428,8 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
 
     #Save ranked regions in a bed file (pvalue included)
     ranked_file = tempdir / "ranked_file.bed"
+    pvals = list()
+    fcs = list()
     with open(ranked_file,'w') as outfile:
         outfile.write('\t'.join(['#chrom', 'start', 'stop', 'rank, fc, p-value']) 
                         + '\n')
@@ -409,23 +439,29 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
                 outfile.write('\t'.join(region[:3]) 
                             + '\t' + ','.join(region[3:]+[str(r)]) 
                             + '\n')
+                pvals.append(float(region[-1]))
+                fcs.append(float(region[4]))
                 r += 1
             for region in sorted(down, key=lambda x: x[4], reverse=True):
                 outfile.write('\t'.join(region[:3]) 
                             + '\t' + ','.join(region[3:]+[str(r)]) 
                             + '\n')
+                pvals.append(float(region[-1]))
+                fcs.append(float(region[4]))
                 r += 1
         elif rank == 'fc':
             for region in sorted(up+down, key=lambda x: x[3], reverse=True):
                 outfile.write('\t'.join(region[:3]) 
                             + '\t' + ','.join(region[3:]+[str(r)]) 
                             + '\n')
+                pvals.append(float(region[-1]))
+                fcs.append(float(region[4]))
                 r += 1
 
-    return ranked_file
+    return ranked_file, pvals, fcs
 
 #==============================================================================
-def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None):
+def create_mdd_files(ranked_file=None, percent=False, pval_cut=False, tempdir=None):
     '''This function creates bed files to be used with motif displacement
         differential (mdd) calculation. It separates a 'ranked_file' which
         contains regions ranked by differential expression via DE-Seq
@@ -463,11 +499,11 @@ def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None
                 rank = int(rank)
                 regions.append((chrom, start, stop, fc, pval, rank))
     regions = sorted(regions, key=lambda x: x[-2])
-    if percent != None:
+    if percent != False:
         index = int(len(regions) * percent)
         mdd1_regions = regions[index:]
         mdd2_regions = regions[:index]
-    elif pval_cut != None:
+    elif pval_cut != False:
         mdd1_regions = [region for region in regions if region[-2] >= pval_cut]
         mdd2_regions = [region for region in regions if region[-2] < pval_cut]
     else:
@@ -492,3 +528,248 @@ def create_mdd_files(ranked_file=None, percent=None, pval_cut=None, tempdir=None
             rank2 += 1
 
     return mdd_bedfile1, mdd_bedfile2
+
+#==============================================================================
+def quartile_split(ranked_file):
+    '''Takes a ranked_file and outputs regions separated by quartiles
+    '''
+    regions = list()
+    with open(ranked_file) as F:
+        F.readline()
+        for line in F:
+            linelist = line.strip('\n').split('\t')
+            regions.append(linelist[:3])
+    
+    q1 = int(round(len(regions)*.25))
+    q2 = int(round(len(regions)*.5))
+    q3 = int(round(len(regions)*.75))
+
+    q1regions = regions[:q1]
+    q2regions = regions[q1:q2]
+    q3regions = regions[q2:q3]
+    q4regions = regions[q3:]
+
+    return q1regions, q2regions, q3regions, q4regions
+#==============================================================================
+def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
+                            bam1=None, bam2=None, millions_mapped=None, 
+                            largewindow=None):
+    '''This function creates a metaprofile from 4 regions and stores them in
+        a dictionary. 
+    '''
+    q1posprofile1, q1negprofile1, q1posprofile2, q1negprofile2 = meta_profile(
+                                        regionlist=q1regions, 
+                                        millions_mapped=millions_mapped, 
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+    
+    q2posprofile1, q2negprofile1, q2posprofile2, q2negprofile2 = meta_profile(
+                                        regionlist=q2regions, 
+                                        millions_mapped=millions_mapped, 
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+
+    q3posprofile1, q3negprofile1, q3posprofile2, q3negprofile2 = meta_profile(
+                                        regionlist=q3regions, 
+                                        millions_mapped=millions_mapped, 
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+
+    q4posprofile1, q4negprofile1, q4posprofile2, q4negprofile2 = meta_profile(
+                                        regionlist=q4regions, 
+                                        millions_mapped=millions_mapped, 
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+
+    meta_profile_dict = {'q1posprofile1': q1posprofile1, 
+                        'q1negprofile1': q1negprofile1,
+                        'q1posprofile2': q1posprofile2, 
+                        'q1negprofile2': q1negprofile2, 
+                        'q2posprofile1': q2posprofile1, 
+                        'q2negprofile1': q2negprofile1, 
+                        'q2posprofile2': q2posprofile2, 
+                        'q2negprofile2': q2negprofile2,
+                        'q3posprofile1': q3posprofile1, 
+                        'q3negprofile1': q3negprofile1, 
+                        'q3posprofile2': q3posprofile2, 
+                        'q3negprofile2': q3negprofile2,
+                        'q4posprofile1': q4posprofile1, 
+                        'q4negprofile1': q4negprofile1, 
+                        'q4posprofile2': q4posprofile2, 
+                        'q4negprofile2': q4negprofile2}
+
+    return meta_profile_dict
+
+#==============================================================================
+def meta_profile(regionlist=None, region_file=None, millions_mapped=None, 
+                largewindow=None, bam1=None, bam2=None):
+    '''This function returns average profiles for given regions of interest.
+        A user may input either a list of regions or a bed file
+    Parameters
+    ----------
+    regionlist : list
+        a list of regions of interest. Format [(chrom, start, stop), (), ...]
+    
+    region_file : string
+        full path to a bed file containing regions of interest.
+    millions_mapped : list
+        a list of floats corresponding to millions mapped reads for inputted
+        bam files. These must be in order corresponding to the order of bam1
+        files followed by bam2 files.
+    
+    largewindow : float
+        the window with which to compute profiles for
+    bam1 : list
+        a list of full paths to bam files corresponding to a condition or 
+        treatment
+    
+    bam2 : list
+        a list of full paths to bam files corresponding to a condition or 
+        treatment
+        
+    Returns
+    -------
+    posprofile1 : list
+        profile for the positive strand corresponding to condition 1. Each 
+        value in the list is a bp
+    negprofile1 : list
+        profile for the negative strand corresponding to condition 1. Each 
+        value in the list is a bp
+    posprofile2 : list
+        profile for the positive strand corresponding to condition 2. Each 
+        value in the list is a bp
+    negprofile2 : list
+        profile for the negative strand corresponding to condition 2. Each 
+        value in the list is a bp
+    Raises
+    ------
+    '''
+    regions=list()
+    if regionlist != None and region_file == None:
+        for chrom, start, stop in regionlist:
+            regions.append(
+                hts.GenomicInterval(chrom, int(start), int(stop), '.'))
+    elif region_file != None and regionlist == None:
+        with open(region_file) as F:
+            for line in F:
+                line = line.strip('\n').split('\t')
+                chrom, start, stop = line[:3]
+                regions.append(
+                    hts.GenomicInterval(chrom, int(start), int(stop), '.'))
+    elif region_file == None and regionlist == None:
+        raise NameError("Must input either a regionlist or region_file.")
+    else:
+        raise NameError("Only input one of regionlist or region_file variables.")
+    
+
+    hts_bam1 = list()
+    hts_bam2 = list()
+    for bam in bam1:
+        hts_bam1.append(hts.BAM_Reader(bam))
+    for bam in bam2:
+        hts_bam2.append(hts.BAM_Reader(bam))
+
+    if len(hts_bam1) == 0 or len(hts_bam2) == 0:
+        raise ValueError("One of bam1 or bam2 variables is empty.")
+    # if len(millions_mapped) == 0 or len(millions_mapped) != len(hts_bam1) + len(hts_bam2):
+    #     raise ValueError(("Millions_mapped variable is empty or does not match "
+    #                         "length of bam variables combined."))
+
+
+    posprofile1 = np.zeros(2*int(largewindow))  
+    negprofile1 = np.zeros(2*int(largewindow))
+    posprofile2 = np.zeros(2*int(largewindow))   
+    negprofile2 = np.zeros(2*int(largewindow))
+    rep1number = float(len(hts_bam1))
+    rep2number = float(len(hts_bam2))
+    mil_map1 = 0.0
+    mil_map2 = 0.0
+    for window in regions:
+        avgposprofile1 = np.zeros(2*int(largewindow))
+        avgnegprofile1 = np.zeros(2*int(largewindow))
+        i = 0
+        for sortedbamfile in hts_bam1:
+            # mil_map = float(millions_mapped[i])
+            i += 1
+            tempposprofile = np.zeros(2*int(largewindow))
+            tempnegprofile = np.zeros(2*int(largewindow))
+            for almnt in sortedbamfile[ window ]:
+                mil_map1 += 1.0
+                if almnt.iv.strand == '+':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window = almnt.iv.end - window.end \
+                                    + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                if almnt.iv.strand == '-':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+            # pos_sum = np.sum(tempposprofile)
+            # neg_sum = np.sum(tempnegprofile)
+            # if pos_sum != 0:
+            #     tempposprofile = [x/pos_sum for x in tempposprofile]
+            # if neg_sum != 0:
+            #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
+            avgposprofile1 = [x+y for x,y in zip(avgposprofile1, tempposprofile)]
+            avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
+        # avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
+        # avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
+        avgposprofile1 = [x/rep1number for x in avgposprofile1]
+        avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
+        posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
+        negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
+
+        avgposprofile2 = np.zeros(2*int(largewindow))
+        avgnegprofile2 = np.zeros(2*int(largewindow))
+        i = len(hts_bam1)
+        for sortedbamfile in hts_bam2:
+            # mil_map = float(millions_mapped[i])
+            i += 1
+            tempposprofile = np.zeros(2*int(largewindow))
+            tempnegprofile = np.zeros(2*int(largewindow))
+            for almnt in sortedbamfile[ window ]:
+                if almnt.iv.strand == '+':
+                    mil_map2 += 1.0
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                if almnt.iv.strand == '-':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+            # pos_sum = np.sum(tempposprofile)
+            # neg_sum = np.sum(tempnegprofile)
+            # if pos_sum != 0:
+            #     tempposprofile = [x/pos_sum for x in tempposprofile]
+            # if neg_sum != 0:
+            #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
+            avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
+            avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
+        # avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
+        # avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
+        avgposprofile2 = [x/rep2number for x in avgposprofile2]
+        avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
+        posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
+        negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
+    
+    mil_map1 = mil_map1/rep1number
+    mil_map2 = mil_map2/rep2number
+
+    posprofile1 = [x/mil_map1 for x in posprofile1]
+    negprofile1 = [x/mil_map1 for x in negprofile1]
+    posprofile2 = [x/mil_map2 for x in posprofile2]
+    negprofile2 = [x/mil_map2 for x in negprofile2]
+
+
+    return posprofile1, negprofile1, posprofile2, negprofile2

@@ -23,6 +23,7 @@ from pathlib import Path
 from contextlib import closing
 
 import config
+
 #Main Script
 #==============================================================================
 def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=None):
@@ -182,7 +183,7 @@ def helper_single(args):
     return result
 
 #==============================================================================
-def current_mem_usage(jobid, in_place=False, **kwargs):
+def current_mem_usage(jobid, **kwargs):
     '''Prints current memory usage. Adapted from scripts by Chris Slocum and 
         Fred Cirera. Additional kwargs are passed to print function
     '''
@@ -200,29 +201,9 @@ def current_mem_usage(jobid, in_place=False, **kwargs):
             byte = float(num.strip('G'))*1024.0*1024.0*1024.0
         for unit in ['','K','M','G','T','P','E','Z']:
             if abs(byte) < 1024.0:
-                if in_place:
-                    print_in_place("(Memory Usage: %3.1f%s%s)" % (byte, unit, suffix), file=sys.stderr)
-                else:
-                    print("(Memory Usage: %3.1f%s%s)" % (byte, unit, suffix), file=sys.stderr, **kwargs)
+                print("(Memory Usage: %3.1f%s%s)" % (byte, unit, suffix), file=sys.stderr, **kwargs)
                 return
             byte /= 1024.0
-        if in_place:
-            print_in_place("(Memory Usage: %.1f%s%s)" % (byte, 'Y', suffix), file=sys.stderr)
         else:
             print("(Memory Usage: %.1f%s%s)" % (byte, 'Y', suffix), file=sys.stderr, **kwargs)
     return
-
-#==============================================================================
-def print_in_place(string, offset, file=None):
-    '''Writes a string to a file, then relocates pointer to position before
-        writing the string
-    '''
-    # offset = len(string)
-    # file.write(string)
-    # new_position = file.tell()
-    # print(new_position, offset)
-    # file.seek(new_position-offset,0)
-
-    current_position = file.tell()
-    file.seek(current_position-offset,0)
-    file.write(string)

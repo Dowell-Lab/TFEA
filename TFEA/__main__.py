@@ -15,8 +15,11 @@ __version__ = '4.0'
 import sys
 import subprocess
 from pathlib import Path
+#Add TFEA srcdirectory into path
+srcdirectory = Path(__file__).absolute().parent
+sys.path.insert(0, srcdirectory.parent)
 
-import process_inputs
+from TFEA import process_inputs
 
 #ARGUMENT PARSING
 #==============================================================================
@@ -27,10 +30,7 @@ import process_inputs
     configuration file and command line flags. In this case, the command line
     flags will overwrite any redundant options in the configuration file.
 '''
-#TFEA source directory
-srcdirectory = Path(__file__).absolute().parent
-
-#argparse to add arguments to this python package
+#Process user inputs in a separate module
 parser = process_inputs.read_arguments()
 
 #Display help message when no args are passed.
@@ -38,13 +38,11 @@ if len(sys.argv) == 1:
     parser.print_help()
     sys.exit(1)
 
-#If user provided arguments, then parse them
-test = parser.parse_args().TEST
-
 #TEST module
 #==============================================================================
 '''If test flag specified, run unittests and exit.
 '''
+test = parser.parse_args().TEST
 if test:
     subprocess.call(["python3", "-m", "unittest", "-v", "-f", 
                         srcdirectory / 'test' / 'test_basic.py'])
@@ -74,8 +72,8 @@ process_inputs.create_directories(srcdirectory=srcdirectory)
 
 #SECONDARY IMPORTS
 #==============================================================================
-import config
-import multiprocess
+from TFEA import config
+from TFEA import multiprocess
 import multiprocessing as mp
 
 #Print starting statements
@@ -93,7 +91,7 @@ if config.vars.DEBUG:
     input into subsequent modules.
 '''
 if config.vars.COMBINE != False:
-    import combine
+    from TFEA import combine
     combine.main()
 
 #RANK module
@@ -103,7 +101,7 @@ if config.vars.COMBINE != False:
     region (since we will perform bedtools closest later)
 '''
 if config.vars.RANK != False:
-    import rank
+    from TFEA import rank
     rank.main()
 
 #SCANNER module
@@ -113,7 +111,7 @@ if config.vars.RANK != False:
     by running bedtools closest on region centers compared to a database of
     motif hits across the genome.
 '''
-import scanner
+from TFEA import scanner
 scanner.main()
     
 #ENRICHMENT module
@@ -121,14 +119,14 @@ scanner.main()
 '''Where the bulk of TFEA analysis occurs. Some components of plotting module 
     are contained within this enrichment module
 '''
-import enrichment
+from TFEA import enrichment
 enrichment.main()
     
 #OUTPUT module
 #==============================================================================
 '''A module to write output to either a txt or html file
 '''
-import output
+from TFEA import output
 output.main()
 
 print("TFEA done.", file=sys.stderr)

@@ -20,23 +20,23 @@ import sys
 import time
 import datetime
 import subprocess
+import traceback
 from pathlib import Path
 
 from pybedtools import BedTool
 from pybedtools import featurefuncs
 
-import config
-import multiprocess
-import exceptions
+from TFEA import multiprocess
+from TFEA import exceptions
 
 #Main Script
 #==============================================================================
-def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None, 
+def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False, 
             ranked_file=None, md_bedfile1=None, md_bedfile2=None, 
             scanner=None, md=None, largewindow=None, smallwindow=None, 
             genomehits=None, fimo_background=None, genomefasta=None, 
             tempdir=None, fimo_motifs=None, singlemotif=None, fimo_thresh=None,
-            debug=None, mdd=None):
+            debug=None, mdd=None, jobid=None, cpus=None):
     '''This is the main script of the SCANNER module. It returns motif distances
         to regions of interest by either scanning fasta files on the fly using
         fimo or homer or by using bedtools closest on a center bed file and 
@@ -114,7 +114,9 @@ def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None,
     InputError
         If an unknown scanner option is specified
     '''
+    start_time = time.time()
     if use_config:
+        from TFEA import config
         fasta_file=config.vars.FASTA_FILE
         md_fasta1=config.vars.MD_FASTA1 
         md_fasta2=config.vars.MD_FASTA2 
@@ -141,16 +143,20 @@ def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None,
         cpus = config.vars.CPUS
         jobid = config.vars.JOBID
 
-
-    SCANNERtime = time.time()
     print("Scanning regions using " + scanner + "...", flush=True, file=sys.stderr)
+
+    motif_distances = None
+    md_distances1 = None
+    md_distances2 = None
+    mdd_distances1 = None
+    mdd_distances2 = None
 
     if not fasta_file and scanner != 'genome hits':
         fasta_file = getfasta(bedfile=ranked_file, genomefasta=genomefasta, 
                                 tempdir=tempdir, outname='ranked_file.fa')
         if os.stat(fasta_file).st_size == 0:
             raise exceptions.FileEmptyError("Error in SCANNER module. Converting RANKED_FILE to fasta failed.")
-    if config.vars.MD:
+    if md:
         if not md_fasta1:
             md_fasta1 = getfasta(bedfile=md_bedfile1, genomefasta=genomefasta, 
                                 tempdir=tempdir, outname='md1_fasta.fa')
@@ -159,7 +165,7 @@ def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None,
                                 tempdir=tempdir, outname='md2_fasta.fa')
         if os.stat(md_fasta1).st_size == 0 or os.stat(md_fasta2).st_size == 0:
             raise exceptions.FileEmptyError("Error in SCANNER module. Converting MD bedfiles to fasta failed.")
-    if config.vars.MDD:
+    if mdd:
         if not mdd_fasta1:
             mdd_fasta1 = getfasta(bedfile=mdd_bedfile1, genomefasta=genomefasta, 
                                 tempdir=tempdir, outname='mdd1_fasta.fa')
@@ -170,7 +176,7 @@ def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None,
             raise exceptions.FileEmptyError("Error in SCANNER module. Converting MDD bedfiles to fasta failed.")
 
     #FIMO
-    # if scanner == 'fimo':
+    if scanner == 'fimo':
         #Get background file, if none desired set to 'None'
         if fasta_file and fimo_background:
             background_file = fasta_markov(tempdir=tempdir, fastafile=fasta_file, order='1')
@@ -231,8 +237,10 @@ def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None,
                                                 kwargs=fimo_keywords, 
                                                 debug=debug, jobid=jobid,
                                                 cpus=cpus)
-            config.vars.MD_DISTANCES1 = md_distances1
-            config.vars.MD_DISTANCES2 = md_distances2
+            
+            if use_config:
+                config.vars.MD_DISTANCES1 = md_distances1
+                config.vars.MD_DISTANCES2 = md_distances2
         
         if mdd:
             print("\tMDD:", file=sys.stderr)
@@ -253,9 +261,9 @@ def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None,
                                                 kwargs=fimo_keywords, 
                                                 debug=debug, jobid=jobid,
                                                 cpus=cpus)
-
-            config.vars.MDD_DISTANCES1 = mdd_distances1
-            config.vars.MDD_DISTANCES2 = mdd_distances2
+            if use_config:
+                config.vars.MDD_DISTANCES1 = mdd_distances1
+                config.vars.MDD_DISTANCES2 = mdd_distances2
             
     #HOMER
     elif scanner== 'homer':
@@ -308,9 +316,9 @@ def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None,
                                             kwargs=bedtools_distance_keywords, 
                                             debug=debug, jobid=jobid,
                                             cpus=cpus)
-
-            config.vars.MD_DISTANCES1 = md_distances1
-            config.vars.MD_DISTANCES2 = md_distances2
+            if use_config:
+                config.vars.MD_DISTANCES1 = md_distances1
+                config.vars.MD_DISTANCES2 = md_distances2
         if mdd:
             mdd_bedfile1 = get_center(bedfile=mdd_bedfile1, outname=mdd_bedfile1)
             bedtools_distance_keywords = dict(genomehits=genomehits, 
@@ -335,19 +343,24 @@ def main(use_config=True, fasta_file=None, md_fasta1=None, md_fasta2=None,
                                             kwargs=bedtools_distance_keywords, 
                                             debug=debug, jobid=jobid,
                                             cpus=cpus)
-
-            config.vars.MDD_DISTANCES1 = mdd_distances1
-            config.vars.MDD_DISTANCES2 = mdd_distances2
+            if use_config:
+                config.vars.MDD_DISTANCES1 = mdd_distances1
+                config.vars.MDD_DISTANCES2 = mdd_distances2
     else:
         raise exceptions.InputError("SCANNER option not recognized.")
-            
-    config.vars.MOTIF_DISTANCES = motif_distances
 
-    SCANNERtime = time.time()-SCANNERtime
-    print("done in: " + str(datetime.timedelta(seconds=int(SCANNERtime))), file=sys.stderr)
+    if use_config:
+        config.vars.MOTIF_DISTANCES = motif_distances
 
-    if config.vars.DEBUG:
+    total_time = time.time() - start_time
+    if use_config:
+        SCANNERtime = total_time
+    print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
+
+    if debug:
         multiprocess.current_mem_usage(config.vars.JOBID)
+
+    return motif_distances, md_distances1, md_distances2, mdd_distances1, mdd_distances2
 
 #Functions
 #==============================================================================
@@ -373,6 +386,9 @@ def getfasta(bedfile=None, genomefasta=None, tempdir=None, outname=None):
         fasta format 
     '''
     fasta_file = tempdir / outname
+    #pybedtools implementation (incomplete)
+    # pybed = BedTool(bedfile).sequence(fi=genomefasta).saveas(fasta_file)
+
     getfasta_command = ["bedtools", "getfasta",
                         "-fi", genomefasta, 
                         "-bed", bedfile,
@@ -619,6 +635,7 @@ def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score',
     d = dict()
     lines = fimo_stdout.split('\n')
     header = lines[0].split('\t')
+    max_score = 0
     if len(header) > 1:
         start_index = header.index('start')
         stop_index = header.index('stop')
@@ -630,17 +647,29 @@ def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score',
         start = line_list[start_index]
         stop = line_list[stop_index]
         distance = ((int(start)+int(stop))/2)-int(largewindow)
-        score = line_list[score_index]
+        score = float(line_list[score_index])
+        if score > max_score:
+            max_score = score
         if id not in d:
             d[id] = [score, distance]
         elif retain == 'score':
-            prev_score = float(d[id][0])
-            if prev_score < float(score):
+            prev_score = d[id][0]
+            if prev_score < score:
                 d[id] = [score, distance]
         elif retain == 'distance':
-            prev_distance = float(d[id][1])
-            if prev_distance < float(distance):
+            prev_distance = d[id][1]
+            if prev_distance < distance:
                 d[id] = [score, distance]
+        elif retain == 'avg':
+            d[id].append(score)
+            d[id].append(distance)
+
+    if retain == 'avg':
+        for id in d:
+            norm_scores = [d[id][i]/max_score for i in range(len(d[id])) if i%2 == 0]
+            distances = [d[id][i] for i in range(len(d[id])) if i%2 != 0]
+            avg_distance = [distances[i] for i in range(len(distances))]
+
 
     distances = list()
     for name in names:
@@ -648,7 +677,6 @@ def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score',
             distances.append(d[name][1])
         else:
             distances.append('.')
-
 
     return distances
 

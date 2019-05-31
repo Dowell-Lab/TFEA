@@ -22,48 +22,76 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-import config
-import multiprocess
+from TFEA import multiprocess
+from TFEA import plot
 
 #Main Script
 #==============================================================================
-def main(results=config.vars.RESULTS, md_results=config.vars.MD_RESULTS, 
-        mdd_results=config.vars.MDD_RESULTS):
-    config.vars.OUTPUTtime = time.time()
+def main(use_config=True, outputdir=None, results=None, md_results=None, 
+            mdd_results=None, motif_distances=None, md=False, mdd=False, 
+            debug=False, jobid=None, output_type=False, p_cutoff=None):
+    '''This script creates output files associated with TFEA
+    '''
+    start_time = time.time()
+    if use_config:
+        from TFEA import config
+        outputdir = config.vars.OUTPUT
+        figuredir = config.vars.FIGUREDIR
+        results=config.vars.RESULTS
+        md_results=config.vars.MD_RESULTS 
+        mdd_results=config.vars.MDD_RESULTS
+        motif_distances = config.vars.MOTIF_DISTANCES
+        md = config.vars.MD
+        mdd = config.vars.MDD
+        debug = config.vars.DEBUG
+        jobid = config.vars.JOBID
+        output_type = config.vars.OUTPUT_TYPE
+        p_cutoff = config.vars.PVALCUTOFF
+
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
     header = ['#TF', 'AUC', 'Events', 'p-val', 'p-adj']
-    txt_output(results=results, outname='results.txt', 
-                        sortindex=[-2,-1])
-    if config.vars.MD:
+    txt_output(outputdir=outputdir, results=results, outname='results.txt', 
+                sortindex=[-2,-1])
+    plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA', xlabel='Log10(Motif Hits)', 
+                    ylabel='Area Under the Curve (AUC)', figuredir=figuredir)
+    if md:
         header = ['#TF', 'MD-Score', 'Events', 'p-val']
-        txt_output(results=md_results, outname='md_results.txt', 
-                            header=header, sortindex=[-1])
-    if config.vars.MDD:
+        txt_output(outputdir=outputdir, results=md_results, 
+                    outname='md_results.txt', header=header, sortindex=[-1])
+        plot.plot_global_MA(results, p_cutoff=p_cutoff, title='MD', xlabel='Log10(Motif Hits)', 
+                    ylabel='MD-Score Difference', figuredir=figuredir)
+    if mdd:
         header = ['#TF', 'MD-Score', 'Events', 'p-val']
-        txt_output(results=mdd_results, outname='mdd_results.txt', 
-                            header=header, sortindex=[-1])
-    config.vars.OUTPUTtime = time.time()-config.vars.OUTPUTtime
-    # if not config.vars.TEXTONLY:
-    #     output.summary_html_output(config_object=config_object, 
-    #                                 outputdir=outputdir)
-    #     module_list = [('COMBINE', config.vars.COMBINE, config.vars.COMBINEtime), 
-    #                     ('COUNT', config.vars.COUNT, config.vars.COUNTtime), 
-    #                     ('RANK', config.vars.RANK, config.vars.RANKtime), 
-    #                     ('FASTA', config.vars.FASTA, config.vars.FASTAtime), 
-    #                     ('SCANNER', config.vars.SCANNER, config.vars.SCANNERtime), 
-    #                     ('ENRICHMENT', config.vars.ENRICHMENT, config.vars.ENRICHMENTtime), 
-    #                     ('OUTPUT', config.vars.OUTPUT_TYPE, config.vars.OUTPUTtime)]
-    #     output.html_output(results=results, module_list=module_list)
+        txt_output(outputdir=outputdir, results=mdd_results, 
+                    outname='mdd_results.txt', header=header, sortindex=[-1])
+        plot.plot_global_MA(results, p_cutoff=p_cutoff, title='MDD', xlabel='Log10(Motif Hits)', 
+                    ylabel='Differential MD-Score Difference', figuredir=figuredir)
+    
+    total_time = time.time() - start_time
+    if use_config:
+        config.vars.OUTPUTtime = total_time
+    if output_type == 'html':
+        summary_html_output(config_object=config_object, 
+                                    outputdir=outputdir)
+        if use_config:
+            module_list = [('COMBINE', config.vars.COMBINE, config.vars.COMBINEtime),
+                        ('RANK', config.vars.RANK, config.vars.RANKtime), 
+                        ('SCANNER', config.vars.SCANNER, config.vars.SCANNERtime), 
+                        ('ENRICHMENT', config.vars.ENRICHMENT, config.vars.ENRICHMENTtime), 
+                        ('OUTPUT', config.vars.OUTPUT_TYPE, config.vars.OUTPUTtime)]
+        else:
+            module_list = []
+        html_output(results=results, module_list=module_list)
         
-    print("done in: " + str(datetime.timedelta(seconds=int(config.vars.OUTPUTtime))), file=sys.stderr)
+    print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
-    if config.vars.DEBUG:
-        multiprocess.current_mem_usage(config.vars.JOBID)
+    if debug:
+        multiprocess.current_mem_usage(jobid)
 
 
 #Functions
 #==============================================================================
-def txt_output(results=None, outputdir=config.vars.OUTPUT, outname='results.txt', 
+def txt_output(results=None, outputdir=None, outname=None, 
                 header=None, sortindex=None):
     with open(os.path.join(outputdir, outname), 'w') as outfile:
         if type(header) == list:
@@ -74,151 +102,7 @@ def txt_output(results=None, outputdir=config.vars.OUTPUT, outname='results.txt'
             results.sort(key=lambda x: x[index])
         for values in results:
             outfile.write('\t'.join([str(x) for x in values])+'\n')
-
-#==============================================================================
-# def plot_output(motif_distances=None, plot=config.vars.PLOTALL, padj_cutoff=config.vars.PADJCUTOFF,
-#                             figuredir=config.vars.FIGUREDIR, logos=config.vars.MOTIF_LOGOS, 
-#                             largewindow=config.vars.LARGEWINDOW,
-#                             smallwindow=config.vars.SMALLWINDOW, 
-#                             ranks=None, pvals=None, fc=None, 
-#                             cumscore=None, motif_file=None, p=None,
-#                             simES=None, actualES=None, gc_array=None,
-#                             meta_profile_dict=None, label1=None, label2=None):
-#     '''This function generates all TFEA related graphs for an individual motif
-
-#     Parameters
-#     ----------
-#     plot : boolean
-#         switch to determine whether all motifs are plotted or just significant
-#         ones
-    
-#     padj_cutoff : float
-#         the cutoff value that determines signficance. This is technically
-#         evaluated against the non-adjusted p-value since p-adj has not been
-#         calculated yet at this point
-    
-#     figuredir : string
-#         the full path to the figuredir within the ouptut directory containing
-#         all figures and plots
-
-#     logos : string
-#         full path to a directory containing meme logos. These are copied to the
-#         output directory to be displayed in the html results.
-
-#     largewindow : float
-#         a user specified larger window used for plotting purposes and to do
-#         some calculations regarding the user-provided regions of interest
-
-#     smallwindow : float
-#         a user specified smaller window used for plotting purposes and to do
-#         some calculations regarding the user-provided regions of interest
-
-#     distances_abs : list or array
-#         a sorted (based on rank) list of absolute motif to region center 
-#         distances
-
-#     sorted_distances : list or array
-#         a sorted (based on rank) list of motif distances. Negative corresponds
-#         to upstream of region
-
-#     ranks : list or array
-#         a list of ranks that correspond to each region of interest. The ranking
-#         comes from DE-Seq p-value
-
-#     pvals : list or array
-#         a list of DE-Seq p-values for all regions
-
-#     p : float
-#         the p-value of the given motif based on simulations
-
-#     simES : list
-#         a list of simulated 'enrichment' scores calculated by randomizing
-#         region rank
-
-#     actualES : float
-#         the observed 'enchrichment' score. Can be calculated in many different
-#         ways..
-
-#     gc_array : list
-#         an array of gc richness of regions of interest. It is recommended that
-#         this array be no larger than 1000 bins.
-
-#     Returns
-#     -------
-#     None
-#     '''
-#     import config
-#     #Only plot things if user selects to plot all or if the p-value is less than
-#     #the cutoff
-#     if plot or p < padj_cutoff:
-#         if config.vars.SCANNER == 'homer':
-#             pass
-#         else:
-#             #Get motif logos from logo directory
-#             os.system("scp '" + logos 
-#                         + motif_file.strip('.sorted.distance.bed').strip('HO_') 
-#                         + "_direct.png' " + figuredir)
-
-#             os.system("scp '" + logos 
-#                         + motif_file.strip('.sorted.distance.bed').strip('HO_') 
-#                         + "_revcomp.png' " + figuredir)
-        
-
-#         #Filter distances into quartiles for plotting purposes
-#         q1 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 25)))
-#         q2 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 50)))
-#         q3 = int(round(np.percentile(np.arange(1, len(sorted_distances),1), 75)))
-#         q1_distances = [x for x in sorted_distances[:q1] if x <= largewindow]
-#         q2_distances = [x for x in sorted_distances[q1:q2] if x <= largewindow]
-#         q3_distances = [x for x in sorted_distances[q2:q3] if x <= largewindow]
-#         q4_distances = [x for x in sorted_distances[q3:] if x <= largewindow]
-
-        
-#         #Get log pval to plot for rank metric
-#         sorted_pval = [x for _,x in sorted(zip(ranks, pvals))]
-#         sorted_fc = [x for _,x in sorted(zip(ranks, fc))]
-#         logpval = list()
-#         for x,y in zip(sorted_pval,sorted_fc):
-#             try:
-#                 if y < 1:
-#                     logpval.append(math.log(x,10))
-#                 else:
-#                     logpval.append(-math.log(x,10))
-#             except:
-#                 logpval.append(0.0)
-
-#         #Plot the enrichment plot
-#         enrichment_plot(largewindow=largewindow,
-#                             smallwindow=smallwindow,
-#                             figuredir=figuredir,
-#                             cumscore=cumscore, 
-#                             sorted_distances=sorted_distances, 
-#                             logpval=logpval,  
-#                             gc_array=gc_array, score=score, 
-#                             motif_file=motif_file, 
-#                             q1_distances=q1_distances, 
-#                             q2_distances=q2_distances, 
-#                             q3_distances=q3_distances, 
-#                             q4_distances=q4_distances,
-#                             meta_profile_dict=meta_profile_dict,
-#                             dpi=None, label1=label1, 
-#                             label2=label2)
-
-#         #Plot the simulation plot
-#         simulation_plot(figuredir=figuredir, simES=simES, actualES=actualES,
-#                         motif_file=motif_file)
-
-#         # #Plot the distance distribution histograms plot
-#         # independent_functions.meta_plot(figuredir=figuredir, 
-#         #                                     meta_profile_dict=meta_profile_dict,
-#         #                                     motif_file=motif_file, 
-#         #                                     q1_distances=q1_distances, 
-#         #                                     q2_distances=q2_distances, 
-#         #                                     q3_distances=q3_distances, 
-#         #                                     q4_distances=q4_distances, 
-#         #                                     bins=100, 
-#         #                                     dpi=None)
-
+                
 #==============================================================================
 def html_output(results=None, module_list=None, columns=None):
     '''Creates the main html output and also individual html outputs for each
@@ -786,10 +670,10 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None):
     ax.set_title("DE-Seq MA-Plot",fontsize=14)
     ax.set_ylabel("Log2 Fold-Change ("+label2+"/"+label1+")",fontsize=14)
     ax.set_xlabel("Log10 Average Expression",fontsize=14)
-    ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on')
-    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+    ax.tick_params(axis='y', which='both', left=False, right=False, 
+                    labelleft=True)
+    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
+                    labelbottom=True)
     plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.png'),
                 bbox_inches='tight')
 
@@ -913,10 +797,10 @@ def enrichment_lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=Non
     ax.plot([0, 1],[0, 1], '--', alpha=0.75)
     ax.set_title(title, fontsize=14)
     ax.set_ylabel('Enrichment Score (ES)', fontsize=10)
-    ax.tick_params(axis='y', which='both', left='on', right='off', 
-                    labelleft='on')
-    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='off')
+    ax.tick_params(axis='y', which='both', left=True, right=False, 
+                    labelleft=True)
+    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
+                    labelbottom=False)
     ax.set_ylim([0,1])
     ax.set_xlim(xlimits)
 
@@ -926,10 +810,10 @@ def motifhit_scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewin
     #This is the barplot right below the enrichment score line plot
     ax.scatter(xvals, yvals, edgecolor="", color="black", 
                     s=10, alpha=0.25)
-    ax.tick_params(axis='y', which='both', left='off', right='off', 
-                    labelleft='on') 
-    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='off')
+    ax.tick_params(axis='y', which='both', left=False, right=False, 
+                    labelleft=True) 
+    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
+                    labelbottom=False)
     plt.yticks([-int(largewindow),0,int(largewindow)],
                 [str(-int(largewindow)/1000.0),'0',\
                 str(int(largewindow)/1000.0)])
@@ -941,10 +825,10 @@ def motifhit_scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewin
 def ranking_fillplot(ax=None, xvals=None, yvals=None, xlimits=None):
     #This is the rank metric fill plot
     ax.fill_between(xvals,0,yvals,facecolor='grey',edgecolor="")
-    ax.tick_params(axis='y', which='both', left='on', right='off', 
-                    labelleft='on')
-    ax.tick_params(axis='x', which='both', bottom='off', top='off', 
-                    labelbottom='on')
+    ax.tick_params(axis='y', which='both', left=True, right=False, 
+                    labelleft=True)
+    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
+                    labelbottom=True)
     ylim = math.fabs(max([x for x in yvals if -500 < x < 500],key=abs))
     ax.set_ylim(ylimits)
     ax.yaxis.set_ticks([int(-ylim),0,int(ylim)])
