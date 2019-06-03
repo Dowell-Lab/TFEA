@@ -106,7 +106,6 @@ pip3 install --user .
   ```
 
 <br></br>
-
 <H2 id="Usage">Usage</H2>
 
 Once installed (using pip3), TFEA can be run from anywhere, try:
@@ -115,20 +114,16 @@ Once installed (using pip3), TFEA can be run from anywhere, try:
 TFEA --help
 ```
 
-otherwise, if TFEA is not installed with pip3, you should still be able to run it by specifying the full path:
-
-```
-python3 /full/path/to/TFEA/TFEA --help
-```
-
 To make sure TFEA is installed properly, run the following tests:
+
+<b>*Note:*</b> If you chose to skip installations because you were going to run TFEA using the --sbatch flag, make sure you load the appropriate modules on FIJI or these tests will fail. Also, beware that the --test-full test can be memory and CPU intensive and you might get yelled at if you execute it on the FIJI head node.
 
 ```
 TFEA --test-install
 TFEA --test-full
 ```
 
-Once you've ran the tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA ppeline. Test files are provided within 'test_files' for you to get familiar with TFEA (for all paths, make sure you input the full path to 'test_files' on your machine or ```cd``` into the TFEA parent directory and simply copy paste):
+Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA ppeline. Test files are provided within the 'test_files' directory in this repository.
 
 ```
 #Using only flags
@@ -144,7 +139,7 @@ TFEA --output ./test_files/test_rep2 \
 #Using only a config file
 TFEA --config ./test_files/test_config.ini
 
-#On FIJI
+#On FIJI using sbatch
 TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
 ```
 
@@ -336,7 +331,15 @@ Miscellaneous Options:
 ```
 
 <H2 id="ConfigurationFile">Configuration File</H3>
-TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini). If both flag inputs and configuration file inputs are provided, TFEA uses flag inputs preferrentially. Below is an example of a configuration file
+TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. This can be helpful to keep track of different TFEA runs and because you can use variables within the config file. For documentation on config files and what you can do with them see <a href="https://docs.python.org/3.6/library/configparser.html#supported-ini-file-structure">Supported INI File Structure</a> and <a href="https://docs.python.org/3.6/library/configparser.html#interpolation-of-values">Interpolation of values (ExtendedInterpolation)</a>
+
+<b>*Notes:*</b>
+1. Section headers (ex: `[Modules]`) don't matter but you need to have at least ONE section header to be a viable .ini file
+2. Capitalization of variables doesn't matter
+3. Feel free to specify any additional variables you like, TFEA will only parse specific variables
+4. If both flag inputs and configuration file inputs are provided, TFEA uses command line flag inputs preferrentially
+
+Below is an example of a configuration file:
 
   ```bash
   #Example config.ini file for use with TFEA.
