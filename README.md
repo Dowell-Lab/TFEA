@@ -1,5 +1,25 @@
 Transcription Factor Enrichment Analysis (TFEA)
 ====
+ <br></br>
+# Table of Contents
+1. <A href="#Help">Help</A>
+2. <A href="">Pipeline</A>
+1. <A href="#Installation">Installation</A>
+2. <A href="#Requirements">Requirements</A>
+   - <A href="#Python3">Python3</A>
+     - <A href="#HTSeq">HTSeq</A>
+     - <A href="#Pybedtools">Pybedtools</A>
+     - <A href="#psutil">psutil</A>
+   - <A href="#DESeq">DESeq</A>
+   - <A href="#Bedtools">Bedtools</A>
+   - <A href="#MEMESuite">MEME Suite</A>
+     - <A href="#ImageMagick">Image Magick</A>
+   - <A href="#FIJIModules">FIJI Modules</A>
+3. <A href="#ConfigurationFile">Configuration File</A>
+4. <A href="#RunningLocally">Running Locally</A>
+5. <A href="#UsingSBATCH">Using SBATCH</A>
+6. <A href="#ExampleOutput">Example Output</A>
+7. <A href="#ContactInformation">Contact Information</A>
   
 ```
 TFEA --help
@@ -167,36 +187,19 @@ Miscellaneous Options:
                         memory footprint. Default: 10
  ```
  
- # TFEA Pipeline
+ <H2 id="Pipeline"># TFEA Pipeline</H2>
  ![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/TFEA_Pipeline2.png)
  
- <br></br>
-# Table of Contents
-1. <A href="#Installation">Installation</A>
-2. <A href="#Requirements">Requirements</A>
-   - <A href="#HTSeq">HTSeq</A>
-   - <A href="#configparser">confipgarser</A>
-   - <A href="#DESeq">DESeq</A>
-   - <A href="#Bedtools">Bedtools</A>
-   - <A href="#Samtools">Samtools</A>
-   - <A href="#MEMESuite">MEME Suite</A>
-   - <A href="#FIJIModules">FIJI Modules</A>
-3. <A href="#ConfigurationFile">Configuration File</A>
-4. <A href="#RunningLocally">Running Locally</A>
-5. <A href="#UsingSBATCH">Using SBATCH</A>
-6. <A href="#ExampleOutput">Example Output</A>
-7. <A href="#ContactInformation">Contact Information</A>
-
 <br></br>
 
 <H2 id="Installation">Installation</H2>
 
-To install, this package:
+To install, this package and all python3 dependencies:
 
 ```
 git clone https://github.com/jdrubin91/TFEA.git
 cd /full/path/to/TFEA/
-pip3 install .
+pip3 install --user .
 ```
 
 TFEA can then be run from anywhere, try:
@@ -211,6 +214,33 @@ Alternatively, TFEA can be run without installation using:
 cd /full/path/to/TFEA/
 python3 TFEA/ --help
 ```
+but this will require you to install each required python3 package separately.
+
+It is recommended that you run the multiple test modules within TFEA to make sure everything is properly installed:
+```
+TFEA --test-install
+TFEA --test-full
+```
+
+Once you've ran the tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA ppeline. These files are provided within 'test_files' for you to get familiar with TFEA (for all paths, make sure you input the full path to 'test_files' on your machine or ```cd``` into the TFEA parent directory and simply copy paste):
+
+```
+#Using only flags
+TFEA --output ./test_files/test_rep2 \
+--bed1 ./test_files/SRR1105736.tfit_bidirs.chr22.bed ./test_files/SRR1105737.tfit_bidirs.chr22.bed \
+--bed2 ./test_files/SRR1105738.tfit_bidirs.chr22.bed ./test_files/SRR1105739.tfit_bidirs.chr22.bed \
+--bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
+--bam2 ./test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
+--label1 condition1 --label2 condition2 \
+--genomefasta ./test_files/chr22.fa \
+--fimo_motifs ./test_files/test_database.meme
+
+#Using only a config file
+TFEA --config ./test_files/test_config.ini
+
+#On FIJI
+TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
+```
 
 <br></br>
 
@@ -218,35 +248,23 @@ python3 TFEA/ --help
 
 Before running TFEA, make sure you have the following installed on your machine
 
-*Note:* If using the --sbatch module on FIJI, you may need to install configparser, DESeq, and DESeq2 but you should not need to install anything else
+*Note:* If using the --sbatch module on FIJI, you will need to install DESeq and DESeq2 but you should not need to install anything else
+  <H3 id="Python3">Python 3</H3>
+  TFEA is written in python3. Instructions for installing python3 can be found here:
+  <a href="https://www.python.org/downloads/">python3 Installation</a>
 
   <H3 id="HTSeq">HTSeq</H3>
   TFEA uses HTSeq to draw meta plots of coverage (from BAM inputs) over inputted BED files.
   
   ```
-  pip install htseq
+  pip3 install htseq
   ```
   
   If you are on FIJI compute cluster, htseq is available as a module:
   
   ```
-  module load python/2.7.14/htseq
+  module load python/3.6.3/htseq
   ```
-
-
-  <H3 id="configparser">configparser</H3>
-  TFEA uses python's configparser. If this is not installed on your machine use pip to install it:
-
-  ```
-  pip install configparser
-  ```
-
-  If you're on FIJI (CU Boulder), pip can be used to install packages to your home directory:
-
-  ```
-  pip install --user configparser
-  ```
-  *Note:* Here 'user' is an argument and does not mean you should replace that with your specific user ID (i.e. just copy paste this command to your terminal and don't edit anything)
 
   <H3 id="DESeq">DESeq</H3>
   TFEA uses DESeq or DESeq2 (depending on replicate number) to rank inputted bed files based on fold change significance. Make sure DESeq and DESeq2 are both installed on your system R, in your terminal:
@@ -278,57 +296,48 @@ Before running TFEA, make sure you have the following installed on your machine
   If you are on FIJI compute cluster, bedtools is available as a module:
   
   ```
-  module load bedtools
-  ```
-  
-  <H3 id="Samtools">Samtools</H3>
-  TFEA uses samtools to calculate millions mapped reads of your BAM files. Instructions for downloading and installing samtools can be found here:
-  <br></br>
-  <a href="http://www.htslib.org/download/">Samtools Download and Installation</a>
-  <br></br>
-  If you are on FIJI compute cluster, bedtools is available as a module:
-  
-  ```
-  module load samtools
+  module load bedtools/2.25.0
   ```
   
   <H3 id="MEMESuite">MEME Suite</H3>
   TFEA uses the MEME suite to scan sequences from inputted bed files for motif hits using the background atcg distribution form inputted bed file regions. TFEA also uses the MEME suite to generate motif logos for html display. Instructions for downloading and installing the MEME suite can be found here:
   <br></br>
   <a href="http://meme-suite.org/doc/install.html?man_type=web">MEME Download and Installation</a>
+  Note: TFEA uses some 
   <br></br>
   If you are on FIJI compute cluster, the meme suite is available as a module:
   
   ```
-  module load meme
+  module load meme/5.0.3
   ```
   
   <H3 id="FIJIModules">FIJI Modules</H3>
-  Below is a summary of all FIJI modules needed. Configparser will need to be installed using pip.
+  Below is a summary of all FIJI modules needed.
   
   ```
-  module load python/2.7.14
   module load python/3.6.3
-  module load bedtools/2.25.0
   module load python/3.6.3/matplotlib/1.5.1
   module load python/3.6.3/scipy/0.17.1
   module load python/3.6.3/numpy/1.14.1
-  module load meme/4.12.0
+  module load python/3.6.3/htseq/0.9.1
+  module load python/3.6.3/pybedtools/0.7.10
+
+  module load bedtools/2.25.0
+  module load meme/5.0.3
   ```
 
 <br></br>
 
 <H2 id="ConfigurationFile">Configuration File</H3>
-Below is a brief description of each variable required in the config.ini file. These variables can be in any order under any headings but they are organized in this way for clarity. This file and a simple version without comments is also available within the examples folder.
+TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini). If both flag inputs and configuration variable inputs are provided, TFEA uses flag inputs preferrentially. Below is an example of a configuration file
 
   ```bash
-  #Example config.ini file for use with TFEA. Contains full descriptions of all variables.
+  #Example config.ini file for use with TFEA.
 
   [MODULES]
-  #Which parts of TFEA would you like to run? These are switches to turn on/off different modules in TFEA
 
   #This module combines bed files from BED and merges them using bedtools. If False, it will assume BEDS[0] contains the bed file of interest (must be a sorted bed file). (boolean)
-  COMBINE = True
+  COMBINE = 'intersect/merge
 
   #This module performs bedtools multicov which requires bam files and a bed file. It will count reads for each bam file across all regions in the inputted bed file. (boolean)
   COUNT = True
@@ -424,11 +433,10 @@ Node configuration can be changed within scripts/run_main.sbatch. See here the s
   #SBATCH --time=24:00:00
 
   ### Specify the number of nodes/cores
-  #SBATCH --nodes=1
   #SBATCH --ntasks=10
 
   ### Allocate the amount of memory needed
-  #SBATCH --mem=50gb
+  #SBATCH --mem=20gb
 
   ### Set error and output locations. These will be automatically updated to the output directory.
   #SBATCH --error /scratch/Users/user/e_and_o/%x.err
@@ -441,11 +449,14 @@ Node configuration can be changed within scripts/run_main.sbatch. See here the s
   ### Load required modules
   module purge
   module load python/3.6.3
-  module load bedtools/2.25.0
   module load python/3.6.3/matplotlib/1.5.1
   module load python/3.6.3/scipy/0.17.1
   module load python/3.6.3/numpy/1.14.1
-  module load meme/4.12.0
+  module load python/3.6.3/htseq/0.9.1
+  module load python/3.6.3/pybedtools/0.7.10
+
+  module load bedtools/2.25.0
+  module load meme/5.0.3
 
   ### now call your program
 
