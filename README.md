@@ -1,9 +1,8 @@
-# Transcription Factor Enrichment Analysis (TFEA)
-# Table of Contents
-1. <A href="#Help">Help</A>
-2. <A href="">Pipeline</A>
-1. <A href="#Installation">Installation</A>
-2. <A href="#Requirements">Requirements</A>
+<H1>Transcription Factor Enrichment Analysis (TFEA)</H1>
+<H2 id="TableOfContents">Table of Contents</H2>
+
+1. <A href="#Pipeline">Pipeline</A>
+2. <A href="#Installation">Installation</A>
    - <A href="#Python3">Python3</A>
      - <A href="#HTSeq">HTSeq</A>
      - <A href="#Pybedtools">Pybedtools</A>
@@ -13,13 +12,193 @@
    - <A href="#MEMESuite">MEME Suite</A>
      - <A href="#ImageMagick">Image Magick</A>
    - <A href="#FIJIModules">FIJI Modules</A>
+4. <A href="#Usage">Usage</A>
 3. <A href="#ConfigurationFile">Configuration File</A>
 4. <A href="#RunningLocally">Running Locally</A>
 5. <A href="#UsingSBATCH">Using SBATCH</A>
 6. <A href="#ExampleOutput">Example Output</A>
 7. <A href="#ContactInformation">Contact Information</A>
+ 
+<br></br>
+ 
+<H2 id="Pipeline">TFEA Pipeline</H2>
+ 
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/TFEA_Pipeline2.png)
+ 
+<br></br>
+
+<H2 id="Installation">Installation</H2>
+
+To install, this package and all python3 dependencies:
+
+```
+git clone https://github.com/jdrubin91/TFEA.git
+cd /full/path/to/TFEA/
+pip3 install --user .
+```
+
+Alternatively, TFEA can be run without installation using:
+
+```
+python3 /full/path/to/TFEA/TFEA/
+```
+
+but this will require you to install each required python3 package separately using pip3 (see below).
+
+Before running TFEA, make sure you have the following installed on your machine:
+
+*Note:* If using the --sbatch module on FIJI, you only need to install DESeq and DESeq2 (assuming pip3 installation of TFEA)
+
+  <H3 id="Python3">Python 3</H3>
+  TFEA is written in python3. Instructions for installing python3 can be found here:
+  <a href="https://www.python.org/downloads/">python3 Installation</a>
+  Note: The python3 packages below are installed automatically if using pip3
+
+  <H4 id="HTSeq">HTSeq</H3>
+  TFEA uses HTSeq to draw meta plots of coverage (from BAM inputs) over inputted BED files. Install HTSeq using:
   
-<H2 id="Help">Help</H2>
+  ```
+  pip3 install htseq
+  ```
+  
+  If you are on FIJI compute cluster, htseq is available as a module:
+  
+  ```
+  module load python/3.6.3/htseq
+  ```
+  
+  <H4 id="Pybedtools">Pybedtools</H3>
+  TFEA uses pybedtools for combining bed files. Pybedtools can be installed using:
+  
+  ```
+  pip3 install pybedtools
+  ```
+  
+  If you are on FIJI compute cluster, htseq is available as a module:
+  
+  ```
+  module load python/3.6.3/pybedtools/0.7.10
+  ```
+  
+  <H4 id="psutil">psutil</H3>
+  TFEA uses psutil to track memory and CPU usage. It can be installed using:
+  
+  ```
+  pip3 install pybedtools
+  ```
+  
+  If you are on FIJI compute cluster, install psutil for your user only using:
+  
+  ```
+  pip3 install --user psutil
+  ```
+
+  <H3 id="DESeq">DESeq</H3>
+  TFEA uses DESeq or DESeq2 (depending on replicate number) to rank inputted bed files based on fold change significance. Make sure DESeq and DESeq2 are both installed on your system R, in your terminal:
+    
+  ```
+  R
+  > source("https://bioconductor.org/biocLite.R")
+  > biocLite("DESeq")
+  > biocLite("DESeq2")
+  ```
+  
+  If on FIJI, make sure all gcc modules are unloaded before installing DESeq or DESeq2. This can be accomplished with:
+  
+  ```
+  module unload gcc
+  ```
+  
+  or
+  
+  ```
+  module purge
+  ```
+  
+  <H3 id="Bedtools">Bedtools</H3>
+  TFEA uses Bedtools to do several genomic computations. Instructions for installing bedtools can be found here:
+  <br></br>
+  <a href="http://bedtools.readthedocs.io/en/latest/content/installation.html">Bedtools Installation</a>
+  <br></br>
+  If you are on FIJI compute cluster, bedtools is available as a module:
+  
+  ```
+  module load bedtools/2.25.0
+  ```
+  
+  <H3 id="MEMESuite">MEME Suite</H3>
+  TFEA uses the MEME suite to scan sequences from inputted bed files for motif hits using the background atcg distribution form inputted bed file regions. TFEA also uses the MEME suite to generate motif logos for html display. Instructions for downloading and installing the MEME suite can be found here:
+  <br></br>
+  <a href="http://meme-suite.org/doc/install.html?man_type=web">MEME Download and Installation</a>
+  Note: TFEA uses some 
+  <br></br>
+  If you are on FIJI compute cluster, the meme suite is available as a module:
+  
+  ```
+  module load meme/5.0.3
+  ```
+  <H4 id="ImageMagick">Image Magick</H3>
+  TFEA uses the meme2images script within MEME to produce motif logo figures. This requires Image Magick, which is a common linux utility package sometimes pre-installed on machines. To check if you have Image Magick installed try:
+  
+  ```
+  identify -version
+  ```
+  
+  If you do not have Image Magick installed, follow these instructions:
+  <br></br>
+  <a href="https://imagemagick.org/script/install-source.php">Image Magick Download and Installation</a>
+  
+  <H3 id="FIJIModules">FIJI Modules</H3>
+  Below is a summary of all FIJI modules needed to run TFEA.
+  
+  ```
+  module load python/3.6.3
+  module load python/3.6.3/matplotlib/1.5.1
+  module load python/3.6.3/scipy/0.17.1
+  module load python/3.6.3/numpy/1.14.1
+  module load python/3.6.3/htseq/0.9.1
+  module load python/3.6.3/pybedtools/0.7.10
+
+  module load bedtools/2.25.0
+  module load meme/5.0.3
+  ```
+
+<br></br>
+
+<H2 id="Usage">Usage</H2>
+
+TFEA can then be run from anywhere, try:
+
+```
+TFEA --help
+```
+
+
+Once installed, it is recommended that you run the multiple test modules within TFEA to make sure everything is working properly:
+```
+TFEA --test-install
+TFEA --test-full
+```
+
+Once you've ran the tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA ppeline. Test files are provided within 'test_files' for you to get familiar with TFEA (for all paths, make sure you input the full path to 'test_files' on your machine or ```cd``` into the TFEA parent directory and simply copy paste):
+
+```
+#Using only flags
+TFEA --output ./test_files/test_rep2 \
+--bed1 ./test_files/SRR1105736.tfit_bidirs.chr22.bed ./test_files/SRR1105737.tfit_bidirs.chr22.bed \
+--bed2 ./test_files/SRR1105738.tfit_bidirs.chr22.bed ./test_files/SRR1105739.tfit_bidirs.chr22.bed \
+--bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
+--bam2 ./test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
+--label1 condition1 --label2 condition2 \
+--genomefasta ./test_files/chr22.fa \
+--fimo_motifs ./test_files/test_database.meme
+
+#Using only a config file
+TFEA --config ./test_files/test_config.ini
+
+#On FIJI
+TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
+```
 
 ```
 usage: TFEA [-h] [--output OUTPUT] [--bed1 [BED1 [BED1 ...]]]
@@ -205,146 +384,6 @@ Miscellaneous Options:
                         Increasing this value will significantly increase
                         memory footprint. Default: 1
 ```
- 
-<H2 id="Pipeline">TFEA Pipeline</H2>
- 
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/TFEA_Pipeline2.png)
- 
-<br></br>
-
-<H2 id="Installation">Installation</H2>
-
-To install, this package and all python3 dependencies:
-
-```
-git clone https://github.com/jdrubin91/TFEA.git
-cd /full/path/to/TFEA/
-pip3 install --user .
-```
-
-TFEA can then be run from anywhere, try:
-
-```
-TFEA --help
-```
-
-Alternatively, TFEA can be run without installation using:
-
-```
-cd /full/path/to/TFEA/
-python3 TFEA/ --help
-```
-but this will require you to install each required python3 package separately.
-
-It is recommended that you run the multiple test modules within TFEA to make sure everything is properly installed:
-```
-TFEA --test-install
-TFEA --test-full
-```
-
-Once you've ran the tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA ppeline. These files are provided within 'test_files' for you to get familiar with TFEA (for all paths, make sure you input the full path to 'test_files' on your machine or ```cd``` into the TFEA parent directory and simply copy paste):
-
-```
-#Using only flags
-TFEA --output ./test_files/test_rep2 \
---bed1 ./test_files/SRR1105736.tfit_bidirs.chr22.bed ./test_files/SRR1105737.tfit_bidirs.chr22.bed \
---bed2 ./test_files/SRR1105738.tfit_bidirs.chr22.bed ./test_files/SRR1105739.tfit_bidirs.chr22.bed \
---bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
---bam2 ./test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
---label1 condition1 --label2 condition2 \
---genomefasta ./test_files/chr22.fa \
---fimo_motifs ./test_files/test_database.meme
-
-#Using only a config file
-TFEA --config ./test_files/test_config.ini
-
-#On FIJI
-TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
-```
-
-<br></br>
-
-<H2 id="Requirements">Requirements</H2>
-
-Before running TFEA, make sure you have the following installed on your machine
-
-*Note:* If using the --sbatch module on FIJI, you will need to install DESeq and DESeq2 but you should not need to install anything else
-  <H3 id="Python3">Python 3</H3>
-  TFEA is written in python3. Instructions for installing python3 can be found here:
-  <a href="https://www.python.org/downloads/">python3 Installation</a>
-
-  <H3 id="HTSeq">HTSeq</H3>
-  TFEA uses HTSeq to draw meta plots of coverage (from BAM inputs) over inputted BED files.
-  
-  ```
-  pip3 install htseq
-  ```
-  
-  If you are on FIJI compute cluster, htseq is available as a module:
-  
-  ```
-  module load python/3.6.3/htseq
-  ```
-
-  <H3 id="DESeq">DESeq</H3>
-  TFEA uses DESeq or DESeq2 (depending on replicate number) to rank inputted bed files based on fold change significance. Make sure DESeq and DESeq2 are both installed on your system R, in your terminal:
-    
-  ```
-  R
-  > source("https://bioconductor.org/biocLite.R")
-  > biocLite("DESeq")
-  > biocLite("DESeq2")
-  ```
-  
-  If on FIJI, make sure all gcc modules are unloaded before installing DESeq or DESeq2. This can be accomplished with:
-  
-  ```
-  module unload gcc
-  ```
-  
-  or
-  
-  ```
-  module purge
-  ```
-  
-  <H3 id="Bedtools">Bedtools</H3>
-  TFEA uses Bedtools to do several genomic computations. Instructions for installing bedtools can be found here:
-  <br></br>
-  <a href="http://bedtools.readthedocs.io/en/latest/content/installation.html">Bedtools Installation</a>
-  <br></br>
-  If you are on FIJI compute cluster, bedtools is available as a module:
-  
-  ```
-  module load bedtools/2.25.0
-  ```
-  
-  <H3 id="MEMESuite">MEME Suite</H3>
-  TFEA uses the MEME suite to scan sequences from inputted bed files for motif hits using the background atcg distribution form inputted bed file regions. TFEA also uses the MEME suite to generate motif logos for html display. Instructions for downloading and installing the MEME suite can be found here:
-  <br></br>
-  <a href="http://meme-suite.org/doc/install.html?man_type=web">MEME Download and Installation</a>
-  Note: TFEA uses some 
-  <br></br>
-  If you are on FIJI compute cluster, the meme suite is available as a module:
-  
-  ```
-  module load meme/5.0.3
-  ```
-  
-  <H3 id="FIJIModules">FIJI Modules</H3>
-  Below is a summary of all FIJI modules needed.
-  
-  ```
-  module load python/3.6.3
-  module load python/3.6.3/matplotlib/1.5.1
-  module load python/3.6.3/scipy/0.17.1
-  module load python/3.6.3/numpy/1.14.1
-  module load python/3.6.3/htseq/0.9.1
-  module load python/3.6.3/pybedtools/0.7.10
-
-  module load bedtools/2.25.0
-  module load meme/5.0.3
-  ```
 
 <br></br>
 
