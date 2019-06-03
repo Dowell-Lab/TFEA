@@ -1,6 +1,4 @@
-Transcription Factor Enrichment Analysis (TFEA)
-====
- <br></br>
+# Transcription Factor Enrichment Analysis (TFEA)
 # Table of Contents
 1. <A href="#Help">Help</A>
 2. <A href="">Pipeline</A>
@@ -21,26 +19,29 @@ Transcription Factor Enrichment Analysis (TFEA)
 6. <A href="#ExampleOutput">Example Output</A>
 7. <A href="#ContactInformation">Contact Information</A>
   
+<H2 id="Help">Help</H2>
 ```
-TFEA --help
-usage: TFEA [-h] [--output OUTPUT] [--bed1 [BED1]] [--bed2 [BED2]]
-            [--bam1 [BAM1]] [--bam2 [BAM2]] [--label1 LABEL1]
-            [--label2 LABEL2] [--config CONFIG] [--sbatch SBATCH] [--test]
+usage: TFEA [-h] [--output OUTPUT] [--bed1 [BED1 [BED1 ...]]]
+            [--bed2 [BED2 [BED2 ...]]] [--bam1 [BAM1 [BAM1 ...]]]
+            [--bam2 [BAM2 [BAM2 ...]]] [--label1 LABEL1] [--label2 LABEL2]
+            [--config CONFIG] [--sbatch SBATCH] [--test-install] [--test-full]
             [--combined_file COMBINED_FILE] [--ranked_file RANKED_FILE]
             [--fasta_file FASTA_FILE] [--md] [--mdd]
             [--md_bedfile1 MD_BEDFILE1] [--md_bedfile2 MD_BEDFILE2]
             [--mdd_bedfile1 MDD_BEDFILE1] [--mdd_bedfile2 MDD_BEDFILE2]
             [--md_fasta1 MD_FASTA1] [--md_fasta2 MD_FASTA2]
             [--mdd_fasta1 MDD_FASTA1] [--mdd_fasta2 MDD_FASTA2]
+            [--mdd_pval MDD_PVAL] [--mdd_percent MDD_PERCENT]
             [--combine {intersect/merge,merge all,tfit clean,tfit remove small,False}]
-            [--rank {deseq,fc,False}] [--fasta {True,False}]
-            [--scanner {fimo,genome hits}] [--enrichment {auc,auc_bgcorrect}]
-            [--debug] [--genomefasta GENOMEFASTA] [--fimo_thresh FIMO_THRESH]
+            [--rank {deseq,fc,False}] [--scanner {fimo,genome hits}]
+            [--enrichment {auc,auc_bgcorrect}] [--debug]
+            [--genomefasta GENOMEFASTA] [--fimo_thresh FIMO_THRESH]
             [--fimo_motifs FIMO_MOTIFS] [--fimo_background FIMO_BACKGROUND]
             [--genomehits GENOMEHITS] [--singlemotif SINGLEMOTIF]
             [--permutations PERMUTATIONS] [--largewindow LARGEWINDOW]
             [--smallwindow SMALLWINDOW] [--dpi DPI] [--padjcutoff PADJCUTOFF]
-            [--pvalcutoff PVALCUTOFF] [--textOnly] [--processes CPUS]
+            [--pvalcutoff PVALCUTOFF] [--plotall] [--output_type {txt,html}]
+            [--cpus CPUS]
 
 Transcription Factor Enrichment Analysis (TFEA)
 
@@ -53,10 +54,16 @@ Main Inputs:
   --output OUTPUT, -o OUTPUT
                         Full path to output directory. If it exists, overwrite
                         its contents.
-  --bed1 [BED1]         Bed files associated with condition 1
-  --bed2 [BED2]         Bed files associated with condition 2
-  --bam1 [BAM1]         Sorted bam files associated with condition 1
-  --bam2 [BAM2]         Sorted bam files associated with condition 2
+  --bed1 [BED1 [BED1 ...]]
+                        Bed files associated with condition 1
+  --bed2 [BED2 [BED2 ...]]
+                        Bed files associated with condition 2
+  --bam1 [BAM1 [BAM1 ...]]
+                        Sorted bam files associated with condition 1. Must be
+                        indexed.
+  --bam2 [BAM2 [BAM2 ...]]
+                        Sorted bam files associated with condition 2. Must be
+                        indexed.
   --label1 LABEL1       An informative label for condition 1
   --label2 LABEL2       An informative label for condition 2
   --config CONFIG, -c CONFIG
@@ -67,7 +74,9 @@ Main Inputs:
   --sbatch SBATCH, -s SBATCH
                         Submits an sbatch (slurm) job. If specified, input an
                         e-mail address.
-  --test, -t            Performs unit testing
+  --test-install, -ti   Checks whether all requirements are installed and
+                        command-line runnable.
+  --test-full, -t       Performs unit testing on full TFEA pipeline.
 
 Processed Inputs:
   Input options for pre-processed data
@@ -111,6 +120,11 @@ Secondary Analysis Inputs:
   --mdd_fasta2 MDD_FASTA2
                         A fasta file for Differential MD-Score analysis
                         associated with condition 2.
+  --mdd_pval MDD_PVAL   P-value cutoff for retaining differential regions.
+                        Default: 0.2
+  --mdd_percent MDD_PERCENT
+                        Percentage cutoff for retaining differential regions.
+                        Default: False
 
 Module Switches:
   Switches for different modules
@@ -119,13 +133,11 @@ Module Switches:
                         Method for combining input bed files
   --rank {deseq,fc,False}
                         Method for ranking combined bed file
-  --fasta {True,False}  Swtich that determines whether converting to fasta is
-                        performed.
   --scanner {fimo,genome hits}
                         Method for scanning fasta files for motifs
   --enrichment {auc,auc_bgcorrect}
                         Method for calculating enrichment
-  --debug               Print memory usage to stderr
+  --debug               Print memory and CPU usage to stderr
 
 Fasta Options:
   Options for performing conversion of bed to fasta
@@ -137,7 +149,8 @@ Scanner Options:
   Options for performing motif scanning
 
   --fimo_thresh FIMO_THRESH
-                        P-value threshold for calling FIMO motif hits
+                        P-value threshold for calling FIMO motif hits.
+                        Default: 1e-6
   --fimo_motifs FIMO_MOTIFS
                         Full path to a .meme formatted motif databse file.
                         Some databases included in motif_databases folder.
@@ -159,36 +172,42 @@ Enrichment Options:
 
   --permutations PERMUTATIONS
                         Number of permutations to perfrom for calculating
-                        p-value.
+                        p-value. Default: 1000
   --largewindow LARGEWINDOW
                         The size (bp) of a large window around input regions
-                        that captures background.
+                        that captures background. Default: 1500
   --smallwindow SMALLWINDOW
                         The size (bp) of a small window arount input regions
-                        that captures signal.
+                        that captures signal. Default: 150
 
 Output Options:
   Options for the output.
 
-  --dpi DPI             Resolution of output figures.
+  --dpi DPI             Resolution of output figures. Default: 100
   --padjcutoff PADJCUTOFF
                         A p-adjusted cutoff value that determines some
                         plotting output.
   --pvalcutoff PVALCUTOFF
                         A p-value cutoff value that determines some plotting
                         output.
-  --textOnly            Suppress html output.
+  --plotall             Plot graphs for all motifs.Warning: This will make
+                        TFEA run much slower andwill result in a large output
+                        folder.
+  --output_type {txt,html}
+                        Specify output type. Selecting html will increase
+                        processing time and memory usage. Default: txt
 
 Miscellaneous Options:
   Other options.
 
-  --processes CPUS      Number of processes to run in parallel. Note:
+  --cpus CPUS           Number of processes to run in parallel. Note:
                         Increasing this value will significantly increase
-                        memory footprint. Default: 10
- ```
+                        memory footprint. Default: 1
+```
  
- <H2 id="Pipeline"># TFEA Pipeline</H2>
- ![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/TFEA_Pipeline2.png)
+<H2 id="Pipeline">TFEA Pipeline</H2>
+ 
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/TFEA_Pipeline2.png)
  
 <br></br>
 
