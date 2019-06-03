@@ -20,6 +20,7 @@
 7. <A href="#ContactInformation">Contact Information</A>
   
 <H2 id="Help">Help</H2>
+
 ```
 usage: TFEA [-h] [--output OUTPUT] [--bed1 [BED1 [BED1 ...]]]
             [--bed2 [BED2 [BED2 ...]]] [--bam1 [BAM1 [BAM1 ...]]]
