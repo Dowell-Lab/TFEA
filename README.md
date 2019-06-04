@@ -128,7 +128,7 @@ TFEA --test-install
 TFEA --test-full
 ```
 
-Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA ppeline. Test files are provided within the 'test_files' directory in this repository.
+Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA pipeline. Test files are provided within the 'test_files' directory in this repository.
 
 Using flags
 
@@ -182,6 +182,7 @@ BAM1=[${TEST_FILES}+'SRR1105736.sorted.chr22.subsample.bam', ${TEST_FILES}+'SRR1
 BAM2=[${TEST_FILES}+'SRR1105738.sorted.chr22.subsample.bam', ${TEST_FILES}+'SRR1105739.sorted.chr22.subsample.bam']
 
 [MODULES]
+TEST_FILES='./test_files/'
 FIMO_MOTIFS=${TEST_FILES}+'test_database.meme'
 GENOMEFASTA=${TEST_FILES}+'chr22.fa'
 
