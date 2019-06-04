@@ -183,7 +183,7 @@ BAM2=[${TEST_FILES}+'SRR1105738.sorted.chr22.subsample.bam', ${TEST_FILES}+'SRR1
 
 [MODULES]
 FIMO_MOTIFS=${TEST_FILES}+'test_database.meme'
-GENOMEFASTA=${TEST_FILES}+'chr22.fa.fai'
+GENOMEFASTA=${TEST_FILES}+'chr22.fa'
 
 [OPTIONS]
 OUTPUT_TYPE='html'
