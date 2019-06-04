@@ -597,9 +597,13 @@ SP2_HUMAN.H11MO.0.A     -0.04994116666412335    114     0.027169601555608307    
 ```
 
 TF = The name of the motif analyzed
+
 AUC = Area under the curve
+
 Events = Number of motif hits within smallwindow
+
 p-val = P-value
+
 p-adj = adjusted p-value (Bonferroni)
 
 <H3 id="">md_results.txt and mdd_results.txt</H3>
