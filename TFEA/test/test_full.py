@@ -97,7 +97,7 @@ class TestMain(unittest.TestCase):
 
         self.assertTrue((self.testdir / 'test_output' / 'results.txt').exists())
         self.assertTrue((self.testdir / 'test_output' / 'results.html').exists())
-        self.assertTrue((self.testdir / 'test_output' / 'summary.html').exists())
+        # self.assertTrue((self.testdir / 'test_output' / 'summary.html').exists())
         # self.assertTrue((self.testdir / 'test_rep1' / 'md_results.txt').exists())
         # self.assertTrue((self.testdir / 'test_rep1' / 'mdd_results.txt').exists())
 

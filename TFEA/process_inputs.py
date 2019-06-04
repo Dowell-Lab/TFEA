@@ -522,6 +522,8 @@ def create_directories(srcdirectory=None):
     if config.vars['SBATCH'] == False: #No sbatch flag
         make_out_directories(create=True)
         write_rerun(args=sys.argv, outputdir=config.vars['OUTPUT'])
+        write_vars(config_vars=config.vars, 
+                    outputfile=config.vars['OUTPUT'] / 'inputs.txt')
         config.vars['JOBID'] = 0
     elif str(config.vars['SBATCH']) == 'SUBMITTED': #Internal flag
         make_out_directories(create=False)
@@ -529,6 +531,8 @@ def create_directories(srcdirectory=None):
     else: #--sbatch specified
         make_out_directories(create=True)
         write_rerun(args=sys.argv, outputdir=config.vars['OUTPUT'])
+        var_file = config.vars['OUTPUT'] / 'vars.txt'
+        var_file.write_text(str(config.vars))
         scriptdir = srcdirectory.parent / 'cluster_scripts'
         script = scriptdir / 'run_main.sbatch'
         email = str(config.vars['SBATCH'])
@@ -566,4 +570,14 @@ def write_rerun(args=None, outputdir=None):
         outfile.write('python3 ' + Path(__file__).absolute().parent.as_posix() + ' ' 
                         + ' '.join(args[1:]))
     
+
+def write_vars(config_vars=None, outputfile=None):
+    exclude = ['MOTIF_DISTANCES','MD_DISTANCES1', 'MD_DISTANCES2', 
+                'MDD_DISTANCES1', 'MDD_DISTANCES2', 'PVALS', 'FCS', 
+                'META_PROFILE', 'RESULTS', 'MD_RESULTS', 'MDD_RESULTS']
+
+    with open(outputfile, 'w') as outfile:
+        for key in config_vars:
+            if key not in exclude:
+                outfile.write(key + ' = ' + str(config_vars[key]) + '\n')
 

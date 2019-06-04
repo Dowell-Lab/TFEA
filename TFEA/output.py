@@ -108,7 +108,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
         config.vars['OUTPUTtime'] = total_time
     if output_type == 'html':
         if use_config:
-            summary_html_output(config_object=config.vars, outputdir=outputdir)
+            # summary_html_output(config_object=config.vars, outputdir=outputdir)
             module_list = [('COMBINE', config.vars['COMBINE'], config.vars['COMBINEtime']),
                         ('RANK', config.vars['RANK'], config.vars['RANKtime']), 
                         ('SCANNER', config.vars['SCANNER'], config.vars['SCANNERtime']), 
@@ -274,36 +274,37 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <img src="./plots/DESEQ_MA_Plot.png" alt="Differential MD-Score P-Value \
                     Histogram">
             </div>
-            <div id="Summary of Variables Used" style="float: right; \
-                width: 45%">
-                <p><a href="./Summary.html">Full Summary of Variables Used\
-                </a></p>
+            <div id="User Inputs" style="float: right; width: 45%">
                 <p><b>PADJ < """ + str(padj_cutoff) + """</b></p>
+                <p><a href="./inputs.txt">User Inputs</a></p>
+                <p><a href="./plots/MD_MA.png">MD MA-Plot</a> | \
+                    <a href="./plots/MD_volcano.png">MD VolcanoPlot</a></p>
+                <p><a href="./plots/MDD_MA.png">MDD MA-Plot</a> | \
+                    <a href="./plots/MDD_volcano.png">MDD VolcanoPlot</a></p>
                 <table>
                     <tr>
                         <th>Module</th>
                         <th>Value</th>
                         <th>Time (hh:mm:ss)</th>
                     </tr>
-                <p><a href="./plots/MD_MA.png">MD MA-Plot</a> | <a href="./plots/MD_volcano.png">MD VolcanoPlot</a></p>
-                <p><a href="./plots/MDD_MA.png">MDD MA-Plot</a> | <a href="./plots/MDD_volcano.png">MDD VolcanoPlot</a></p>
                 """)
     total_time = 0
-    for module, value, time in module_list:
-        total_time += time
-        outfile.write("""<tr>
+    if len(module_list) != 0:
+        for module, value, time in module_list:
+            total_time += time
+            outfile.write("""<tr>
                         <td>"""+module+"""</td>
                         <td>"""+str(value)+"""</td>
                         <td>"""+str(datetime.timedelta(seconds=int(time)))
                         +"""</td>
                     </tr>""")
-    outfile.write("""<tr>
+        outfile.write("""<tr>
                         <td><b>Total</b></td>
                         <td> </td>
                         <td><b>"""+str(datetime.timedelta(seconds=int(total_time)))
                         +"""</b></td>
                     </tr>""")
-    outfile.write("""
+        outfile.write("""
                 </table>   
             </div>
         </div>
