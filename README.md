@@ -21,7 +21,7 @@
  
 <H2 id="Pipeline">TFEA Pipeline</H2>
  
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/TFEA_Pipeline2.png)
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/TFEA_Pipeline2.png)
  
 <br></br>
 
@@ -537,11 +537,12 @@ TFEA will output all files and folders into the directory specified by the `--ou
 ```
 test_output
 │   rerun.sh
+│   test_config.ini
+│   inputs.txt
 │   results.txt
 │   md_results.txt
 │   mdd_results.txt
 │   results.html
-│   summary.html
 │
 └───e_and_o
 │      TFEA_test_output.err
@@ -568,7 +569,85 @@ test_output
        ranked_file.fa
 ```
 
-This part is still under construction.
+A brief description of the files contained within this output directory are below:
+
+<H3 id="">rerun.sh</H3>
+This bash script can be used at any time to regenerate a TFEA output folder in its entirety, run it using:
+
+```
+sh ./test_output/rerun.sh
+```
+
+<H3 id="">test_config.ini</H3>
+
+TFEA copies the config file you are using into the output directoy. This file is then referenced by rerun.sh.
+
+
+<H3 id="">inputs.txt</H3>
+
+A .txt file that contains all user-provided inputs into TFEA
+
+<H3 id="">results.txt</H3>
+Contains TFEA results tab-delimited in .txt format. For example:
+
+```
+#TF     AUC     Events  p-val   p-adj
+P53_HUMAN.H11MO.0.A     0.2795355012578686      5       0.02464223619276762     0.04928447238553524
+SP2_HUMAN.H11MO.0.A     -0.04994116666412335    114     0.027169601555608307    0.054339203111216615
+```
+
+TF = The name of the motif analyzed
+AUC = Area under the curve
+Events = Number of motif hits within smallwindow
+p-val = P-value
+p-adj = adjusted p-value (Bonferroni)
+
+<H3 id="">md_results.txt and mdd_results.txt</H3>
+Contains tab-delimited results for secondary MD-Score (MDS) and Differential MD-Score (MDD) analysis if these flags were specified
+
+<H3 id="">results.html</H3>
+
+The main results html (if `--output_type 'html'` specified). For example:
+
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleResults.png)
+
+1. TFEA MA-plot - An MA-like plot with each dot representing a TF motif analyzed (red=significant below specified p-adj cutoff). On the y-axis is the area under the curve (AUC) which is the main TFEA statistic. On the x-axis is the log10 of the number of motif hits within the largewindow input
+
+2. TFEA Volcano Plot - Similar to the MA-Plot, each dot is a TF motif (red=significant below specified p-adj cutoff). X-axis = area under the curve (AUC). Y-axis = -log10 of the p-adjusted value. Dashed line is the specified p-adjusted cutoff.
+
+3. DE-Seq MA-plot - An actual MA-plot where each dot represents a region specified by the user. On the x-axis is the log10 of the average expression across conditions and replicates. On the y-axis is the log2 fold change between both conditions. The dots on this plot are colored based on how they are ranked.
+
+4. Link to inputs.txt file, MD MA-plot and volcano (if `--md` specified), MDD MA-plot and volcano (if `--mdd` specified), and a table of time to perform each module in TFEA and the total time to run TFEA.
+
+5. A list of TF motifs analyzed that have positive AUC values (headers correspond to the same headers as in results.txt). If red, then this TF motif was significant below the p-adj cutoff. Clickable links will direct to a separate MOTIF.results.html file contained within the plots/ directory in output.
+
+6. A list of TF motifs analyzed that have negative AUC values (headers correspond to the same headers as in results.txt). If red, then this TF motif was significant below the p-adj cutoff. Clickable links will direct to a separate MOTIF.results.html file contained within the plots/ directory in output.
+
+<H3 id="">MOTIF.results.html</H3>
+
+Each signficant TF motif (or all motifs if `--plotall` specified) will produce its own MOTIF.results.html file contained within the plots/ directory in the specified output directory. All images are also self-contained within the plots/ folder. For example:
+
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleMotifResults.png)
+
+1. Results for this specific motif (identical to what's reported in results.html)
+
+2. Enrichment line plot - The running sum statistic (green) for the specified TF motif. The blue dashed line indicates the random background expectation. The area under the curve (AUC) is calculated as the area between the green and dashed blue line (directional).
+
+3. Score bar plot - Quantification of the amount added to the running sum statistic at any given point.
+
+4. Motif hit scatter plot - The actual motif hits for each region centered on the region and bounded by the largewindow input.
+
+5. Rank metric fill plot - A visual representation of the ranking metric used (log10(DE-Seq p-value) with direction dependent on fold change)
+
+6. Meta plot - A meta plot of read coverage over regions separated by quartiles.
+
+7. Heat map - A heatmap of motif hits for each quartile
+
+8. The forward motif logo
+
+9. The reverse complement motif logo
+
+10. Simulation plot - The distribution of simulated AUC values (number of simulations specified with `--permutations` flag). The observed AUC is the red bar.
 
 <br></br>
 
