@@ -158,6 +158,7 @@ TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
 TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. This can be helpful to keep track of different TFEA runs and because you can use variables within the config file. For documentation on config files and what you can do with them see <a href="https://docs.python.org/3.6/library/configparser.html#supported-ini-file-structure">Supported INI File Structure</a> and <a href="https://docs.python.org/3.6/library/configparser.html#interpolation-of-values">Interpolation of values (ExtendedInterpolation)</a>
 <br></br>
 <b>*Notes:*</b>
+
 1. Section headers (ex: `[OUTPUT]`) don't matter but you need to have at least ONE section header to be a viable .ini file
 2. Capitalization of variables doesn't matter
 3. Feel free to specify any additional variables you like, TFEA will only parse variables that match a flag input
