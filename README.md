@@ -35,7 +35,6 @@ cd /full/path/to/TFEA/
 pip3 install --user .
 ```
 
-<br></br>
 <b>*Note:*</B> If you plan to run TFEA only on FIJI using the --sbatch flag, then you only need to install DESeq and DESeq2. Otherwise, follow the instructions below for installing all TFEA dependencies.
 
   <H3 id="DESeq">DESeq</H3>
@@ -156,7 +155,7 @@ TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
 
 <H3 id="ConfigurationFile">Configuration File</H3>
 TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. This can be helpful to keep track of different TFEA runs and because you can use variables within the config file. For documentation on config files and what you can do with them see <a href="https://docs.python.org/3.6/library/configparser.html#supported-ini-file-structure">Supported INI File Structure</a> and <a href="https://docs.python.org/3.6/library/configparser.html#interpolation-of-values">Interpolation of values (ExtendedInterpolation)</a>
-<br></br>
+
 <b>*Notes:*</b>
 
 1. Section headers (ex: `[OUTPUT]`) don't matter but you need to have at least ONE section header to be a viable .ini file
@@ -188,7 +187,6 @@ OUTPUT_TYPE='html'
 PLOTALL=True
 ```
 
-<br></br>
 
 <H3 id="UsingSBATCH">Using SBATCH</H3>
 Specifying the `--sbatch` flag will submit TFEA to a compute cluster assuming you are logged into one. Below are the default node configuration settings, this can be changed within cluster_scripts/run_main.sbatch. See here the sbatch code used:
@@ -235,10 +233,7 @@ Specifying the `--sbatch` flag will submit TFEA to a compute cluster assuming yo
 
   python3 ${cmd}
   ```
-<b>*Note:*</b> For TFEA to properly run a job, the python call within the sbatch script:
-`python3 ${cmd}`
-
-<b>MUST NOT BE CHANGED</b>
+<b>*Note:*</b> For TFEA to properly run a job, the python call within the sbatch script: `python3 ${cmd}` <b>MUST NOT BE CHANGED</b>
 
 
 <H3 id="PreProcessedInputs">Using Pre-processed Inputs</H3>
@@ -281,6 +276,7 @@ chr22	21554591	21557591
 chr22	50304644	50307644
 chr22	39096295	39099295
 chr22	31176104	31179104
+...
 ```
 
 Usage with TFEA
@@ -306,6 +302,7 @@ ccgccccacactgacgcagt...ccgcctcagcctcctaaa
 cttggggagagcagaagcca...gtgcagtggtgcaatctt
 >chr22:50304644-50307644
 CTGAGCACCCCCCACCAGCCA...GGAGACGGGGCCTTTGT
+...
 ```
 
 Usage with TFEA
