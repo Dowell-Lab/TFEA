@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
 
-import TFEA
-import runpy
-runpy(TFEA)
+from TFEA import main
+main.run()

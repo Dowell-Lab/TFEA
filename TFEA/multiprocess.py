@@ -18,11 +18,12 @@ import os
 import multiprocessing as mp
 import subprocess
 import resource
+import psutil
 import sys
 from pathlib import Path
 from contextlib import closing
 
-import config
+from TFEA import config
 
 #Main Script
 #==============================================================================
@@ -65,7 +66,7 @@ def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=No
     #     p.join()
 
     #Method 2 
-    with mp.Pool(processes=cpus) as p:
+    with mp.Pool(cpus) as p:
         results = list()
         print(f'\t Completed: 0/{len(args)} ', end=' ', file=sys.stderr)
         # print_in_place(f'\t Completed: 0/{len(args)} ', file=sys.stderr)
@@ -187,23 +188,40 @@ def current_mem_usage(jobid, **kwargs):
     '''Prints current memory usage. Adapted from scripts by Chris Slocum and 
         Fred Cirera. Additional kwargs are passed to print function
     '''
-    if jobid != None:
-        suffix = 'B'
-        # num = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-        # jobid = (config.vars.TEMPDIR / 'jobid.txt').read_text().strip('\n')
-        num = subprocess.check_output(["sstat", "--format=maxRSS", "-j", jobid+'.batch']).decode('UTF-8').split('\n')[-2].strip()
-        unit = num[-1]
-        if unit == 'K':
-            byte = float(num.strip('K'))*1024.0
-        elif unit == 'M':
-            byte = float(num.strip('M'))*1024.0*1024.0
-        elif unit == 'G':
-            byte = float(num.strip('G'))*1024.0*1024.0*1024.0
-        for unit in ['','K','M','G','T','P','E','Z']:
-            if abs(byte) < 1024.0:
-                print("(Memory Usage: %3.1f%s%s)" % (byte, unit, suffix), file=sys.stderr, **kwargs)
-                return
-            byte /= 1024.0
-        else:
-            print("(Memory Usage: %.1f%s%s)" % (byte, 'Y', suffix), file=sys.stderr, **kwargs)
+    suffix = 'B'
+
+    #Using sstat
+    # num = subprocess.check_output(["sstat", "--format=maxRSS", "-j", jobid+'.batch']).decode('UTF-8').split('\n')[-2].strip()
+    # unit = num[-1]
+
+    #Using psutil
+    num = psutil.Process(pid=os.getpid()).memory_info().rss
+    unit = 'B'
+    print(f'(CPU: {psutil.cpu_percent()}%)', file=sys.stderr, **kwargs)
+
+    #Using resource
+    # num = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    # unit = 'B'
+
+    if unit == 'B':
+        byte = float(str(num).strip('B'))
+    if unit == 'K':
+        byte = float(str(num).strip('K'))*1024.0
+    elif unit == 'M':
+        byte = float(str(num).strip('M'))*1024.0*1024.0
+    elif unit == 'G':
+        byte = float(str(num).strip('G'))*1024.0*1024.0*1024.0
+    for unit in ['','K','M','G','T','P','E','Z']:
+        if abs(byte) < 1024.0:
+            print("(Memory Usage: %3.1f%s%s)" % (byte, unit, suffix), file=sys.stderr, **kwargs)
+            return
+        byte /= 1024.0
+    else:
+        print("(Memory Usage: %.1f%s%s)" % (byte, 'Y', suffix), file=sys.stderr, **kwargs)
     return
+
+#==============================================================================
+def limit_cpu():
+    "is called at every process start"
+    p = psutil.Process(os.getpid())
+    p.nice(value=19)

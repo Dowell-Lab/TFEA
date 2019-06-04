@@ -16,6 +16,7 @@ setup(name='tfea',
           'matplotlib',
           'scipy',
           'numpy',
-          'pybedtools'
+          'pybedtools',
+          'psutil'
       ],
       zip_safe=False)

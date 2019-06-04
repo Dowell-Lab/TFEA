@@ -117,31 +117,31 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
     start_time = time.time()
     if use_config:
         from TFEA import config
-        fasta_file=config.vars.FASTA_FILE
-        md_fasta1=config.vars.MD_FASTA1 
-        md_fasta2=config.vars.MD_FASTA2 
-        mdd_fasta1=config.vars.MDD_FASTA1 
-        mdd_fasta2=config.vars.MDD_FASTA2 
-        ranked_file=config.vars.RANKED_FILE
-        md_bedfile1=config.vars.MD_BEDFILE1
-        md_bedfile2=config.vars.MD_BEDFILE2 
-        mdd_bedfile1=config.vars.MDD_BEDFILE1
-        mdd_bedfile2=config.vars.MDD_BEDFILE2 
-        scanner=config.vars.SCANNER
-        md=config.vars.MD
-        largewindow=config.vars.LARGEWINDOW
-        smallwindow=config.vars.SMALLWINDOW
-        genomehits=config.vars.GENOMEHITS
-        fimo_background=config.vars.FIMO_BACKGROUND
-        genomefasta=config.vars.GENOMEFASTA
-        tempdir=config.vars.TEMPDIR
-        fimo_motifs=config.vars.FIMO_MOTIFS
-        singlemotif=config.vars.SINGLEMOTIF
-        fimo_thresh=config.vars.FIMO_THRESH
-        debug=config.vars.DEBUG
-        mdd=config.vars.MDD
-        cpus = config.vars.CPUS
-        jobid = config.vars.JOBID
+        fasta_file=config.vars['FASTA_FILE']
+        md_fasta1=config.vars['MD_FASTA1']
+        md_fasta2=config.vars['MD_FASTA2']
+        mdd_fasta1=config.vars['MDD_FASTA1']
+        mdd_fasta2=config.vars['MDD_FASTA2']
+        ranked_file=config.vars['RANKED_FILE']
+        md_bedfile1=config.vars['MD_BEDFILE1']
+        md_bedfile2=config.vars['MD_BEDFILE2']
+        mdd_bedfile1=config.vars['MDD_BEDFILE1']
+        mdd_bedfile2=config.vars['MDD_BEDFILE2']
+        scanner=config.vars['SCANNER']
+        md=config.vars['MD']
+        largewindow=config.vars['LARGEWINDOW']
+        smallwindow=config.vars['SMALLWINDOW']
+        genomehits=config.vars['GENOMEHITS']
+        fimo_background=config.vars['FIMO_BACKGROUND']
+        genomefasta=config.vars['GENOMEFASTA']
+        tempdir=config.vars['TEMPDIR']
+        fimo_motifs=config.vars['FIMO_MOTIFS']
+        singlemotif=config.vars['SINGLEMOTIF']
+        fimo_thresh=config.vars['FIMO_THRESH']
+        debug=config.vars['DEBUG']
+        mdd=config.vars['MDD']
+        cpus = config.vars['CPUS']
+        jobid = config.vars['JOBID']
 
     print("Scanning regions using " + scanner + "...", flush=True, file=sys.stderr)
 
@@ -239,8 +239,8 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                                                 cpus=cpus)
             
             if use_config:
-                config.vars.MD_DISTANCES1 = md_distances1
-                config.vars.MD_DISTANCES2 = md_distances2
+                config.vars['MD_DISTANCES1'] = md_distances1
+                config.vars['MD_DISTANCES2'] = md_distances2
         
         if mdd:
             print("\tMDD:", file=sys.stderr)
@@ -262,8 +262,8 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                                                 debug=debug, jobid=jobid,
                                                 cpus=cpus)
             if use_config:
-                config.vars.MDD_DISTANCES1 = mdd_distances1
-                config.vars.MDD_DISTANCES2 = mdd_distances2
+                config.vars['MDD_DISTANCES1'] = mdd_distances1
+                config.vars['MDD_DISTANCES2'] = mdd_distances2
             
     #HOMER
     elif scanner== 'homer':
@@ -317,8 +317,8 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                                             debug=debug, jobid=jobid,
                                             cpus=cpus)
             if use_config:
-                config.vars.MD_DISTANCES1 = md_distances1
-                config.vars.MD_DISTANCES2 = md_distances2
+                config.vars['MD_DISTANCES1'] = md_distances1
+                config.vars['MD_DISTANCES2'] = md_distances2
         if mdd:
             mdd_bedfile1 = get_center(bedfile=mdd_bedfile1, outname=mdd_bedfile1)
             bedtools_distance_keywords = dict(genomehits=genomehits, 
@@ -344,13 +344,13 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                                             debug=debug, jobid=jobid,
                                             cpus=cpus)
             if use_config:
-                config.vars.MDD_DISTANCES1 = mdd_distances1
-                config.vars.MDD_DISTANCES2 = mdd_distances2
+                config.vars['MDD_DISTANCES1'] = mdd_distances1
+                config.vars['MDD_DISTANCES2'] = mdd_distances2
     else:
         raise exceptions.InputError("SCANNER option not recognized.")
 
     if use_config:
-        config.vars.MOTIF_DISTANCES = motif_distances
+        config.vars['MOTIF_DISTANCES'] = motif_distances
 
     total_time = time.time() - start_time
     if use_config:
@@ -358,7 +358,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
     if debug:
-        multiprocess.current_mem_usage(config.vars.JOBID)
+        multiprocess.current_mem_usage(jobid)
 
     return motif_distances, md_distances1, md_distances2, mdd_distances1, mdd_distances2
 

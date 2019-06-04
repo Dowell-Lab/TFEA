@@ -29,59 +29,100 @@ from TFEA import plot
 #==============================================================================
 def main(use_config=True, outputdir=None, results=None, md_results=None, 
             mdd_results=None, motif_distances=None, md=False, mdd=False, 
-            debug=False, jobid=None, output_type=False, p_cutoff=None):
+            debug=False, jobid=None, output_type=False, p_cutoff=None, 
+            dpi=100):
     '''This script creates output files associated with TFEA
     '''
     start_time = time.time()
     if use_config:
         from TFEA import config
-        outputdir = config.vars.OUTPUT
-        figuredir = config.vars.FIGUREDIR
-        results=config.vars.RESULTS
-        md_results=config.vars.MD_RESULTS 
-        mdd_results=config.vars.MDD_RESULTS
-        motif_distances = config.vars.MOTIF_DISTANCES
-        md = config.vars.MD
-        mdd = config.vars.MDD
-        debug = config.vars.DEBUG
-        jobid = config.vars.JOBID
-        output_type = config.vars.OUTPUT_TYPE
-        p_cutoff = config.vars.PVALCUTOFF
+        outputdir = config.vars['OUTPUT']
+        figuredir = config.vars['FIGUREDIR']
+        results=config.vars['RESULTS']
+        md_results=config.vars['MD_RESULTS']
+        mdd_results=config.vars['MDD_RESULTS']
+        motif_distances = config.vars['MOTIF_DISTANCES']
+        md = config.vars['MD']
+        mdd = config.vars['MDD']
+        debug = config.vars['DEBUG']
+        jobid = config.vars['JOBID']
+        output_type = config.vars['OUTPUT_TYPE']
+        p_cutoff = config.vars['PVALCUTOFF']
+        padj_cutoff = config.vars['PADJCUTOFF']
+        label1 = config.vars['LABEL1']
+        label2 = config.vars['LABEL2']
+        plotall = config.vars['PLOTALL']
+        singlemotif = config.vars['SINGLEMOTIF']
+        dpi = config.vars['DPI']
+
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
     header = ['#TF', 'AUC', 'Events', 'p-val', 'p-adj']
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
-                sortindex=[-2,-1])
-    plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA', xlabel='Log10(Motif Hits)', 
-                    ylabel='Area Under the Curve (AUC)', figuredir=figuredir)
+                sortindex=[-2,-1], header=header)
+    plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
+                    xlabel='Log10(Motif Hits)', 
+                    ylabel='Area Under the Curve (AUC)', 
+                    savepath=figuredir / 'TFEA_MA.png', 
+                    dpi=dpi)
+    plot.plot_global_volcano(results, p_cutoff=p_cutoff, title='TFEA Volcano Plot', 
+                    xlabel='Area Under the Curve (AUC)', 
+                    ylabel='-log10(P-adj)', 
+                    savepath=figuredir / 'TFEA_volcano.png', 
+                    dpi=dpi)
     if md:
         header = ['#TF', 'MD-Score', 'Events', 'p-val']
         txt_output(outputdir=outputdir, results=md_results, 
                     outname='md_results.txt', header=header, sortindex=[-1])
-        plot.plot_global_MA(results, p_cutoff=p_cutoff, title='MD', xlabel='Log10(Motif Hits)', 
-                    ylabel='MD-Score Difference', figuredir=figuredir)
+        plot.plot_global_MA(md_results, p_cutoff=p_cutoff, 
+                                title='MD MA-Plot', 
+                                xlabel='Log10(Motif Hits)', 
+                                ylabel='MD-Score Difference', 
+                                savepath=figuredir / 'MD_MA.png',  
+                                dpi=dpi)
+        plot.plot_global_volcano(md_results, p_cutoff=p_cutoff, 
+                                    title='MD Volcano Plot', 
+                                    xlabel='MD-Score Difference', 
+                                    ylabel='-log10(P-val)', 
+                                    savepath=figuredir / 'MD_volcano.png', 
+                                    dpi=dpi)
     if mdd:
         header = ['#TF', 'MD-Score', 'Events', 'p-val']
         txt_output(outputdir=outputdir, results=mdd_results, 
                     outname='mdd_results.txt', header=header, sortindex=[-1])
-        plot.plot_global_MA(results, p_cutoff=p_cutoff, title='MDD', xlabel='Log10(Motif Hits)', 
-                    ylabel='Differential MD-Score Difference', figuredir=figuredir)
+        plot.plot_global_MA(mdd_results, p_cutoff=p_cutoff, 
+                                title='MDD MA-Plot', 
+                                xlabel='Log10(Motif Hits)', 
+                                ylabel='Differential MD-Score Difference', 
+                                savepath=figuredir / 'MDD_MA.png', 
+                                dpi=dpi)
+        plot.plot_global_volcano(mdd_results, p_cutoff=p_cutoff, 
+                                    title='MDD Volcano Plot', 
+                                    xlabel='Differential MD-Score Difference', 
+                                    ylabel='-log10(P-val)', 
+                                    savepath=figuredir / 'MDD_volcano.png', 
+                                    dpi=dpi)
     
     total_time = time.time() - start_time
     if use_config:
-        config.vars.OUTPUTtime = total_time
+        config.vars['OUTPUTtime'] = total_time
     if output_type == 'html':
-        summary_html_output(config_object=config_object, 
-                                    outputdir=outputdir)
         if use_config:
-            module_list = [('COMBINE', config.vars.COMBINE, config.vars.COMBINEtime),
-                        ('RANK', config.vars.RANK, config.vars.RANKtime), 
-                        ('SCANNER', config.vars.SCANNER, config.vars.SCANNERtime), 
-                        ('ENRICHMENT', config.vars.ENRICHMENT, config.vars.ENRICHMENTtime), 
-                        ('OUTPUT', config.vars.OUTPUT_TYPE, config.vars.OUTPUTtime)]
+            summary_html_output(config_object=config.vars, outputdir=outputdir)
+            module_list = [('COMBINE', config.vars['COMBINE'], config.vars['COMBINEtime']),
+                        ('RANK', config.vars['RANK'], config.vars['RANKtime']), 
+                        ('SCANNER', config.vars['SCANNER'], config.vars['SCANNERtime']), 
+                        ('ENRICHMENT', config.vars['ENRICHMENT'], config.vars['ENRICHMENTtime']), 
+                        ('OUTPUT', config.vars['OUTPUT_TYPE'], config.vars['OUTPUTtime'])]
         else:
             module_list = []
-        html_output(results=results, module_list=module_list)
+        create_motif_result_htmls(results=results, outputdir=outputdir, 
+                                    padj_cutoff=padj_cutoff, 
+                                    singlemotif=singlemotif, 
+                                    plotall=plotall)
+        html_output(results=results, module_list=module_list, 
+                    outputdir=outputdir, label1=label1, label2=label2, 
+                    padj_cutoff=padj_cutoff, plotall=plotall)
         
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
@@ -102,9 +143,10 @@ def txt_output(results=None, outputdir=None, outname=None,
             results.sort(key=lambda x: x[index])
         for values in results:
             outfile.write('\t'.join([str(x) for x in values])+'\n')
-                
+
 #==============================================================================
-def html_output(results=None, module_list=None, columns=None):
+def html_output(results=None, module_list=None, outputdir=None,
+                label1=None, label2=None, padj_cutoff=None, plotall=None):
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -182,14 +224,6 @@ def html_output(results=None, module_list=None, columns=None):
     -------
     None
     '''
-    #Using a config file
-    import config
-    outputdir = config.vars.OUTPUTDIR
-    label1 = config.vars.LABEL1
-    label2 = config.vars.LABEL2
-    padj_cutoff = config.vars.PADJCUTOFF
-    plot = config.vars.PLOTALL
-
     outfile = open(os.path.join(outputdir, 'results.html'),'w')
     outfile.write("""<!DOCTYPE html>
     <html>
@@ -229,15 +263,15 @@ def html_output(results=None, module_list=None, columns=None):
         <h1>TFEA Results """ + label1 + """ vs. """ + label2 + """</h1>
         <div class="row">
             <div style="float: left; width: 45%">
-                <img src="./plots/TFEA_NES_MA_Plot.png" alt="NES MA-Plot">
+                <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
             </div>
             <div style="float: left; width: 45%">
-                <img src="./plots/DESEQ_MA_Plot.png" alt="DE-Seq MA-Plot">
+                <img src="./plots/TFEA_volcano.png" alt="DE-Seq MA-Plot">
             </div>
         </div>
         <div class="row">
             <div style="float: left; width:45%">
-                <img src="./plots/TFEA_Pval_Histogram.png" alt="TFEA P-Value \
+                <img src="./plots/DESEQ_MA_Plot.png" alt="Differential MD-Score P-Value \
                     Histogram">
             </div>
             <div id="Summary of Variables Used" style="float: right; \
@@ -250,52 +284,60 @@ def html_output(results=None, module_list=None, columns=None):
                         <th>Module</th>
                         <th>Value</th>
                         <th>Time (hh:mm:ss)</th>
-                    </tr>""")
-    for (module, value, time) in module_list:
+                    </tr>
+                <p><a href="./plots/MD_MA.png">MD MA-Plot</a> | <a href="./plots/MD_volcano.png">MD VolcanoPlot</a></p>
+                <p><a href="./plots/MDD_MA.png">MDD MA-Plot</a> | <a href="./plots/MDD_volcano.png">MDD VolcanoPlot</a></p>
+                """)
+    total_time = 0
+    for module, value, time in module_list:
+        total_time += time
         outfile.write("""<tr>
                         <td>"""+module+"""</td>
                         <td>"""+str(value)+"""</td>
-                        <td>"""+str(datetime.timedelta(
-                                    seconds=int(time)))
+                        <td>"""+str(datetime.timedelta(seconds=int(time)))
                         +"""</td>
+                    </tr>""")
+    outfile.write("""<tr>
+                        <td><b>Total</b></td>
+                        <td> </td>
+                        <td><b>"""+str(datetime.timedelta(seconds=int(total_time)))
+                        +"""</b></td>
                     </tr>""")
     outfile.write("""
                 </table>   
             </div>
         </div>
         <div>
-            <div id="Positive Enrichment Score" style="float: left; width:45%">
-                <h1>Positive Enrichment Score</h1>
+            <div id="Positive AUC Value" style="float: left; width:45%">
+                <h1>Positive AUC Value</h1>
                 <table> 
                     <tr>
-    """)
+                        <th>TF Motif</th>
+                        <th>AUC</th>
+                        <th>P-value</th>
+                        <th>PADJ</th>
+                        <th>HITS</th>
+                    </tr>""")
 
-    for column_name in columns:
-        outfile.write("""                        <th>"""+column_name+"""</th>
-    """)
-
-    outfile.write("""</tr>
-                """)
-
-    for motif, enrichment, hits, p_val, p_adj in results:
-        if enrichment > 0:
+    for motif, auc, hits, p_val, p_adj in results:
+        if auc >= 0:
             if p_adj < padj_cutoff:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>
-                <td>"""+str("%.4f" % enrichment)+"""</td>
+                <td>"""+str("%.4f" % auc)+"""</td>
                 <td>"""+str("%.3g" % p_val)+"""</td>
                 <td>"""+str("%.3g" % p_adj)+"""</td>
                 <td>"""+str(hits)+"""</td>
             </tr>
                     """)
-            elif plot:
+            elif plotall:
                 outfile.write("""
             <tr>
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>
-                <td>"""+str("%.4f" % enrichment)+"""</td>
+                <td>"""+str("%.4f" % auc)+"""</td>
                 <td>"""+str("%.3g" % p_val)+"""</td>
                 <td>"""+str("%.3g" % p_adj)+"""</td>
                 <td>"""+str(hits)+"""</td>
@@ -306,7 +348,7 @@ def html_output(results=None, module_list=None, columns=None):
                 outfile.write("""
             <tr>
                 <td>"""+motif+"""</td>
-                <td>"""+str("%.4f" % enrichment)+"""</td>
+                <td>"""+str("%.4f" % auc)+"""</td>
                 <td>"""+str("%.3g" % p_val)+"""</td>
                 <td>"""+str("%.3g" % p_adj)+"""</td>
                 <td>"""+str(hits)+"""</td>
@@ -318,37 +360,37 @@ def html_output(results=None, module_list=None, columns=None):
         </table>
     </div>
 
-    <div id="Negative Enrichment Score" style="float: right; width: 45%">
-        <h1>Negative Enrichment Score</h1>
+    <div id="Negative AUC Value" style="float: right; width: 45%">
+        <h1>Negative AUC Value</h1>
         <table> 
             <tr>
                 <th>TF Motif</th>
-                <th>ENRICHMENT("""+config.vars.ENRICHMENT+""")</th>
+                <th>AUC</th>
                 <th>P-value</th>
                 <th>PADJ</th>
                 <th>HITS</th>
             </tr>
                 """)
 
-    for [motif, enrichment, hits, p_val, p_adj] in results:
-        if enrichment < 0:
+    for motif, auc, hits, p_val, p_adj in results:
+        if auc < 0:
             if p_adj < padj_cutoff:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>
-                <td>"""+str("%.4f" % enrichment)+"""</td>
+                <td>"""+str("%.4f" % auc)+"""</td>
                 <td>"""+str("%.3g" % p_val)+"""</td>
                 <td>"""+str("%.3g" % p_adj)+"""</td>
                 <td>"""+str(hits)+"""</td>
             </tr>
                     """)
-            elif plot:
+            elif plotall:
                 outfile.write("""
             <tr>
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>
-                <td>"""+str("%.4f" % enrichment)+"""</td>
+                <td>"""+str("%.4f" % auc)+"""</td>
                 <td>"""+str("%.3g" % p_val)+"""</td>
                 <td>"""+str("%.3g" % p_adj)+"""</td>
                 <td>"""+str(hits)+"""</td>
@@ -358,7 +400,7 @@ def html_output(results=None, module_list=None, columns=None):
                 outfile.write("""
             <tr>
                 <td>"""+motif+"""</td>
-                <td>"""+str("%.4f" % enrichment)+"""</td>
+                <td>"""+str("%.4f" % auc)+"""</td>
                 <td>"""+str("%.3g" % p_val)+"""</td>
                 <td>"""+str("%.3g" % p_adj)+"""</td>
                 <td>"""+str(hits)+"""</td>
@@ -377,6 +419,9 @@ def html_output(results=None, module_list=None, columns=None):
 
 #==============================================================================
 def summary_html_output(config_object=None, outputdir=None):
+    exclude = ['MOTIF_DISTANCES','MD_DISTANCES1', 'MD_DISTANCES2', 
+                'MDD_DISTANCES1', 'MDD_DISTANCES2', 'PVALS', 'FCS', 
+                'META_PROFILE', 'RESULTS', 'MD_RESULTS', 'MDD_RESULTS']
     with open(os.path.join(outputdir,'summary.html'),'w') as outfile:
         outfile.write("""<!DOCTYPE html>
                 <html>
@@ -384,15 +429,18 @@ def summary_html_output(config_object=None, outputdir=None):
                 <title>Variables Used</title>
                 </head>
                 <body>
+                    <a href="""+os.path.join(outputdir,'results.html')+""">BACK</a>
                     <h1>Variables Used</h1>""")
         for key in config_object:
-            for item in config_object[key]:
-                outfile.write('<p>' + item.upper() + '=' 
-                                + config_object[key][item] + '</p>\n')
+            if key not in exclude:
+                value = config_object[key]
+                value = str(value)
+                outfile.write('<p>' + key + '=' + value + '</p>\n')
         outfile.write('</body>')
 
 #==============================================================================
-def create_motif_result_html(results=None):
+def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
+                                singlemotif=None, plotall=None):
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -431,7 +479,7 @@ def create_motif_result_html(results=None):
     padj_cutoff : float
         the cutoff value for determining significance
 
-    plot : boolean
+    plotall : boolean
         a switch that controls whether all motifs are plotted or just 
         significant ones defined by the p-adj cutoff
 
@@ -470,24 +518,17 @@ def create_motif_result_html(results=None):
     -------
     None
     '''
-    #Using a config file
-    import config
-    outputdir = config.vars.OUTPUTDIR
-    padj_cutoff = config.vars.PADJCUTOFF
-    singlemotif = config.vars.SINGLEMOTIF
-    plot = config.vars.PLOTALL
-
     #For each TF motif with an PADJ value less than a cutoff, an html file is 
     #created to be used in results.html
     positivelist = [x[0] for x in results 
-                    if x[2] > 0 and (plot or x[-1] < padj_cutoff)]
+                    if x[1] >= 0 and (plotall or x[-1] < padj_cutoff)]
     negativelist = [x[0] for x in results 
-                    if x[2] < 0 and (plot or x[-1] < padj_cutoff)]
+                    if x[1] < 0 and (plotall or x[-1] < padj_cutoff)]
 
     for i in range(len(results)):
-        motif, enrichment, hits, p_val, p_adj = results[i] 
-        if plot or p_adj < padj_cutoff or singlemotif:
-            if enrichment > 0:
+        motif, auc, hits, p_val, p_adj = results[i] 
+        if plotall or p_adj < padj_cutoff: # or motif in singlemotif:
+            if auc >= 0:
                 try:
                     NEXT_MOTIF = positivelist[positivelist.index(motif)+1]
                 except IndexError:
@@ -505,8 +546,8 @@ def create_motif_result_html(results=None):
                     PREV_MOTIF = negativelist[negativelist.index(motif)-1]
                 except IndexError:
                     PREV_MOTIF = negativelist[len(negativelist)]
-            direct_logo = motif.strip('HO_') + "_direct.png"
-            reverse_logo = motif.strip('HO_') + "_revcomp.png"
+            direct_logo = "logo" + motif.replace('.','_') + ".png"
+            reverse_logo = "logo_rc" + motif.replace('.','_') + ".png"
             outfile = open(os.path.join(outputdir, 'plots', motif 
                             + '.results.html'),'w')
             outfile.write("""<!DOCTYPE html>
@@ -569,7 +610,7 @@ def create_motif_result_html(results=None):
                     </tr>
                     <tr>
                         <td>"""+motif+"""</td>
-                        <td>"""+str("%.2f" % enrichment)+"""</td>
+                        <td>"""+str("%.2f" % auc)+"""</td>
                         <td>"""+str("%.4g" % p_val)+"""</td>
                         <td>"""+str("%.4g" % p_adj)+"""</td>
                         <td>"""+str(hits)+"""</td>
@@ -585,7 +626,7 @@ def create_motif_result_html(results=None):
             </div>
         </div>
         <div class="row">
-            <div style="float: right; width: 600px">
+            <div style="float: left; width: 600px; padding-right:50px">
                 <p>Forward:</p>
                 <img src="./"""+direct_logo+"""" \
                     alt="Forward Logo">
@@ -594,7 +635,7 @@ def create_motif_result_html(results=None):
                 <img src="./"""+reverse_logo+"""" \
                     alt="Reverse Logo">
             </div>
-            <div style="float:left; width: 600px">
+            <div style="float:right; width: 600px">
                 <img src="./"""+motif+"""_simulation_plot.png" \
                     alt="Simulation Plot">
             </div>
@@ -604,235 +645,3 @@ def create_motif_result_html(results=None):
     </html>""")
             outfile.close()
             PREV_MOTIF = motif
-
-#==============================================================================
-def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None):
-    '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
-    to the figuredir directory created in TFEA output folder
-
-    Parameters
-    ----------
-    deseqfile : string
-        full path to the deseq file (specifically .res.txt)
-
-    label1 : string
-        the name of the treatment or condition corresponding to bam1 list
-
-    label2 : string
-        the name of the treatment or condition corresponding to bam2 list
-
-    figuredir : string
-        full path to figure directory in output directory (created by TFEA)
-
-    Returns
-    -------
-    None
-    '''
-    up_x = list()
-    up_y = list()
-    up_p = list()
-    dn_x = list()
-    dn_y = list()
-    dn_p = list()
-    with open(deseq_file,'r') as F:
-        header = F.readline().strip('\n').split('\t')
-        basemean_index = header.index('"baseMean"')
-        log2fc_index = header.index('"log2FoldChange"')
-        for line in F:
-            line = line.strip('\n').split('\t')
-            try:
-                log2fc = float(line[log2fc_index+1])
-                basemean = math.log(float(line[basemean_index+1]),10)
-                pval = float(line[-2])
-                if log2fc > 0:
-                    up_x.append(basemean)
-                    up_y.append(log2fc)
-                    up_p.append(pval)
-                else:
-                    dn_x.append(basemean)
-                    dn_y.append(log2fc)
-                    dn_p.append(pval)
-            except:
-                pass
-
-    x = [x for _,x in sorted(zip(up_p,up_x))] \
-        + [x for _,x in sorted(zip(dn_p,dn_x),reverse=True)]
-
-    y = [y for _,y in sorted(zip(up_p,up_y))] \
-        + [y for _,y in sorted(zip(dn_p,dn_y),reverse=True)]
-
-    c = plt.cm.RdYlGn(np.linspace(0, 1, len(x)))
-
-    #Creates an MA-Plot of the region expression
-    F = plt.figure(figsize=(7,6))
-    ax = plt.subplot(111)
-    plt.scatter(x=x,y=y,color=c,edgecolor='')
-    ax.set_title("DE-Seq MA-Plot",fontsize=14)
-    ax.set_ylabel("Log2 Fold-Change ("+label2+"/"+label1+")",fontsize=14)
-    ax.set_xlabel("Log10 Average Expression",fontsize=14)
-    ax.tick_params(axis='y', which='both', left=False, right=False, 
-                    labelleft=True)
-    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
-                    labelbottom=True)
-    plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.png'),
-                bbox_inches='tight')
-
-#==============================================================================
-def enrichment_plot(motif_distance, 
-                    largewindow=None, figuredir=None, outname=None,
-                    cumscore=None, sorted_distances=None, logpval=None, 
-                    dpi=None, save=True):
-    '''This function plots the TFEA enrichment plot.
-
-    Parameters
-    ----------
-    largewindow : float
-        a user specified larger window used for plotting purposes and to do
-        some calculations regarding the user-provided regions of interest
-
-    smallwindow : float
-        a user specified smaller window used for plotting purposes and to do
-        some calculations regarding the user-provided regions of interest
-
-    figuredir : string
-        the full path to the figuredir within the ouptut directory containing
-        all figures and plots
-
-    cumscore : list
-        the cumulative score of the running sum as we walk through the ranked
-        regions
-
-    score : list
-        a list of fimo hit scores to use in shading an optional bar plot within
-        the enrichment plot
-
-    sorted_distances : list or array
-        a sorted (based on rank) list of motif distances. Negative corresponds
-        to upstream of region
-
-    logpval : list or array
-        a way to visualize the ranking of the regions of interest. It is
-        the log10 of the p-value with the sign (positive or negative) based on
-        whether the fold change of the region is over 1 or less than 1.
-
-    updistancehist : list or array
-        the first quartile of ranked regions. These are presumably higher in
-        condition1
-
-    downdistancehist : list or array
-        the fourth quartile of ranked regions. These are presumably higher in
-        condition2
-
-    gc_array : list
-        an array of gc richness of regions of interest. It is recommended that
-        this array be no larger than 1000 bins.
-
-    motif_file : string
-        the name of the motif thats associated with all the input data. Used 
-        for figure naming purposes.
-
-    Returns
-    -------
-    None
-    '''
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
-    import matplotlib.gridspec as gridspec
-    import traceback
-
-    import config
-    dpi = config.vars.DPI
-    try:
-        #Begin plotting section
-        motif = motif_distance[0]
-        len_cumscore = float(len(cumscore))
-        F = plt.figure(figsize=(15.5,12))
-        xvals = np.linspace(start=0, stop=1, num=len_cumscore)
-        limits = [0, 1]
-
-        #With GC-Content
-        # gs = gridspec.GridSpec(4, 1, height_ratios=[2, 2, 1, 1])
-
-        #Without GC-Content
-        # gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 2])
-
-        outer_gs = gridspec.GridSpec(2, 1, height_ratios=[2,1])
-        enrichment_gs = gridspec.GridSpecFromSubplotSpec(4, 1, 
-                                            subplot_spec=outer_gs[0], 
-                                            height_ratios=[4, 1, 4, 2], 
-                                            hspace=.1)
-        lineplot = plt.subplot(enrichment_gs[0])
-        barplot = plt.subplot(enrichment_gs[1])
-        scatterplot = plt.subplot(enrichment_gs[2])
-        fillplot = plt.subplot(enrichment_gs[3])
-        figure_title = motif.strip('.bed') + ' Enrichment Plot'
-        lineplot(title=figure_title, ax=lineplot, xvals=xvals, yvals=cumscore, 
-                    xlimits=limits)
-        scatterplot(ax=scatterplot, xvals=xvals, yvals=sorted_distances, 
-                    xlimits=None, largewindow=largewindow)
-        fillplot(ax=fillplot, xvals=xvals, yvals=logpval, xlimits=limits, 
-                ylimits=None)
-
-        #Makes sure that axis labels are properly spaced
-        plt.tight_layout()
-
-        if save:
-            plt.savefig(os.path.join(figuredir, outname + motif + '.png'), 
-                        dpi=dpi, bbox_inches='tight')
-            plt.close()
-        else:
-            plt.show()
-    except Exception as e:
-        # This prints the type, value, and stack trace of the
-        # current exception being handled.
-        print(traceback.print_exc())
-        raise e
-
-#==============================================================================
-def enrichment_lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
-    #This is the enrichment score plot (i.e. line plot)
-    # ax0 = plt.subplot(gs[0])
-    ax.plot(xvals,yvals,color='green')
-    ax.plot([0, 1],[0, 1], '--', alpha=0.75)
-    ax.set_title(title, fontsize=14)
-    ax.set_ylabel('Enrichment Score (ES)', fontsize=10)
-    ax.tick_params(axis='y', which='both', left=True, right=False, 
-                    labelleft=True)
-    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
-                    labelbottom=False)
-    ax.set_ylim([0,1])
-    ax.set_xlim(xlimits)
-
-#==============================================================================
-def motifhit_scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None):
-    import matplotlib.pyplot as plt
-    #This is the barplot right below the enrichment score line plot
-    ax.scatter(xvals, yvals, edgecolor="", color="black", 
-                    s=10, alpha=0.25)
-    ax.tick_params(axis='y', which='both', left=False, right=False, 
-                    labelleft=True) 
-    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
-                    labelbottom=False)
-    plt.yticks([-int(largewindow),0,int(largewindow)],
-                [str(-int(largewindow)/1000.0),'0',\
-                str(int(largewindow)/1000.0)])
-    ax.set_xlim(xlimits)
-    ax.set_ylim([-int(largewindow),int(largewindow)])
-    ax.set_ylabel('Distance (kb)', fontsize=10)
-
-#==============================================================================
-def ranking_fillplot(ax=None, xvals=None, yvals=None, xlimits=None):
-    #This is the rank metric fill plot
-    ax.fill_between(xvals,0,yvals,facecolor='grey',edgecolor="")
-    ax.tick_params(axis='y', which='both', left=True, right=False, 
-                    labelleft=True)
-    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
-                    labelbottom=True)
-    ylim = math.fabs(max([x for x in yvals if -500 < x < 500],key=abs))
-    ax.set_ylim(ylimits)
-    ax.yaxis.set_ticks([int(-ylim),0,int(ylim)])
-    ax.set_xlim(xlimits)
-    ax.set_xlabel('Relative Rank (n='+str(len(xvals))+')', 
-                    fontsize=14)
-    ax.set_ylabel('Rank Metric',fontsize=10)

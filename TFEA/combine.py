@@ -29,7 +29,7 @@ from TFEA import exceptions
 #Main Script
 #==============================================================================
 def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None, 
-        md=None, largewindow=None, scanner=None, debug=False):
+        md=None, largewindow=None, scanner=None, debug=False, jobid=None):
     '''This is the main script of the combine function that is called within
         TFEA. Default arguments are assigned to variables within config.vars.
 
@@ -68,14 +68,16 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
     '''
     start_time = time.time()
     if use_config:
-        bed1=config.vars.BED1
-        bed2=config.vars.BED2
-        method=config.vars.COMBINE
-        tempdir=config.vars.TEMPDIR
-        md=config.vars.MD
-        largewindow=config.vars.LARGEWINDOW
-        scanner=config.vars.SCANNER
-        debug = config.vars.DEBUG
+        bed1=config.vars['BED1']
+        bed2=config.vars['BED2']
+        method=config.vars['COMBINE']
+        tempdir=config.vars['TEMPDIR']
+        md=config.vars['MD']
+        largewindow=config.vars['LARGEWINDOW']
+        scanner=config.vars['SCANNER']
+        debug = config.vars['DEBUG']
+        jobid = config.vars['JOBID']
+
     print("Combining Regions...", end=' ', flush=True, file=sys.stderr)
 
     #Merge all bed regions, for MD merge condition replicates
@@ -177,22 +179,22 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
             raise exceptions.FileEmptyError("Error in COMBINE module. Resulting md bed file is empty.")
         if use_config:
             #Assign MD_BEDFILE variables in config
-            config.vars.MD_BEDFILE1 = md_bedfile1 
-            config.vars.MD_BEDFILE2 = md_bedfile2
+            config.vars['MD_BEDFILE1'] = md_bedfile1 
+            config.vars['MD_BEDFILE2'] = md_bedfile2
 
     #Assign COMBINED_FILE variable in config
     if use_config:
-        config.vars.COMBINED_FILE = combined_file
+        config.vars['COMBINED_FILE'] = combined_file
     
     #Record time, print
     total_time = time.time() - start_time
     if use_config:
-        config.vars.COMBINEtime = total_time
+        config.vars['COMBINEtime'] = total_time
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), 
             file=sys.stderr)
 
     if debug:
-        multiprocess.current_mem_usage(config.vars.JOBID)
+        multiprocess.current_mem_usage(jobid)
 
 #Functions
 #==============================================================================
@@ -213,7 +215,7 @@ def merge_bed(beds=None):
     parent_bed = BedTool(beds[0].as_posix())
     for bed in beds[1:]:
         parent_bed = parent_bed.cat(bed.as_posix())
-    merged_bed = parent_bed.merge().sort()
+    merged_bed = parent_bed.sort().merge().sort()
 
     return merged_bed
 

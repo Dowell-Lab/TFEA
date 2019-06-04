@@ -89,31 +89,31 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
     '''
     start_time = time.time()
     if use_config:
-        motif_distances = config.vars.MOTIF_DISTANCES
-        md_distances1 = config.vars.MD_DISTANCES1
-        md_distances2 = config.vars.MD_DISTANCES2 
-        mdd_distances1 = config.vars.MDD_DISTANCES1
-        mdd_distances2 = config.vars.MDD_DISTANCES2
-        enrichment = config.vars.ENRICHMENT
-        permutations = config.vars.PERMUTATIONS
-        debug = config.vars.DEBUG
-        largewindow = config.vars.LARGEWINDOW
-        smallwindow = config.vars.SMALLWINDOW
-        pvals = config.vars.PVALS
-        fcs = config.vars.FCS
-        md = config.vars.MD
-        mdd = config.vars.MDD
-        cpus = config.vars.CPUS
-        jobid = config.vars.JOBID
-        p_cutoff = config.vars.PVALCUTOFF
-        figuredir = config.vars.FIGUREDIR
-        plotall = config.vars.PLOTALL
-        fimo_motifs = config.vars.FIMO_MOTIFS
-        meta_profile_dict = config.vars.META_PROFILE
-        label1 = config.vars.LABEL1
-        label2 = config.vars.LABEL2
-        dpi = config.vars.DPI
-        output_type = config.vars.OUTPUT_TYPE
+        motif_distances = config.vars['MOTIF_DISTANCES']
+        md_distances1 = config.vars['MD_DISTANCES1']
+        md_distances2 = config.vars['MD_DISTANCES2']
+        mdd_distances1 = config.vars['MDD_DISTANCES1']
+        mdd_distances2 = config.vars['MDD_DISTANCES2']
+        enrichment = config.vars['ENRICHMENT']
+        permutations = config.vars['PERMUTATIONS']
+        debug = config.vars['DEBUG']
+        largewindow = config.vars['LARGEWINDOW']
+        smallwindow = config.vars['SMALLWINDOW']
+        pvals = config.vars['PVALS']
+        fcs = config.vars['FCS']
+        md = config.vars['MD']
+        mdd = config.vars['MDD']
+        cpus = config.vars['CPUS']
+        jobid = config.vars['JOBID']
+        p_cutoff = config.vars['PVALCUTOFF']
+        figuredir = config.vars['FIGUREDIR']
+        plotall = config.vars['PLOTALL']
+        fimo_motifs = config.vars['FIMO_MOTIFS']
+        meta_profile_dict = config.vars['META_PROFILE']
+        label1 = config.vars['LABEL1']
+        label2 = config.vars['LABEL2']
+        dpi = config.vars['DPI']
+        output_type = config.vars['OUTPUT_TYPE']
 
     print("Calculating enrichment...", flush=True, file=sys.stderr)
 
@@ -122,20 +122,19 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
     mdd_results = None
 
     if enrichment == 'auc':
-        print('TFEA:', file=sys.stderr)
+        print('\tTFEA:', file=sys.stderr)
         auc_keywords = dict(permutations=permutations, use_config=use_config, 
                         output_type=output_type, pvals=pvals, plotall=plotall, 
                         p_cutoff=p_cutoff, figuredir=figuredir, 
                         largewindow=largewindow, fimo_motifs=fimo_motifs, 
                         meta_profile_dict=meta_profile_dict, label1=label1, 
                         label2=label2, dpi=dpi, fcs=fcs)
-        # results = multiprocess.main(function=area_under_curve, 
-        #                             args=motif_distances, kwargs=auc_keywords,
-        #                             debug=debug, jobid=jobid, cpus=cpus)
-        results = list()
-        for motif_distance in motif_distances:
-            results.append(area_under_curve(motif_distance, **auc_keywords))
-
+        results = multiprocess.main(function=area_under_curve, 
+                                    args=motif_distances, kwargs=auc_keywords,
+                                    debug=debug, jobid=jobid, cpus=cpus)
+        # results = list()
+        # for motif_distance in motif_distances:
+        #     results.append(area_under_curve(motif_distance, **auc_keywords))
         padj_bonferroni(results)
     elif enrichment == 'anderson-darling':
         results = multiprocess.main(function=anderson_darling, 
@@ -143,7 +142,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                         jobid=jobid, cpus=cpus)
 
     elif enrichment == 'auc_bgcorrect':
-        print('TFEA:', file=sys.stderr)
+        print('\tTFEA:', file=sys.stderr)
         auc_bgcorrect_keywords = dict(permutations=permutations)
         results = multiprocess.main(function=area_under_curve_bgcorrect, 
                                     args=motif_distances, 
@@ -153,28 +152,28 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         padj_bonferroni(results)
 
     if md:
-        print('MD:', file=sys.stderr)
+        print('\tMD:', file=sys.stderr)
         md_results = calculate_md(md_distances1=md_distances1, 
                                     md_distances2=md_distances2, 
                                     smallwindow=smallwindow, 
                                     jobid=jobid, cpus=cpus, debug=debug)
         if use_config:
-            config.vars.MD_RESULTS = md_results
+            config.vars['MD_RESULTS'] = md_results
     if mdd:
-        print('MDD:', file=sys.stderr)
+        print('\tMDD:', file=sys.stderr)
         mdd_results =  calculate_md(md_distances1=mdd_distances1, 
                                         md_distances2=mdd_distances2, 
                                         smallwindow=smallwindow,
                                         jobid=jobid, cpus=cpus, debug=debug)
         if use_config:
-            config.vars.MDD_RESULTS = mdd_results
+            config.vars['MDD_RESULTS'] = mdd_results
 
     if use_config:
-        config.vars.RESULTS = results
+        config.vars['RESULTS'] = results
 
     total_time = time.time() - start_time
     if use_config:
-        config.vars.ENRICHMENTtime = total_time
+        config.vars['ENRICHMENTtime'] = total_time
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
     if debug:
@@ -261,13 +260,17 @@ def area_under_curve(distances, use_config=True, output_type=None,
             from TFEA import plot
             plotting_score = [(float(x)/total) for x in score]
             plotting_cumscore = np.cumsum(plotting_score)
-            plot.plot_individual_graphs(motif=motif, distances=distances, figuredir=figuredir, 
-                            fimo_motifs=fimo_motifs, largewindow=largewindow, 
-                            score=plotting_score, use_config=use_config,
-                            dpi=dpi, pvals=pvals, fcs=fcs, 
-                            cumscore=plotting_cumscore, sim_auc=sim_auc, auc=auc,
-                            meta_profile_dict=meta_profile_dict, label1=label1, 
-                            label2=label2)
+            plot.plot_individual_graphs(motif=motif, distances=distances, 
+                                        figuredir=figuredir, 
+                                        fimo_motifs=fimo_motifs, 
+                                        largewindow=largewindow, 
+                                        score=plotting_score, 
+                                        use_config=use_config, dpi=dpi, 
+                                        pvals=pvals, fcs=fcs, 
+                                        cumscore=plotting_cumscore, 
+                                        sim_auc=sim_auc, auc=auc,
+                                        meta_profile_dict=meta_profile_dict, 
+                                        label1=label1, label2=label2)
     except Exception as e:
         # This prints the type, value, and stack trace of the
         # current exception being handled.
@@ -341,7 +344,7 @@ def area_under_curve_bgcorrect(distances, use_config=False, output_type=None,
         if math.isnan(p):
             p = 1.0
 
-        if output_type == 'html':
+        if output_type == 'html' or plotall:
             #make individual plots and also individual html file
             from TFEA import plot
             plotting_score = [(float(x)/total) for x in score]

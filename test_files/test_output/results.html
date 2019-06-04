@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+    <title>TFEA Results condition1 vs. condition2</title>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .row {
+        display: flex; /* equal height of the children */
+        width: 100%;
+        padding-bottom: 50px
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+    </head>
+    <body style="width:1300px; margin:0 auto;">
+
+        <h1>TFEA Results condition1 vs. condition2</h1>
+        <div class="row">
+            <div style="float: left; width: 45%">
+                <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
+            </div>
+            <div style="float: left; width: 45%">
+                <img src="./plots/TFEA_volcano.png" alt="DE-Seq MA-Plot">
+            </div>
+        </div>
+        <div class="row">
+            <div style="float: left; width:45%">
+                <img src="./plots/DESEQ_MA_Plot.png" alt="Differential MD-Score P-Value                     Histogram">
+            </div>
+            <div id="Summary of Variables Used" style="float: right;                 width: 45%">
+                <p><a href="./Summary.html">Full Summary of Variables Used                </a></p>
+                <p><b>PADJ < 0.001</b></p>
+                <table>
+                    <tr>
+                        <th>Module</th>
+                        <th>Value</th>
+                        <th>Time (hh:mm:ss)</th>
+                    </tr>
+                <p><a href="./plots/MD_MA.png">MD MA-Plot</a> | <a href="./plots/MD_volcano.png">MD VolcanoPlot</a></p>
+                <p><a href="./plots/MDD_MA.png">MDD MA-Plot</a> | <a href="./plots/MDD_volcano.png">MDD VolcanoPlot</a></p>
+                <tr>
+                        <td>COMBINE</td>
+                        <td>merge all</td>
+                        <td>0:00:00</td>
+                    </tr><tr>
+                        <td>RANK</td>
+                        <td>deseq</td>
+                        <td>0:00:06</td>
+                    </tr><tr>
+                        <td>SCANNER</td>
+                        <td>fimo</td>
+                        <td>0:00:00</td>
+                    </tr><tr>
+                        <td>ENRICHMENT</td>
+                        <td>auc</td>
+                        <td>0:00:07</td>
+                    </tr><tr>
+                        <td>OUTPUT</td>
+                        <td>html</td>
+                        <td>0:00:00</td>
+                    </tr><tr>
+                        <td><b>Total</b></td>
+                        <td> </td>
+                        <td><b>0:00:14</b></td>
+                    </tr>
+                </table>   
+            </div>
+        </div>
+        <div>
+            <div id="Positive AUC Value" style="float: left; width:45%">
+                <h1>Positive AUC Value</h1>
+                <table> 
+                    <tr>
+                        <th>TF Motif</th>
+                        <th>AUC</th>
+                        <th>P-value</th>
+                        <th>PADJ</th>
+                        <th>HITS</th>
+                    </tr>
+            <tr>
+                <td><a href="./plots/P53_HUMAN.H11MO.0.A.results.html">P53_HUMAN.H11MO.0.A</td>
+                <td>0.2795</td>
+                <td>0.0246</td>
+                <td>0.0493</td>
+                <td>5</td>
+            </tr>
+                                
+        </table>
+    </div>
+
+    <div id="Negative AUC Value" style="float: right; width: 45%">
+        <h1>Negative AUC Value</h1>
+        <table> 
+            <tr>
+                <th>TF Motif</th>
+                <th>AUC</th>
+                <th>P-value</th>
+                <th>PADJ</th>
+                <th>HITS</th>
+            </tr>
+                
+            <tr>
+                <td><a href="./plots/SP2_HUMAN.H11MO.0.A.results.html">SP2_HUMAN.H11MO.0.A</td>
+                <td>-0.0499</td>
+                <td>0.0272</td>
+                <td>0.0543</td>
+                <td>114</td>
+            </tr>
+                            
+            </table>
+        </div>
+        </div>
+
+    </body>
+    </html>

@@ -21,29 +21,10 @@ from pathlib import Path
 
 from TFEA import exceptions
 
-#Classes
-#==============================================================================
-class Bunch(object):
-    '''This is a 'Bunch' object. It converts a dict to a namespace representation.
-        Created by combining code written by Alex Martelli 
-        (https://stackoverflow.com/questions/2597278/python-load-variables-in-a-dict-into-namespace)
-        and the built-in python types.SimpleNamespace class.
-    '''
-    def __init__(self, adict):
-        self.__dict__.update(adict)
-    def __repr__(self):
-        keys = sorted(self.__dict__)
-        items = ("{}={!r}".format(k, self.__dict__[k]) for k in keys)
-        return "{}({})".format(type(self).__name__, ", ".join(items))
-
 #Functions
 #==============================================================================
 def read_arguments():
     '''This function consolidates all argument parsing into a single place
-
-    Parameters
-    ----------
-    None
 
     Returns
     -------
@@ -79,8 +60,13 @@ def read_arguments():
                         dest='CONFIG')
     inputs.add_argument('--sbatch','-s', help=("Submits an sbatch (slurm) job. "
                         "If specified, input an e-mail address."), dest='SBATCH')
-    inputs.add_argument('--test','-t', action='store_true', default=None,
-                        help="Performs unit testing", dest='TEST')
+    
+    inputs.add_argument('--test-install','-ti', action='store_true', 
+                        help=("Checks whether all requirements are installed "
+                        "and command-line runnable."), dest='TEST_INSTALL')
+    inputs.add_argument('--test-full','-t', action='store_true', 
+                        help="Performs unit testing on full TFEA pipeline.", 
+                        dest='TEST_FULL')
 
     # Processed inputs if a user desires to run TFEA from a specific point
     processed_inputs = parser.add_argument_group('Processed Inputs', 
@@ -136,10 +122,10 @@ def read_arguments():
                                     "with condition 2."), 
                                     dest='MDD_FASTA2')
     secondary_inputs.add_argument('--mdd_pval', help=("P-value cutoff for "
-                                    "retaining differential regions"), 
+                                    "retaining differential regions. Default: 0.2"), 
                                     dest='MDD_PVAL')
     secondary_inputs.add_argument('--mdd_percent', help=("Percentage cutoff for "
-                                    "retaining differential regions"),
+                                    "retaining differential regions. Default: False"),
                                      dest='MDD_PERCENT')
 
     # Module switches
@@ -158,25 +144,22 @@ def read_arguments():
     module_switches.add_argument('--enrichment', help=("Method for calculating "
                                     "enrichment"), choices=['auc', 
                                     'auc_bgcorrect'], dest='ENRICHMENT')
-    module_switches.add_argument('--debug', help=("Print memory usage to stderr"), 
-                                    action='store_true', dest='DEBUG')
-    
-    # Fasta Options
-    fasta_options = parser.add_argument_group('Fasta Options', ('Options for '
-                                        'performing conversion of bed to fasta'))
-    fasta_options.add_argument('--genomefasta', help=("Genomic fasta file"), 
-                                    dest='GENOMEFASTA')
+    module_switches.add_argument('--debug', help=("Print memory and CPU usage to stderr"), 
+                                    action='store_true', dest='DEBUG', default=None)
 
     # Scanner Options
     scanner_options = parser.add_argument_group('Scanner Options', 
                                         'Options for performing motif scanning')
-    scanner_options.add_argument('--fimo_thresh', help=("P-value threshold for "
-                                    "calling FIMO motif hits"), 
-                                    dest='FIMO_THRESH')
+    scanner_options.add_argument('--genomefasta', help=("Genomic fasta file"), 
+                                    dest='GENOMEFASTA')
+    
     scanner_options.add_argument('--fimo_motifs', help=("Full path to a .meme "
                                     "formatted motif databse file. Some "
                                     "databases included in motif_databases "
                                     "folder."), dest='FIMO_MOTIFS')
+    scanner_options.add_argument('--fimo_thresh', help=("P-value threshold for "
+                                    "calling FIMO motif hits. Default: 1e-6"), 
+                                    dest='FIMO_THRESH')
     scanner_options.add_argument('--fimo_background', help=("Options for "
                                     "choosing mononucleotide background "
                                     "distribution to use with FIMO. "
@@ -197,21 +180,24 @@ def read_arguments():
                                 'Options for performing enrichment analysis')
     enrichment_options.add_argument('--permutations', help=("Number of "
                                         "permutations to perfrom for "
-                                        "calculating p-value."), 
+                                        "calculating p-value. Default: 1000"), 
                                         dest='PERMUTATIONS')
     enrichment_options.add_argument('--largewindow', help=("The size (bp) of a "
                                         "large window around input regions "
-                                        "that captures background."), 
+                                        "that captures background. Default: "
+                                        "1500"), 
                                         dest='LARGEWINDOW')
     enrichment_options.add_argument('--smallwindow', help=("The size (bp) of a "
                                         "small window arount input regions "
-                                        "that captures signal."), 
+                                        "that captures signal. Default: "
+                                        "150"), 
                                         dest='SMALLWINDOW')
     
     # Output Options
     output_options = parser.add_argument_group('Output Options', 
                                                 'Options for the output.')
-    output_options.add_argument('--dpi', help=("Resolution of output figures."), 
+    output_options.add_argument('--dpi', help=("Resolution of output figures. "
+                                    "Default: 100"), 
                                     dest='DPI')
     output_options.add_argument('--padjcutoff', help=("A p-adjusted cutoff "
                                     "value that determines some plotting output."), 
@@ -220,17 +206,20 @@ def read_arguments():
                                     "value that determines some plotting output."), 
                                     dest='PVALCUTOFF')
     output_options.add_argument('--plotall', help=("Plot graphs for all motifs."
-                                    "This will make TFEA run much slower and"
+                                    "Warning: This will make TFEA run much slower and"
                                     "will result in a large output folder."), 
-                                    action='store_true', dest='PLOTALL')
-    output_options.add_argument('--outputtype', help="Suppress html output.", 
+                                    action='store_true', dest='PLOTALL', default=None)
+    output_options.add_argument('--output_type', help="Specify output type. Selecting "
+                                    "html will increase processing time and "
+                                    "memory usage. Default: txt", 
                                     choices=['txt', 'html'], dest='OUTPUT_TYPE')
 
+    #Miscellaneous Options
     misc_options = parser.add_argument_group('Miscellaneous Options', 'Other options.')
-    misc_options.add_argument('--processes', help=("Number of processes to run "
+    misc_options.add_argument('--cpus', help=("Number of processes to run "
                                 "in parallel. Note: Increasing this value will "
                                 "significantly increase memory footprint. "
-                                "Default: 10"), dest='CPUS')
+                                "Default: 1"), dest='CPUS')
 
     #Set default arguments and possible options or types
     # Notes: 
@@ -262,11 +251,12 @@ def read_arguments():
                     'BED2': [False, ['PosixList', bool]], 
                     'BAM1': [False, ['PosixList', bool]], 
                     'BAM2': [False, ['PosixList', bool]],
-                    'LABEL1': [False, [str, bool]],
-                    'LABEL2': [False, [str, bool]],
+                    'LABEL1': ['condition1', [str]],
+                    'LABEL2': ['condition2', [str]],
                     'CONFIG': [False, [Path, bool]],
                     'SBATCH': [False, [str, bool]],
-                    'TEST': [False, [bool, bool]],
+                    'TEST_INSTALL': [False, [bool]],
+                    'TEST_FULL': [False, [bool]],
                     'COMBINED_FILE': [False, [Path, bool]],
                     'RANKED_FILE': [False, [Path, bool]],
                     'FASTA_FILE': [False, [Path, bool]],
@@ -296,11 +286,11 @@ def read_arguments():
                     'PERMUTATIONS': [1000, [int]], 
                     'LARGEWINDOW': [1500, [int]], 
                     'SMALLWINDOW': [150, [int]], 
-                    'DPI': [None, [str, int]], 
+                    'DPI': [100, [int]], 
                     'PADJCUTOFF': [0.001, [float]], 
                     'PVALCUTOFF': [0.01, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
-                    'CPUS': [10, [int]], 
+                    'CPUS': [1, [int]], 
                     'PLOTALL': [False, [bool]]}
 
     #Save default arguments in config
@@ -339,7 +329,7 @@ def make_out_directories(create=False):
     '''
     from TFEA import config
     #Output directory
-    output = config.vars.OUTPUT
+    output = config.vars['OUTPUT']
 
     #Make parent output directory
     if create:
@@ -360,9 +350,9 @@ def make_out_directories(create=False):
     if create:
         figuredir.mkdir(exist_ok=True, parents=True)
 
-    config.vars.TEMPDIR = tempdir
-    config.vars.FIGUREDIR = figuredir
-    config.vars.E_AND_O = e_and_o
+    config.vars['TEMPDIR'] = tempdir
+    config.vars['FIGUREDIR'] = figuredir
+    config.vars['E_AND_O']= e_and_o
 
 #==============================================================================
 def parse_config(configfile=None):
@@ -456,64 +446,71 @@ def verify_arguments(parser=None):
             config_dict[key] = value
 
     #Write variables to config
-    config.vars = Bunch(config_dict)
-    config.vars.COMBINEtime = 0
-    config.vars.COUNTtime = 0
-    config.vars.RANKtime = 0
-    config.vars.FASTAtime = 0
-    config.vars.SCANNERtime = 0
-    config.vars.ENRICHMENTtime = 0
-    config.vars.OUTPUTtime = 0
-    config.vars.MD_DISTANCES1 = []
-    config.vars.MD_DISTANCES2 = []
-    config.vars.MDD_DISTANCES1 = []
-    config.vars.MDD_DISTANCES2 = []
-    config.vars.RESULTS = []
-    config.vars.MD_RESULTS = []
-    config.vars.MDD_RESULTS = []
+    config.vars = config_dict
+    config.vars['COMBINEtime'] = 0
+    config.vars['COUNTtime'] = 0
+    config.vars['RANKtime'] = 0
+    config.vars['FASTAtime'] = 0
+    config.vars['SCANNERtime'] = 0
+    config.vars['ENRICHMENTtime'] = 0
+    config.vars['OUTPUTtime'] = 0
+    config.vars['PVALS'] = []
+    config.vars['FCS'] = []
+    config.vars['META_PROFILE'] = {}
+    config.vars['MD_DISTANCES1'] = []
+    config.vars['MD_DISTANCES2'] = []
+    config.vars['MDD_DISTANCES1'] = []
+    config.vars['MDD_DISTANCES2'] = []
+    config.vars['RESULTS'] = []
+    config.vars['MD_RESULTS'] = []
+    config.vars['MDD_RESULTS'] = []
 
+    #Pre-processed inputs
+    if config.vars['COMBINED_FILE']:
+        config.vars['COMBINE'] = False
+    if config.vars['RANKED_FILE']:
+        config.vars['COMBINE'] = False
+        config.vars['RANK'] = False
+    if config.vars['FASTA_FILE']:
+        config.vars['COMBINE'] = False
+        config.vars['RANK'] = False
 
     #Verify combine module
-    if not config.vars.COMBINE:
-        if not config.vars.COMBINED_FILE and config.vars.RANK:
+    if not config.vars['COMBINE']:
+        if not config.vars['COMBINED_FILE'] and config.vars['RANK']:
             raise exceptions.InputError('COMBINE module switched off but RANK module switched on without a COMBINED_FILE')
-        if config.vars.MD:
-            if not config.vars.MD_BEDFILE1 and not config.vars.MD_FASTA1:
+        if config.vars['MD']:
+            if not config.vars['MD_BEDFILE1'] and not config.vars['MD_FASTA1']:
                 raise exceptions.InputError('COMBINE module switched off but MD module switched on without MD_BEDFILE1 or MD_FASTA1')
-            if not config.vars.MD_BEDFILE2 and not config.vars.MD_FASTA2:
+            if not config.vars['MD_BEDFILE2'] and not config.vars['MD_FASTA2']:
                 raise exceptions.InputError('COMBINE module switched off but MD module switched on without MD_BEDFILE2 or MD_FASTA2')
     else:
-        if not config.vars.BED1:
+        if not config.vars['BED1']:
             raise exceptions.InputError('COMBINE module switched on but BED1 not specified')
-        if not config.vars.BED2:
+        if not config.vars['BED2']:
             raise exceptions.InputError('COMBINE module switched on but BED2 not specified')
 
     #Verify rank module
-    if not config.vars.RANK:
-        if not config.vars.RANKED_FILE and not config.vars.FASTA_FILE and config.vars.scanner == 'fimo':
+    if not config.vars['RANK']:
+        if not config.vars['RANKED_FILE'] and not config.vars['FASTA_FILE'] and config.vars['SCANNER'] == 'fimo':
             raise exceptions.InputError('SCANNER module set to "fimo" but RANK module switched off without RANKED_FILE or FASTA_FILE')
-        if config.vars.MDD:
-            if not config.vars.MDD_BEDFILE1 and not config.vars.MDD_FASTA1:
+        if config.vars['MDD']:
+            if not config.vars['MDD_BEDFILE1'] and not config.vars['MDD_FASTA1']:
                 raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE1 or MDD_FASTA1')
-            if not config.vars.MDD_BEDFILE2 and not config.vars.MDD_FASTA2:
+            if not config.vars['MDD_BEDFILE2'] and not config.vars['MDD_FASTA2']:
                 raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE2 or MDD_FASTA2')
     else:
-        if not config.vars.BED1:
-            raise exceptions.InputError('RANK module switched on but BED1 not specified')
-        if not config.vars.BED2:
-            raise exceptions.InputError('RANK module switched on but BED2 not specified')
-        if not config.vars.BAM1:
+        if not config.vars['BAM1']:
             raise exceptions.InputError('RANK module switched on but BAM1 not specified')
-        if not config.vars.BAM2:
+        if not config.vars['BAM2']:
             raise exceptions.InputError('RANK module switched on but BAM2 not specified')
-        if not config.vars.LABEL1:
+        if not config.vars['LABEL1']:
             raise exceptions.InputError('RANK module switched on but LABEL1 not specified')
-        if not config.vars.LABEL2:
+        if not config.vars['LABEL2']:
             raise exceptions.InputError('RANK module switched on but LABEL2 not specified')
-        
 
     #Verify scanner module
-    if not config.vars.GENOMEHITS and config.vars.SCANNER == 'genome hits':
+    if not config.vars['GENOMEHITS'] and config.vars['SCANNER'] == 'genome hits':
         raise exceptions.InputError('SCANNER set to "genome hits" without specifying GENOMEHITS')
 
     print("User arguments verified, all required inputs present and not conflicting.", 
@@ -522,35 +519,35 @@ def verify_arguments(parser=None):
 #==============================================================================
 def create_directories(srcdirectory=None):
     from TFEA import config
-    if config.vars.SBATCH == False: #No sbatch flag
+    if config.vars['SBATCH'] == False: #No sbatch flag
         make_out_directories(create=True)
-        write_rerun(args=sys.argv, outputdir=config.vars.OUTPUT)
-        config.vars.JOBID = 0
-    elif str(config.vars.SBATCH) == 'SUBMITTED': #Internal flag
+        write_rerun(args=sys.argv, outputdir=config.vars['OUTPUT'])
+        config.vars['JOBID'] = 0
+    elif str(config.vars['SBATCH']) == 'SUBMITTED': #Internal flag
         make_out_directories(create=False)
-        config.vars.JOBID = (config.vars.TEMPDIR / 'jobid.txt').read_text().strip('\n')
+        config.vars['JOBID'] = (config.vars['TEMPDIR'] / 'jobid.txt').read_text().strip('\n')
     else: #--sbatch specified
         make_out_directories(create=True)
-        write_rerun(args=sys.argv, outputdir=config.vars.OUTPUT)
+        write_rerun(args=sys.argv, outputdir=config.vars['OUTPUT'])
         scriptdir = srcdirectory.parent / 'cluster_scripts'
         script = scriptdir / 'run_main.sbatch'
-        email = str(config.vars.SBATCH)
-        error_file = config.vars.E_AND_O / ('TFEA_'+config.vars.OUTPUT.name+'.err')
+        email = str(config.vars['SBATCH'])
+        error_file = config.vars['E_AND_O'] / ('TFEA_'+config.vars['OUTPUT'].name+'.err')
         args = sys.argv
         args[args.index('--sbatch')+1] = 'SUBMITTED'
         try:
             sbatch_out = subprocess.run(["sbatch", 
-                                "--error=" + (config.vars.E_AND_O / "%x.err").as_posix(), 
-                                "--output=" + (config.vars.E_AND_O / "%x.out").as_posix(), 
+                                "--error=" + (config.vars['E_AND_O'] / "%x.err").as_posix(), 
+                                "--output=" + (config.vars['E_AND_O'] / "%x.out").as_posix(), 
                                 "--mail-user=" + email, 
                                 "--export=cmd=" + ' '.join(args), 
-                                "--job-name=TFEA_" + config.vars.OUTPUT.name, 
+                                "--job-name=TFEA_" + config.vars['OUTPUT'].name, 
                                 script], stderr=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, check=True)
         except subprocess.CalledProcessError as e:
             raise exceptions.SubprocessError(e.stderr.decode())
         
-        (config.vars.TEMPDIR / 'jobid.txt').write_text(sbatch_out.stdout.decode().split()[-1])
+        (config.vars['TEMPDIR'] / 'jobid.txt').write_text(sbatch_out.stdout.decode().split()[-1])
         print(("TFEA has been submitted using an sbatch script. \nIt can be "
                 "monitored using:\ntail -f " + error_file.as_posix()))
         sys.exit()

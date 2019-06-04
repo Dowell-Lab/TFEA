@@ -39,4 +39,4 @@ PADJCUTOFF = 0.001
 PVALCUTOFF = 0.01
 TEXTONLY = False
 CPUS = 10
-vars = None
+vars = dict()

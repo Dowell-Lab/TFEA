@@ -20,6 +20,7 @@ import sys
 import time
 import datetime
 import subprocess
+import warnings
 from pathlib import Path
 
 from pybedtools import BedTool
@@ -28,13 +29,14 @@ import numpy as np
 
 from TFEA import exceptions
 from TFEA import multiprocess
+from TFEA import plot
 
 #Main Script
 #==============================================================================
 def main(use_config=True, combined_file=None, rank=None, scanner=None, 
             bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
             largewindow=None, mdd=None, mdd_bedfile1=None, mdd_bedfile2=None, 
-            debug=False, jobid=None):
+            debug=False, jobid=None, figuredir=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -90,32 +92,29 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
     start_time = time.time()
     if use_config:
         from TFEA import config
-        combined_file=config.vars.COMBINED_FILE
-        rank=config.vars.RANK
-        scanner=config.vars.SCANNER
-        bam1=config.vars.BAM1
-        bam2=config.vars.BAM2
-        tempdir=config.vars.TEMPDIR
-        label1=config.vars.LABEL1
-        label2=config.vars.LABEL2
-        largewindow=config.vars.LARGEWINDOW
-        mdd=config.vars.MDD 
-        mdd_bedfile1=config.vars.MDD_BEDFILE1
-        mdd_bedfile2=config.vars.MDD_BEDFILE2
-        mdd_pval=config.vars.MDD_PVAL
-        mdd_percent=config.vars.MDD_PERCENT
-        debug = config.vars.DEBUG
-        jobid = config.vars.JOBID
+        figuredir=config.vars['FIGUREDIR']
+        combined_file=config.vars['COMBINED_FILE']
+        rank=config.vars['RANK']
+        scanner=config.vars['SCANNER']
+        bam1=config.vars['BAM1']
+        bam2=config.vars['BAM2']
+        tempdir=config.vars['TEMPDIR']
+        label1=config.vars['LABEL1']
+        label2=config.vars['LABEL2']
+        largewindow=config.vars['LARGEWINDOW']
+        mdd=config.vars['MDD']
+        mdd_bedfile1=config.vars['MDD_BEDFILE1']
+        mdd_bedfile2=config.vars['MDD_BEDFILE2']
+        mdd_pval=config.vars['MDD_PVAL']
+        mdd_percent=config.vars['MDD_PERCENT']
+        debug = config.vars['DEBUG']
+        jobid = config.vars['JOBID']
     print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
 
     #Begin by counting reads from bam files over the combined_file produced
     # by the combine module
     count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
                             tempdir=tempdir, label1=label1, label2=label2)
-    sample_number = (len(bam1)+len(bam2))
-    millions_mapped = sum_reads(count_file=count_file, 
-                                sample_number=sample_number)
-    
     
     if os.stat(count_file).st_size == 0:
         raise exceptions.FileEmptyError("Error in RANK module. Counting failed.")
@@ -124,21 +123,20 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         ranked_file, pvals, fcs = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
-                                    rank=rank)
+                                    rank=rank, figuredir=figuredir)
         q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
         meta_profile = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
-                            bam1=bam1, bam2=bam2, millions_mapped=millions_mapped, 
-                            largewindow=largewindow)
+                            bam1=bam1, bam2=bam2, largewindow=largewindow)
     else:
         raise exceptions.InputError("RANK option not recognized.")
     if os.stat(ranked_file).st_size == 0:
         raise exceptions.FileEmptyError("Error in RANK module. DE-Seq running or parsing failed.")
 
     if use_config:
-        config.vars.RANKED_FILE = ranked_file
-        config.vars.PVALS = pvals
-        config.vars.FCS = fcs
-        config.vars.META_PROFILE = meta_profile
+        config.vars['RANKED_FILE'] = ranked_file
+        config.vars['PVALS'] = pvals
+        config.vars['FCS'] = fcs
+        config.vars['META_PROFILE'] = meta_profile
 
     if mdd and (not mdd_bedfile1 or not mdd_bedfile2):
         mdd_bedfile1, mdd_bedfile2 = create_mdd_files(ranked_file=ranked_file,
@@ -148,14 +146,14 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         if os.stat(mdd_bedfile1).st_size == 0 or os.stat(mdd_bedfile2).st_size == 0:
             raise exceptions.FileEmptyError("Error in RANK module. MDD bed file creation failed.")
         if use_config:
-            if not config.vars.MDD_BEDFILE1:
-                config.vars.MDD_BEDFILE1 = mdd_bedfile1
-            if not config.vars.MDD_BEDFILE2:
-                config.vars.MDD_BEDFILE2 = mdd_bedfile2
+            if not config.vars['MDD_BEDFILE1']:
+                config.vars['MDD_BEDFILE1'] = mdd_bedfile1
+            if not config.vars['MDD_BEDFILE2']:
+                config.vars['MDD_BEDFILE2'] = mdd_bedfile2
     
     total_time = time.time() - start_time
     if use_config:
-        config.vars.RANKtime = total_time
+        config.vars['RANKtime'] = total_time
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
     if debug:
@@ -352,7 +350,7 @@ write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt')
 
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
-            label2=None, largewindow=None, rank=None):
+            label2=None, largewindow=None, rank=None, figuredir=None):
     #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                         count_file=count_file, label1=label1, label2=label2)
@@ -370,6 +368,10 @@ def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None,
         if 'Error' in errormessage:
             printmessage = errormessage[errormessage.index('Error'):]
         raise exceptions.SubprocessError(printmessage)
+
+    
+    plot.plot_deseq_MA(deseq_file=deseq_file, label1=label1, label2=label2, 
+                        figuredir=figuredir)
 
     ranked_file = deseq_parse(deseq_file=deseq_file, tempdir=tempdir, 
                                 largewindow=largewindow, rank=rank)
@@ -431,7 +433,7 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
     pvals = list()
     fcs = list()
     with open(ranked_file,'w') as outfile:
-        outfile.write('\t'.join(['#chrom', 'start', 'stop', 'rank, fc, p-value']) 
+        outfile.write('\t'.join(['#chrom', 'start', 'stop', 'fc,p-value,rank']) 
                         + '\n')
         r=1
         if rank == 'deseq':
@@ -440,14 +442,14 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
                             + '\t' + ','.join(region[3:]+[str(r)]) 
                             + '\n')
                 pvals.append(float(region[-1]))
-                fcs.append(float(region[4]))
+                fcs.append(float(region[3]))
                 r += 1
             for region in sorted(down, key=lambda x: x[4], reverse=True):
                 outfile.write('\t'.join(region[:3]) 
                             + '\t' + ','.join(region[3:]+[str(r)]) 
                             + '\n')
                 pvals.append(float(region[-1]))
-                fcs.append(float(region[4]))
+                fcs.append(float(region[3]))
                 r += 1
         elif rank == 'fc':
             for region in sorted(up+down, key=lambda x: x[3], reverse=True):
@@ -455,7 +457,7 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
                             + '\t' + ','.join(region[3:]+[str(r)]) 
                             + '\n')
                 pvals.append(float(region[-1]))
-                fcs.append(float(region[4]))
+                fcs.append(float(region[3]))
                 r += 1
 
     return ranked_file, pvals, fcs
@@ -552,32 +554,27 @@ def quartile_split(ranked_file):
     return q1regions, q2regions, q3regions, q4regions
 #==============================================================================
 def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
-                            bam1=None, bam2=None, millions_mapped=None, 
-                            largewindow=None):
+                            bam1=None, bam2=None, largewindow=None):
     '''This function creates a metaprofile from 4 regions and stores them in
         a dictionary. 
     '''
     q1posprofile1, q1negprofile1, q1posprofile2, q1negprofile2 = meta_profile(
                                         regionlist=q1regions, 
-                                        millions_mapped=millions_mapped, 
                                         largewindow=largewindow, bam1=bam1, 
                                         bam2=bam2)
     
     q2posprofile1, q2negprofile1, q2posprofile2, q2negprofile2 = meta_profile(
                                         regionlist=q2regions, 
-                                        millions_mapped=millions_mapped, 
                                         largewindow=largewindow, bam1=bam1, 
                                         bam2=bam2)
 
     q3posprofile1, q3negprofile1, q3posprofile2, q3negprofile2 = meta_profile(
                                         regionlist=q3regions, 
-                                        millions_mapped=millions_mapped, 
                                         largewindow=largewindow, bam1=bam1, 
                                         bam2=bam2)
 
     q4posprofile1, q4negprofile1, q4posprofile2, q4negprofile2 = meta_profile(
                                         regionlist=q4regions, 
-                                        millions_mapped=millions_mapped, 
                                         largewindow=largewindow, bam1=bam1, 
                                         bam2=bam2)
 
@@ -601,28 +598,21 @@ def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions,
     return meta_profile_dict
 
 #==============================================================================
-def meta_profile(regionlist=None, region_file=None, millions_mapped=None, 
-                largewindow=None, bam1=None, bam2=None):
+def meta_profile(regionlist=None, region_file=None, largewindow=None, 
+                bam1=None, bam2=None):
     '''This function returns average profiles for given regions of interest.
         A user may input either a list of regions or a bed file
     Parameters
     ----------
     regionlist : list
         a list of regions of interest. Format [(chrom, start, stop), (), ...]
-    
     region_file : string
         full path to a bed file containing regions of interest.
-    millions_mapped : list
-        a list of floats corresponding to millions mapped reads for inputted
-        bam files. These must be in order corresponding to the order of bam1
-        files followed by bam2 files.
-    
     largewindow : float
         the window with which to compute profiles for
     bam1 : list
         a list of full paths to bam files corresponding to a condition or 
         treatment
-    
     bam2 : list
         a list of full paths to bam files corresponding to a condition or 
         treatment
@@ -645,22 +635,23 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
     ------
     '''
     regions=list()
-    if regionlist != None and region_file == None:
-        for chrom, start, stop in regionlist:
-            regions.append(
-                hts.GenomicInterval(chrom, int(start), int(stop), '.'))
-    elif region_file != None and regionlist == None:
-        with open(region_file) as F:
-            for line in F:
-                line = line.strip('\n').split('\t')
-                chrom, start, stop = line[:3]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        if regionlist != None and region_file == None:
+            for chrom, start, stop in regionlist:
                 regions.append(
                     hts.GenomicInterval(chrom, int(start), int(stop), '.'))
-    elif region_file == None and regionlist == None:
-        raise NameError("Must input either a regionlist or region_file.")
-    else:
-        raise NameError("Only input one of regionlist or region_file variables.")
-    
+        elif region_file != None and regionlist == None:
+            with open(region_file) as F:
+                for line in F:
+                    line = line.strip('\n').split('\t')
+                    chrom, start, stop = line[:3]
+                    regions.append(
+                        hts.GenomicInterval(chrom, int(start), int(stop), '.'))
+        elif region_file == None and regionlist == None:
+            raise NameError("Must input either a regionlist or region_file.")
+        else:
+            raise NameError("Only input one of regionlist or region_file variables.")
 
     hts_bam1 = list()
     hts_bam2 = list()
@@ -671,10 +662,6 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
 
     if len(hts_bam1) == 0 or len(hts_bam2) == 0:
         raise ValueError("One of bam1 or bam2 variables is empty.")
-    # if len(millions_mapped) == 0 or len(millions_mapped) != len(hts_bam1) + len(hts_bam2):
-    #     raise ValueError(("Millions_mapped variable is empty or does not match "
-    #                         "length of bam variables combined."))
-
 
     posprofile1 = np.zeros(2*int(largewindow))  
     negprofile1 = np.zeros(2*int(largewindow))
@@ -689,7 +676,6 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
         avgnegprofile1 = np.zeros(2*int(largewindow))
         i = 0
         for sortedbamfile in hts_bam1:
-            # mil_map = float(millions_mapped[i])
             i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
@@ -709,16 +695,8 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
                     start_in_window = max( start_in_window, 0 )
                     end_in_window = min( end_in_window, 2*int(largewindow) )
                     tempnegprofile[ start_in_window : end_in_window ] += -1.0
-            # pos_sum = np.sum(tempposprofile)
-            # neg_sum = np.sum(tempnegprofile)
-            # if pos_sum != 0:
-            #     tempposprofile = [x/pos_sum for x in tempposprofile]
-            # if neg_sum != 0:
-            #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile1 = [x+y for x,y in zip(avgposprofile1, tempposprofile)]
             avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
-        # avgposprofile1 = [x/rep1number/mil_map for x in avgposprofile1]
-        # avgnegprofile1 = [x/rep1number/mil_map for x in avgnegprofile1]
         avgposprofile1 = [x/rep1number for x in avgposprofile1]
         avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
         posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
@@ -728,13 +706,12 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
         avgnegprofile2 = np.zeros(2*int(largewindow))
         i = len(hts_bam1)
         for sortedbamfile in hts_bam2:
-            # mil_map = float(millions_mapped[i])
             i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
             for almnt in sortedbamfile[ window ]:
+                mil_map2 += 1.0
                 if almnt.iv.strand == '+':
-                    mil_map2 += 1.0
                     start_in_window = almnt.iv.start - window.start
                     end_in_window   = almnt.iv.end - window.end \
                                         + 2*int(largewindow)
@@ -748,16 +725,8 @@ def meta_profile(regionlist=None, region_file=None, millions_mapped=None,
                     start_in_window = max( start_in_window, 0 )
                     end_in_window = min( end_in_window, 2*int(largewindow) )
                     tempnegprofile[ start_in_window : end_in_window ] += -1.0
-            # pos_sum = np.sum(tempposprofile)
-            # neg_sum = np.sum(tempnegprofile)
-            # if pos_sum != 0:
-            #     tempposprofile = [x/pos_sum for x in tempposprofile]
-            # if neg_sum != 0:
-            #     tempnegprofile = [-(x/neg_sum) for x in tempnegprofile]
             avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
             avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
-        # avgposprofile2 = [x/rep2number/mil_map for x in avgposprofile2]
-        # avgnegprofile2 = [x/rep2number/mil_map for x in avgnegprofile2]
         avgposprofile2 = [x/rep2number for x in avgposprofile2]
         avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
         posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
