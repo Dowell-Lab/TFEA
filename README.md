@@ -9,8 +9,11 @@
      - <A href="#ImageMagick">Image Magick</A>
    - <A href="#FIJIModules">FIJI Modules</A>
 4. <A href="#Usage">Usage</A>
-3. <A href="#ConfigurationFile">Configuration File</A>
-5. <A href="#UsingSBATCH">Using SBATCH</A>
+   - <A href="#ConfigurationFile">Configuration File</A>
+   - <A href="#UsingSBATCH">Using SBATCH</A>
+   - <A href="#PreProcessedInputs">Pre-Processed Inputs</A>
+   - <A href="#SecondaryAnalysis">Secondary Analysis (MD, MDD)</A>
+   - <A href="#HelpMessage">Help Message</A>
 6. <A href="#ExampleOutput">Example Output</A>
 7. <A href="#ContactInformation">Contact Information</A>
  
@@ -108,7 +111,7 @@ pip3 install --user .
 <br></br>
 <H2 id="Usage">Usage</H2>
 
-Once installed (using pip3), TFEA can be run from anywhere, try:
+Once installed, TFEA can be run from anywhere, try:
 
 ```
 TFEA --help
@@ -125,9 +128,10 @@ TFEA --test-full
 
 Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA ppeline. Test files are provided within the 'test_files' directory in this repository.
 
+Using flags
+
 ```
-#Using only flags
-TFEA --output ./test_files/test_rep2 \
+TFEA --output ./test_files/test_output \
 --bed1 ./test_files/SRR1105736.tfit_bidirs.chr22.bed ./test_files/SRR1105737.tfit_bidirs.chr22.bed \
 --bed2 ./test_files/SRR1105738.tfit_bidirs.chr22.bed ./test_files/SRR1105739.tfit_bidirs.chr22.bed \
 --bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
@@ -135,14 +139,202 @@ TFEA --output ./test_files/test_rep2 \
 --label1 condition1 --label2 condition2 \
 --genomefasta ./test_files/chr22.fa \
 --fimo_motifs ./test_files/test_database.meme
+```
 
-#Using only a config file
+Using a <A href="#ConfigurationFile">config file</A> (config file may be combined with flag inputs)
+
+```
 TFEA --config ./test_files/test_config.ini
+```
 
-#On FIJI using sbatch
+On FIJI using <A href="#UsingSBATCH">sbatch</A> (supported with config or flag inputs)
+
+```
 TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
 ```
 
+
+<H3 id="ConfigurationFile">Configuration File</H3>
+TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. This can be helpful to keep track of different TFEA runs and because you can use variables within the config file. For documentation on config files and what you can do with them see <a href="https://docs.python.org/3.6/library/configparser.html#supported-ini-file-structure">Supported INI File Structure</a> and <a href="https://docs.python.org/3.6/library/configparser.html#interpolation-of-values">Interpolation of values (ExtendedInterpolation)</a>
+<br></br>
+<b>*Notes:*</b>
+1. Section headers (ex: `[OUTPUT]`) don't matter but you need to have at least ONE section header to be a viable .ini file
+2. Capitalization of variables doesn't matter
+3. Feel free to specify any additional variables you like, TFEA will only parse variables that match a flag input
+4. If both flag inputs and configuration file inputs are provided, TFEA uses command line flag inputs preferrentially
+
+Below is an example of a configuration file (./test_files/test_config.ini):
+
+  ```bash
+[OUTPUT]
+OUTPUT='./test_files/test_output/'
+LABEL1='Condition 1'
+LABEL2='Condition 2'
+
+[DATA]
+TEST_FILES='./test_files/'
+BED1=[${TEST_FILES}+'SRR1105736.tfit_bidirs.chr22.bed',${TEST_FILES}+'SRR1105737.tfit_bidirs.chr22.bed']
+BED2=[${TEST_FILES}+'SRR1105738.tfit_bidirs.chr22.bed',${TEST_FILES}+'SRR1105739.tfit_bidirs.chr22.bed']
+BAM1=[${TEST_FILES}+'SRR1105736.sorted.chr22.subsample.bam', ${TEST_FILES}+'SRR1105737.sorted.chr22.subsample.bam']
+BAM2=[${TEST_FILES}+'SRR1105738.sorted.chr22.subsample.bam', ${TEST_FILES}+'SRR1105739.sorted.chr22.subsample.bam']
+
+[MODULES]
+FIMO_MOTIFS=${TEST_FILES}+'test_database.meme'
+GENOMEFASTA=${TEST_FILES}+'chr22.fa.fai'
+
+[OPTIONS]
+OUTPUT_TYPE='html'
+PLOTALL=True
+```
+
+<br></br>
+
+<H3 id="UsingSBATCH">Using SBATCH</H3>
+Specifying the `--sbatch` flag will submit TFEA to a compute cluster assuming you are logged into one. Below are the default node configuration settings, this can be changed within cluster_scripts/run_main.sbatch. See here the sbatch code used:
+
+  ```qsub
+  #!/bin/bash
+
+  ###Name the job
+  #SBATCH --job-name=TFEA
+
+  ###Specify the queue
+  #SBATCH -p short
+
+  ###Specify WallTime
+  #SBATCH --time=24:00:00
+
+  ### Specify the number of nodes/cores
+  #SBATCH --ntasks=10
+
+  ### Allocate the amount of memory needed
+  #SBATCH --mem=20gb
+
+  ### Set error and output locations. These will be automatically updated to the output directory.
+  #SBATCH --error /scratch/Users/user/e_and_o/%x.err
+  #SBATCH --output /scratch/Users/user/e_and_o/%x.out
+
+  ### Set your email address. This is changed automatically
+  #SBATCH --mail-type=ALL
+  #SBATCH --mail-user=jonathan.rubin@colorado.edu
+
+  ### Load required modules
+  module purge
+  module load python/3.6.3
+  module load python/3.6.3/matplotlib/1.5.1
+  module load python/3.6.3/scipy/0.17.1
+  module load python/3.6.3/numpy/1.14.1
+  module load python/3.6.3/htseq/0.9.1
+  module load python/3.6.3/pybedtools/0.7.10
+
+  module load bedtools/2.25.0
+  module load meme/5.0.3
+
+  ### now call your program
+
+  python3 ${cmd}
+  ```
+<b>*Note:*</b> For TFEA to properly run a job, the python call within the sbatch script:
+`python3 ${cmd}`
+
+<b>MUST NOT BE CHANGED</b>
+
+
+<H3 id="PreProcessedInputs">Using Pre-processed Inputs</H3>
+TFEA has several pipeline elements to it that a user may bypass by providing downstream pre-processed files. These files can be generated by TFEA if running the full pipeline and may also be used to speed up reruns of TFEA. Below are the three types of pre-processed inputs, short descriptions, an example of the file, and a usage example with TFEA (in some cases there are other inputs needed to go along with the pre-processed file). If multiple pre-processed inputs specified, TFEA will use the most downstream one.
+
+1. <b>combined_file</b> - A sorted (by chrom, start, stop) bed file containing regions of interest
+
+Example (./test_files/test_combined_file.bed)
+```
+#chrom   start stop
+chr22 10683195	10683999
+chr22	16609343	16609405
+chr22	16901069	16902599
+chr22	17036962	17037636
+chr22	17158022	17160214
+...
+```
+
+Usage with TFEA
+```
+TFEA --output ./test_files/test_output \
+--combined_file ./test_files/test_combined_file.bed \
+--bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
+--bam2 ./test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
+--label1 condition1 --label2 condition2 \
+--genomefasta ./test_files/chr22.fa \
+--fimo_motifs ./test_files/test_database.meme
+```
+
+2. <b>ranked_file</b> - A ranked bed file with regions of interest. 
+
+<b>*Note:*</b> Specifying a ranked_file turns off some plotting functionality
+
+Example (./test_files/test_ranked_file.bed)
+
+```
+#chrom	start	stop
+chr22	50794870	50797870
+chr22	21554591	21557591
+chr22	50304644	50307644
+chr22	39096295	39099295
+chr22	31176104	31179104
+```
+
+Usage with TFEA
+
+```
+TFEA --output ./test_files/test_output \
+--ranked_file ./test_files/test_ranked_file.bed \
+--label1 condition1 --label2 condition2 \
+--genomefasta ./test_files/chr22.fa \
+--fimo_motifs ./test_files/test_database.meme
+```
+
+3. <b>fasta_file</b> - A ranked fasta file with regions of interest (sequences must have unique names but these names aren't used for anything). 
+
+<b>*Note:*</b> Specifying a fasta_file turns off some plotting functionality
+
+Example (./test_files/test_fasta_file.bed)
+
+```
+>chr22:50794870-50797870
+ccgccccacactgacgcagt...ccgcctcagcctcctaaa
+>chr22:21554591-21557591
+cttggggagagcagaagcca...gtgcagtggtgcaatctt
+>chr22:50304644-50307644
+CTGAGCACCCCCCACCAGCCA...GGAGACGGGGCCTTTGT
+```
+
+Usage with TFEA
+
+```
+TFEA --output ./test_files/test_output \
+--fasta_file ./test_files/test_fasta_file.fa \
+--label1 condition1 --label2 condition2 \
+--genomefasta ./test_files/chr22.fa \
+--fimo_motifs ./test_files/test_database.meme
+```
+
+<H3 id="SecondaryAnalysis">Secondary Analysis</H3>
+TFEA can also perform MD-Score analysis and differential MD-Score analysis. This can be switched on easily if running the full pipeline:
+
+```
+TFEA --output ./test_files/test_output \
+--combined_file ./test_files/test_combined_file.bed \
+--bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
+--bam2 ./test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
+--label1 condition1 --label2 condition2 \
+--genomefasta ./test_files/chr22.fa \
+--fimo_motifs ./test_files/test_database.meme \
+--md --mdd
+```
+
+These secondary analyses can also take pre-processed input similar to TFEA. See the 'Secondary Analysis Inputs' section in the <A href="#HelpMessage">help message</A> for more information.
+
+
+<H3 id="HelpMessage">Help Message</H3>
 Below are all the possible flags that can be provided to TFEA with a short description and default values.
 
 ```
@@ -329,142 +521,6 @@ Miscellaneous Options:
                         Increasing this value will significantly increase
                         memory footprint. Default: 1
 ```
-
-<H2 id="ConfigurationFile">Configuration File</H3>
-TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. This can be helpful to keep track of different TFEA runs and because you can use variables within the config file. For documentation on config files and what you can do with them see <a href="https://docs.python.org/3.6/library/configparser.html#supported-ini-file-structure">Supported INI File Structure</a> and <a href="https://docs.python.org/3.6/library/configparser.html#interpolation-of-values">Interpolation of values (ExtendedInterpolation)</a>
-
-<b>*Notes:*</b>
-1. Section headers (ex: `[Modules]`) don't matter but you need to have at least ONE section header to be a viable .ini file
-2. Capitalization of variables doesn't matter
-3. Feel free to specify any additional variables you like, TFEA will only parse specific variables
-4. If both flag inputs and configuration file inputs are provided, TFEA uses command line flag inputs preferrentially
-
-Below is an example of a configuration file:
-
-  ```bash
-  #Example config.ini file for use with TFEA.
-
-  [MODULES]
-
-  #This module combines bed files from BED and merges them using bedtools. If False, it will assume BEDS[0] contains the bed file of interest (must be a sorted bed file). (boolean)
-  COMBINE = 'intersect/merge
-
-  #This module performs bedtools multicov which requires bam files and a bed file. It will count reads for each bam file across all regions in the inputted bed file. (boolean)
-  COUNT = True
-
-  #This module performs DESeq and then ranks regions based on the p-value obtained from DESeq, if you set this to false, TFEA will look for the DESeq file within your specified output directory. (boolean)
-  DESEQ = True
-
-  #This module performs the bulk of the calculation of TFEA and will most likely take the longest. Unless you just want to generate files, this should usually be set to True. (boolean)
-  CALCULATE = True
-
-  #Determines whether ES calculations will be run in parallel. This is recommended to speed up the process.       (boolean)
-  POOL=True
-
-  #This module draws dots on enrichment scatter plot based on whether they are less than the specified p-value cutoff. (boolean)
-  DRAWPVALCUTOFF = False
-
-  #This module allows you to specify whether you want to perform TFEA for all motifs in the specified database or whether you want to do just one motif. If you want to do a single motif, you must specify the exact name of the motif (ex. SINGLEMOTIF = 'HO_SP3_HUMAN.H10MO.B.bed'). (boolean)
-  SINGLEMOTIF = False
-
-  [DATA]
-  #Full path to where you want the data to be output. TFEA outputs a folder with results. (string)
-  OUTPUT = './'
-
-  #A variable that can be used if wanted. This variable can be referenced later on using ${BEDDIR} (optional string)
-  BEDDIR = '/full/path/to/BEDS/'
-
-  #A list of full paths to BED files corresponding to all treatments. One or multiple BED files can be used but they MUST be within a list. (list of strings)
-  BEDS = [${BEDDIR}+'BEDNAME1.bed',${BEDDIR}+'BEDNAME2.bed']
-
-  #A variable that can be used if wanted. This variable can be referenced later on using ${BAMDIR} (optional string)
-  BAMDIR = '/full/path/to/BAMS/'
-
-  #A list of full paths to sorted BAM files corresponding to treatment 1. (list of strings)
-  BAM1 = [${BAMDIR}+'CONDITION1_rep1.sorted.bam',${BAMDIR}+'CONDITION1_rep2.sorted.bam']
-
-  #The name of treatment 1. (string)
-  LABEL1 = 'Treatment 1'
-
-  #A list of full paths to sorted BAM files corresponding to treatment 2. (list of strings)
-  BAM2 = [${BAMDIR}+'CONDITION2_rep1.sorted.bam',${BAMDIR}+'CONDITION2_rep2.sorted.bam']
-
-  #The name of treatment 2. (string)
-  LABEL2 = 'Treatment 2'
-
-
-  [THRESHOLDS]
-  #FDR cut off for calling significant hits (float)
-  FDRCUTOFF = 0.1
-
-  #P-value cut off for calling significant hits (float)
-  PVALCUTOFF = 0.1
-
-  #Corresponds to the furthest motif hits that will be displayed in the enrichment scatter plot. This does not affect results (float)
-  LARGEWINDOW = 1500.0
-
-  #Corresponds to the threshold in which a positive or negative hit is called. Changing this parameter will change your results, only change if you have a good reason to do so. (float)
-  SMALLWINDOW = 150.0
-  ```
-
-<br></br>
-
-<H2 id="UsingSBATCH">Using SBATCH</H2>
-Submitting jobs through the slurm scheduler is supported. To use this module:
-
-  ```bash
-  python3 TFEA/ --config CONFIG.ini --sbatch email@address.com
-  ```
-
-
-Node configuration can be changed within scripts/run_main.sbatch. See here the sbatch code used:
-
-  ```qsub
-  #!/bin/bash
-
-  ###Name the job
-  #SBATCH --job-name=TFEA
-
-  ###Specify the queue
-  #SBATCH -p short
-
-  ###Specify WallTime
-  #SBATCH --time=24:00:00
-
-  ### Specify the number of nodes/cores
-  #SBATCH --ntasks=10
-
-  ### Allocate the amount of memory needed
-  #SBATCH --mem=20gb
-
-  ### Set error and output locations. These will be automatically updated to the output directory.
-  #SBATCH --error /scratch/Users/user/e_and_o/%x.err
-  #SBATCH --output /scratch/Users/user/e_and_o/%x.out
-
-  ### Set your email address. This is changed automatically
-  #SBATCH --mail-type=ALL
-  #SBATCH --mail-user=jonathan.rubin@colorado.edu
-
-  ### Load required modules
-  module purge
-  module load python/3.6.3
-  module load python/3.6.3/matplotlib/1.5.1
-  module load python/3.6.3/scipy/0.17.1
-  module load python/3.6.3/numpy/1.14.1
-  module load python/3.6.3/htseq/0.9.1
-  module load python/3.6.3/pybedtools/0.7.10
-
-  module load bedtools/2.25.0
-  module load meme/5.0.3
-
-  ### now call your program
-
-  python3 ${cmd}
-  ```
-**NOTE:** For TFEA to properly run a job, the python call within the sbatch script:
->python3 ${cmd}
-
-**MUST NOT BE CHANGED**
 
 <br></br>
 
