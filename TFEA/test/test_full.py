@@ -65,8 +65,8 @@ class TestMain(unittest.TestCase):
         self.count_file = self.testdir / 'count_file.header.bed'
         self.fimo_motifs = self.testdir / 'test_database.meme'
 
-        touch_command = ["touch", self.testdir / '*.bai']
-        subprocess.run(touch_command, check=True)
+        touch_command = "touch " + str(self.testdir / '*.bai')
+        subprocess.run(touch_command, check=True, shell=True)
     
     def test_full(self):
         shutil.rmtree(self.testdir / 'test_output', ignore_errors=True)
@@ -82,10 +82,11 @@ class TestMain(unittest.TestCase):
                     '--label2', self.label2,
                     '--genomefasta', self.genomefasta,
                     '--fimo_motifs', self.fimo_motifs,  
+                    '--motif_annotation', self.testdir / 'test_motif_annotation.bed',
                     '--output_type', 'html', 
                     '--plotall',
                     '--combine', 'merge all',
-                    '--md','--mdd',
+                    '--md', '--mdd',
                     '--debug']
         # try:
         print('\n============================================')

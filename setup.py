@@ -8,7 +8,7 @@ setup(name='tfea',
       author_email='jonathan.rubin@colorado.edu',
       license='CU Boulder Dowell Lab',
       packages=['TFEA'],
-      scripts=['bin/TFEA'],
+      scripts=['bin/TFEA', 'bin/TFEA-annotate'],
       install_requires=[
           'htseq',
           'configparser',

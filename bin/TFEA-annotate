@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+
+from TFEA import annotate_motifs
+annotate_motifs.main()

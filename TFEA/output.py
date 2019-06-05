@@ -47,7 +47,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
         debug = config.vars['DEBUG']
         jobid = config.vars['JOBID']
         output_type = config.vars['OUTPUT_TYPE']
-        p_cutoff = config.vars['PVALCUTOFF']
+        p_cutoff = config.vars['PADJCUTOFF']
         padj_cutoff = config.vars['PADJCUTOFF']
         label1 = config.vars['LABEL1']
         label2 = config.vars['LABEL2']
@@ -57,7 +57,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    header = ['#TF', 'AUC', 'Events', 'p-val', 'p-adj']
+    header = ['#TF', 'AUC', 'Events', 'p-adj', 'fpkm']
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
                 sortindex=[-2,-1], header=header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
@@ -116,13 +116,18 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                         ('OUTPUT', config.vars['OUTPUT_TYPE'], config.vars['OUTPUTtime'])]
         else:
             module_list = []
-        create_motif_result_htmls(results=results, outputdir=outputdir, 
+        results_header = ['TF', 'AUC', 'Hits', 'FPKM', 'P-adj']
+        create_motif_result_htmls(results=results, results_header=results_header, 
+                                    outputdir=outputdir, 
                                     padj_cutoff=padj_cutoff, 
                                     singlemotif=singlemotif, 
-                                    plotall=plotall)
-        html_output(results=results, module_list=module_list, 
+                                    plotall=plotall, auc_index=1, 
+                                    padj_index=-1)
+        html_output(results=results, results_header=results_header,
+                    module_list=module_list, 
                     outputdir=outputdir, label1=label1, label2=label2, 
-                    padj_cutoff=padj_cutoff, plotall=plotall)
+                    padj_cutoff=padj_cutoff, plotall=plotall, auc_index=1, 
+                    padj_index=-1)
         
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
@@ -146,7 +151,8 @@ def txt_output(results=None, outputdir=None, outname=None,
 
 #==============================================================================
 def html_output(results=None, module_list=None, outputdir=None,
-                label1=None, label2=None, padj_cutoff=None, plotall=None):
+                label1=None, label2=None, padj_cutoff=None, plotall=None, 
+                results_header=None, auc_index=1, padj_index=3):
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -304,7 +310,7 @@ def html_output(results=None, module_list=None, outputdir=None,
                         <td><b>"""+str(datetime.timedelta(seconds=int(total_time)))
                         +"""</b></td>
                     </tr>""")
-        outfile.write("""
+    outfile.write("""
                 </table>   
             </div>
         </div>
@@ -313,47 +319,43 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <h1>Positive AUC Value</h1>
                 <table> 
                     <tr>
-                        <th>TF Motif</th>
-                        <th>AUC</th>
-                        <th>P-value</th>
-                        <th>PADJ</th>
-                        <th>HITS</th>
-                    </tr>""")
+                    """)
+    for label in results_header:
+        outfile.write("<th>" + label + "</th>\n")
 
-    for motif, auc, hits, p_val, p_adj in results:
+    for motif_result in results:
+        auc = motif_result[auc_index]
+        p_adj = motif_result[padj_index]
+        motif = motif_result[0]
         if auc >= 0:
             if p_adj < padj_cutoff:
+                motif = motif_result[0]
                 outfile.write("""
+                    </tr>
             <tr style="color: red;">
                 <td><a href="./plots/"""+motif+""".results.html">"""
-                    +motif+"""</td>
-                <td>"""+str("%.4f" % auc)+"""</td>
-                <td>"""+str("%.3g" % p_val)+"""</td>
-                <td>"""+str("%.3g" % p_adj)+"""</td>
-                <td>"""+str(hits)+"""</td>
-            </tr>
+                    +motif+"""</td>""")
+                for number_result in motif_result[1:]:
+                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                outfile.write("""            </tr>
                     """)
             elif plotall:
                 outfile.write("""
             <tr>
                 <td><a href="./plots/"""+motif+""".results.html">"""
-                    +motif+"""</td>
-                <td>"""+str("%.4f" % auc)+"""</td>
-                <td>"""+str("%.3g" % p_val)+"""</td>
-                <td>"""+str("%.3g" % p_adj)+"""</td>
-                <td>"""+str(hits)+"""</td>
-            </tr>
+                    +motif+"""</td>""")
+                for number_result in motif_result[1:]:
+                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                outfile.write("""            </tr>
                     """)
 
             else:
                 outfile.write("""
             <tr>
-                <td>"""+motif+"""</td>
-                <td>"""+str("%.4f" % auc)+"""</td>
-                <td>"""+str("%.3g" % p_val)+"""</td>
-                <td>"""+str("%.3g" % p_adj)+"""</td>
-                <td>"""+str(hits)+"""</td>
-            </tr>
+                <td>"""+motif+"""</td>""")
+                for number_result in motif_result[1:]:
+                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                outfile.write("""            </tr>
                     """)
 
 
@@ -365,47 +367,40 @@ def html_output(results=None, module_list=None, outputdir=None,
         <h1>Negative AUC Value</h1>
         <table> 
             <tr>
-                <th>TF Motif</th>
-                <th>AUC</th>
-                <th>P-value</th>
-                <th>PADJ</th>
-                <th>HITS</th>
-            </tr>
                 """)
+    for label in results_header:
+        outfile.write("<th>" + label + "</th>\n")
 
-    for motif, auc, hits, p_val, p_adj in results:
+    for motif_result in results:
+        auc = motif_result[auc_index]
+        p_adj = motif_result[padj_index]
+        motif = motif_result[0]
         if auc < 0:
             if p_adj < padj_cutoff:
                 outfile.write("""
             <tr style="color: red;">
                 <td><a href="./plots/"""+motif+""".results.html">"""
-                    +motif+"""</td>
-                <td>"""+str("%.4f" % auc)+"""</td>
-                <td>"""+str("%.3g" % p_val)+"""</td>
-                <td>"""+str("%.3g" % p_adj)+"""</td>
-                <td>"""+str(hits)+"""</td>
-            </tr>
+                    +motif+"""</td>""")
+                for number_result in motif_result[1:]:
+                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                outfile.write("""            </tr>
                     """)
             elif plotall:
                 outfile.write("""
             <tr>
                 <td><a href="./plots/"""+motif+""".results.html">"""
-                    +motif+"""</td>
-                <td>"""+str("%.4f" % auc)+"""</td>
-                <td>"""+str("%.3g" % p_val)+"""</td>
-                <td>"""+str("%.3g" % p_adj)+"""</td>
-                <td>"""+str(hits)+"""</td>
-            </tr>
+                    +motif+"""</td>""")
+                for number_result in motif_result[1:]:
+                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                outfile.write("""            </tr>
                     """)
             else:
                 outfile.write("""
             <tr>
-                <td>"""+motif+"""</td>
-                <td>"""+str("%.4f" % auc)+"""</td>
-                <td>"""+str("%.3g" % p_val)+"""</td>
-                <td>"""+str("%.3g" % p_adj)+"""</td>
-                <td>"""+str(hits)+"""</td>
-            </tr>
+                <td>"""+motif+"""</td>""")
+                for number_result in motif_result[1:]:
+                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                outfile.write("""            </tr>
                     """)
 
     outfile.write("""        
@@ -441,7 +436,8 @@ def summary_html_output(config_object=None, outputdir=None):
 
 #==============================================================================
 def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
-                                singlemotif=None, plotall=None):
+                                singlemotif=None, plotall=None, 
+                                results_header=None, auc_index=1, padj_index=3):
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -527,7 +523,9 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                     if x[1] < 0 and (plotall or x[-1] < padj_cutoff)]
 
     for i in range(len(results)):
-        motif, auc, hits, p_val, p_adj = results[i] 
+        motif = results[i][0]
+        auc = results[i][auc_index]
+        p_adj = results[i][padj_index]
         if plotall or p_adj < padj_cutoff: # or motif in singlemotif:
             if auc >= 0:
                 try:
@@ -603,19 +601,17 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                 padding-top:25px">
                 <table> 
                     <tr>
-                        <th>TF Motif</th>
-                        <th>AUC</th> 
-                        <th>P-value</th>
-                        <th>PADJ</th>
-                        <th>HITS</th>
+                """)
+            for label in results_header:
+                outfile.write("<th>" + label + "</th>\n")
+            outfile.write("""
                     </tr>
                     <tr>
-                        <td>"""+motif+"""</td>
-                        <td>"""+str("%.2f" % auc)+"""</td>
-                        <td>"""+str("%.4g" % p_val)+"""</td>
-                        <td>"""+str("%.4g" % p_adj)+"""</td>
-                        <td>"""+str(hits)+"""</td>
-                    </tr>
+                        <td>"""+motif+"""</td>""")
+            for number_result in results[i][1:]:
+                outfile.write("<td>" + str("%.5g" % number_result) + "</td>\n")
+            outfile.write("""            </tr>
+                    
                 </table>
             </div>
         </div>

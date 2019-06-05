@@ -35,8 +35,8 @@ from TFEA import plot
 #==============================================================================
 def main(use_config=True, combined_file=None, rank=None, scanner=None, 
             bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
-            largewindow=None, mdd=None, mdd_bedfile1=None, mdd_bedfile2=None, 
-            debug=False, jobid=None, figuredir=None):
+            largewindow=None, mdd=False, mdd_bedfile1=False, mdd_bedfile2=False, 
+            motif_annotations=False, debug=False, jobid=None, figuredir=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -107,6 +107,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         mdd_bedfile2=config.vars['MDD_BEDFILE2']
         mdd_pval=config.vars['MDD_PVAL']
         mdd_percent=config.vars['MDD_PERCENT']
+        motif_annotations = config.vars['MOTIF_ANNOTATIONS']
         debug = config.vars['DEBUG']
         jobid = config.vars['JOBID']
     print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
@@ -115,6 +116,16 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
     # by the combine module
     count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
                             tempdir=tempdir, label1=label1, label2=label2)
+    millions_mapped = sum_reads(count_file=count_file, sample_number=len(bam1+bam2))
+    if motif_annotations:
+        motif_fpkm = motif_count_reads(bedfile=motif_annotations, 
+                                            bam1=bam1, bam2=bam2, 
+                                            tempdir=tempdir, 
+                                            label1=label1, label2=label2, 
+                                            millions_mapped=millions_mapped)
+        if use_config:
+            config.vars['MOTIF_FPKM'] = motif_fpkm
+        
     
     if os.stat(count_file).st_size == 0:
         raise exceptions.FileEmptyError("Error in RANK module. Counting failed.")
@@ -196,6 +207,7 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
     #This os.system call runs bedtools multicov to count reads in all specified
     #BAMs for given regions in BED
     count_file = tempdir / "count_file.bed"
+    count_file_header = tempdir / "count_file.header.bed"
 
     #pybedtools implementation (incomplete)
     # pybed_count = BedTool(bedfile.as_posix()).multi_bam_coverage(bams=bam1+bam2)
@@ -211,7 +223,6 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
 
     # This section adds a header to the count_file and reformats it to remove 
     # excess information and add a column with the region for later use
-    count_file_header = tempdir / "count_file.header.bed"
     outfile = open(count_file_header, 'w')
     outfile.write("#chrom\tstart\tstop\tregion\t" 
                     + '\t'.join([label1]*len(bam1)) + "\t" 
@@ -227,6 +238,76 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
                             + '\t'.join(counts) + "\n")
     outfile.close()
     return count_file_header
+
+#==============================================================================
+def motif_count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, 
+                            label1=None, label2=None, millions_mapped=None):
+    '''Counts reads across regions in a given bed file using bam files inputted
+        by a user
+
+    Parameters
+    ----------
+    bedfile : string
+        full path to a bed file containing full regions of interest which will 
+        be counted using bedtools multicov
+
+    bam1 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    bam2 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    label1 : string
+        the name of the treatment or condition corresponding to bam1 list
+
+    label2 : string
+        the name of the treatment or condition corresponding to bam2 list
+
+    Returns
+    -------
+    None
+    '''
+    #This os.system call runs bedtools multicov to count reads in all specified
+    #BAMs for given regions in BED
+    count_file = tempdir / "motif_counts.bed"
+    count_file_header = tempdir / "motif_counts.header.fpkm.bed"
+
+    #pybedtools implementation (incomplete)
+    # pybed_count = BedTool(bedfile.as_posix()).multi_bam_coverage(bams=bam1+bam2)
+    # pybed_count.saveas(count_file, trackline=("#chrom\tstart\tstop\tregion\t" 
+    #                                             + '\t'.join([label1]*len(bam1)) + "\t" 
+    #                                             + '\t'.join([label2]*len(bam2)) + "\n"))
+
+    #Bedtools implementation
+    multicov_command = ["bedtools", "multicov", "-s", 
+                        "-bams"] + bam1+bam2 + ["-bed", bedfile]
+    with open(count_file, 'w') as outfile:
+        subprocess.run(multicov_command, stdout=outfile, check=True)
+
+    # This section adds a header to the count_file and reformats it to remove 
+    # excess information and add a column with the region for later use
+    outfile = open(count_file_header, 'w')
+    outfile.write("#chrom\tstart\tstop\tregion\t" 
+                    + '\t'.join([label1]*len(bam1)) + "\t" 
+                    + '\t'.join([label2]*len(bam2)) + "\n")
+    motif_fpkm = {}
+    with open(count_file) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            chrom,start,stop,motif = line[:4]
+            length = float(stop) - float(start)
+            fpkm = [float(c)/(m/1000000.0)/length for c,m in zip(line[-(len(bam1)+len(bam2)):], millions_mapped)]
+            motif_fpkm[motif] = np.mean(fpkm)
+            outfile.write('\t'.join([chrom,start,stop]) + "\t" 
+                            + motif + "\t"
+                            + '\t'.join([str(f) for f in fpkm]) + "\n")
+    outfile.close()
+    return motif_fpkm
 
 #==============================================================================
 def sum_reads(count_file=None, sample_number=None):
@@ -253,7 +334,7 @@ def sum_reads(count_file=None, sample_number=None):
         F.readline()
         for line in F:
             line = line.strip('\n').split('\t')
-            [x+float(y) for x,y in zip(millions_mapped,line[-1*sample_number:])]
+            millions_mapped = [x+float(y) for x,y in zip(millions_mapped,line[-1*sample_number:])]
 
     return millions_mapped
 

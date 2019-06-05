@@ -39,7 +39,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
             largewindow=None, smallwindow=None, md=None, mdd=None, cpus=None, 
             jobid=None, pvals=None, fcs=None, p_cutoff=None, figuredir=None, 
             plotall=False, fimo_motifs=None, meta_profile_dict=None, 
-            label1=None, label2=None, dpi=None):
+            label1=None, label2=None, dpi=None, motif_fpkm={}):
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -105,7 +105,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         mdd = config.vars['MDD']
         cpus = config.vars['CPUS']
         jobid = config.vars['JOBID']
-        p_cutoff = config.vars['PVALCUTOFF']
+        p_cutoff = config.vars['PADJCUTOFF']
         figuredir = config.vars['FIGUREDIR']
         plotall = config.vars['PLOTALL']
         fimo_motifs = config.vars['FIMO_MOTIFS']
@@ -114,6 +114,10 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         label2 = config.vars['LABEL2']
         dpi = config.vars['DPI']
         output_type = config.vars['OUTPUT_TYPE']
+        try:
+            motif_fpkm = config.vars['MOTIF_FPKM']
+        except:
+            motif_fpkm = {}
 
     print("Calculating enrichment...", flush=True, file=sys.stderr)
 
@@ -128,14 +132,15 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                         p_cutoff=p_cutoff, figuredir=figuredir, 
                         largewindow=largewindow, fimo_motifs=fimo_motifs, 
                         meta_profile_dict=meta_profile_dict, label1=label1, 
-                        label2=label2, dpi=dpi, fcs=fcs)
+                        label2=label2, dpi=dpi, fcs=fcs, motif_fpkm=motif_fpkm, 
+                        tests=len(motif_distances))
         results = multiprocess.main(function=area_under_curve, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
         # results = list()
         # for motif_distance in motif_distances:
         #     results.append(area_under_curve(motif_distance, **auc_keywords))
-        padj_bonferroni(results)
+        # padj_bonferroni(results)
     elif enrichment == 'anderson-darling':
         results = multiprocess.main(function=anderson_darling, 
                                         args=motif_distances, debug=debug, 
@@ -201,7 +206,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
                         plotall=None, p_cutoff=None, figuredir=None, 
                         largewindow=None, fimo_motifs=None, 
                         meta_profile_dict=None, label1=None, label2=None, 
-                        dpi=None, fcs=None):
+                        dpi=None, fcs=None, tests=None, motif_fpkm=None):
     '''Calculates an enrichment score using the area under the curve. This
         method is not as sensitive to artifacts as other methods. It works well
         as an asymmetry detector and will be good at picking up cases where
@@ -212,6 +217,10 @@ def area_under_curve(distances, use_config=True, output_type=None,
         #sort distances based on the ranks from TF bed file
         #and calculate the absolute distance
         motif = distances[0]
+        try:
+            fpkm = motif_fpkm[motif]
+        except KeyError:
+            fpkm = 0
         distances = distances[1:]
         distances_abs = [abs(x)  if x != '.' else x for x in distances]
 
@@ -219,7 +228,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
 
         #Filter any TFs/files without any hits
         if hits == 0:
-            return [motif, 0.0, 0, 1.0]
+            return [motif, 0.0, 0, fpkm, 1.0]
 
         #Get -exp() of distance and get cumulative scores
         #Filter distances into quartiles to get middle distribution
@@ -229,7 +238,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         try:
             average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
         except ZeroDivisionError:
-            return [motif, 0.0, 0, 1.0]
+            return [motif, 0.0, 0, fpkm, 1.0]
         
         score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
         total = sum(score)
@@ -255,6 +264,8 @@ def area_under_curve(distances, use_config=True, output_type=None,
         p = min(norm.cdf(auc,mu,sigma), 1-norm.cdf(auc,mu,sigma))
         if math.isnan(p):
             p = 1.0
+        
+        p = p*tests if p*tests <=1 else 1
 
         if output_type=='html' or plotall or p < p_cutoff:
             from TFEA import plot
@@ -276,7 +287,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         # current exception being handled.
         print(traceback.print_exc())
         raise e
-    return [motif, auc, hits, p]
+    return [motif, auc, hits, fpkm, p]
 
 #==============================================================================
 def area_under_curve_bgcorrect(distances, use_config=False, output_type=None, 

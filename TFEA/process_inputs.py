@@ -152,7 +152,6 @@ def read_arguments():
                                         'Options for performing motif scanning')
     scanner_options.add_argument('--genomefasta', help=("Genomic fasta file"), 
                                     dest='GENOMEFASTA')
-    
     scanner_options.add_argument('--fimo_motifs', help=("Full path to a .meme "
                                     "formatted motif databse file. Some "
                                     "databases included in motif_databases "
@@ -202,9 +201,6 @@ def read_arguments():
     output_options.add_argument('--padjcutoff', help=("A p-adjusted cutoff "
                                     "value that determines some plotting output."), 
                                     dest='PADJCUTOFF')
-    output_options.add_argument('--pvalcutoff', help=("A p-value cutoff "
-                                    "value that determines some plotting output."), 
-                                    dest='PVALCUTOFF')
     output_options.add_argument('--plotall', help=("Plot graphs for all motifs."
                                     "Warning: This will make TFEA run much slower and"
                                     "will result in a large output folder."), 
@@ -220,6 +216,13 @@ def read_arguments():
                                 "in parallel. Note: Increasing this value will "
                                 "significantly increase memory footprint. "
                                 "Default: 1"), dest='CPUS')
+    misc_options.add_argument('--mem', help=("Amount of memory to request for"
+                                "sbatch script. Default: 50gb"), dest='MEM')
+    misc_options.add_argument('--motif_annotations', help=("A bed file "
+                                "specifying genomic coordinates for genes "
+                                "corresponding to motifs. Motif name must "
+                                "be in the 4th column and match what is in "
+                                "the database."), dest='MOTIF_ANNOTATIONS')
 
     #Set default arguments and possible options or types
     # Notes: 
@@ -288,9 +291,10 @@ def read_arguments():
                     'SMALLWINDOW': [150, [int]], 
                     'DPI': [100, [int]], 
                     'PADJCUTOFF': [0.001, [float]], 
-                    'PVALCUTOFF': [0.01, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'CPUS': [1, [int]], 
+                    'MEM': ['50gb', [str]],
+                    'MOTIF_ANNOTATIONS': [False, [Path, bool]],
                     'PLOTALL': [False, [bool]]}
 
     #Save default arguments in config
@@ -533,8 +537,7 @@ def create_directories(srcdirectory=None):
         write_rerun(args=sys.argv, outputdir=config.vars['OUTPUT'])
         var_file = config.vars['OUTPUT'] / 'vars.txt'
         var_file.write_text(str(config.vars))
-        scriptdir = srcdirectory.parent / 'cluster_scripts'
-        script = scriptdir / 'run_main.sbatch'
+        script = srcdirectory / 'main.sbatch'
         email = str(config.vars['SBATCH'])
         error_file = config.vars['E_AND_O'] / ('TFEA_'+config.vars['OUTPUT'].name+'.err')
         args = sys.argv
@@ -546,6 +549,8 @@ def create_directories(srcdirectory=None):
                                 "--mail-user=" + email, 
                                 "--export=cmd=" + ' '.join(args), 
                                 "--job-name=TFEA_" + config.vars['OUTPUT'].name, 
+                                "--ntasks=" + str(config.vars['CPUS']),
+                                "--mem=" + str(config.vars['MEM']),
                                 script], stderr=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, check=True)
         except subprocess.CalledProcessError as e:
