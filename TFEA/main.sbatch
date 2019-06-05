@@ -13,7 +13,7 @@
 #SBATCH --ntasks=10
 
 ### Allocate the amount of memory needed
-#SBATCH --mem=10gb
+#SBATCH --mem=50gb
 
 ### Setting to mail when the job is complete
 #SBATCH --error /scratch/Users/joru1876/e_and_o/%x.err
@@ -35,8 +35,6 @@ module load python/3.6.3/pybedtools/0.7.10
 
 module load bedtools/2.25.0
 module load meme/5.0.3
-
-export PATH=$PATH:/opt/meme/5.0.3/libexec/meme-5.0.3/
 
 ### now call your program
 
