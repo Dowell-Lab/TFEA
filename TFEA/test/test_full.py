@@ -17,15 +17,9 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 import os
 import sys
 import unittest
-import warnings
-import tracemalloc
 import subprocess
 import shutil
 from pathlib import Path
-
-import numpy as np
-
-from .context import exceptions
 
 #Tests
 #==============================================================================
@@ -44,7 +38,7 @@ def execute(cmd):
 
 class TestMain(unittest.TestCase):
     def setUp(self):
-        self.srcdir = Path(__file__).parent.parent.parent
+        self.srcdir = Path(__file__).parent
         self.testdir = self.srcdir / 'test_files'
         self.bed1 = [self.testdir / 'SRR1105736.tfit_bidirs.chr22.bed', 
                     self.testdir / 'SRR1105737.tfit_bidirs.chr22.bed']
@@ -131,4 +125,4 @@ class TestMain(unittest.TestCase):
     #     self.assertTrue((self.testdir / 'test_rep2' / 'mdd_results.txt').exists())
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2, failfast=True)

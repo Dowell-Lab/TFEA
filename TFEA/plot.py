@@ -222,7 +222,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     sigx = [x for x, p in zip(xlist, plist) if p < p_cutoff]
     sigy = [p for x, p in zip(ylist, plist) if p < p_cutoff]
 
-    plt.figure(figsize=(7,6))
+    F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     ax.scatter(xlist, ylist, color='navy', edgecolor='', s=50)
     ax.scatter(sigx, sigy, color='red', edgecolor='', s=50)
@@ -237,7 +237,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     #                 labelbottom=True)
 
     # plt.tight_layout()
-    plt.savefig(savepath, dpi=dpi) #, bbox_inches='tight')
+    F.savefig(savepath, dpi=dpi) #, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
@@ -259,7 +259,7 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     sigx = [x for x, p in zip(xlist, plist) if p < p_cutoff]
     sigy = [p for x, p in zip(ylist, plist) if p < p_cutoff]
 
-    plt.figure(figsize=(7,6))
+    F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     ax.scatter(xlist, ylist, color='navy', edgecolor='', s=50)
     ax.scatter(sigx, sigy, color='red', edgecolor='', s=50)
@@ -274,7 +274,7 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     #                 labelbottom=True)
 
     # plt.tight_layout()
-    plt.savefig(savepath, dpi=dpi) #, bbox_inches='tight')
+    F.savefig(savepath, dpi=dpi) #, bbox_inches='tight')
     plt.close()
 
 #==============================================================================

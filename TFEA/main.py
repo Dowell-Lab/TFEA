@@ -18,7 +18,7 @@ def run():
     from pathlib import Path
     #Add TFEA srcdirectory into path
     srcdirectory = Path(__file__).absolute().parent
-    sys.path.insert(0, srcdirectory.parent)
+    sys.path.insert(0, srcdirectory)
 
     from TFEA import process_inputs
 
@@ -45,14 +45,12 @@ def run():
     '''
     test_install = parser.parse_args().TEST_INSTALL
     if test_install:
-        subprocess.call(["python3", "-m", "unittest", "-v", 
-                            srcdirectory / 'test' / 'test_install.py'])
+        subprocess.call(["python3", srcdirectory / 'test' / 'test_install.py'])
         sys.exit()
 
     test_full = parser.parse_args().TEST_FULL
     if test_full:
-        subprocess.call(["python3", "-m", "unittest", "-v", "-f", 
-                            srcdirectory / 'test' / 'test_full.py'])
+        subprocess.call(["python3", srcdirectory / 'test' / 'test_full.py'])
         sys.exit()
 
     #VERIFICATION OF USER INPUTS
@@ -137,7 +135,7 @@ def run():
     from TFEA import output
     output.main()
 
-    print("TFEA done.", file=sys.stderr)
+    print("TFEA done. Output in:", config.vars['OUTPUT'], file=sys.stderr)
 
     #==============================================================================
     #END OF MAIN SCRIPT

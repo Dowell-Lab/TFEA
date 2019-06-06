@@ -1,0 +1,24 @@
+# 1-order Markov frequencies from file /Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA/TFEA/test/test_files/test_output/temp_files/ranked_file.fa
+# seqs: 305    min: 3000    max: 3000    avg: 3000.0    sum: 915000    alph: DNA
+# order 0
+A 2.260e-01
+C 2.740e-01
+G 2.740e-01
+T 2.260e-01
+# order 1
+AA 6.064e-02
+AC 4.866e-02
+AG 7.463e-02
+AT 4.205e-02
+CA 7.139e-02
+CC 9.043e-02
+CG 3.758e-02
+CT 7.463e-02
+GA 5.976e-02
+GC 7.520e-02
+GG 9.043e-02
+GT 4.866e-02
+TA 3.415e-02
+TC 5.976e-02
+TG 7.139e-02
+TT 6.064e-02

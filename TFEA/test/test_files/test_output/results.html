@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+    <title>TFEA Results condition1 vs. condition2</title>
+    <style>
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .row {
+        display: flex; /* equal height of the children */
+        width: 100%;
+        padding-bottom: 50px
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #dddddd;
+        }
+    </style>
+    </head>
+    <body style="width:1300px; margin:0 auto;">
+
+        <h1>TFEA Results condition1 vs. condition2</h1>
+        <div class="row">
+            <div style="float: left; width: 45%">
+                <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
+            </div>
+            <div style="float: left; width: 45%">
+                <img src="./plots/TFEA_volcano.png" alt="DE-Seq MA-Plot">
+            </div>
+        </div>
+        <div class="row">
+            <div style="float: left; width:45%">
+                <img src="./plots/DESEQ_MA_Plot.png" alt="Differential MD-Score P-Value                     Histogram">
+            </div>
+            <div id="User Inputs" style="float: right; width: 45%">
+                <p><b>PADJ < 0.001</b></p>
+                <p><a href="./inputs.txt">User Inputs</a></p>
+                <p><a href="./plots/MD_MA.png">MD MA-Plot</a> |                     <a href="./plots/MD_volcano.png">MD VolcanoPlot</a></p>
+                <p><a href="./plots/MDD_MA.png">MDD MA-Plot</a> |                     <a href="./plots/MDD_volcano.png">MDD VolcanoPlot</a></p>
+                <table>
+                    <tr>
+                        <th>Module</th>
+                        <th>Value</th>
+                        <th>Time (hh:mm:ss)</th>
+                    </tr>
+                <tr>
+                        <td>COMBINE</td>
+                        <td>merge all</td>
+                        <td>0:00:00</td>
+                    </tr><tr>
+                        <td>RANK</td>
+                        <td>deseq</td>
+                        <td>0:00:09</td>
+                    </tr><tr>
+                        <td>SCANNER</td>
+                        <td>fimo</td>
+                        <td>0:00:00</td>
+                    </tr><tr>
+                        <td>ENRICHMENT</td>
+                        <td>auc</td>
+                        <td>0:00:13</td>
+                    </tr><tr>
+                        <td>OUTPUT</td>
+                        <td>html</td>
+                        <td>0:00:00</td>
+                    </tr><tr>
+                        <td><b>Total</b></td>
+                        <td> </td>
+                        <td><b>0:00:23</b></td>
+                    </tr>
+                </table>   
+            </div>
+        </div>
+        <div>
+            <div id="Positive AUC Value" style="float: left; width:45%">
+                <h1>Positive AUC Value</h1>
+                <table> 
+                    <tr>
+                    <th>TF</th>
+<th>AUC</th>
+<th>Hits</th>
+<th>FPKM</th>
+<th>P-adj</th>
+
+            <tr>
+                <td><a href="./plots/TBX1_HUMAN.H11MO.0.D.results.html">TBX1_HUMAN.H11MO.0.D</td><td>0.0216</td>
+<td>49</td>
+<td>0.229</td>
+<td>0.604</td>
+            </tr>
+                                
+        </table>
+    </div>
+
+    <div id="Negative AUC Value" style="float: right; width: 45%">
+        <h1>Negative AUC Value</h1>
+        <table> 
+            <tr>
+                <th>TF</th>
+<th>AUC</th>
+<th>Hits</th>
+<th>FPKM</th>
+<th>P-adj</th>
+
+            <tr>
+                <td><a href="./plots/SOX10_HUMAN.H11MO.0.B.results.html">SOX10_HUMAN.H11MO.0.B</td><td>-0.0731</td>
+<td>5</td>
+<td>0.00483</td>
+<td>0.638</td>
+            </tr>
+                            
+            </table>
+        </div>
+        </div>
+
+    </body>
+    </html>

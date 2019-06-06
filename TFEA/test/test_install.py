@@ -15,24 +15,28 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 #Imports
 #==============================================================================
 import os
-import sys
 import unittest
-import warnings
-import tracemalloc
 import subprocess
-import shutil
+import warnings
 from pathlib import Path
-
-import numpy as np
-
-from .context import exceptions
 
 #Tests
 #==============================================================================
 class TestMain(unittest.TestCase):
     def setUp(self):
-        self.srcdir = Path(__file__).parent.parent.parent
+        self.srcdir = Path(__file__).parent
         self.testdir = self.srcdir / 'test_files'
+        # self.testdir = Path(__file__).parent
+
+    def test_python_packages(self):
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            import matplotlib
+            import numpy
+            import scipy
+            import pybedtools
+            import psutil
+            import HTSeq
 
     def test_bedtools(self):
         command = ["bedtools", "--help"]
@@ -119,4 +123,4 @@ class TestMain(unittest.TestCase):
             raise AssertionError("DE-Seq2 not installed")
 
 if __name__ == '__main__':
-    unittest.main()
+    unittest.main(verbosity=2)
