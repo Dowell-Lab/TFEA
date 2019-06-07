@@ -20,7 +20,6 @@ import math
 import time
 import datetime
 import numpy as np
-import matplotlib.pyplot as plt
 
 from TFEA import multiprocess
 from TFEA import plot

@@ -237,7 +237,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     #                 labelbottom=True)
 
     # plt.tight_layout()
-    F.savefig(savepath, dpi=dpi) #, bbox_inches='tight')
+    F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
@@ -274,7 +274,7 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     #                 labelbottom=True)
 
     # plt.tight_layout()
-    F.savefig(savepath, dpi=dpi) #, bbox_inches='tight')
+    F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
     plt.close()
 
 #==============================================================================

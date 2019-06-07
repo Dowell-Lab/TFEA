@@ -32,6 +32,7 @@ class TestMain(unittest.TestCase):
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             import matplotlib
+            matplotlib.use('Agg')
             import numpy
             import scipy
             import pybedtools
