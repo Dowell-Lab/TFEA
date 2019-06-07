@@ -47,11 +47,24 @@ def run():
     if test_install:
         subprocess.call(["python3", srcdirectory / 'test' / 'test_install.py'])
         sys.exit()
-
+        
     test_full = parser.parse_args().TEST_FULL
     if test_full:
-        subprocess.call(["python3", srcdirectory / 'test' / 'test_full.py'])
-        sys.exit()
+        sbatch = parser.parse_args().SBATCH
+        if not sbatch:
+            subprocess.call(["python3", srcdirectory / 'test' / 'test_full.py'])
+            sys.exit()
+        else:
+            error_file = str(srcdirectory / 'test' / 'test_files' / 'TFEA_test.err')
+            output_file = str(srcdirectory / 'test' / 'test_files' / 'TFEA_test.out')
+            subprocess.call(["sbatch", 
+            "--error=" + error_file, 
+            "--output=" +  output_file,
+            "--mail-user=" + sbatch,
+            srcdirectory / 'test' / 'test.sbatch'])
+            print(("TFEA tests submitted as sbatch job. It can be "
+                "monitored using:\ntail -f " + error_file))
+            sys.exit()
 
     #VERIFICATION OF USER INPUTS
     #==============================================================================

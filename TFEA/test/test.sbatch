@@ -7,21 +7,21 @@
 #SBATCH -p short
 
 ###Specify WallTime
-#SBATCH --time=24:00:00
+#SBATCH --time=0:10:00
 
 ### Specify the number of nodes/cores
-#SBATCH --ntasks=10
+#SBATCH --ntasks=1
 
 ### Allocate the amount of memory needed
-#SBATCH --mem=50gb
+#SBATCH --mem=1gb
 
 ### Setting to mail when the job is complete
-#SBATCH --error /scratch/Users/joru1876/e_and_o/%x.err
-#SBATCH --output /scratch/Users/joru1876/e_and_o/%x.out
+###SBATCH --error /scratch/Users/joru1876/e_and_o/%x.err
+###SBATCH --output /scratch/Users/joru1876/e_and_o/%x.out
 
 ### Set your email address
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=joru1876@colorado.edu
+###SBATCH --mail-user=joru1876@colorado.edu
 
 ### Load required modules
 module purge
