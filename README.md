@@ -128,6 +128,12 @@ TFEA --test-install
 TFEA --test-full
 ```
 
+If on a compute cluster with slurm the --sbatch flag is compatible with --test-full and is recommended on FIJI. Execute like so:
+
+```
+TFEA --test-full --sbatch your_email@address.com
+```
+
 Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA pipeline. Test files are provided within the 'test_files' directory in this repository.
 
 Using flags
