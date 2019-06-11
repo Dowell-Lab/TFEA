@@ -58,7 +58,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
     header = ['#TF', 'AUC', 'Events', 'p-adj', 'fpkm']
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
-                sortindex=[-2,-1], header=header)
+                sortindex=[2, 1, -1], header=header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
                     xlabel='Log10(Motif Hits)', 
                     ylabel='Area Under the Curve (AUC)', 
@@ -126,7 +126,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                     module_list=module_list, 
                     outputdir=outputdir, label1=label1, label2=label2, 
                     padj_cutoff=padj_cutoff, plotall=plotall, auc_index=1, 
-                    padj_index=-1)
+                    padj_index=-1, sortindex=[2, 1, -1])
         
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
@@ -151,7 +151,7 @@ def txt_output(results=None, outputdir=None, outname=None,
 #==============================================================================
 def html_output(results=None, module_list=None, outputdir=None,
                 label1=None, label2=None, padj_cutoff=None, plotall=None, 
-                results_header=None, auc_index=1, padj_index=3):
+                results_header=None, auc_index=1, padj_index=-1, sortindex=None):
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -229,6 +229,8 @@ def html_output(results=None, module_list=None, outputdir=None,
     -------
     None
     '''
+    for index in sortindex:
+        results.sort(key=lambda x: x[index])
     outfile = open(os.path.join(outputdir, 'results.html'),'w')
     outfile.write("""<!DOCTYPE html>
     <html>

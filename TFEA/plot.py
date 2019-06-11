@@ -220,7 +220,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     plist = [i[-1] for i in results]
 
     sigx = [x for x, p in zip(xlist, plist) if p < p_cutoff]
-    sigy = [p for x, p in zip(ylist, plist) if p < p_cutoff]
+    sigy = [y for y, p in zip(ylist, plist) if p < p_cutoff]
 
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
@@ -258,6 +258,7 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
 
     sigx = [x for x, p in zip(xlist, plist) if p < p_cutoff]
     sigy = [p for x, p in zip(ylist, plist) if p < p_cutoff]
+    sigy = [-math.log(p, 10) if p != 0 else 0 for p in sigy]
 
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)

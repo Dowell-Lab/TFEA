@@ -38,11 +38,14 @@ def read_arguments():
     inputs = parser.add_argument_group('Main Inputs', 
                                         'Inputs required for full pipeline')
     inputs.add_argument('--output', '-o', help=("Full path to output directory. "
-                        "If it exists, overwrite its contents."), dest='OUTPUT')
+                        "If it exists, overwrite its contents."), dest='OUTPUT', 
+                        metavar='DIR')
     inputs.add_argument('--bed1', nargs='*', help=("Bed files associated with "
-                        "condition 1"), dest='BED1')
+                        "condition 1"), dest='BED1', 
+                        metavar='FILE1 FILE2 ... FILEN')
     inputs.add_argument('--bed2', nargs='*', help=("Bed files associated with "
-                        "condition 2"), dest='BED2')
+                        "condition 2"), dest='BED2', 
+                        metavar='FILE1 FILE2 ... FILEN')
     inputs.add_argument('--bam1', nargs='*', help=("Sorted bam files "
                         "associated with condition 1. Must be indexed."), 
                         dest='BAM1')
@@ -535,8 +538,8 @@ def create_directories(srcdirectory=None):
     else: #--sbatch specified
         make_out_directories(create=True)
         write_rerun(args=sys.argv, outputdir=config.vars['OUTPUT'])
-        var_file = config.vars['OUTPUT'] / 'vars.txt'
-        var_file.write_text(str(config.vars))
+        write_vars(config_vars=config.vars, 
+                    outputfile=config.vars['OUTPUT'] / 'inputs.txt')
         script = srcdirectory / 'main.sbatch'
         email = str(config.vars['SBATCH'])
         error_file = config.vars['E_AND_O'] / ('TFEA_'+config.vars['OUTPUT'].name+'.err')
@@ -575,7 +578,7 @@ def write_rerun(args=None, outputdir=None):
         outfile.write('python3 ' + Path(__file__).absolute().parent.as_posix() + ' ' 
                         + ' '.join(args[1:]))
     
-
+#==============================================================================
 def write_vars(config_vars=None, outputfile=None):
     exclude = ['MOTIF_DISTANCES','MD_DISTANCES1', 'MD_DISTANCES2', 
                 'MDD_DISTANCES1', 'MDD_DISTANCES2', 'PVALS', 'FCS', 

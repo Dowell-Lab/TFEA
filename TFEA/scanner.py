@@ -354,7 +354,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
 
     total_time = time.time() - start_time
     if use_config:
-        SCANNERtime = total_time
+        config.vars['SCANNERtime'] = total_time
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
     if debug:
