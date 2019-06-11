@@ -39,7 +39,8 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
             largewindow=None, smallwindow=None, md=None, mdd=None, cpus=None, 
             jobid=None, pvals=None, fcs=None, p_cutoff=None, figuredir=None, 
             plotall=False, fimo_motifs=None, meta_profile_dict=None, 
-            label1=None, label2=None, dpi=None, motif_fpkm={}):
+            label1=None, label2=None, dpi=None, motif_fpkm={}, 
+            suppress_plots=False):
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -133,7 +134,8 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                         largewindow=largewindow, fimo_motifs=fimo_motifs, 
                         meta_profile_dict=meta_profile_dict, label1=label1, 
                         label2=label2, dpi=dpi, fcs=fcs, motif_fpkm=motif_fpkm, 
-                        tests=len(motif_distances))
+                        tests=len(motif_distances), 
+                        suppress_plots=suppress_plots)
         results = multiprocess.main(function=area_under_curve, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
@@ -206,7 +208,8 @@ def area_under_curve(distances, use_config=True, output_type=None,
                         plotall=None, p_cutoff=None, figuredir=None, 
                         largewindow=None, fimo_motifs=None, 
                         meta_profile_dict=None, label1=None, label2=None, 
-                        dpi=None, fcs=None, tests=None, motif_fpkm=None):
+                        dpi=None, fcs=None, tests=None, motif_fpkm=None, 
+                        suppress_plots=False):
     '''Calculates an enrichment score using the area under the curve. This
         method is not as sensitive to artifacts as other methods. It works well
         as an asymmetry detector and will be good at picking up cases where
@@ -267,7 +270,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         
         p = p*tests if p*tests <=1 else 1
 
-        if output_type=='html' or plotall or p < p_cutoff:
+        if (output_type=='html' or plotall or p < p_cutoff) and not suppress_plots:
             from TFEA import plot
             plotting_score = [(float(x)/total) for x in score]
             plotting_cumscore = np.cumsum(plotting_score)

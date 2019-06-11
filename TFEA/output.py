@@ -56,7 +56,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    header = ['#TF', 'AUC', 'Events', 'p-adj', 'fpkm']
+    header = ['#TF', 'AUC', 'Events', 'fpkm', 'p-adj']
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
                 sortindex=[2, 1, -1], header=header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
