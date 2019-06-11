@@ -33,7 +33,10 @@ def main():
     with open(inputs['gene_names']) as F:
         for line in F:
             motif, gene = line.strip('\n').split('\t')
-            motif_gene[gene] = motif
+            if gene not in motif_gene:
+                motif_gene[gene] = [motif]
+            else:
+                motif_gene[gene].append(motif)
 
     #Parse annotation file, tie motifs to genomic coordinates
     motif_annotation = {}
@@ -43,8 +46,9 @@ def main():
             names = linelist[3].split(';')
             for n in names:
                 if n in motif_gene:
-                    motif = motif_gene[n]
-                    motif_annotation[motif] = ['\t'.join(linelist[:3]), linelist[5]]
+                    motifs = motif_gene[n]
+                    for motif in motifs:
+                        motif_annotation[motif] = ['\t'.join(linelist[:3]), linelist[5]]
 
     #Write results to output
     with open(inputs['output'], 'w') as outfile:

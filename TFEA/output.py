@@ -337,7 +337,10 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    if type(number_result) == float or type(number_result) == int:
+                        outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             elif plotall:
@@ -346,7 +349,10 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    if type(number_result) == float or type(number_result) == int:
+                        outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 
@@ -355,7 +361,10 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td>"""+motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    if type(number_result) == float or type(number_result) == int:
+                        outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 
@@ -383,7 +392,10 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    if type(number_result) == float or type(number_result) == int:
+                        outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             elif plotall:
@@ -392,7 +404,10 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    if type(number_result) == float or type(number_result) == int:
+                        outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             else:
@@ -400,7 +415,10 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td>"""+motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    if type(number_result) == float or type(number_result) == int:
+                        outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 

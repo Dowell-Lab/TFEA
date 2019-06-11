@@ -17,17 +17,15 @@ import numpy as np
 
 #Main Function
 #==============================================================================
-def run(fasta_file, simulations=None, sequences=None, output=None):
-    for i in range(simulations):
-        sequence_pull = get_sequence_indices(fasta=fasta_file, 
-                                                sequence_n=sequences)
+def run(outputpath, fasta_file=None, sequence_n=None):
+    sequence_pull = get_sequence_indices(fasta=fasta_file, 
+                                            sequence_n=sequence_n)
 
-        sequences = pull_sequences(fasta=fasta_file, 
-                                    sequence_pull=sequence_pull, 
-                                    sequence_n=sequences)
+    sequences = pull_sequences(fasta=fasta_file, 
+                                sequence_pull=sequence_pull, 
+                                sequence_n=sequence_n)
 
-        write_fasta(sequences=sequences, 
-                    outputpath=output / (str(i) + 'Random.fa'))
+    write_fasta(sequences=sequences, outputpath=outputpath)
 
 #Auxiliary Functions
 #==============================================================================
@@ -70,7 +68,7 @@ def get_sequence_indices(fasta=None, sequence_n=None):
         a list of indices corresponding to sequences to pull from the inputted fasta file
     '''
     total_sequences = count_fasta(fasta)
-    sequence_pull = np.random.choice(total_sequences, size=(sequence_n), replace=False)
+    sequence_pull = np.random.choice(total_sequences, size=int(sequence_n), replace=False)
     
     return sequence_pull
 

@@ -223,7 +223,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         try:
             fpkm = motif_fpkm[motif]
         except KeyError:
-            fpkm = 0
+            fpkm = 'N/A'
         distances = distances[1:]
         distances_abs = [abs(x)  if x != '.' else x for x in distances]
 
