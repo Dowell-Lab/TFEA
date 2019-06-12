@@ -208,8 +208,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
                         plotall=None, p_cutoff=None, figuredir=None, 
                         largewindow=None, fimo_motifs=None, 
                         meta_profile_dict=None, label1=None, label2=None, 
-                        dpi=None, fcs=None, tests=None, motif_fpkm=None, 
-                        suppress_plots=False):
+                        dpi=None, fcs=None, tests=None, motif_fpkm=None):
     '''Calculates an enrichment score using the area under the curve. This
         method is not as sensitive to artifacts as other methods. It works well
         as an asymmetry detector and will be good at picking up cases where
@@ -270,7 +269,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         
         p = p*tests if p*tests <=1 else 1
 
-        if (output_type=='html' or plotall or p < p_cutoff) and not suppress_plots:
+        if plotall or (output_type=='html' and p < p_cutoff):
             from TFEA import plot
             plotting_score = [(float(x)/total) for x in score]
             plotting_cumscore = np.cumsum(plotting_score)
@@ -290,7 +289,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         # current exception being handled.
         print(traceback.print_exc())
         raise e
-    return [motif, auc, hits, fpkm, p]
+    return [motif, auc, hits, sigma, fpkm, p]
 
 #==============================================================================
 def area_under_curve_bgcorrect(distances, use_config=False, output_type=None, 

@@ -59,7 +59,7 @@ def run():
         random_folder = Path(parser.random_folder)
     elif parser.random_fasta:
         from TFEA.simulate import pull_sequences
-        keyword_args = dict(fastsa_file=parser.random_fasta, 
+        keyword_args = dict(fasta_file=parser.random_fasta, 
                             sequence_n=parser.sequences)
         args = [parent_folder / (str(i) + 'Random.fa') for i in range(int(parser.simulations))]
         multiprocess.main(function=pull_sequences.run, args=args, 
@@ -90,7 +90,7 @@ def run():
                         largewindow=parser.largewindow, 
                         smallwindow=parser.smallwindow, 
                         md=False, mdd=False, p_cutoff=0,
-                        cpus=int(parser.cpus), jobid=0, suppress_plots=True)
+                        cpus=int(parser.cpus), jobid=0, output_type='txt')
         for result in results:
             motif = result[0]
             padj = result[-1]

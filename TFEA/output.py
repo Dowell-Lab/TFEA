@@ -56,9 +56,10 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    header = ['#TF', 'AUC', 'Events', 'fpkm', 'p-adj']
+    header = ['#TF', 'AUC', 'Events', 'STD','FPKM', 'P-adj']
+    sort_index = [3, 2, 1, -1]
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
-                sortindex=[2, 1, -1], header=header)
+                sortindex=sort_index, header=header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
                     xlabel='Log10(Motif Hits)', 
                     ylabel='Area Under the Curve (AUC)', 
@@ -115,18 +116,17 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                         ('OUTPUT', config.vars['OUTPUT_TYPE'], config.vars['OUTPUTtime'])]
         else:
             module_list = []
-        results_header = ['TF', 'AUC', 'Hits', 'FPKM', 'P-adj']
-        create_motif_result_htmls(results=results, results_header=results_header, 
+        create_motif_result_htmls(results=results, results_header=header, 
                                     outputdir=outputdir, 
                                     padj_cutoff=padj_cutoff, 
                                     singlemotif=singlemotif, 
                                     plotall=plotall, auc_index=1, 
                                     padj_index=-1)
-        html_output(results=results, results_header=results_header,
+        html_output(results=results, results_header=header,
                     module_list=module_list, 
                     outputdir=outputdir, label1=label1, label2=label2, 
                     padj_cutoff=padj_cutoff, plotall=plotall, auc_index=1, 
-                    padj_index=-1, sortindex=[2, 1, -1])
+                    padj_index=-1, sortindex=sort_index)
         
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
