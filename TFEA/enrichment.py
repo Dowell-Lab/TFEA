@@ -24,8 +24,7 @@ import datetime
 import traceback
 import numpy as np
 import math
-from scipy.stats import norm
-from scipy.stats import anderson_ksamp
+from scipy import stats
 
 from TFEA import config
 from TFEA import multiprocess
@@ -134,8 +133,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                         largewindow=largewindow, fimo_motifs=fimo_motifs, 
                         meta_profile_dict=meta_profile_dict, label1=label1, 
                         label2=label2, dpi=dpi, fcs=fcs, motif_fpkm=motif_fpkm, 
-                        tests=len(motif_distances), 
-                        suppress_plots=suppress_plots)
+                        tests=len(motif_distances))
         results = multiprocess.main(function=area_under_curve, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
@@ -260,10 +258,11 @@ def area_under_curve(distances, use_config=True, output_type=None,
         sim_auc = permute_auc(distances=normalized_score, trend=trend, 
                                 permutations=permutations)
 
-        #Calculate p-value                                                                                                                                                          
+        #Calculate p-value
+        z = stats.zscore([auc] + sim_auc)[0]
         mu = np.mean(sim_auc)
         sigma = np.std(sim_auc)
-        p = min(norm.cdf(auc,mu,sigma), 1-norm.cdf(auc,mu,sigma))
+        p = min(stats.norm.cdf(auc,mu,sigma), 1-stats.norm.cdf(auc,mu,sigma))
         if math.isnan(p):
             p = 1.0
         
@@ -289,7 +288,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         # current exception being handled.
         print(traceback.print_exc())
         raise e
-    return [motif, auc, hits, sigma, fpkm, p]
+    return [motif, auc, hits, z, sigma, fpkm, p]
 
 #==============================================================================
 def area_under_curve_bgcorrect(distances, use_config=False, output_type=None, 
@@ -353,7 +352,7 @@ def area_under_curve_bgcorrect(distances, use_config=False, output_type=None,
         #Calculate p-value                                                                                                                                                          
         mu = np.mean(sim_auc)
         sigma = np.std(sim_auc)
-        p = min(norm.cdf(auc,mu,sigma), 1-norm.cdf(auc,mu,sigma))
+        p = min(stats.norm.cdf(auc,mu,sigma), 1-stats.norm.cdf(auc,mu,sigma))
         if math.isnan(p):
             p = 1.0
 
@@ -425,13 +424,13 @@ def max_GSEA(distances, use_config=False, output_type=None, cutoff=None,
         mu = np.mean(simESsubset)
         NES = -(actualES/mu)
         sigma = np.std(simESsubset)
-        p = norm.cdf(actualES, mu, sigma)
+        p = stats.norm.cdf(actualES, mu, sigma)
     else:
         simESsubset = [x for x in simES if x > 0]
         mu = np.mean(simESsubset)
         NES = actualES/mu
         sigma = np.std(simESsubset)
-        p = 1-norm.cdf(actualES, mu, sigma)
+        p = 1-stats.norm.cdf(actualES, mu, sigma)
 
     if math.isnan(p):
         p = 1.0
@@ -548,7 +547,7 @@ def anderson_darling(distances):
     expected_distribution =  [x for x in distances[int(q1):int(q3)] if x != '.']
     observed_distribution = [x for x in distances if x != '.']
 
-    stat, _, sig = anderson_ksamp([observed_distribution, expected_distribution])
+    stat, _, sig = stats.anderson_ksamp([observed_distribution, expected_distribution])
 
     return [motif, stat, hits, sig]
 
@@ -595,7 +594,7 @@ def md_score_p(results):
                 z = (md2-md1-mean)/math.sqrt(SE)
             except ZeroDivisionError:
                 z=0
-            cdf=norm.cdf(z,0,1)
+            cdf=stats.norm.cdf(z,0,1)
             p=min(cdf,1-cdf)*2
             md = md2-md1-mean
             total = (N1 + N2)/2.0

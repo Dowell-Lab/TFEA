@@ -75,6 +75,7 @@ def run():
     motif_counts = {}
     simulations = 0
     for fasta_file in random_folder.glob('*.fa'):
+        print("Scanning:", str(fasta_file),file=sys.stderr)
         motif_distances, _, _, _, _ = scanner.main(use_config=False, 
                         fasta_file=fasta_file, scanner='fimo', 
                         md=False, largewindow=parser.largewindow, 

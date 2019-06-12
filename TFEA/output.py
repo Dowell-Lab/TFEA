@@ -56,10 +56,10 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    header = ['#TF', 'AUC', 'Events', 'STD','FPKM', 'P-adj']
+    TFEA_header = ['#TF', 'AUC', 'Events', 'Z-score','STD','FPKM', 'P-adj']
     sort_index = [3, 2, 1, -1]
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
-                sortindex=sort_index, header=header)
+                sortindex=sort_index, header=TFEA_header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
                     xlabel='Log10(Motif Hits)', 
                     ylabel='Area Under the Curve (AUC)', 
@@ -116,13 +116,13 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                         ('OUTPUT', config.vars['OUTPUT_TYPE'], config.vars['OUTPUTtime'])]
         else:
             module_list = []
-        create_motif_result_htmls(results=results, results_header=header, 
+        create_motif_result_htmls(results=results, results_header=TFEA_header, 
                                     outputdir=outputdir, 
                                     padj_cutoff=padj_cutoff, 
                                     singlemotif=singlemotif, 
                                     plotall=plotall, auc_index=1, 
                                     padj_index=-1)
-        html_output(results=results, results_header=header,
+        html_output(results=results, results_header=TFEA_header,
                     module_list=module_list, 
                     outputdir=outputdir, label1=label1, label2=label2, 
                     padj_cutoff=padj_cutoff, plotall=plotall, auc_index=1, 
@@ -337,9 +337,9 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    if type(number_result) == float or type(number_result) == int:
+                    try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
-                    else:
+                    except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
@@ -349,9 +349,9 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    if type(number_result) == float or type(number_result) == int:
+                    try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
-                    else:
+                    except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
@@ -361,9 +361,9 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td>"""+motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    if type(number_result) == float or type(number_result) == int:
+                    try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
-                    else:
+                    except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
@@ -392,9 +392,9 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    if type(number_result) == float or type(number_result) == int:
+                    try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
-                    else:
+                    except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
@@ -404,9 +404,9 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    if type(number_result) == float or type(number_result) == int:
+                    try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
-                    else:
+                    except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
@@ -415,9 +415,9 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td>"""+motif+"""</td>""")
                 for number_result in motif_result[1:]:
-                    if type(number_result) == float or type(number_result) == int:
+                    try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
-                    else:
+                    except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
