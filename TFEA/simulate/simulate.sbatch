@@ -4,10 +4,10 @@
 #SBATCH --job-name=TFEA_simulate
 
 ###Specify the queue
-#SBATCH -p short
+#SBATCH -p long
 
 ###Specify WallTime
-#SBATCH --time=24:00:00
+#SBATCH --time=240:00:00
 
 ### Specify the number of nodes/cores
 #SBATCH --ntasks=10

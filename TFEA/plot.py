@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 import subprocess
+import warnings
 
 import numpy as np
 
@@ -279,6 +280,56 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     plt.close()
 
 #==============================================================================
+def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None, 
+                        ylabel=None, savepath=None, dpi=100, x_index=None,
+                        y_index=None, p_index=None, s_index=None, c_index=None):
+    ylist = [i[y_index] for i in results]
+    xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in results]
+    # xlist = [i[x_index]**2 for i in results]
+    plist = [i[p_index] for i in results]
+
+    if s_index != None:
+        slist = [i[s_index] for i in results]
+        print(slist)
+        slist = [((s/max([sigs for sigs, p in zip(slist,plist) if p < p_cutoff]))**2)*100 if p < p_cutoff else 50 for s,p in zip(slist,plist) ]
+        print(slist)
+    else:
+        slist = [50 for i in results]
+    
+    # print([tup for tup in zip(slist,xlist,ylist,[i[0] for i in results])])
+    
+    clist = np.zeros((len(results),4))
+    clist = np.array([[1.0, 0, 0, 0] if p < p_cutoff else [0, 0, 0.4, 0] for p in plist])
+    if c_index != None:
+        tempclist = [i[c_index] for i in results]
+        max_val = max(tempclist)
+        tempclist = [math.sqrt(c/max_val) for c in tempclist]
+        clist[:,3] = tempclist
+    else:
+        clist[:,3] = 1.0
+
+
+    F = plt.figure(figsize=(7,6))
+    ax = plt.subplot(111)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
+        ax.scatter(xlist, ylist, color=clist, edgecolor='', s=slist)
+    # ax.scatter(sigx, sigy, color=sigclist, edgecolor='', s=slist)
+    ax.set_title(title, fontsize=14)
+    ax.set_ylabel(ylabel, fontsize=14)
+
+    ax.set_xlabel(xlabel, fontsize=14)
+    # ax.tick_params(axis='y', which='both', left=False, right=False, 
+    #                 labelleft=True)
+
+    # ax.tick_params(axis='x', which='both', bottom=False, top=False, 
+    #                 labelbottom=True)
+
+    # plt.tight_layout()
+    F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
+    plt.close()
+
+#==============================================================================
 def meme_logo(motif_file, motif_ID, figuredir):
     '''Runs meme2images that creates logo images
     '''
@@ -486,3 +537,23 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
                         labelpad=20)
     plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.png'), dpi=dpi)
                 # bbox_inches='tight')
+
+if __name__ == "__main__":
+    results_file = '/Users/joru1876/Google_Drive/Colorado_University/Jonathan/CECIE/7_WT_DMSO_Nutlin_1hr/results.txt'
+    results = []
+    with open(results_file) as F:
+        for line in F:
+            if '#' not in line[0]:
+                linelist = [float(l) if l != 'N/A' and 'H11MO' not in l else l for l in line.strip('\n').split('\t')]
+                linelist = [0 if l != l else l for l in linelist]
+                results.append(linelist)
+    plot_global_z_v(results, p_cutoff=0.0001, title='MA Plot', 
+                    x_index=2,
+                    y_index=1,
+                    p_index=-1,
+                    s_index=4,
+                    # c_index=-2,
+                    xlabel="Log10 Hits", 
+                    ylabel="AUC", 
+                    savepath='/Users/joru1876/Google_Drive/Colorado_University/Jonathan/CECIE/7_WT_DMSO_Nutlin_1hr/ZV_plot.png', 
+                    dpi=100)

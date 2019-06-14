@@ -196,6 +196,7 @@ def current_mem_usage(jobid, **kwargs):
 
     #Using psutil
     num = psutil.Process(pid=os.getpid()).memory_info().rss
+    # num = psutil.virtual_memory().active
     unit = 'B'
     print(f'(CPU: {psutil.cpu_percent()}%)', file=sys.stderr, **kwargs)
 

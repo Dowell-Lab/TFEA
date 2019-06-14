@@ -63,7 +63,6 @@ def read_arguments():
                         dest='CONFIG')
     inputs.add_argument('--sbatch','-s', help=("Submits an sbatch (slurm) job. "
                         "If specified, input an e-mail address."), dest='SBATCH')
-    
     inputs.add_argument('--test-install','-ti', action='store_true', 
                         help=("Checks whether all requirements are installed "
                         "and command-line runnable."), dest='TEST_INSTALL')
@@ -278,7 +277,7 @@ def read_arguments():
                     'MDD_FASTA2': [False, [Path, bool]],
                     'MDD_PVAL': [0.2, [float, bool]],
                     'MDD_PERCENT': [False, [float, bool]],
-                    'COMBINE': ['intersect/merge', [str, bool]],
+                    'COMBINE': ['merge all', [str, bool]],
                     'RANK': ['deseq', [str, bool]],
                     'SCANNER': ['fimo', [str, bool]],
                     'ENRICHMENT': ['auc', [str]],
@@ -519,6 +518,11 @@ def verify_arguments(parser=None):
     #Verify scanner module
     if not config.vars['GENOMEHITS'] and config.vars['SCANNER'] == 'genome hits':
         raise exceptions.InputError('SCANNER set to "genome hits" without specifying GENOMEHITS')
+    if not config.vars['FIMO_MOTIFS'] and config.vars['SCANNER'] == 'fimo':
+        raise exceptions.InputError('SCANNER set to "fimo" without specifying FIMO_MOTIFS')
+
+    if not config.vars['FASTA_FILE'] and not config.vars['GENOMEFASTA']:
+        raise exceptions.InputError('User inputs require GENOMEFASTA')
 
     print("User arguments verified, all required inputs present and not conflicting.", 
             file=sys.stderr)

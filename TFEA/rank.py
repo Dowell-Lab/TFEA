@@ -36,7 +36,8 @@ from TFEA import plot
 def main(use_config=True, combined_file=None, rank=None, scanner=None, 
             bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
             largewindow=None, mdd=False, mdd_bedfile1=False, mdd_bedfile2=False, 
-            motif_annotations=False, debug=False, jobid=None, figuredir=None):
+            motif_annotations=False, debug=False, jobid=None, figuredir=None, 
+            output_type=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -110,6 +111,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         motif_annotations = config.vars['MOTIF_ANNOTATIONS']
         debug = config.vars['DEBUG']
         jobid = config.vars['JOBID']
+        output_type = config.vars['OUTPUT_TYPE']
     print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
 
     #Begin by counting reads from bam files over the combined_file produced
@@ -135,9 +137,11 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir)
-        q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
-        meta_profile = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
-                            bam1=bam1, bam2=bam2, largewindow=largewindow)
+        meta_profile = {}
+        if output_type == 'html':
+            q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
+            meta_profile = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
+                                bam1=bam1, bam2=bam2, largewindow=largewindow)
     else:
         raise exceptions.InputError("RANK option not recognized.")
     if os.stat(ranked_file).st_size == 0:
@@ -301,7 +305,7 @@ def motif_count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None,
             line = line.strip('\n').split('\t')
             chrom,start,stop,motif = line[:4]
             length = float(stop) - float(start)
-            fpkm = [float(c)/(m/1000000.0)/length for c,m in zip(line[-(len(bam1)+len(bam2)):], millions_mapped)]
+            fpkm = [float(c)/(m/1000000.0)/(length/1000.0) for c,m in zip(line[-(len(bam1)+len(bam2)):], millions_mapped)]
             motif_fpkm[motif] = np.mean(fpkm)
             outfile.write('\t'.join([chrom,start,stop]) + "\t" 
                             + motif + "\t"
@@ -813,8 +817,8 @@ def meta_profile(regionlist=None, region_file=None, largewindow=None,
         posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
         negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
     
-    mil_map1 = mil_map1/rep1number
-    mil_map2 = mil_map2/rep2number
+    mil_map1 = mil_map1/rep1number/1e6
+    mil_map2 = mil_map2/rep2number/1e6
 
     posprofile1 = [x/mil_map1 for x in posprofile1]
     negprofile1 = [x/mil_map1 for x in negprofile1]

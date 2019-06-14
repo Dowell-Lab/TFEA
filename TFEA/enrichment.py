@@ -217,10 +217,11 @@ def area_under_curve(distances, use_config=True, output_type=None,
         #sort distances based on the ranks from TF bed file
         #and calculate the absolute distance
         motif = distances[0]
+        nan = float('Nan')
         try:
             fpkm = motif_fpkm[motif]
         except KeyError:
-            fpkm = 'N/A'
+            fpkm = nan
         distances = distances[1:]
         distances_abs = [abs(x)  if x != '.' else x for x in distances]
 
@@ -228,7 +229,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
 
         #Filter any TFs/files without any hits
         if hits == 0:
-            return [motif, 0.0, 0, fpkm, 1.0]
+            return [motif, nan, hits, nan, nan, fpkm, 1.0]
 
         #Get -exp() of distance and get cumulative scores
         #Filter distances into quartiles to get middle distribution
@@ -238,7 +239,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         try:
             average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
         except ZeroDivisionError:
-            return [motif, 0.0, 0, fpkm, 1.0]
+            return [motif, nan, hits, nan, nan, fpkm, 1.0]
         
         score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
         total = sum(score)
@@ -262,6 +263,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         z = stats.zscore([auc] + sim_auc)[0]
         mu = np.mean(sim_auc)
         sigma = np.std(sim_auc)
+        var = np.var(sim_auc)
         p = min(stats.norm.cdf(auc,mu,sigma), 1-stats.norm.cdf(auc,mu,sigma))
         if math.isnan(p):
             p = 1.0
@@ -288,7 +290,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
         # current exception being handled.
         print(traceback.print_exc())
         raise e
-    return [motif, auc, hits, z, sigma, fpkm, p]
+    return [motif, auc, hits, z, var, fpkm, p]
 
 #==============================================================================
 def area_under_curve_bgcorrect(distances, use_config=False, output_type=None, 

@@ -56,7 +56,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    TFEA_header = ['#TF', 'AUC', 'Events', 'Z-score','STD','FPKM', 'P-adj']
+    TFEA_header = ['#TF', 'AUC', 'Events', 'Z-score','Var','FPKM', 'P-adj']
     sort_index = [3, 2, 1, -1]
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
                 sortindex=sort_index, header=TFEA_header)
@@ -70,6 +70,15 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                     ylabel='-log10(P-adj)', 
                     savepath=figuredir / 'TFEA_volcano.png', 
                     dpi=dpi)
+    plot.plot_global_z_v(results, p_cutoff=p_cutoff, title='TFEA ZV-Plot', 
+                        xlabel='Log10 Variance', 
+                        ylabel='Z-score', 
+                        savepath=figuredir / 'TFEA_ZV.png', dpi=dpi, 
+                        x_index=4,
+                        y_index=3, 
+                        p_index=-1, 
+                        s_index=None, 
+                        c_index=None)
     if md:
         header = ['#TF', 'MD-Score', 'Events', 'p-val']
         txt_output(outputdir=outputdir, results=md_results, 
@@ -143,8 +152,9 @@ def txt_output(results=None, outputdir=None, outname=None,
             outfile.write('\t'.join(header) + '\n')
         elif type(header) == str:
             outfile.write(header + '\n')
-        for index in sortindex:
-            results.sort(key=lambda x: x[index])
+        for index in sortindex[:-1]:
+            results.sort(key=lambda x: x[index], reverse=True)
+        results.sort(key=lambda x: x[sortindex[-1]])
         for values in results:
             outfile.write('\t'.join([str(x) for x in values])+'\n')
 
@@ -229,8 +239,9 @@ def html_output(results=None, module_list=None, outputdir=None,
     -------
     None
     '''
-    for index in sortindex:
-        results.sort(key=lambda x: x[index])
+    for index in sortindex[:-1]:
+        results.sort(key=lambda x: x[index], reverse=True)
+    results.sort(key=lambda x: x[sortindex[-1]])
     outfile = open(os.path.join(outputdir, 'results.html'),'w')
     outfile.write("""<!DOCTYPE html>
     <html>
@@ -273,13 +284,12 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
             </div>
             <div style="float: left; width: 45%">
-                <img src="./plots/TFEA_volcano.png" alt="DE-Seq MA-Plot">
+                <img src="./plots/TFEA_ZV.png" alt="TFEA ZV-Plot">
             </div>
         </div>
         <div class="row">
             <div style="float: left; width:45%">
-                <img src="./plots/DESEQ_MA_Plot.png" alt="Differential MD-Score P-Value \
-                    Histogram">
+                <img src="./plots/DESEQ_MA_Plot.png" alt="Region DE-Seq Plot">
             </div>
             <div id="User Inputs" style="float: right; width: 45%">
                 <p><b>PADJ < """ + str(padj_cutoff) + """</b></p>
