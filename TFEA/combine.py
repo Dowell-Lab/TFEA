@@ -149,7 +149,6 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
             md_merged_bed1.filter(lambda b: b.stop - b.start > size_cut).saveas(combined_file)
             # md_merged_bed2.filter(lambda b: b.stop - b.start > size_cut).each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
             md_merged_bed2.filter(lambda b: b.stop - b.start > size_cut).saveas(combined_file)
-        
 
     #Intersect replicates, merge conditions. For MD intersect condition replicates
     elif method == 'intersect/merge':
@@ -169,6 +168,9 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
             # md_intersected_bed1.saveas(md_bedfile1)
             md_intersected_bed2.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
             # md_intersected_bed2.saveas(md_bedfile2)
+    
+    else:
+        raise exceptions.InputError("Error: COMBINE option not recognized.")
 
     #Check to make sure no files are empty
     if os.stat(combined_file).st_size == 0:
@@ -191,7 +193,7 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
     if use_config:
         config.vars['COMBINEtime'] = total_time
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), 
-            file=sys.stderr)
+            ". Processing", len(combined_file.read_text().split('\n')), "regions", file=sys.stderr)
 
     if debug:
         multiprocess.current_mem_usage(jobid)

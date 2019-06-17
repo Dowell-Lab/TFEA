@@ -225,6 +225,9 @@ def read_arguments():
                                 "corresponding to motifs. Motif name must "
                                 "be in the 4th column and match what is in "
                                 "the database."), dest='MOTIF_ANNOTATIONS')
+    misc_options.add_argument('--bootstrap', help=("Amount to subsample motif"
+                                "hits to. Set to False to turn off."
+                                " Default: 1000"), dest='BOOTSTRAP')
 
     #Set default arguments and possible options or types
     # Notes: 
@@ -296,6 +299,7 @@ def read_arguments():
                     'OUTPUT_TYPE': ['txt', [str]],
                     'CPUS': [1, [int]], 
                     'MEM': ['50gb', [str]],
+                    'BOOTSTRAP': [False, [int, bool]],
                     'MOTIF_ANNOTATIONS': [False, [Path, bool]],
                     'PLOTALL': [False, [bool]]}
 

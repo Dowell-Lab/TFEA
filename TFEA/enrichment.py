@@ -29,6 +29,7 @@ from scipy import stats
 from TFEA import config
 from TFEA import multiprocess
 from TFEA import plot
+from TFEA import exceptions
 
 #Main Script
 #==============================================================================
@@ -38,8 +39,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
             largewindow=None, smallwindow=None, md=None, mdd=None, cpus=None, 
             jobid=None, pvals=None, fcs=None, p_cutoff=None, figuredir=None, 
             plotall=False, fimo_motifs=None, meta_profile_dict=None, 
-            label1=None, label2=None, dpi=None, motif_fpkm={}, 
-            suppress_plots=False):
+            label1=None, label2=None, dpi=None, motif_fpkm={}, bootstrap=False):
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -114,6 +114,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         label2 = config.vars['LABEL2']
         dpi = config.vars['DPI']
         output_type = config.vars['OUTPUT_TYPE']
+        bootstrap = config.vars['BOOTSTRAP']
         try:
             motif_fpkm = config.vars['MOTIF_FPKM']
         except:
@@ -133,7 +134,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                         largewindow=largewindow, fimo_motifs=fimo_motifs, 
                         meta_profile_dict=meta_profile_dict, label1=label1, 
                         label2=label2, dpi=dpi, fcs=fcs, motif_fpkm=motif_fpkm, 
-                        tests=len(motif_distances))
+                        tests=len(motif_distances), bootstrap=bootstrap)
         results = multiprocess.main(function=area_under_curve, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
@@ -141,20 +142,22 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         # for motif_distance in motif_distances:
         #     results.append(area_under_curve(motif_distance, **auc_keywords))
         # padj_bonferroni(results)
-    elif enrichment == 'anderson-darling':
-        results = multiprocess.main(function=anderson_darling, 
-                                        args=motif_distances, debug=debug, 
-                                        jobid=jobid, cpus=cpus)
+    # elif enrichment == 'anderson-darling':
+    #     results = multiprocess.main(function=anderson_darling, 
+    #                                     args=motif_distances, debug=debug, 
+    #                                     jobid=jobid, cpus=cpus)
 
-    elif enrichment == 'auc_bgcorrect':
-        print('\tTFEA:', file=sys.stderr)
-        auc_bgcorrect_keywords = dict(permutations=permutations)
-        results = multiprocess.main(function=area_under_curve_bgcorrect, 
-                                    args=motif_distances, 
-                                    kwargs=auc_bgcorrect_keywords,
-                                    debug=debug, jobid=jobid, cpus=cpus)
+    # elif enrichment == 'auc_bgcorrect':
+    #     print('\tTFEA:', file=sys.stderr)
+    #     auc_bgcorrect_keywords = dict(permutations=permutations)
+    #     results = multiprocess.main(function=area_under_curve_bgcorrect, 
+    #                                 args=motif_distances, 
+    #                                 kwargs=auc_bgcorrect_keywords,
+    #                                 debug=debug, jobid=jobid, cpus=cpus)
 
-        padj_bonferroni(results)
+    #     padj_bonferroni(results)
+    else:
+        raise exceptions.InputError("Enrichment option not recognized or supported.")
 
     if md:
         print('\tMD:', file=sys.stderr)
@@ -206,7 +209,8 @@ def area_under_curve(distances, use_config=True, output_type=None,
                         plotall=None, p_cutoff=None, figuredir=None, 
                         largewindow=None, fimo_motifs=None, 
                         meta_profile_dict=None, label1=None, label2=None, 
-                        dpi=None, fcs=None, tests=None, motif_fpkm=None):
+                        dpi=None, fcs=None, tests=None, motif_fpkm=None, 
+                        bootstrap=False):
     '''Calculates an enrichment score using the area under the curve. This
         method is not as sensitive to artifacts as other methods. It works well
         as an asymmetry detector and will be good at picking up cases where
@@ -256,7 +260,11 @@ def area_under_curve(distances, use_config=True, output_type=None,
         auc = np.trapz(cumscore) - np.trapz(trend)
 
         #Calculate random AUC
-        sim_auc = permute_auc(distances=normalized_score, trend=trend, 
+        if bootstrap:
+            sim_auc = permute_auc_bootstrap(original_distances=distances, trend=trend, 
+                                permutations=permutations, bootstrap=bootstrap)
+        else:
+            sim_auc = permute_auc(distances=normalized_score, trend=trend, 
                                 permutations=permutations)
 
         #Calculate p-value
@@ -293,98 +301,103 @@ def area_under_curve(distances, use_config=True, output_type=None,
     return [motif, auc, hits, z, var, fpkm, p]
 
 #==============================================================================
-def area_under_curve_bgcorrect(distances, use_config=False, output_type=None, 
-                        permutations=None, pvals=None,
-                        plotall=None, p_cutoff=None, figuredir=None, 
-                        largewindow=None, fimo_motifs=None, 
-                        meta_profile_dict=None, label1=None, label2=None, 
-                        dpi=None, fcs=None):
-    try:
-        #sort distances based on the ranks from TF bed file
-        #and calculate the absolute distance
-        motif = distances[0]
-        distances = distances[1:]
-        distances_abs = [abs(x)  if x != '.' else x for x in distances]
-
-        hits = len([x for x in distances_abs if x != '.'])
-
-        #Filter any TFs/files without any hits
-        if hits == 0:
-            return [motif, 0.0, 0, 1.0]
-
-        #Get -exp() of distance and get cumulative scores
-        #Filter distances into quartiles to get middle distribution
-        q1 = int(round(len(distances)*.25))
-        q3 = int(round(len(distances)*.75))
-        middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
-        try:
-            average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
-        except ZeroDivisionError:
-            return [motif, 0.0, 0, 1.0]
+def permute_auc(distances=None, trend=None, permutations=None):
+    '''Generates permutations of the distances and calculates AUC for each 
+        permutation.
+    Parameters
+    ----------
+    distances : list or array
+        normalized distances 
         
-        score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
-        total = sum(score)
-        if output_type == 'score':
-            return score
-
-        #Normalize x-axis to be from 0 to 1
-        binwidth = 1.0/float(len(distances_abs))
-        normalized_score = [(float(x)/total)*binwidth for x in score]
-        cumscore = np.cumsum(normalized_score)
-        trend = np.append(np.arange(0,1,1.0/float(len(cumscore)))[1:], 1.0)
-        trend = [x*binwidth for x in trend]
-
-        #Calculate the backgroupnd AUC
-        bg_cumscore = np.cumsum(normalized_score[q1:q3])
-        bg_trend = np.append(np.arange(0,1,1.0/float(len(bg_cumscore)))[1:], 1.0)
-        bg_trend = [x*binwidth for x in bg_trend]
-        bg_auc = np.trapz(bg_cumscore) - np.trapz(bg_trend)
-
-
-        #The AUC is the relative to the "random" line
-        auc = np.trapz(cumscore) - np.trapz(trend)
-
-        #Subtract background auc
-        auc = auc - bg_auc
-
-        #Calculate random AUC
-        sim_auc = permute_auc(distances=normalized_score, trend=trend, 
-                                permutations=permutations)
-
-        #Calculate p-value                                                                                                                                                          
-        mu = np.mean(sim_auc)
-        sigma = np.std(sim_auc)
-        p = min(stats.norm.cdf(auc,mu,sigma), 1-stats.norm.cdf(auc,mu,sigma))
-        if math.isnan(p):
-            p = 1.0
-
-        if output_type == 'html' or plotall:
-            #make individual plots and also individual html file
-            from TFEA import plot
-            plotting_score = [(float(x)/total) for x in score]
-            plotting_cumscore = np.cumsum(plotting_score)
-            plot.plot_individual_graphs(distances=distances, figuredir=figuredir, 
-                            fimo_motifs=fimo_motifs, largewindow=largewindow, 
-                            score=plotting_score, use_config=use_config,
-                            dpi=dpi, pvals=pvals, fcs=fcs, 
-                            cumscore=plotting_cumscore, sim_auc=sim_auc, auc=auc,
-                            meta_profile_dict=meta_profile_dict, label1=label1, 
-                            label2=label2)
-            
+    permutations : int
+        number of times to permute (default=1000)
         
-        if output_type == 'lineplot_output':
-            plotting_score = [0] + [(float(x)/total) for x in score]
-            plotting_cumscore = np.cumsum(plotting_score)
-            return plotting_cumscore
+    Returns
+    -------
+    es_permute : list 
+        list of AUC calculated for permutations 
+       
+    '''
+    es_permute = []
+    triangle_area = np.trapz(trend)
+    for i in range(permutations):
+        random_distances = np.random.permutation(distances)
+        cum_distances = np.cumsum(random_distances)
+        es = np.trapz(cum_distances)
+        auc = es - triangle_area
+        es_permute.append(auc)
+
+    return es_permute
+
+#==============================================================================
+def permute_auc_bootstrap(original_distances=None, trend=None, permutations=None, bootstrap=False):
+    '''Generates permutations of the original_ and calculates AUC for each 
+        permutation.
+
+    Parameters
+    ----------
+    distances : list or array
+        normalized distances 
         
-        if output_type == 'simulation_output':
-            return auc, sim_auc
-    except Exception as e:
-        # This prints the type, value, and stack trace of the
-        # current exception being handled.
-        print(traceback.print_exc())
-        raise e
-    return [motif, auc, hits, p]
+    permutations : int
+        number of times to permute (default=1000)
+        
+    Returns
+    -------
+    es_permute : list 
+        list of AUC calculated for permutations 
+       
+    '''
+    hits = [x for x in original_distances if x != '.']
+    if bootstrap and bootstrap <= len(original_distances):
+        if bootstrap < len(hits):
+            #Determine where there are hits
+            hit_indexes = [i for i,x in enumerate(original_distances) if x != '.']
+
+            #Subsample down hits to bootstrap number
+            new_hit_indexes = np.random.choice(hit_indexes, bootstrap, replace=False)
+
+            #Only keep hit if it is within subsampled indexes, otherwise replace it with '.'
+            new_distances = [x if i in new_hit_indexes else '.' for i,x in enumerate(original_distances)]
+        else:
+            #Get all numerical hit values
+            hits = [x for x in original_distances if x != '.']
+
+            #Generate a list of hit values of size bootstrap
+            new_hits = iter(np.random.choice(hits, bootstrap, replace=True))
+
+            #Determine where the hits will be in the new distances array
+            new_hit_indexes = np.random.choice(len(original_distances), bootstrap, replace=False)
+
+            #Place the hits in their appropriate place
+            new_distances = [next(new_hits) if i in new_hit_indexes else '.' for i in range(len(original_distances))]
+
+    #Get -exp() of distance and get cumulative scores
+    #Filter distances into quartiles to get middle distribution
+    distances_abs = [abs(x) if x != '.' else x for x in new_distances]
+    q1 = int(round(len(new_distances)*.25))
+    q3 = int(round(len(new_distances)*.75))
+    middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
+    average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
+    
+    score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
+    total = sum(score)
+
+    binwidth = 1.0/float(len(distances_abs))
+    normalized_score = [(float(x)/total)*binwidth for x in score]
+
+    es_permute = []
+    triangle_area = np.trapz(trend)
+
+    normalized_distances = normalized_score
+    for i in range(permutations):
+        random_distances = np.random.permutation(normalized_distances)
+        cum_distances = np.cumsum(random_distances)
+        es = np.trapz(cum_distances)
+        auc = es - triangle_area
+        es_permute.append(auc)
+
+    return es_permute
 
 #==============================================================================
 def max_GSEA(distances, use_config=False, output_type=None, cutoff=None,
@@ -456,36 +469,6 @@ def max_GSEA(distances, use_config=False, output_type=None, cutoff=None,
         return actualES, simES
 
     return [motif, actualES, NES, pos_total, p]
-
-#==============================================================================
-def permute_auc(distances=None, trend=None, permutations=None):
-    '''Generates permutations of the distances and calculates AUC for each 
-        permutation.
-
-    Parameters
-    ----------
-    distances : list or array
-        normalized distances 
-        
-    permutations : int
-        number of times to permute (default=1000)
-        
-    Returns
-    -------
-    es_permute : list 
-        list of AUC calculated for permutations 
-       
-    '''
-    es_permute = []
-    triangle_area = np.trapz(trend)
-    for i in range(permutations):
-        random_distances = np.random.permutation(distances)
-        cum_distances = np.cumsum(random_distances)
-        es = np.trapz(cum_distances)
-        auc = es - triangle_area
-        es_permute.append(auc)
-
-    return es_permute
 
 #==============================================================================
 def permute_max_GSEA(hits=None, permutations=1000):

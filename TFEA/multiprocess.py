@@ -67,6 +67,7 @@ def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=No
 
     #Method 2 
     with mp.Pool(cpus) as p:
+        p.daemon = False #Allow child processes to spawn new processes
         results = list()
         print(f'\t Completed: 0/{len(args)} ', end=' ', file=sys.stderr)
         # print_in_place(f'\t Completed: 0/{len(args)} ', file=sys.stderr)
