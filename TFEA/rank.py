@@ -37,7 +37,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
             bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
             largewindow=None, mdd=False, mdd_bedfile1=False, mdd_bedfile2=False, 
             motif_annotations=False, debug=False, jobid=None, figuredir=None, 
-            output_type=None):
+            output_type=None, basemean_cut=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -112,7 +112,8 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         debug = config.vars['DEBUG']
         jobid = config.vars['JOBID']
         output_type = config.vars['OUTPUT_TYPE']
-    print("Ranking regions...", end=' ', flush=True, file=sys.stderr)
+        basemean_cut = config.vars['BASEMEAN_CUT']
+    print("Ranking regions...", flush=True, file=sys.stderr)
 
     #Begin by counting reads from bam files over the combined_file produced
     # by the combine module
@@ -136,9 +137,11 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         ranked_file, pvals, fcs = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
-                                    rank=rank, figuredir=figuredir)
+                                    rank=rank, figuredir=figuredir, 
+                                    basemean_cut=basemean_cut)
         meta_profile = {}
         if output_type == 'html':
+            print("\tGenerating Meta-Profile per Quartile:", file=sys.stderr)
             q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
             meta_profile = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
                                 bam1=bam1, bam2=bam2, largewindow=largewindow)
@@ -435,7 +438,8 @@ write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt')
 
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
-            label2=None, largewindow=None, rank=None, figuredir=None):
+            label2=None, largewindow=None, rank=None, figuredir=None, 
+            basemean_cut=None):
     #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                         count_file=count_file, label1=label1, label2=label2)
@@ -456,15 +460,17 @@ def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None,
 
     
     plot.plot_deseq_MA(deseq_file=deseq_file, label1=label1, label2=label2, 
-                        figuredir=figuredir)
+                        figuredir=figuredir, basemean_cut=basemean_cut)
 
     ranked_file = deseq_parse(deseq_file=deseq_file, tempdir=tempdir, 
-                                largewindow=largewindow, rank=rank)
+                                largewindow=largewindow, rank=rank, 
+                                basemean_cut=basemean_cut)
 
     return ranked_file
 
 #==============================================================================
-def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
+def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None, 
+                basemean_cut=0):
     '''This function parses a DE-seq output file and creates a new file with 
         the center of each region ranked by p-value 
     
@@ -490,6 +496,7 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
         header = F.readline().strip('\n').split('\t')
         fc_index = [i for i in range(len(header)) 
                     if header[i]=='"fc"' or header[i]=='"foldChange"'][0]
+        basemean_index = [i for i in range(len(header)) if header[i]=='"baseMean"'][0]
         for line in F:
             line = line.strip('\n').split('\t')
             if line[fc_index+1] != 'NA':
@@ -508,10 +515,12 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None):
                 start = center - int(largewindow)
                 stop = center + int(largewindow)
                 fc = float(line[fc_index+1])
-                if fc < 1:
-                    down.append([chrom, str(start), str(stop), str(fc), str(pval)])
-                else:
-                    up.append([chrom, str(start), str(stop), str(fc), str(pval)])
+                basemean = float(line[basemean_index+1])
+                if basemean > basemean_cut:
+                    if fc < 1:
+                        down.append([chrom, str(start), str(stop), str(fc), str(pval)])
+                    else:
+                        up.append([chrom, str(start), str(stop), str(fc), str(pval)])
 
     #Save ranked regions in a bed file (pvalue included)
     ranked_file = tempdir / "ranked_file.bed"
@@ -643,47 +652,70 @@ def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions,
     '''This function creates a metaprofile from 4 regions and stores them in
         a dictionary. 
     '''
-    q1posprofile1, q1negprofile1, q1posprofile2, q1negprofile2 = meta_profile(
-                                        regionlist=q1regions, 
-                                        largewindow=largewindow, bam1=bam1, 
-                                        bam2=bam2)
+    q1regions = ['q1'] + q1regions
+    q2regions = ['q2'] + q2regions
+    q3regions = ['q3'] + q3regions
+    q4regions = ['q4'] + q4regions
+    kwargs = dict(largewindow=largewindow, bam1=bam1, bam2=bam2)
+    meta_profile_tuples = multiprocess.main(function=meta_profile, 
+                            args=[q1regions, q2regions, q3regions, q4regions], 
+                            kwargs=kwargs)
+
+    # q1posprofile1, q1negprofile1, q1posprofile2, q1negprofile2 = meta_profile(
+    #                                     regionlist=q1regions, 
+    #                                     largewindow=largewindow, bam1=bam1, 
+    #                                     bam2=bam2)
     
-    q2posprofile1, q2negprofile1, q2posprofile2, q2negprofile2 = meta_profile(
-                                        regionlist=q2regions, 
-                                        largewindow=largewindow, bam1=bam1, 
-                                        bam2=bam2)
+    # q2posprofile1, q2negprofile1, q2posprofile2, q2negprofile2 = meta_profile(
+    #                                     regionlist=q2regions, 
+    #                                     largewindow=largewindow, bam1=bam1, 
+    #                                     bam2=bam2)
 
-    q3posprofile1, q3negprofile1, q3posprofile2, q3negprofile2 = meta_profile(
-                                        regionlist=q3regions, 
-                                        largewindow=largewindow, bam1=bam1, 
-                                        bam2=bam2)
+    # q3posprofile1, q3negprofile1, q3posprofile2, q3negprofile2 = meta_profile(
+    #                                     regionlist=q3regions, 
+    #                                     largewindow=largewindow, bam1=bam1, 
+    #                                     bam2=bam2)
 
-    q4posprofile1, q4negprofile1, q4posprofile2, q4negprofile2 = meta_profile(
-                                        regionlist=q4regions, 
-                                        largewindow=largewindow, bam1=bam1, 
-                                        bam2=bam2)
+    # q4posprofile1, q4negprofile1, q4posprofile2, q4negprofile2 = meta_profile(
+    #                                     regionlist=q4regions, 
+    #                                     largewindow=largewindow, bam1=bam1, 
+    #                                     bam2=bam2)
 
-    meta_profile_dict = {'q1posprofile1': q1posprofile1, 
-                        'q1negprofile1': q1negprofile1,
-                        'q1posprofile2': q1posprofile2, 
-                        'q1negprofile2': q1negprofile2, 
-                        'q2posprofile1': q2posprofile1, 
-                        'q2negprofile1': q2negprofile1, 
-                        'q2posprofile2': q2posprofile2, 
-                        'q2negprofile2': q2negprofile2,
-                        'q3posprofile1': q3posprofile1, 
-                        'q3negprofile1': q3negprofile1, 
-                        'q3posprofile2': q3posprofile2, 
-                        'q3negprofile2': q3negprofile2,
-                        'q4posprofile1': q4posprofile1, 
-                        'q4negprofile1': q4negprofile1, 
-                        'q4posprofile2': q4posprofile2, 
-                        'q4negprofile2': q4negprofile2}
+    meta_profile_dict = {}
+    mil_map1 = 0
+    mil_map2 = 0
+    for profile_list in meta_profile_tuples:
+        mil_map1 += profile_list[-1][1]
+        mil_map2 += profile_list[-1][2]
+    for profile_list in meta_profile_tuples:
+        for key, profile in profile_list[:-1]:
+            if '1' in key:
+                profile = [x/mil_map1 for x in profile]
+            elif '2' in key:
+                profile = [x/mil_map2 for x in profile]
+            meta_profile_dict[key] = profile
+
+    # meta_profile_dict = {'q1posprofile1': q1posprofile1, 
+    #                     'q1negprofile1': q1negprofile1,
+    #                     'q1posprofile2': q1posprofile2, 
+    #                     'q1negprofile2': q1negprofile2, 
+    #                     'q2posprofile1': q2posprofile1, 
+    #                     'q2negprofile1': q2negprofile1, 
+    #                     'q2posprofile2': q2posprofile2, 
+    #                     'q2negprofile2': q2negprofile2,
+    #                     'q3posprofile1': q3posprofile1, 
+    #                     'q3negprofile1': q3negprofile1, 
+    #                     'q3posprofile2': q3posprofile2, 
+    #                     'q3negprofile2': q3negprofile2,
+    #                     'q4posprofile1': q4posprofile1, 
+    #                     'q4negprofile1': q4negprofile1, 
+    #                     'q4posprofile2': q4posprofile2, 
+    #                     'q4negprofile2': q4negprofile2}
 
     return meta_profile_dict
 
 #==============================================================================
-def meta_profile(regionlist=None, region_file=None, largewindow=None, 
+def meta_profile(regionlist=None, largewindow=None, 
                 bam1=None, bam2=None):
     '''This function returns average profiles for given regions of interest.
         A user may input either a list of regions or a bed file
@@ -719,24 +751,12 @@ def meta_profile(regionlist=None, region_file=None, largewindow=None,
     Raises
     ------
     '''
+    key_prefix = regionlist[0]
     regions=list()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        if regionlist != None and region_file == None:
-            for chrom, start, stop in regionlist:
-                regions.append(
-                    hts.GenomicInterval(chrom, int(start), int(stop), '.'))
-        elif region_file != None and regionlist == None:
-            with open(region_file) as F:
-                for line in F:
-                    line = line.strip('\n').split('\t')
-                    chrom, start, stop = line[:3]
-                    regions.append(
-                        hts.GenomicInterval(chrom, int(start), int(stop), '.'))
-        elif region_file == None and regionlist == None:
-            raise NameError("Must input either a regionlist or region_file.")
-        else:
-            raise NameError("Only input one of regionlist or region_file variables.")
+        for chrom, start, stop in regionlist[1:]:
+            regions.append(hts.GenomicInterval(chrom, int(start), int(stop), '.'))
 
     hts_bam1 = list()
     hts_bam2 = list()
@@ -817,13 +837,13 @@ def meta_profile(regionlist=None, region_file=None, largewindow=None,
         posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
         negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
     
-    mil_map1 = mil_map1/rep1number/1e6
-    mil_map2 = mil_map2/rep2number/1e6
+    # mil_map1 = mil_map1/rep1number/1e6
+    # mil_map2 = mil_map2/rep2number/1e6
 
-    posprofile1 = [x/mil_map1 for x in posprofile1]
-    negprofile1 = [x/mil_map1 for x in negprofile1]
-    posprofile2 = [x/mil_map2 for x in posprofile2]
-    negprofile2 = [x/mil_map2 for x in negprofile2]
+    # posprofile1 = [x/mil_map1 for x in posprofile1]
+    # negprofile1 = [x/mil_map1 for x in negprofile1]
+    # posprofile2 = [x/mil_map2 for x in posprofile2]
+    # negprofile2 = [x/mil_map2 for x in negprofile2]
 
 
-    return posprofile1, negprofile1, posprofile2, negprofile2
+    return (key_prefix + 'posprofile1', posprofile1), (key_prefix + 'negprofile1', negprofile1), (key_prefix + 'posprofile2', posprofile2), (key_prefix + 'negprofile2', negprofile2), ('millions mapped', mil_map1, mil_map2)

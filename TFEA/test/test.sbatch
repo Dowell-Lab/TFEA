@@ -13,7 +13,7 @@
 #SBATCH --ntasks=1
 
 ### Allocate the amount of memory needed
-#SBATCH --mem=1gb
+#SBATCH --mem=10gb
 
 ### Setting to mail when the job is complete
 ###SBATCH --error /scratch/Users/joru1876/e_and_o/%x.err

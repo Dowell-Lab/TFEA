@@ -25,6 +25,7 @@ import subprocess
 import warnings
 
 import numpy as np
+from scipy import stats
 
 from TFEA import exceptions
 
@@ -35,7 +36,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
                             dpi=100, pvals=None, fcs=None, 
                             cumscore=None, sim_auc=None, auc=None,
                             meta_profile_dict=None, label1=None, label2=None, 
-                            motif=None):
+                            motif=None, offset=None):
     '''This function plots all TFEA related graphs for an individual motif
     '''
     if use_config:
@@ -51,7 +52,10 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
         meta_profile_dict = config.vars['META_PROFILE']
 
     #Create MEME logos
-    meme_logo(fimo_motifs, motif, figuredir)
+    if fimo_motifs:
+        meme_logo(fimo_motifs, motif, figuredir)
+    else:
+        print("No MEME database inputted, logos will not be displayed.")
 
     #Filter distances into quartiles for plotting purposes
     q1 = int(round(np.percentile(np.arange(1, len(distances),1), 25)))
@@ -179,14 +183,23 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     bins=100
     maximum = max(sim_auc)
     minimum = min(sim_auc)
-    ax.hist(sim_auc,bins=bins)
+    ax.hist(sim_auc,bins=bins, linewidth=0)
     width = (maximum-minimum)/100.0
-    rect = ax.bar(auc,ax.get_ylim()[1],color='red',width=width*2)[0]
-    height = rect.get_height()
-    ax.text(rect.get_x() + rect.get_width()/2., 1.05*height, 'Observed', 
-            ha='center', va='bottom')
 
-    ax.set_xlim([min(minimum,auc)-(width*40), max(maximum,auc)+(width*40)])
+    if offset != 0:
+        non_corrected_rect = ax.bar(auc-offset,ax.get_ylim()[1],color='red',width=width*2)[0]
+        height = non_corrected_rect.get_height()
+        ax.text(non_corrected_rect.get_x() + non_corrected_rect.get_width()/2., 
+                1.05*height, 'Non-Corected AUC', ha='center', va='bottom')
+
+    corrected_rect = ax.bar(auc,ax.get_ylim()[1],color='green',width=width*2)[0]
+
+    height = corrected_rect.get_height()
+
+    ax.text(corrected_rect.get_x() + corrected_rect.get_width()/2., 
+            1.05*height, 'Corrected AUC', ha='center', va='bottom')
+
+    ax.set_xlim([min(minimum,auc, auc-offset)-(width*40), max(maximum,auc,auc-offset)+(width*40)])
 
     ax.set_ylim([0,(1.05*height)+5])
     ax.tick_params(axis='y', which='both', left=False, right=False, 
@@ -206,9 +219,9 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
 
 #==============================================================================
 def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None, 
-                    ylabel=None, savepath=None, dpi=100):
-    '''This function plots graphs that are displayed on the main results.html 
-        filethat correspond to results relating to all analyzed TFs.
+                    ylabel=None, x_index=None, y_index=None, c_index=None,
+                    p_index=None, savepath=None, dpi=100, ylimits=None):
+    '''Plot an MA plot. Note: x-values will be transformed to log10
 
     Parameters
     ----------
@@ -216,26 +229,49 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
         contains calculated enrichment scores for all TFs of interest specified
         by the user
     '''
-    ylist = [i[1] for i in results]
-    xlist = [math.log(i[2], 10) if i[2] != 0 else 0 for i in results]
-    plist = [i[-1] for i in results]
-
-    sigx = [x for x, p in zip(xlist, plist) if p < p_cutoff]
-    sigy = [y for y, p in zip(ylist, plist) if p < p_cutoff]
-
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    ax.scatter(xlist, ylist, color='navy', edgecolor='', s=50)
-    ax.scatter(sigx, sigy, color='red', edgecolor='', s=50)
+    clean_results = [i for i in results if i[y_index] == i[y_index] and i[x_index] == i[x_index]]
+    ylist = [i[y_index] for i in clean_results]
+    xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in clean_results]
+    if c_index != None:
+        clist = [i[c_index] for i in clean_results]
+        max_c = abs(max(clist, key=abs))
+        scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='plasma',
+                                vmax=max_c, vmin=-max_c)
+    else:
+        scatter = ax.scatter(xlist, ylist, edgecolor='', color='navy', s=50)
+
+    if p_index != None:
+        plist = [i[p_index] for i in clean_results]
+        sigx = [x for x,p in zip(xlist,plist) if p<p_cutoff]
+        sigy = [y for y,p in zip(ylist,plist) if p<p_cutoff]
+        if c_index != None:
+            sigc = [scatter.to_rgba(c) for c,p in zip(clist,plist) if p<p_cutoff]
+            ax.scatter(sigx, sigy, c=sigc, #marker='x', 
+                        edgecolor='k',  linewidth=1, s=50)
+        else:
+            ax.scatter(sigx, sigy, color='red', edgecolor='',  s=50)
+
+    # ylist = [i[1] for i in results]
+    # xlist = [math.log(i[2], 10) if i[2] != 0 else 0 for i in results]
+    # plist = [i[-1] for i in results]
+
+    # sigx = [x for x, p in zip(xlist, plist) if p < p_cutoff]
+    # sigy = [y for y, p in zip(ylist, plist) if p < p_cutoff]
+
+    # ax.scatter(xlist, ylist, color='navy', edgecolor='', s=50)
+    # ax.scatter(sigx, sigy, color='red', edgecolor='', s=50)
+
     ax.set_title(title, fontsize=14)
     ax.set_ylabel(ylabel, fontsize=14)
-
     ax.set_xlabel(xlabel, fontsize=14)
-    # ax.tick_params(axis='y', which='both', left=False, right=False, 
-    #                 labelleft=True)
-
-    # ax.tick_params(axis='x', which='both', bottom=False, top=False, 
-    #                 labelbottom=True)
+    ax.tick_params(axis='y', which='both', left=True, right=False, 
+                    labelleft=True)
+    ax.tick_params(axis='x', which='both', bottom=True, top=False, 
+                    labelbottom=True)
+    if ylimits != None:
+        ax.set_ylim(ylimits)
 
     # plt.tight_layout()
     F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
@@ -269,11 +305,11 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     ax.set_ylabel(ylabel, fontsize=14)
     ax.set_xlabel(xlabel, fontsize=14)
     ax.axhline(-math.log(p_cutoff, 10), linestyle='--', color='black')
-    # ax.tick_params(axis='y', which='both', left=False, right=False, 
-    #                 labelleft=True)
+    ax.tick_params(axis='y', which='both', left=True, right=False, 
+                    labelleft=True)
 
-    # ax.tick_params(axis='x', which='both', bottom=False, top=False, 
-    #                 labelbottom=True)
+    ax.tick_params(axis='x', which='both', bottom=True, top=False, 
+                    labelbottom=True)
 
     # plt.tight_layout()
     F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
@@ -285,7 +321,6 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
                         y_index=None, p_index=None, s_index=None, c_index=None):
     ylist = [i[y_index] for i in results]
     xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in results]
-    # xlist = [i[x_index]**2 for i in results]
     plist = [i[p_index] for i in results]
 
     if s_index != None:
@@ -314,18 +349,64 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
         ax.scatter(xlist, ylist, color=clist, edgecolor='', s=slist)
-    # ax.scatter(sigx, sigy, color=sigclist, edgecolor='', s=slist)
     ax.set_title(title, fontsize=14)
     ax.set_ylabel(ylabel, fontsize=14)
-
     ax.set_xlabel(xlabel, fontsize=14)
-    # ax.tick_params(axis='y', which='both', left=False, right=False, 
-    #                 labelleft=True)
 
-    # ax.tick_params(axis='x', which='both', bottom=False, top=False, 
-    #                 labelbottom=True)
+    F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
+    plt.close()
 
-    # plt.tight_layout()
+#==============================================================================
+def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None, 
+                        ylabel=None, savepath=None, dpi=100, x_index=None,
+                        y_index=None, p_index=None, c_index=None, 
+                        linear_regression=None, ylimits=None):
+
+    F = plt.figure(figsize=(7,6))
+    ax = plt.subplot(111)
+    #Remove Nans from results
+    clean_results = [i for i in results if i[y_index] == i[y_index] and i[x_index] == i[x_index]]
+    ylist = [i[y_index] for i in clean_results]
+    xlist = [i[x_index] for i in clean_results]
+    clist = [i[c_index] for i in clean_results]
+    max_c = abs(max(clist, key=abs))
+    ylist = [y-c for y,c in zip(ylist,clist)]
+    scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='plasma',
+                            vmax=max_c, vmin=-max_c)
+    cbar = plt.colorbar(scatter)
+    cbar.set_label('AUC Correction', rotation=270, labelpad=20)
+
+    if p_index != None:
+        plist = [i[p_index] for i in clean_results]
+        sigx = [x for x,p in zip(xlist,plist) if p<p_cutoff]
+        sigy = [y for y,p in zip(ylist,plist) if p<p_cutoff]
+        sigc = [scatter.to_rgba(c) for c,p in zip(clist,plist) if p<p_cutoff]
+        ax.scatter(sigx, sigy, c=sigc, #marker='x', 
+                        edgecolor='k', linewidth=1, s=50)
+    
+    if linear_regression != None:
+        slope, intercept, r_value, p_value, _ = linear_regression
+        s = ("y = (" + str("%.3g" % slope) + ")x + " + str("%.3g" % intercept)
+            + "\nR$^2$ = " + str("%.3g" % r_value**2)
+            + "\np-val = " + str("%.3g" % p_value))
+        ax.plot([0,1],[intercept, slope+intercept], color='r', alpha=0.5, label=s, 
+                linewidth=5)
+
+        ax.legend()
+
+    ax.axhline(0, linestyle='--', alpha=0.5, linewidth=2, c='k')
+    ax.set_xlim([0,1])
+    ax.set_title(title, fontsize=14)
+    ax.set_ylabel(ylabel, fontsize=14)
+    ax.set_xlabel(xlabel, fontsize=14)
+    ax.tick_params(axis='y', which='both', left=True, right=False, 
+                    labelleft=True)
+
+    ax.tick_params(axis='x', which='both', bottom=True, top=False, 
+                    labelbottom=True)
+    if ylimits != None:
+        ax.set_ylim(ylimits)
+
     F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
     plt.close()
 
@@ -462,7 +543,7 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
 
 #==============================================================================
 def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None, 
-                    dpi=100):
+                    dpi=100, basemean_cut=0):
     '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
     to the figuredir directory created in TFEA output folder
 
@@ -526,10 +607,12 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     ax.set_title("DE-Seq MA-Plot",fontsize=14)
     ax.set_ylabel("Log2 Fold-Change ("+label2+"/"+label1+")",fontsize=14)
     ax.set_xlabel("Log10 Average Expression",fontsize=14)
-    # ax.tick_params(axis='y', which='both', left=False, right=False, 
-    #                 labelleft=True)
-    # ax.tick_params(axis='x', which='both', bottom=False, top=False, 
-    #                 labelbottom=True)
+    ax.tick_params(axis='y', which='both', left=True, right=False, 
+                    labelleft=True)
+    ax.tick_params(axis='x', which='both', bottom=True, top=False, 
+                    labelbottom=True)
+    if basemean_cut != 0:
+        ax.axvline(math.log(basemean_cut, 10), linestyle='--', c='k', alpha=0.5)
     cbar = plt.colorbar()
     cbar.ax.invert_yaxis() 
     cbar.set_ticks([0, 0.25, 0.5, 0.75, 1], ['0', '0.25', '0.5', '0.75', '1'])
@@ -539,21 +622,20 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
                 # bbox_inches='tight')
 
 if __name__ == "__main__":
-    results_file = '/Users/joru1876/Google_Drive/Colorado_University/Jonathan/CECIE/7_WT_DMSO_Nutlin_1hr/results.txt'
+    results_file = '/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA_outputs/Allen2014/v5_outputs/20190620_DMSO_Nutlin_fimohits_gccorrect/results.txt'
     results = []
     with open(results_file) as F:
         for line in F:
             if '#' not in line[0]:
-                linelist = [float(l) if l != 'N/A' and 'H11MO' not in l else l for l in line.strip('\n').split('\t')]
-                linelist = [0 if l != l else l for l in linelist]
+                linelist = [float(l) if 'H11MO' not in l else l for l in line.strip('\n').split('\t')]
                 results.append(linelist)
-    plot_global_z_v(results, p_cutoff=0.0001, title='MA Plot', 
+    plot_global_MA(results, p_cutoff=0.001, title='MA Plot', 
+                    c_index=4,
                     x_index=2,
                     y_index=1,
                     p_index=-1,
-                    s_index=4,
-                    # c_index=-2,
-                    xlabel="Log10 Hits", 
+                    ylimits=[-0.5,0.5],
+                    xlabel="GC-content", 
                     ylabel="AUC", 
-                    savepath='/Users/joru1876/Google_Drive/Colorado_University/Jonathan/CECIE/7_WT_DMSO_Nutlin_1hr/ZV_plot.png', 
+                    savepath='/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA_outputs/Allen2014/v5_outputs/20190620_DMSO_Nutlin_fimohits_gccorrect/newMA_plot.png', 
                     dpi=100)

@@ -66,6 +66,17 @@ def run():
                 "monitored using:\ntail -f " + error_file))
             sys.exit()
 
+    #Rerun module
+    #==============================================================================
+    '''If rerun flag specified, rerun all rerun.sh files in specified directory
+    '''
+    rerun = parser.parse_args().RERUN
+    if rerun:
+        for path in rerun:
+            for rerun_script in Path(path).glob('**/rerun.sh'):
+                subprocess.call(["sh", rerun_script])
+        sys.exit()
+
     #VERIFICATION OF USER INPUTS
     #==============================================================================
     '''This section of the code reads config file and user specified flags, makes

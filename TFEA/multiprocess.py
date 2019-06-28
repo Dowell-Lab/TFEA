@@ -66,10 +66,10 @@ def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=No
     #     p.join()
 
     #Method 2 
+    print(f'\t Completed: 0/{len(args)} ', end=' ', file=sys.stderr)
     with mp.Pool(cpus) as p:
         p.daemon = False #Allow child processes to spawn new processes
         results = list()
-        print(f'\t Completed: 0/{len(args)} ', end=' ', file=sys.stderr)
         # print_in_place(f'\t Completed: 0/{len(args)} ', file=sys.stderr)
         for i, x in enumerate(p.imap_unordered(helper_single, [(function, arg, kwargs, debug) for arg in args]), 1):
             # sys.stderr.write("\033[K")

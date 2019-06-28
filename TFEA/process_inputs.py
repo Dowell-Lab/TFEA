@@ -227,7 +227,15 @@ def read_arguments():
                                 "the database."), dest='MOTIF_ANNOTATIONS')
     misc_options.add_argument('--bootstrap', help=("Amount to subsample motif"
                                 "hits to. Set to False to turn off."
-                                " Default: 1000"), dest='BOOTSTRAP')
+                                " Default: False"), dest='BOOTSTRAP')
+    misc_options.add_argument('--basemean_cut', help=("Basemean cutoff value "
+                                "for inputted regions. Default: 0"), 
+                                dest='BASEMEAN_CUT')
+    misc_options.add_argument('--rerun', help=("Rerun TFEA in all folders of a"
+                                "specified directory. Default: False"), 
+                                nargs='*', dest='RERUN')
+    misc_options.add_argument('--gc', help=("Perform GC-correction. Default: True"), 
+                                dest='GC')
 
     #Set default arguments and possible options or types
     # Notes: 
@@ -301,6 +309,9 @@ def read_arguments():
                     'MEM': ['50gb', [str]],
                     'BOOTSTRAP': [False, [int, bool]],
                     'MOTIF_ANNOTATIONS': [False, [Path, bool]],
+                    'BASEMEAN_CUT': [0, [int]],
+                    'RERUN': [False, ['PosixList', bool]],
+                    'GC': [True, [bool]],
                     'PLOTALL': [False, [bool]]}
 
     #Save default arguments in config
@@ -430,8 +441,10 @@ def verify_arguments(parser=None):
             value = arg_defaults[key][0] #Nothing specified, use default argument
 
         #Cast to correct type
-        if value in (True, 'True', False, 'False'): #Detect bools explicitly
-            config_dict[key] = bool(value)
+        if value in ('True' ,'true', True): #Detect True explicitly
+            config_dict[key] = True
+        elif value in ('False', 'false', False): #Detect False explicitly
+            config_dict[key] = False
         elif 'PosixList' in arg_defaults[key][1]: #Handle special 'PosixList' type
             types = arg_defaults[key][1]
             for default_type in types:
@@ -457,6 +470,8 @@ def verify_arguments(parser=None):
 
     #Write variables to config
     config.vars = config_dict
+
+    #Initialize internal variables
     config.vars['COMBINEtime'] = 0
     config.vars['COUNTtime'] = 0
     config.vars['RANKtime'] = 0
@@ -475,7 +490,7 @@ def verify_arguments(parser=None):
     config.vars['MD_RESULTS'] = []
     config.vars['MDD_RESULTS'] = []
 
-    #Pre-processed inputs
+    #Set module booleans based on pre-processed inputs
     if config.vars['COMBINED_FILE']:
         config.vars['COMBINE'] = False
     if config.vars['RANKED_FILE']:
@@ -552,7 +567,11 @@ def create_directories(srcdirectory=None):
         email = str(config.vars['SBATCH'])
         error_file = config.vars['E_AND_O'] / ('TFEA_'+config.vars['OUTPUT'].name+'.err')
         args = sys.argv
-        args[args.index('--sbatch')+1] = 'SUBMITTED'
+        if '--sbatch' in args:
+            args[args.index('--sbatch')+1] = 'SUBMITTED'
+        else:
+            args.append('--sbatch')
+            args.append('SUBMITTED')
         try:
             sbatch_out = subprocess.run(["sbatch", 
                                 "--error=" + (config.vars['E_AND_O'] / "%x.err").as_posix(), 

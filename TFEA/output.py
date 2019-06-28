@@ -56,29 +56,32 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    TFEA_header = ['#TF', 'AUC', 'Events', 'Z-score','Var','FPKM', 'P-adj']
-    sort_index = [3, 2, 1, -1]
+    TFEA_header = ['#TF', 'Corrected AUC', 'Events', 'GC', 'GC-Correction','FPKM', 'P-adj']
+    sort_index = [5, 2, 1, -1]
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
                 sortindex=sort_index, header=TFEA_header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
-                    xlabel='Log10(Motif Hits)', 
-                    ylabel='Area Under the Curve (AUC)', 
-                    savepath=figuredir / 'TFEA_MA.png', 
-                    dpi=dpi)
-    plot.plot_global_volcano(results, p_cutoff=p_cutoff, title='TFEA Volcano Plot', 
-                    xlabel='Area Under the Curve (AUC)', 
-                    ylabel='-log10(P-adj)', 
-                    savepath=figuredir / 'TFEA_volcano.png', 
-                    dpi=dpi)
-    plot.plot_global_z_v(results, p_cutoff=p_cutoff, title='TFEA ZV-Plot', 
-                        xlabel='Log10 Variance', 
-                        ylabel='Z-score', 
-                        savepath=figuredir / 'TFEA_ZV.png', dpi=dpi, 
-                        x_index=4,
-                        y_index=3, 
-                        p_index=-1, 
-                        s_index=None, 
-                        c_index=None)
+                        xlabel='Log10(Motif Hits)', 
+                        ylabel='Corrected Area Under the Curve (AUC)', 
+                        savepath=figuredir / 'TFEA_MA.png', 
+                        dpi=dpi, 
+                        c_index=4,
+                        x_index=2,
+                        y_index=1,
+                        p_index=-1,
+                        ylimits=[-0.5,0.5])
+    # plot.plot_global_volcano(results, p_cutoff=p_cutoff, title='TFEA Volcano Plot', 
+    #                 xlabel='Area Under the Curve (AUC)', 
+    #                 ylabel='-log10(P-adj)', 
+    #                 savepath=figuredir / 'TFEA_volcano.png', 
+    #                 dpi=dpi)
+    # plot.plot_global_gc(results, p_cutoff=p_cutoff, title='TFEA GC-Plot', 
+    #                     xlabel='Motif GC-content', 
+    #                     ylabel='Area Under the Curve (AUC)', 
+    #                     savepath=figuredir / 'TFEA_GC.png', dpi=dpi, 
+    #                     x_index=-3,
+    #                     y_index=1, 
+    #                     p_index=-1)
     if md:
         header = ['#TF', 'MD-Score', 'Events', 'p-val']
         txt_output(outputdir=outputdir, results=md_results, 
@@ -88,7 +91,10 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                 xlabel='Log10(Motif Hits)', 
                                 ylabel='MD-Score Difference', 
                                 savepath=figuredir / 'MD_MA.png',  
-                                dpi=dpi)
+                                dpi=dpi, 
+                                x_index=2,
+                                y_index=1,
+                                p_index=-1)
         plot.plot_global_volcano(md_results, p_cutoff=p_cutoff, 
                                     title='MD Volcano Plot', 
                                     xlabel='MD-Score Difference', 
@@ -104,7 +110,10 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                 xlabel='Log10(Motif Hits)', 
                                 ylabel='Differential MD-Score Difference', 
                                 savepath=figuredir / 'MDD_MA.png', 
-                                dpi=dpi)
+                                dpi=dpi, 
+                                x_index=2,
+                                y_index=1,
+                                p_index=-1)
         plot.plot_global_volcano(mdd_results, p_cutoff=p_cutoff, 
                                     title='MDD Volcano Plot', 
                                     xlabel='Differential MD-Score Difference', 
@@ -276,15 +285,15 @@ def html_output(results=None, module_list=None, outputdir=None,
         }
     </style>
     </head>
-    <body style="width:1300px; margin:0 auto;">
+    <body style="width:1500px; margin:0 auto;">
 
         <h1>TFEA Results """ + label1 + """ vs. """ + label2 + """</h1>
         <div class="row">
             <div style="float: left; width: 45%">
                 <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
             </div>
-            <div style="float: left; width: 45%">
-                <img src="./plots/TFEA_ZV.png" alt="TFEA ZV-Plot">
+            <div style="float: right; width: 45%">
+                <img src="./plots/TFEA_GC.png" alt="TFEA GC-Plot">
             </div>
         </div>
         <div class="row">

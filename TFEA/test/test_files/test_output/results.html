@@ -31,15 +31,15 @@
         }
     </style>
     </head>
-    <body style="width:1300px; margin:0 auto;">
+    <body style="width:1500px; margin:0 auto;">
 
         <h1>TFEA Results condition1 vs. condition2</h1>
         <div class="row">
             <div style="float: left; width: 45%">
                 <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
             </div>
-            <div style="float: left; width: 45%">
-                <img src="./plots/TFEA_ZV.png" alt="TFEA ZV-Plot">
+            <div style="float: right; width: 45%">
+                <img src="./plots/TFEA_GC.png" alt="TFEA GC-Plot">
             </div>
         </div>
         <div class="row">
@@ -47,7 +47,7 @@
                 <img src="./plots/DESEQ_MA_Plot.png" alt="Region DE-Seq Plot">
             </div>
             <div id="User Inputs" style="float: right; width: 45%">
-                <p><b>PADJ < 0.001</b></p>
+                <p><b>PADJ < 0.1</b></p>
                 <p><a href="./inputs.txt">User Inputs</a></p>
                 <p><a href="./plots/MD_MA.png">MD MA-Plot</a> |                     <a href="./plots/MD_volcano.png">MD VolcanoPlot</a></p>
                 <p><a href="./plots/MDD_MA.png">MDD MA-Plot</a> |                     <a href="./plots/MDD_volcano.png">MDD VolcanoPlot</a></p>
@@ -64,15 +64,15 @@
                     </tr><tr>
                         <td>RANK</td>
                         <td>deseq</td>
-                        <td>0:00:06</td>
+                        <td>0:00:05</td>
                     </tr><tr>
                         <td>SCANNER</td>
                         <td>fimo</td>
-                        <td>0:00:01</td>
+                        <td>0:00:02</td>
                     </tr><tr>
                         <td>ENRICHMENT</td>
                         <td>auc</td>
-                        <td>0:00:11</td>
+                        <td>0:00:24</td>
                     </tr><tr>
                         <td>OUTPUT</td>
                         <td>html</td>
@@ -80,7 +80,7 @@
                     </tr><tr>
                         <td><b>Total</b></td>
                         <td> </td>
-                        <td><b>0:00:20</b></td>
+                        <td><b>0:00:32</b></td>
                     </tr>
                 </table>   
             </div>
@@ -91,20 +91,30 @@
                 <table> 
                     <tr>
                     <th>#TF</th>
-<th>AUC</th>
+<th>Corrected AUC</th>
 <th>Events</th>
-<th>Z-score</th>
-<th>Var</th>
+<th>GC</th>
+<th>GC-Correction</th>
 <th>FPKM</th>
 <th>P-adj</th>
 
+                    </tr>
+            <tr style="color: red;">
+                <td><a href="./plots/ZN121_HUMAN.H11MO.0.C.results.html">ZN121_HUMAN.H11MO.0.C</td><td>0.0424</td>
+<td>204</td>
+<td>0.583</td>
+<td>0.025</td>
+<td>nan</td>
+<td>0.00851</td>
+            </tr>
+                    
             <tr>
-                <td><a href="./plots/TBX1_HUMAN.H11MO.0.D.results.html">TBX1_HUMAN.H11MO.0.D</td><td>0.0216</td>
+                <td><a href="./plots/TBX1_HUMAN.H11MO.0.D.results.html">TBX1_HUMAN.H11MO.0.D</td><td>0.0338</td>
 <td>49</td>
-<td>0.473</td>
-<td>0.00208</td>
+<td>0.71</td>
+<td>0.0122</td>
 <td>229</td>
-<td>0.636</td>
+<td>0.882</td>
             </tr>
                                 
         </table>
@@ -115,20 +125,29 @@
         <table> 
             <tr>
                 <th>#TF</th>
-<th>AUC</th>
+<th>Corrected AUC</th>
 <th>Events</th>
-<th>Z-score</th>
-<th>Var</th>
+<th>GC</th>
+<th>GC-Correction</th>
 <th>FPKM</th>
 <th>P-adj</th>
 
             <tr>
-                <td><a href="./plots/SOX10_HUMAN.H11MO.0.B.results.html">SOX10_HUMAN.H11MO.0.B</td><td>-0.0731</td>
+                <td><a href="./plots/SP2_HUMAN.H11MO.0.A.results.html">SP2_HUMAN.H11MO.0.A</td><td>-0.0461</td>
+<td>114</td>
+<td>0.794</td>
+<td>0.00385</td>
+<td>nan</td>
+<td>0.15</td>
+            </tr>
+                    
+            <tr>
+                <td><a href="./plots/SOX10_HUMAN.H11MO.0.B.results.html">SOX10_HUMAN.H11MO.0.B</td><td>-0.0301</td>
 <td>5</td>
-<td>-0.536</td>
-<td>0.0203</td>
+<td>0.402</td>
+<td>0.043</td>
 <td>4.83</td>
-<td>0.592</td>
+<td>1</td>
             </tr>
                             
             </table>

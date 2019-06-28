@@ -214,9 +214,9 @@ def merge_bed(beds=None):
     merged_bed : BedTool object 
         resulting merged bed object 
     '''
-    parent_bed = BedTool(beds[0].as_posix())
+    parent_bed = BedTool(str(beds[0]))
     for bed in beds[1:]:
-        parent_bed = parent_bed.cat(bed.as_posix())
+        parent_bed = parent_bed.cat(str(bed))
     merged_bed = parent_bed.sort().merge().sort()
 
     return merged_bed

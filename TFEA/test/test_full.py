@@ -58,6 +58,7 @@ class TestMain(unittest.TestCase):
 
         self.count_file = self.testdir / 'count_file.header.bed'
         self.fimo_motifs = self.testdir / 'test_database.meme'
+        self.genomehits = self.testdir / 'test_genome_hits'
 
         touch_command = "touch " + str(self.testdir / '*.bai')
         subprocess.run(touch_command, check=True, shell=True)
@@ -81,11 +82,16 @@ class TestMain(unittest.TestCase):
                     '--plotall',
                     '--combine', 'merge all',
                     '--md', '--mdd',
-                    '--debug']
+                    '--debug',
+                    '--padjcutoff', '0.1']
         # try:
-        print('\n============================================')
+        print('\n============================================', 
+                file=sys.stderr, flush=True)
         for output in execute(command):
-            print('\t', output.decode(), end="", flush=True)
+            try:
+                print('\t', output.decode(), end="", flush=True)
+            except:
+                print('\t', output, end="", flush=True)
             # subprocess.check_output(command, stderr=subprocess.PIPE)
         # except subprocess.CalledProcessError as e:
         #     raise exceptions.SubprocessError(e.stderr.decode())
@@ -95,6 +101,41 @@ class TestMain(unittest.TestCase):
         # self.assertTrue((self.testdir / 'test_output' / 'summary.html').exists())
         # self.assertTrue((self.testdir / 'test_rep1' / 'md_results.txt').exists())
         # self.assertTrue((self.testdir / 'test_rep1' / 'mdd_results.txt').exists())
+
+    # def test_genome_hits(self):
+    #     shutil.rmtree(self.testdir / 'test_output', ignore_errors=True)
+    #     TFEA_path = Path(__file__).absolute().parent.parent
+    #     command = ['nice', '-n', '19',
+    #                 'python3', TFEA_path, 
+    #                 '--output', self.testdir / 'test_output', 
+    #                 '--bed1', self.bed1[0], 
+    #                 '--bed2', self.bed2[0], 
+    #                 '--bam1', self.bam1[0], 
+    #                 '--bam2', self.bam2[0], 
+    #                 '--label1', self.label1, 
+    #                 '--label2', self.label2,
+    #                 '--genomefasta', self.genomefasta,
+    #                 '--fimo_motifs', self.fimo_motifs,
+    #                 '--scanner', 'genome hits',
+    #                 '--genomehits', self.genomehits,  
+    #                 '--motif_annotation', self.testdir / 'test_motif_annotation.bed',
+    #                 '--output_type', 'html', 
+    #                 '--plotall',
+    #                 '--combine', 'merge all',
+    #                 '--debug']
+    #     # try:
+    #     print('\n============================================')
+    #     for output in execute(command):
+    #         print('\t', output.decode(), end="", flush=True)
+    #         # subprocess.check_output(command, stderr=subprocess.PIPE)
+    #     # except subprocess.CalledProcessError as e:
+    #     #     raise exceptions.SubprocessError(e.stderr.decode())
+
+    #     self.assertTrue((self.testdir / 'test_output' / 'results.txt').exists())
+    #     self.assertTrue((self.testdir / 'test_output' / 'results.html').exists())
+    #     # self.assertTrue((self.testdir / 'test_output' / 'summary.html').exists())
+    #     # self.assertTrue((self.testdir / 'test_rep1' / 'md_results.txt').exists())
+    #     # self.assertTrue((self.testdir / 'test_rep1' / 'mdd_results.txt').exists())
 
     # def test_2rep(self):
     #     shutil.rmtree(self.testdir / 'test_rep2', ignore_errors=True)
@@ -114,7 +155,7 @@ class TestMain(unittest.TestCase):
     #     print()
     #     for output in execute(command):
     #         print('\t', output, end="")
-    #         # subprocess.check_output(command, stderr=subprocess.PIPE)
+    #         subprocess.check_output(command, stderr=subprocess.PIPE)
     #     # except subprocess.CalledProcessError as e:
     #     #     raise exceptions.SubprocessError(e.stderr.decode())
 
@@ -123,6 +164,13 @@ class TestMain(unittest.TestCase):
     #     self.assertTrue((self.testdir / 'test_rep2' / 'summary.html').exists())
     #     self.assertTrue((self.testdir / 'test_rep2' / 'md_results.txt').exists())
     #     self.assertTrue((self.testdir / 'test_rep2' / 'mdd_results.txt').exists())
+
+    # def test_combine(self):
+    #     from TFEA import combine
+    #     merged_bed1 = combine.merge_bed(beds=self.bed1+self.bed2)
+    #     merged_bed2 = combine.merge_bed(beds=self.bed2+self.bed1)
+        
+    #     print(len(merged_bed1), len(merged_bed2))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2, failfast=True)

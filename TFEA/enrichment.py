@@ -39,7 +39,8 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
             largewindow=None, smallwindow=None, md=None, mdd=None, cpus=None, 
             jobid=None, pvals=None, fcs=None, p_cutoff=None, figuredir=None, 
             plotall=False, fimo_motifs=None, meta_profile_dict=None, 
-            label1=None, label2=None, dpi=None, motif_fpkm={}, bootstrap=False):
+            label1=None, label2=None, dpi=None, motif_fpkm={}, bootstrap=False,
+            gc=None):
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -115,6 +116,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         dpi = config.vars['DPI']
         output_type = config.vars['OUTPUT_TYPE']
         bootstrap = config.vars['BOOTSTRAP']
+        gc = config.vars['GC']
         try:
             motif_fpkm = config.vars['MOTIF_FPKM']
         except:
@@ -127,17 +129,53 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
     mdd_results = None
 
     if enrichment == 'auc':
-        print('\tTFEA:', file=sys.stderr)
+        gc_correct = {}
+        linear_regression = None
+        if gc:
+            print('\tCorrecting GC:', file=sys.stderr)
+            auc_keywords = dict(fimo_motifs=fimo_motifs)
+            motif_gc_auc = multiprocess.main(function=get_auc_gc, 
+                                        args=motif_distances, kwargs=auc_keywords,
+                                        debug=debug, jobid=jobid, cpus=cpus)
+
+            #Calculate linear regression based on AUC and GC content of motifs
+            varx = np.array([i[2] for i in motif_gc_auc])
+            vary = np.array([i[1] for i in motif_gc_auc])
+            mask = ~np.isnan(varx) & ~np.isnan(vary)
+            linear_regression = [x for x in stats.linregress(varx[mask], vary[mask])]
+            slope, intercept, _, _, _ = linear_regression
+            for key, _, gc in motif_gc_auc:
+                offset = slope*gc + intercept
+                gc_correct[key] = offset
+
+
+        print('\tCalculating AUC:', file=sys.stderr)
         auc_keywords = dict(permutations=permutations, use_config=use_config, 
                         output_type=output_type, pvals=pvals, plotall=plotall, 
                         p_cutoff=p_cutoff, figuredir=figuredir, 
                         largewindow=largewindow, fimo_motifs=fimo_motifs, 
                         meta_profile_dict=meta_profile_dict, label1=label1, 
                         label2=label2, dpi=dpi, fcs=fcs, motif_fpkm=motif_fpkm, 
-                        tests=len(motif_distances), bootstrap=bootstrap)
-        results = multiprocess.main(function=area_under_curve, 
+                        tests=len(motif_distances), bootstrap=bootstrap, 
+                        gc_correct=gc_correct)
+        results = multiprocess.main(function=auc_simulate_and_plot, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
+
+        plot.plot_global_gc(results, p_cutoff=p_cutoff, 
+                                title='TFEA GC-Plot', 
+                                xlabel='Motif GC-content',
+                                ylabel='Non-corrected Area Under the Curve (AUC)', 
+                                savepath=figuredir / 'TFEA_GC.png', 
+                                linear_regression=linear_regression,
+                                dpi=dpi, 
+                                x_index=3,
+                                y_index=1, 
+                                c_index=4,
+                                p_index=-1,
+                                ylimits=[-0.5,0.5])
+
+        
         # results = list()
         # for motif_distance in motif_distances:
         #     results.append(area_under_curve(motif_distance, **auc_keywords))
@@ -204,13 +242,66 @@ def calculate_md(md_distances1=None, md_distances2=None, smallwindow=None,
 
 #Functions
 #==============================================================================
-def area_under_curve(distances, use_config=True, output_type=None, 
+def get_auc_gc(distances, fimo_motifs=None):
+    '''Calculates an enrichment score using the area under the curve. This
+        method is not as sensitive to artifacts as other methods. It works well
+        as an asymmetry detector and will be good at picking up cases where
+        most of the motif localization changes happen at the most differentially
+        transcribed regions.
+    '''
+    try:
+        #sort distances based on the ranks from TF bed file
+        #and calculate the absolute distance
+        motif = distances[0]
+        if fimo_motifs != None:
+            gc = get_gc(motif=motif, motif_database=fimo_motifs)
+        nan = float('Nan')
+        distances = distances[1:]
+        distances_abs = [abs(x)  if x != '.' else x for x in distances]
+
+        hits = len([x for x in distances_abs if x != '.'])
+
+        #Filter any TFs/files without any hits
+        if hits == 0:
+            return [motif, nan, gc]
+
+        #Get -exp() of distance and get cumulative scores
+        #Filter distances into quartiles to get middle distribution
+        q1 = int(round(len(distances)*.25))
+        q3 = int(round(len(distances)*.75))
+        middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
+        try:
+            average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
+        except ZeroDivisionError:
+            return [motif, nan, gc]
+        
+        score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
+        total = sum(score)
+
+        binwidth = 1.0/float(len(distances_abs))
+        normalized_score = [(float(x)/total)*binwidth for x in score]
+        cumscore = np.cumsum(normalized_score)
+        trend = np.append(np.arange(0,1,1.0/float(len(cumscore)))[1:], 1.0)
+        trend = [x*binwidth for x in trend]
+
+        #The AUC is the relative to the "random" line
+        auc = np.trapz(cumscore) - np.trapz(trend)
+
+    except Exception as e:
+        # This prints the type, value, and stack trace of the
+        # current exception being handled.
+        print(traceback.print_exc())
+        raise e
+    return [motif, auc, gc]
+
+#==============================================================================
+def auc_simulate_and_plot(distances, use_config=True, output_type=None, 
                         permutations=None, pvals=None,
                         plotall=None, p_cutoff=None, figuredir=None, 
                         largewindow=None, fimo_motifs=None, 
                         meta_profile_dict=None, label1=None, label2=None, 
                         dpi=None, fcs=None, tests=None, motif_fpkm=None, 
-                        bootstrap=False):
+                        bootstrap=False, gc_correct=None):
     '''Calculates an enrichment score using the area under the curve. This
         method is not as sensitive to artifacts as other methods. It works well
         as an asymmetry detector and will be good at picking up cases where
@@ -222,6 +313,9 @@ def area_under_curve(distances, use_config=True, output_type=None,
         #and calculate the absolute distance
         motif = distances[0]
         nan = float('Nan')
+        gc = nan
+        if fimo_motifs != None:
+            gc = get_gc(motif=motif, motif_database=fimo_motifs)
         try:
             fpkm = motif_fpkm[motif]
         except KeyError:
@@ -233,7 +327,7 @@ def area_under_curve(distances, use_config=True, output_type=None,
 
         #Filter any TFs/files without any hits
         if hits == 0:
-            return [motif, nan, hits, nan, nan, fpkm, 1.0]
+            return [motif, 0, hits, gc, nan, fpkm, 1.0]
 
         #Get -exp() of distance and get cumulative scores
         #Filter distances into quartiles to get middle distribution
@@ -243,12 +337,10 @@ def area_under_curve(distances, use_config=True, output_type=None,
         try:
             average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
         except ZeroDivisionError:
-            return [motif, nan, hits, nan, nan, fpkm, 1.0]
+            return [motif, 0, hits, gc, nan, fpkm, 1.0]
         
         score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
         total = sum(score)
-        if output_type == 'score':
-            return score
 
         binwidth = 1.0/float(len(distances_abs))
         normalized_score = [(float(x)/total)*binwidth for x in score]
@@ -258,6 +350,10 @@ def area_under_curve(distances, use_config=True, output_type=None,
 
         #The AUC is the relative to the "random" line
         auc = np.trapz(cumscore) - np.trapz(trend)
+        offset = 0
+        if motif in gc_correct:
+            offset = gc_correct[motif]
+        auc = auc - offset
 
         #Calculate random AUC
         if bootstrap:
@@ -268,10 +364,8 @@ def area_under_curve(distances, use_config=True, output_type=None,
                                 permutations=permutations)
 
         #Calculate p-value
-        z = stats.zscore([auc] + sim_auc)[0]
         mu = np.mean(sim_auc)
         sigma = np.std(sim_auc)
-        var = np.var(sim_auc)
         p = min(stats.norm.cdf(auc,mu,sigma), 1-stats.norm.cdf(auc,mu,sigma))
         if math.isnan(p):
             p = 1.0
@@ -292,13 +386,14 @@ def area_under_curve(distances, use_config=True, output_type=None,
                                         cumscore=plotting_cumscore, 
                                         sim_auc=sim_auc, auc=auc,
                                         meta_profile_dict=meta_profile_dict, 
-                                        label1=label1, label2=label2)
+                                        label1=label1, label2=label2, 
+                                        offset=offset)
     except Exception as e:
         # This prints the type, value, and stack trace of the
         # current exception being handled.
         print(traceback.print_exc())
         raise e
-    return [motif, auc, hits, z, var, fpkm, p]
+    return [motif, auc, hits, gc, -offset, fpkm, p]
 
 #==============================================================================
 def permute_auc(distances=None, trend=None, permutations=None):
@@ -587,3 +682,45 @@ def md_score_p(results):
         results[i] = [motif, md, total, p]
 
     return results
+
+#==============================================================================
+def get_gc(motif=None, motif_database=None, alphabet=['A','C','G','T']):
+    '''
+    Obtain a pssm model from a meme formatted database file. Warning: If there are multiple
+    motif matches, this function will return the last match in the database.
+    
+    Parameters
+    ----------
+    motif_database : string
+        full path to a MEME formatted (.meme) file
+    motif : string
+        the name of a motif that exactly matches a motif in motif_database
+        
+    Returns
+    -------
+    PSSM : list or array
+        a list of lists where each corresponding to position then alphabet probability
+    '''
+    motif_hit = False
+    PSSM = list()
+    with open(motif_database,'r') as F:
+        for line in F:
+            if 'MOTIF' in line:
+                if motif in line:
+                    motif_hit = True
+                else:
+                    motif_hit = False
+            elif motif_hit and 'URL' not in line and 'letter-probability' not in line and line != '\n':
+                acgt_probabilities = [float(x) for x in line.strip('\n').split()]
+                total_prob = sum(acgt_probabilities)
+                acgt_probabilities = [x/total_prob for x in acgt_probabilities] #Convert to probabilities
+                PSSM.append(acgt_probabilities)
+
+    gc = 0
+    for base in PSSM:
+        gc += base[alphabet.index('C')]
+        gc += base[alphabet.index('G')]
+    
+    gc = gc/float(len(PSSM))
+    
+    return gc

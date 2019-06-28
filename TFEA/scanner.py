@@ -279,11 +279,12 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
 
         #Perform bedtools closest to get distances
         ranked_file = get_center(bedfile=ranked_file, outname=ranked_file)
+        print("\tTFEA:", file=sys.stderr)
         bedtools_distance_keywords = dict(genomehits=genomehits, 
                                             ranked_center_file=ranked_file, 
                                             tempdir=tempdir, 
                                             distance_cutoff=largewindow, 
-                                            rank_index=5)
+                                            rank_index=3)
         
         motif_distances = multiprocess.main(function=bedtools_closest, 
                                             args=motif_list, 
@@ -293,6 +294,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
 
         #GENOME HITS for md score bed files
         if md:
+            print("\tMD:", file=sys.stderr)
             md_bedfile1 = get_center(bedfile=md_bedfile1, outname=md_bedfile1)
             bedtools_distance_keywords = dict(genomehits=genomehits, 
                                                 ranked_center_file=md_bedfile1, 
@@ -320,6 +322,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                 config.vars['MD_DISTANCES1'] = md_distances1
                 config.vars['MD_DISTANCES2'] = md_distances2
         if mdd:
+            print("\tMDD:", file=sys.stderr)
             mdd_bedfile1 = get_center(bedfile=mdd_bedfile1, outname=mdd_bedfile1)
             bedtools_distance_keywords = dict(genomehits=genomehits, 
                                                 ranked_center_file=mdd_bedfile1, 
@@ -707,7 +710,7 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
         closest_out = tempdir / (motif + '.closest.bed')
 
         # import sys
-        # print(' '.join(command) + ' > ' + closest_out.as_posix(), file=sys.stderr)
+        # print(' '.join([str(c) for c in command]) + ' > ' + closest_out.as_posix(), file=sys.stderr)
 
         try:
             closest_out.write_bytes(subprocess.check_output(command, stderr=subprocess.PIPE))
@@ -722,14 +725,15 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
                 linelist = line.strip('\n').split('\t')
                 distance = int(linelist[-1])
                 if rank_index != None:
-                    ranks.append(int(linelist[rank_index]))
-                if distance <= distance_cutoff:
+                    rank = int(linelist[rank_index].split(',')[-1])
+                    ranks.append(rank)
+                if abs(distance) <= distance_cutoff:
                     distances.append(distance)
                 else:
                     distances.append('.')
         if rank_index != None:
             distances = [x for i,x in sorted(zip(ranks,distances))]
-        # closest_out.unlink()
+        closest_out.unlink()
 
     except Exception as e:
         # This prints the type, value, and stack trace of the
@@ -737,7 +741,7 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
         print(traceback.print_exc())
         raise e
 
-    return [motif] + distances
+    return [motif.strip('.bed')] + distances
 
 #==============================================================================
 def get_center(bedfile=None, outname=None):
@@ -756,7 +760,7 @@ def get_center(bedfile=None, outname=None):
     outname : str
         full path to the output centered bed file
     '''
-    outbed = BedTool(bedfile).each(featurefuncs.center).sort()
+    outbed = BedTool(str(bedfile)).each(featurefuncs.center).sort()
     outbed.saveas(outname)
 
     return outname
