@@ -21,7 +21,9 @@ import time
 import datetime
 import subprocess
 import warnings
+import json
 from pathlib import Path
+from multiprocessing import Manager
 
 from pybedtools import BedTool
 import HTSeq as hts
@@ -139,12 +141,14 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
                                     basemean_cut=basemean_cut)
-        meta_profile = {}
         if output_type == 'html':
             print("\tGenerating Meta-Profile per Quartile:", file=sys.stderr)
             q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
-            meta_profile = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
-                                bam1=bam1, bam2=bam2, largewindow=largewindow)
+            meta_profile_dict = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
+                                bam1=bam1, bam2=bam2, largewindow=largewindow, 
+                                millions_mapped=millions_mapped, tempdir=tempdir)
+            # manager = Manager()
+            # meta_profile_dict = manager.dict(meta_profile_dict)
     else:
         raise exceptions.InputError("RANK option not recognized.")
     if os.stat(ranked_file).st_size == 0:
@@ -154,7 +158,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         config.vars['RANKED_FILE'] = ranked_file
         config.vars['PVALS'] = pvals
         config.vars['FCS'] = fcs
-        config.vars['META_PROFILE'] = meta_profile
+        config.vars['META_PROFILE'] = meta_profile_dict
 
     if mdd and (not mdd_bedfile1 or not mdd_bedfile2):
         mdd_bedfile1, mdd_bedfile2 = create_mdd_files(ranked_file=ranked_file,
@@ -636,9 +640,9 @@ def quartile_split(ranked_file):
             linelist = line.strip('\n').split('\t')
             regions.append(linelist[:3])
     
-    q1 = int(round(len(regions)*.25))
-    q2 = int(round(len(regions)*.5))
-    q3 = int(round(len(regions)*.75))
+    q1 = int(round(np.percentile(np.arange(1, len(regions),1), 25)))
+    q2 = int(round(np.percentile(np.arange(1, len(regions),1), 50)))
+    q3 = int(round(np.percentile(np.arange(1, len(regions),1), 75)))
 
     q1regions = regions[:q1]
     q2regions = regions[q1:q2]
@@ -648,7 +652,8 @@ def quartile_split(ranked_file):
     return q1regions, q2regions, q3regions, q4regions
 #==============================================================================
 def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
-                            bam1=None, bam2=None, largewindow=None):
+                            bam1=None, bam2=None, largewindow=None,
+                            tempdir=None, millions_mapped=None):
     '''This function creates a metaprofile from 4 regions and stores them in
         a dictionary. 
     '''
@@ -657,66 +662,72 @@ def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions,
     q3regions = ['q3'] + q3regions
     q4regions = ['q4'] + q4regions
     kwargs = dict(largewindow=largewindow, bam1=bam1, bam2=bam2)
-    meta_profile_tuples = multiprocess.main(function=meta_profile, 
+    if len(q1regions + q2regions + q3regions + q4regions)*largewindow < 6e7:
+        meta_profile_tuples = multiprocess.main(function=meta_profile, 
                             args=[q1regions, q2regions, q3regions, q4regions], 
                             kwargs=kwargs)
+    else:
+        print("\tToo many regions to parallelize over. Performing computation in serial.", 
+                file=sys.stderr)
+        meta_profile_tuples = []
+        meta_profile_tuples.append(meta_profile(regionlist=q1regions, 
+                                            largewindow=largewindow, bam1=bam1, 
+                                            bam2=bam2))
 
-    # q1posprofile1, q1negprofile1, q1posprofile2, q1negprofile2 = meta_profile(
-    #                                     regionlist=q1regions, 
-    #                                     largewindow=largewindow, bam1=bam1, 
-    #                                     bam2=bam2)
-    
-    # q2posprofile1, q2negprofile1, q2posprofile2, q2negprofile2 = meta_profile(
-    #                                     regionlist=q2regions, 
-    #                                     largewindow=largewindow, bam1=bam1, 
-    #                                     bam2=bam2)
+        meta_profile_tuples.append(meta_profile(regionlist=q2regions, 
+                                            largewindow=largewindow, bam1=bam1, 
+                                            bam2=bam2))
 
-    # q3posprofile1, q3negprofile1, q3posprofile2, q3negprofile2 = meta_profile(
-    #                                     regionlist=q3regions, 
-    #                                     largewindow=largewindow, bam1=bam1, 
-    #                                     bam2=bam2)
-
-    # q4posprofile1, q4negprofile1, q4posprofile2, q4negprofile2 = meta_profile(
-    #                                     regionlist=q4regions, 
-    #                                     largewindow=largewindow, bam1=bam1, 
-    #                                     bam2=bam2)
+        meta_profile_tuples.append(meta_profile(regionlist=q3regions, 
+                                            largewindow=largewindow, bam1=bam1, 
+                                            bam2=bam2))
+        
+        meta_profile_tuples.append(meta_profile(regionlist=q4regions, 
+                                            largewindow=largewindow, bam1=bam1, 
+                                            bam2=bam2))
 
     meta_profile_dict = {}
-    mil_map1 = 0
-    mil_map2 = 0
+    mil_map1 = sum(millions_mapped[:len(bam1)])/len(bam1)/1e6
+    mil_map2 = sum(millions_mapped[-len(bam2):])/len(bam2)/1e6
     for profile_list in meta_profile_tuples:
-        mil_map1 += profile_list[-1][1]
-        mil_map2 += profile_list[-1][2]
-    for profile_list in meta_profile_tuples:
-        for key, profile in profile_list[:-1]:
-            if '1' in key:
-                profile = [x/mil_map1 for x in profile]
-            elif '2' in key:
-                profile = [x/mil_map2 for x in profile]
+        for key, profile in profile_list:
+            if key[-1] == '1':
+                profile = [[y/mil_map1 for y in x] for x in profile]
+            elif key[-1] == '2':
+                profile = [[y/mil_map2 for y in x] for x in profile]
             meta_profile_dict[key] = profile
+    if tempdir == None:
+        return meta_profile_dict
+    else:
+        meta_profile_folder = tempdir / 'meta_profile'
+        meta_profile_folder.mkdir()
+        
+        for key in meta_profile_dict:
+            for i, profile in enumerate(meta_profile_dict[key]):
+                profile_file = meta_profile_folder / (f'{key}_{i}')
+                profile_file.write_text(json.dumps(profile))
+                
+        return meta_profile_folder
 
-    # meta_profile_dict = {'q1posprofile1': q1posprofile1, 
-    #                     'q1negprofile1': q1negprofile1,
-    #                     'q1posprofile2': q1posprofile2, 
-    #                     'q1negprofile2': q1negprofile2, 
-    #                     'q2posprofile1': q2posprofile1, 
-    #                     'q2negprofile1': q2negprofile1, 
-    #                     'q2posprofile2': q2posprofile2, 
-    #                     'q2negprofile2': q2negprofile2,
-    #                     'q3posprofile1': q3posprofile1, 
-    #                     'q3negprofile1': q3negprofile1, 
-    #                     'q3posprofile2': q3posprofile2, 
-    #                     'q3negprofile2': q3negprofile2,
-    #                     'q4posprofile1': q4posprofile1, 
-    #                     'q4negprofile1': q4negprofile1, 
-    #                     'q4posprofile2': q4posprofile2, 
-    #                     'q4negprofile2': q4negprofile2}
+        #JSON
+        # meta_profile_file = tempdir / 'meta_profile.json'
+        # meta_profile_file.write_text(json.dumps(meta_profile_dict))
 
-    return meta_profile_dict
+        # return meta_profile_file
+
+        #Pickling
+        # with open(meta_profile_file, 'wb') as f:
+        #     pickle.dump(meta_profile_dict, f)
+
+        # #Pure Python
+        # with open(meta_profile_file, 'w') as outfile:
+        #     for key in meta_profile_dict:
+        #         outfile.write('#' + key + '\n')
+        #         outfile.write('\n'.join([','.join([str(y) for y in x]) for x in profile]) + '\n')
+        
 
 #==============================================================================
-def meta_profile(regionlist=None, largewindow=None, 
-                bam1=None, bam2=None):
+def meta_profile(regionlist=None, largewindow=None, bam1=None, bam2=None):
     '''This function returns average profiles for given regions of interest.
         A user may input either a list of regions or a bed file
     Parameters
@@ -768,24 +779,29 @@ def meta_profile(regionlist=None, largewindow=None,
     if len(hts_bam1) == 0 or len(hts_bam2) == 0:
         raise ValueError("One of bam1 or bam2 variables is empty.")
 
-    posprofile1 = np.zeros(2*int(largewindow))  
-    negprofile1 = np.zeros(2*int(largewindow))
-    posprofile2 = np.zeros(2*int(largewindow))   
-    negprofile2 = np.zeros(2*int(largewindow))
+    # posprofile1 = np.zeros(2*int(largewindow))  
+    # negprofile1 = np.zeros(2*int(largewindow))
+    # posprofile2 = np.zeros(2*int(largewindow))   
+    # negprofile2 = np.zeros(2*int(largewindow))
+    # posprofile1 = []
+    # negprofile1 = []
+    # posprofile2 = []   
+    # negprofile2 = []
+    posprofile1 = np.empty((len(regions), 2*int(largewindow)))
+    negprofile1 = np.empty((len(regions), 2*int(largewindow)))
+    posprofile2 = np.empty((len(regions), 2*int(largewindow)))
+    negprofile2 = np.empty((len(regions), 2*int(largewindow)))
     rep1number = float(len(hts_bam1))
     rep2number = float(len(hts_bam2))
-    mil_map1 = 0.0
-    mil_map2 = 0.0
-    for window in regions:
+    for i, window in enumerate(regions):
         avgposprofile1 = np.zeros(2*int(largewindow))
         avgnegprofile1 = np.zeros(2*int(largewindow))
-        i = 0
+        # i = 0
         for sortedbamfile in hts_bam1:
-            i += 1
+            # i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
             for almnt in sortedbamfile[ window ]:
-                mil_map1 += 1.0
                 if almnt.iv.strand == '+':
                     start_in_window = almnt.iv.start - window.start
                     end_in_window = almnt.iv.end - window.end \
@@ -800,22 +816,30 @@ def meta_profile(regionlist=None, largewindow=None,
                     start_in_window = max( start_in_window, 0 )
                     end_in_window = min( end_in_window, 2*int(largewindow) )
                     tempnegprofile[ start_in_window : end_in_window ] += -1.0
-            avgposprofile1 = [x+y for x,y in zip(avgposprofile1, tempposprofile)]
-            avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
-        avgposprofile1 = [x/rep1number for x in avgposprofile1]
-        avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
-        posprofile1 = [x+y for x,y in zip(posprofile1,avgposprofile1)]
-        negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
+            # avgposprofile1 = [x+y for x,y in zip(avgposprofile1, tempposprofile)]
+            # avgnegprofile1 = [x+y for x,y in zip(avgnegprofile1, tempnegprofile)]
+
+            avgposprofile1 = np.add(avgposprofile1, tempposprofile)
+            avgnegprofile1 = np.add(avgnegprofile1, tempnegprofile)
+        # avgposprofile1 = [x/rep1number for x in avgposprofile1]
+        # avgnegprofile1 = [x/rep1number for x in avgnegprofile1]
+        avgposprofile1 = avgposprofile1/rep1number
+        avgnegprofile1 = avgnegprofile1/rep1number
+        # posprofile1 = [x+y for x,y in zip(posprofile1, avgposprofile1)]
+        # negprofile1 = [x+y for x,y in zip(negprofile1, avgnegprofile1)]
+        # posprofile1.append(avgposprofile1)
+        # negprofile1.append(avgnegprofile1)
+        posprofile1[i] = avgposprofile1
+        negprofile1[i] = avgnegprofile1
 
         avgposprofile2 = np.zeros(2*int(largewindow))
         avgnegprofile2 = np.zeros(2*int(largewindow))
-        i = len(hts_bam1)
+        # i = len(hts_bam1)
         for sortedbamfile in hts_bam2:
-            i += 1
+            # i += 1
             tempposprofile = np.zeros(2*int(largewindow))
             tempnegprofile = np.zeros(2*int(largewindow))
             for almnt in sortedbamfile[ window ]:
-                mil_map2 += 1.0
                 if almnt.iv.strand == '+':
                     start_in_window = almnt.iv.start - window.start
                     end_in_window   = almnt.iv.end - window.end \
@@ -830,20 +854,28 @@ def meta_profile(regionlist=None, largewindow=None,
                     start_in_window = max( start_in_window, 0 )
                     end_in_window = min( end_in_window, 2*int(largewindow) )
                     tempnegprofile[ start_in_window : end_in_window ] += -1.0
-            avgposprofile2 = [x+y for x,y in zip(avgposprofile2,tempposprofile)]
-            avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
-        avgposprofile2 = [x/rep2number for x in avgposprofile2]
-        avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
-        posprofile2 = [x+y for x,y in zip(posprofile2,avgposprofile2)]
-        negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
+            # avgposprofile2 = [x+y for x,y in zip(avgposprofile2, tempposprofile)]
+            # avgnegprofile2 = [x+y for x,y in zip(avgnegprofile2, tempnegprofile)]
+            avgposprofile2 = np.add(avgposprofile2, tempposprofile)
+            avgnegprofile2 = np.add(avgnegprofile2, tempnegprofile)
+        # avgposprofile2 = [x/rep2number for x in avgposprofile2]
+        # avgnegprofile2 = [x/rep2number for x in avgnegprofile2]
+        avgposprofile2 = avgposprofile2/rep2number
+        avgnegprofile2 = avgnegprofile2/rep2number
+        # posprofile2 = [x+y for x,y in zip(posprofile2, avgposprofile2)]
+        # negprofile2 = [x+y for x,y in zip(negprofile2, avgnegprofile2)]
+        # posprofile2.append(avgposprofile2)
+        # negprofile2.append(avgnegprofile2)
+        posprofile2[i] = avgposprofile2
+        negprofile2[i] = avgnegprofile2
     
     # mil_map1 = mil_map1/rep1number/1e6
     # mil_map2 = mil_map2/rep2number/1e6
 
-    # posprofile1 = [x/mil_map1 for x in posprofile1]
-    # negprofile1 = [x/mil_map1 for x in negprofile1]
-    # posprofile2 = [x/mil_map2 for x in posprofile2]
-    # negprofile2 = [x/mil_map2 for x in negprofile2]
+    # posprofile1 = [[x/mil_map1 for x in posprofile1]]
+    # negprofile1 = [[x/mil_map1 for x in negprofile1]]
+    # posprofile2 = [[x/mil_map2 for x in posprofile2]]
+    # negprofile2 = [[x/mil_map2 for x in negprofile2]]
 
 
-    return (key_prefix + 'posprofile1', posprofile1), (key_prefix + 'negprofile1', negprofile1), (key_prefix + 'posprofile2', posprofile2), (key_prefix + 'negprofile2', negprofile2), ('millions mapped', mil_map1, mil_map2)
+    return (key_prefix + 'posprofile1', posprofile1), (key_prefix + 'negprofile1', negprofile1), (key_prefix + 'posprofile2', posprofile2), (key_prefix + 'negprofile2', negprofile2)

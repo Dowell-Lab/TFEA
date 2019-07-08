@@ -358,6 +358,19 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
     total_time = time.time() - start_time
     if use_config:
         config.vars['SCANNERtime'] = total_time
+
+    #Remove large fasta files from output folder
+    if fasta_file:
+        fasta_file.unlink()
+    if md_fasta1:
+        md_fasta1.unlink()
+    if md_fasta2:
+        md_fasta2.unlink()
+    if mdd_fasta1:
+        mdd_fasta1.unlink()
+    if mdd_fasta2:
+        mdd_fasta2.unlink()
+
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
     if debug:
@@ -674,7 +687,8 @@ def fimo_parse_stdout(fimo_stdout=None, largewindow=None, retain='score',
             avg_distance = [distances[i] for i in range(len(distances))]
 
 
-    distances = list()
+    # distances = np.empty(len(names), dtype=object)
+    distances = [] 
     for name in names:
         if name in d:
             distances.append(d[name][1])

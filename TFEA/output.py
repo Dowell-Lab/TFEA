@@ -287,13 +287,13 @@ def html_output(results=None, module_list=None, outputdir=None,
     </head>
     <body style="width:1500px; margin:0 auto;">
 
-        <h1>TFEA Results """ + label1 + """ vs. """ + label2 + """</h1>
+        <h1>""" + label1 + """ vs. """ + label2 + """ TFEA Results</h1>
         <div class="row">
             <div style="float: left; width: 45%">
-                <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
+                <img src="./plots/TFEA_GC.png" alt="TFEA GC-Plot">
             </div>
             <div style="float: right; width: 45%">
-                <img src="./plots/TFEA_GC.png" alt="TFEA GC-Plot">
+                <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
             </div>
         </div>
         <div class="row">

@@ -78,7 +78,7 @@ def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=No
             print(f'\r\t Completed: {i}/{len(args)} ', end=' ', flush=True, file=sys.stderr)
             # print_in_place(f'\t Completed: {i}/{len(args)} ', file=sys.stderr)
             if debug:
-                current_mem_usage(jobid, end=' ')
+                current_mem_usage(jobid, processes=cpus, end=' ')
                 # current_mem_usage(jobid, in_place=True)
             results.append(x)
         p.close()
@@ -185,34 +185,36 @@ def helper_single(args):
     return result
 
 #==============================================================================
-def current_mem_usage(jobid, **kwargs):
+def current_mem_usage(jobid, processes=1, **kwargs):
     '''Prints current memory usage. Adapted from scripts by Chris Slocum and 
         Fred Cirera. Additional kwargs are passed to print function
     '''
     suffix = 'B'
 
     #Using sstat
-    # num = subprocess.check_output(["sstat", "--format=maxRSS", "-j", jobid+'.batch']).decode('UTF-8').split('\n')[-2].strip()
-    # unit = num[-1]
+    if jobid != 0:
+        num = subprocess.check_output(["sstat", "--format=maxRSS", "-j", jobid+'.batch']).decode('UTF-8').split('\n')[-2].strip()
+        unit = num[-1]
+    else:
+        #Using psutil
+        # num = psutil.Process(pid=os.getpid()).memory_info().rss * processes
 
-    #Using psutil
-    num = psutil.Process(pid=os.getpid()).memory_info().rss
-    # num = psutil.virtual_memory().active
-    unit = 'B'
+        #Using resource
+        num = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss * processes
+        unit = 'B'
+
     print(f'(CPU: {psutil.cpu_percent()}%)', file=sys.stderr, **kwargs)
-
-    #Using resource
-    # num = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    # unit = 'B'
 
     if unit == 'B':
         byte = float(str(num).strip('B'))
-    if unit == 'K':
+    elif unit == 'K':
         byte = float(str(num).strip('K'))*1024.0
     elif unit == 'M':
         byte = float(str(num).strip('M'))*1024.0*1024.0
     elif unit == 'G':
         byte = float(str(num).strip('G'))*1024.0*1024.0*1024.0
+    else:
+        byte = 0
     for unit in ['','K','M','G','T','P','E','Z']:
         if abs(byte) < 1024.0:
             print("(Memory Usage: %3.1f%s%s)" % (byte, unit, suffix), file=sys.stderr, **kwargs)
@@ -227,3 +229,91 @@ def limit_cpu():
     "is called at every process start"
     p = psutil.Process(os.getpid())
     p.nice(value=19)
+
+if __name__ == "__main__":
+    import numpy as np
+    # current_mem_usage(0)
+    # a = [i for i in range(1000)]
+    # print("1000 list:")
+    # current_mem_usage(0)
+    # b = [i for i in range(20000)]
+    # print("20000 list:")
+    # current_mem_usage(0)
+    # c = [[float(i) for i in range(3000)] for j in range(5000)]
+    # d = [[float(i+1) for i in range(3000)] for j in range(5000)]
+    # e = [[float(i+2) for i in range(3000)] for j in range(5000)]
+    # f = [[float(i+3) for i in range(3000)] for j in range(5000)]
+    # print("4 lists of 5000 lists of 3000:")
+
+    # #Using Python lists
+    # current_mem_usage(0)
+    # e = []
+    # regions = []
+    # counter = 0
+    # for k in range(8):
+    #     d = []
+    #     for j in range(5000):
+    #         l = []
+    #         for i in range(3000):
+    #             if i % 2 == 0:
+    #                 i = i*0.0001
+    #             elif i == 4:
+    #                 i = i + 1
+    #             elif i == 5:
+    #                 i = i**2
+    #             else:
+    #                 i = i*j
+    #             counter+=1
+    #             l.append(i)
+    #         d.append(l)
+    #     e.append(d)
+    # e = np.array(e)
+    # print("4 lists of 5000 lists of 3000 appended and arithmetic:")
+    # current_mem_usage(0)
+
+    #Using Numpy arrays
+    # current_mem_usage(0)
+    # l = []
+    # for k in range(8):
+    #     e = np.zeros((5000,3000), dtype=float)
+    #     for j in range(5000):
+    #         for i in range(3000):
+    #             e[j,i] = i
+    #     l.append(e)
+    # print("4 lists of 5000 lists of 3000 appended and arithmetic:")
+    # current_mem_usage(0)
+
+    # regions = [('chrom', str(j), str(j+j*2)) for j in range(20000)]
+    # print("list of tuples:")
+    # current_mem_usage(0)
+    # a = []
+    # for j in range(20000):
+    #     a.append(['motif'] + [j for j in range(3000)])
+    # # current_mem_usage(0)
+    # # b = np.array([[j for j in range(3000)] for i in range(20000)])
+    # current_mem_usage(0)
+    # b = []
+    # for j in range(3000):
+    #     c = np.zeros(20000)
+    #     for i in range(20000):
+    #         c[i] = j
+    #     b.append(('motif', c))
+    # current_mem_usage(0)
+    # from multiprocessing import Manager
+    # manager = Manager()
+    # b = manager.list(b)
+    current_mem_usage(0)
+    import matplotlib.pyplot as plt
+    from TFEA import multiprocess
+    def plot_scatter(arg):
+        F = plt.figure(figsize=(15,15))
+        for i in range(1, 25):
+            ax = F.add_subplot(5,5,i)
+            ax.scatter([x for x in range(20000)],[y for y in range(20000)])
+            ax.set_ylabel('hello')
+            ax.set_xlabel('hello')
+        plt.close()
+        
+    multiprocess.main(function=plot_scatter, args=[i for i in range(5)], cpus=5, debug=True,
+                        kwargs={}, jobid=0)
+    current_mem_usage(0)

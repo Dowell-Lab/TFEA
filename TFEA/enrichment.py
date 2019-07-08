@@ -24,7 +24,11 @@ import datetime
 import traceback
 import numpy as np
 import math
+import pathlib
+import json
+import shutil
 from scipy import stats
+from multiprocessing import Manager
 
 from TFEA import config
 from TFEA import multiprocess
@@ -150,6 +154,8 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
 
 
         print('\tCalculating AUC:', file=sys.stderr)
+        # manager = Manager()
+        # meta_profile_dict = manager.dict(meta_profile_dict)
         auc_keywords = dict(permutations=permutations, use_config=use_config, 
                         output_type=output_type, pvals=pvals, plotall=plotall, 
                         p_cutoff=p_cutoff, figuredir=figuredir, 
@@ -220,6 +226,11 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
     total_time = time.time() - start_time
     if use_config:
         config.vars['ENRICHMENTtime'] = total_time
+
+    #Remove large meta profile file
+    # meta_profile_file.unlink()
+    shutil.rmtree(meta_profile_dict)
+
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
     if debug:
@@ -413,14 +424,14 @@ def permute_auc(distances=None, trend=None, permutations=None):
         list of AUC calculated for permutations 
        
     '''
-    es_permute = []
+    es_permute = np.zeros(permutations)
     triangle_area = np.trapz(trend)
     for i in range(permutations):
         random_distances = np.random.permutation(distances)
         cum_distances = np.cumsum(random_distances)
         es = np.trapz(cum_distances)
         auc = es - triangle_area
-        es_permute.append(auc)
+        es_permute[i] = auc
 
     return es_permute
 

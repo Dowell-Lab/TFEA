@@ -58,12 +58,12 @@ def run():
             error_file = str(srcdirectory / 'test' / 'test_files' / 'TFEA_test.err')
             output_file = str(srcdirectory / 'test' / 'test_files' / 'TFEA_test.out')
             subprocess.call(["sbatch", 
-            "--error=" + error_file, 
-            "--output=" +  output_file,
-            "--mail-user=" + sbatch,
-            srcdirectory / 'test' / 'test.sbatch'])
+                                "--error=" + error_file, 
+                                "--output=" +  output_file,
+                                "--mail-user=" + sbatch,
+                                srcdirectory / 'test' / 'test.sbatch'])
             print(("TFEA tests submitted as sbatch job. It can be "
-                "monitored using:\ntail -f " + error_file))
+                    "monitored using:\ntail -f " + error_file))
             sys.exit()
 
     #Rerun module
