@@ -115,6 +115,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         jobid = config.vars['JOBID']
         output_type = config.vars['OUTPUT_TYPE']
         basemean_cut = config.vars['BASEMEAN_CUT']
+        meta_profile_dict = {}
     print("Ranking regions...", flush=True, file=sys.stderr)
 
     #Begin by counting reads from bam files over the combined_file produced
