@@ -229,7 +229,8 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
 
     #Remove large meta profile file
     # meta_profile_file.unlink()
-    shutil.rmtree(meta_profile_dict)
+    if type(meta_profile_dict) != dict:
+        shutil.rmtree(meta_profile_dict, ignore_errors=True)
 
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
