@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 # Add TFEA srcdirectory into path
 srcdirectory = Path(__file__).absolute().parent
-sys.path.insert(0, srcdirectory.parent)
+sys.path.insert(0, srcdirectory)
 
 from TFEA import main
 

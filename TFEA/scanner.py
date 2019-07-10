@@ -360,16 +360,16 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
         config.vars['SCANNERtime'] = total_time
 
     #Remove large fasta files from output folder
-    if fasta_file:
-        fasta_file.unlink()
-    if md_fasta1:
-        md_fasta1.unlink()
-    if md_fasta2:
-        md_fasta2.unlink()
-    if mdd_fasta1:
-        mdd_fasta1.unlink()
-    if mdd_fasta2:
-        mdd_fasta2.unlink()
+    # if fasta_file:
+    #     fasta_file.unlink()
+    # if md_fasta1:
+    #     md_fasta1.unlink()
+    # if md_fasta2:
+    #     md_fasta2.unlink()
+    # if mdd_fasta1:
+    #     mdd_fasta1.unlink()
+    # if mdd_fasta2:
+    #     mdd_fasta2.unlink()
 
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
