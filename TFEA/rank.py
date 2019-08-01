@@ -518,6 +518,7 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None,
                 stop = stop.strip('"')
                 center = int((int(start)+int(stop))/2)
                 start = center - int(largewindow)
+                start = start if start > 0 else 0
                 stop = center + int(largewindow)
                 fc = float(line[fc_index+1])
                 basemean = float(line[basemean_index+1])

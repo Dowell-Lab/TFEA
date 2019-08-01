@@ -29,28 +29,64 @@
         tr:nth-child(even) {
             background-color: #dddddd;
         }
+        /* Tooltip container */
+        .tooltip {
+        position: relative;
+        display: inline-block;
+        border-bottom: 1px dotted black;
+        }
+
+        .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 120px;
+        background-color: black;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px;
+        position: absolute;
+        z-index: 1;
+        top: 150%;
+        left: 50%;
+        margin-left: -60px;
+        }
+
+        .tooltip .tooltiptext::after {
+        content: "";
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: transparent transparent black transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+        visibility: visible;
+        }
     </style>
     </head>
     <body style="width:1500px; margin:0 auto;">
 
         <h1>condition1 vs. condition2 TFEA Results</h1>
         <div class="row">
-            <div style="float: left; width: 45%">
-                <img src="./plots/TFEA_GC.png" alt="TFEA GC-Plot">
+            <div style="float: left; width: 100%">
+                <img src="./plots/TFEA_GC.svg" alt="TFEA GC-Plot" title="AUC vs. GC-content of all motifs analyzed before GC-correction.">
             </div>
-            <div style="float: right; width: 45%">
-                <img src="./plots/TFEA_MA.png" alt="TFEA MA-Plot">
+            <div style="float: right; width: 100%">
+                <img src="./plots/TFEA_MA.svg" alt="TFEA MA-Plot" style="float: right" title="AUC vs. number of motif hits in input regions.">
             </div>
         </div>
         <div class="row">
-            <div style="float: left; width:45%">
-                <img src="./plots/DESEQ_MA_Plot.png" alt="Region DE-Seq Plot">
+            <div style="float: left; width:100%">
+                <img src="./plots/DESEQ_MA_Plot.svg" alt="Region DE-Seq Plot" title="DE-Seq MA plot using the input regions.">
             </div>
-            <div id="User Inputs" style="float: right; width: 45%">
+            <div id="User Inputs" style="margin: auto; width: 80%">
                 <p><b>PADJ < 0.1</b></p>
                 <p><a href="./inputs.txt">User Inputs</a></p>
-                <p><a href="./plots/MD_MA.png">MD MA-Plot</a> |                     <a href="./plots/MD_volcano.png">MD VolcanoPlot</a></p>
-                <p><a href="./plots/MDD_MA.png">MDD MA-Plot</a> |                     <a href="./plots/MDD_volcano.png">MDD VolcanoPlot</a></p>
+                <p><a href="./plots/MD_MA.svg">MD MA-Plot</a> |                     <a href="./plots/MD_volcano.svg">MD VolcanoPlot</a></p>
+                <p><a href="./plots/MDD_MA.svg">MDD MA-Plot</a> |                     <a href="./plots/MDD_volcano.svg">MDD VolcanoPlot</a></p>
                 <table>
                     <tr>
                         <th>Module</th>
@@ -64,7 +100,7 @@
                     </tr><tr>
                         <td>RANK</td>
                         <td>deseq</td>
-                        <td>0:00:06</td>
+                        <td>0:00:07</td>
                     </tr><tr>
                         <td>SCANNER</td>
                         <td>fimo</td>
@@ -72,7 +108,7 @@
                     </tr><tr>
                         <td>ENRICHMENT</td>
                         <td>auc</td>
-                        <td>0:00:36</td>
+                        <td>0:00:27</td>
                     </tr><tr>
                         <td>OUTPUT</td>
                         <td>html</td>
@@ -80,7 +116,7 @@
                     </tr><tr>
                         <td><b>Total</b></td>
                         <td> </td>
-                        <td><b>0:00:45</b></td>
+                        <td><b>0:00:37</b></td>
                     </tr>
                 </table>   
             </div>
@@ -90,31 +126,34 @@
                 <h1>Positive AUC Value</h1>
                 <table> 
                     <tr>
-                    <th>#TF</th>
-<th>Corrected AUC</th>
-<th>Events</th>
-<th>GC</th>
-<th>GC-Correction</th>
-<th>FPKM</th>
-<th>P-adj</th>
+                    <th><div class="tooltip">#TF<span class="tooltiptext">Motif Name</span></div></th>
+<th><div class="tooltip">AUC<span class="tooltiptext">Area Under the Curve</span></div></th>
+<th><div class="tooltip">Corrected AUC<span class="tooltiptext">Area Under the Curve following GC correction</span></div></th>
+<th><div class="tooltip">Events<span class="tooltiptext">Number of motif instances within analyzed regions</span></div></th>
+<th><div class="tooltip">GC<span class="tooltiptext">GC-content of motif</span></div></th>
+<th><div class="tooltip">FPKM<span class="tooltiptext">FPKM of the gene associated with the motif if an annotation is provided</span></div></th>
+<th><div class="tooltip">P-adj<span class="tooltiptext">Adjusted P-value (Bonferroni)</span></div></th>
+<th><div class="tooltip">Corrected P-adj<span class="tooltiptext">Adjusted P-value (Bonferroni) after GC correction</span></div></th>
 
                     </tr>
             <tr style="color: red;">
-                <td><a href="./plots/ZN121_HUMAN.H11MO.0.C.results.html">ZN121_HUMAN.H11MO.0.C</td><td>0.0424</td>
+                <td><a href="./plots/ZN121_HUMAN.H11MO.0.C.results.html">ZN121_HUMAN.H11MO.0.C</td><td>0.0174</td>
+<td>0.0424</td>
 <td>204</td>
 <td>0.583</td>
-<td>0.025</td>
 <td>nan</td>
-<td>0.00676</td>
+<td>0.46</td>
+<td>0.00675</td>
             </tr>
                     
             <tr>
-                <td><a href="./plots/TBX1_HUMAN.H11MO.0.D.results.html">TBX1_HUMAN.H11MO.0.D</td><td>0.0338</td>
+                <td><a href="./plots/TBX1_HUMAN.H11MO.0.D.results.html">TBX1_HUMAN.H11MO.0.D</td><td>0.0216</td>
+<td>0.0338</td>
 <td>49</td>
 <td>0.71</td>
-<td>0.0122</td>
 <td>229</td>
-<td>0.845</td>
+<td>1</td>
+<td>0.859</td>
             </tr>
                                 
         </table>
@@ -124,29 +163,32 @@
         <h1>Negative AUC Value</h1>
         <table> 
             <tr>
-                <th>#TF</th>
-<th>Corrected AUC</th>
-<th>Events</th>
-<th>GC</th>
-<th>GC-Correction</th>
-<th>FPKM</th>
-<th>P-adj</th>
+                <th><div class="tooltip">#TF<span class="tooltiptext">Motif Name</span></div></th>
+<th><div class="tooltip">AUC<span class="tooltiptext">Area Under the Curve</span></div></th>
+<th><div class="tooltip">Corrected AUC<span class="tooltiptext">Area Under the Curve following GC correction</span></div></th>
+<th><div class="tooltip">Events<span class="tooltiptext">Number of motif instances within analyzed regions</span></div></th>
+<th><div class="tooltip">GC<span class="tooltiptext">GC-content of motif</span></div></th>
+<th><div class="tooltip">FPKM<span class="tooltiptext">FPKM of the gene associated with the motif if an annotation is provided</span></div></th>
+<th><div class="tooltip">P-adj<span class="tooltiptext">Adjusted P-value (Bonferroni)</span></div></th>
+<th><div class="tooltip">Corrected P-adj<span class="tooltiptext">Adjusted P-value (Bonferroni) after GC correction</span></div></th>
 
             <tr>
-                <td><a href="./plots/SP2_HUMAN.H11MO.0.A.results.html">SP2_HUMAN.H11MO.0.A</td><td>-0.0461</td>
+                <td><a href="./plots/SP2_HUMAN.H11MO.0.A.results.html">SP2_HUMAN.H11MO.0.A</td><td>-0.0499</td>
+<td>-0.0461</td>
 <td>114</td>
 <td>0.794</td>
-<td>0.00385</td>
 <td>nan</td>
-<td>0.167</td>
+<td>0.13</td>
+<td>0.177</td>
             </tr>
                     
             <tr>
-                <td><a href="./plots/SOX10_HUMAN.H11MO.0.B.results.html">SOX10_HUMAN.H11MO.0.B</td><td>-0.0301</td>
+                <td><a href="./plots/SOX10_HUMAN.H11MO.0.B.results.html">SOX10_HUMAN.H11MO.0.B</td><td>-0.0731</td>
+<td>-0.0301</td>
 <td>5</td>
 <td>0.402</td>
-<td>0.043</td>
 <td>4.83</td>
+<td>1</td>
 <td>1</td>
             </tr>
                             

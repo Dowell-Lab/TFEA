@@ -296,7 +296,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
                     title=f'Q4(n={len(q4_distances)}')
 
     plt.tight_layout()
-    plt.savefig(os.path.join(figuredir, motif + '_enrichment_plot.png'), 
+    plt.savefig(os.path.join(figuredir, motif + '_enrichment_plot.svg'), 
                 dpi=dpi, bbox_inches='tight')
     plt.close()
 
@@ -311,12 +311,12 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     ylim_max = ax.get_ylim()[1]
 
     if offset != 0:
-        ax.bar(auc-offset,ylim_max,color='red',width=width*2, linewidth=0, label='Non-Corrected AUC')[0]
+        ax.bar(auc,ylim_max,color='red',width=width*2, linewidth=0, label='Non-Corrected AUC')[0]
         # height = non_corrected_rect.get_height()
         # ax.text(non_corrected_rect.get_x() + non_corrected_rect.get_width()/2., 
         #         1.05*height, 'Non-Corected AUC', ha='center', va='bottom')
 
-    ax.bar(auc,ylim_max,color='green',width=width*2, linewidth=0, label='Corrected AUC')[0]
+    ax.bar(auc-offset,ylim_max,color='green',width=width*2, linewidth=0, label='Corrected AUC')[0]
 
     ax.legend()
 
@@ -339,7 +339,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     ax.set_xlabel('Area Under the Curve (AUC)', fontsize=14)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(figuredir, motif + '_simulation_plot.png'), 
+    plt.savefig(os.path.join(figuredir, motif + '_simulation_plot.svg'), 
                 dpi=dpi, bbox_inches='tight')
     plt.close()
 
@@ -359,9 +359,12 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     ax = plt.subplot(111)
     clean_results = [i for i in results if i[y_index] == i[y_index] and i[x_index] == i[x_index]]
     ylist = [i[y_index] for i in clean_results]
+    # import sys
+    # print(clean_results, file=sys.stderr)
     xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in clean_results]
     if c_index != None:
         clist = [i[c_index] for i in clean_results]
+        clist = [y-c for y,c in zip(ylist,clist)]
         max_c = abs(max([x for x in clist if x == x], key=abs))
         # import sys
         # print("MA c-list:", clist, file=sys.stderr)
@@ -504,7 +507,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     # import sys
     # print("GC c-list:", clist, file=sys.stderr)
     # print("GC max_c:", max_c, file=sys.stderr)
-    ylist = [y-c for y,c in zip(ylist,clist)]
+    clist = [c-y for y,c in zip(ylist,clist)]
     scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='viridis',
                             vmax=max_c, vmin=-max_c)
     cbar = plt.colorbar(scatter)
@@ -552,9 +555,9 @@ def meme_logo(motif_file, motif_ID, figuredir):
                             motif_file, figuredir]
     motif_ID = motif_ID.replace('.', '_')
     imagemagick_command = ['convert', figuredir / ('logo'+motif_ID+'.eps'), 
-                            figuredir / ('logo'+motif_ID+'.png')]
+                            figuredir / ('logo'+motif_ID+'.svg')]
     imagemagick_rc_command = ['convert', figuredir / ('logo'+motif_ID+'.eps'), 
-                            figuredir / ('logo_rc'+motif_ID+'.png')]
+                            figuredir / ('logo_rc'+motif_ID+'.svg')]
     try:
         subprocess.check_output(meme2images_command, stderr=subprocess.PIPE)
         subprocess.check_output(imagemagick_command, stderr=subprocess.PIPE)
@@ -775,7 +778,7 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     cbar.set_ticks([0, 0.25, 0.5, 0.75, 1], ['0', '0.25', '0.5', '0.75', '1'])
     cbar.set_label('Relative Rank (n=' + str(len(x)) + ')', rotation=270, 
                         labelpad=20)
-    plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.png'), dpi=dpi)
+    plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.svg'), dpi=dpi)
                 # bbox_inches='tight')
 
 if __name__ == "__main__":

@@ -172,12 +172,12 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                 title='TFEA GC-Plot', 
                                 xlabel='Motif GC-content',
                                 ylabel='Non-corrected Area Under the Curve (AUC)', 
-                                savepath=figuredir / 'TFEA_GC.png', 
+                                savepath=figuredir / 'TFEA_GC.svg', 
                                 linear_regression=linear_regression,
                                 dpi=dpi, 
-                                x_index=3,
+                                x_index=4,
                                 y_index=1, 
-                                c_index=4,
+                                c_index=2,
                                 p_index=-1,
                                 ylimits=[-0.5,0.5])
 
@@ -339,7 +339,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
 
         #Filter any TFs/files without any hits
         if hits == 0:
-            return [motif, 0, hits, gc, nan, fpkm, 1.0]
+            return [motif, 0, 0, hits, gc, fpkm, 1.0, 1.0]
 
         #Get -exp() of distance and get cumulative scores
         #Filter distances into quartiles to get middle distribution
@@ -349,7 +349,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         try:
             average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
         except ZeroDivisionError:
-            return [motif, 0, hits, gc, nan, fpkm, 1.0]
+            return [motif, 0, 0, hits, gc, fpkm, 1.0, 1.0]
         
         score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
         total = sum(score)
@@ -365,7 +365,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         offset = 0
         if motif in gc_correct:
             offset = gc_correct[motif]
-        auc = auc - offset
+        corrected_auc = auc - offset
 
         #Calculate random AUC
         if bootstrap:
@@ -381,8 +381,12 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         p = min(stats.norm.cdf(auc,mu,sigma), 1-stats.norm.cdf(auc,mu,sigma))
         if math.isnan(p):
             p = 1.0
-        
         p = p*tests if p*tests <=1 else 1
+
+        corrected_p = min(stats.norm.cdf(corrected_auc,mu,sigma), 1-stats.norm.cdf(corrected_auc,mu,sigma))
+        if math.isnan(corrected_p):
+            corrected_p = 1.0
+        corrected_p = corrected_p*tests if corrected_p*tests <=1 else 1
 
         if plotall or (output_type=='html' and p < p_cutoff):
             from TFEA import plot
@@ -405,7 +409,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         # current exception being handled.
         print(traceback.print_exc())
         raise e
-    return [motif, auc, hits, gc, -offset, fpkm, p]
+    return [motif, auc, corrected_auc, hits, gc, fpkm, p, corrected_p]
 
 #==============================================================================
 def permute_auc(distances=None, trend=None, permutations=None):

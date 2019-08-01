@@ -20,6 +20,7 @@ import time
 import datetime
 from pathlib import Path
 
+import pybedtools
 from pybedtools import BedTool, featurefuncs
 
 from TFEA import config
@@ -85,7 +86,7 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         combined_file = tempdir / "combined_file.mergeall.bed"
         merged_bed = merge_bed(beds=bed1+bed2)
         # merged_bed.each(center_feature).each(extend_feature, size=largewindow).saveas(combined_file)
-        merged_bed.saveas(combined_file)
+        merged_bed.remove_invalid().saveas(combined_file)
         if md:
             md_bedfile1 = tempdir / "md_bedfile1.merge.bed"
             md_bedfile2 = tempdir / "md_bedfile2.merge.bed"
@@ -93,9 +94,9 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
             # md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
             md_merged_bed1 = merge_bed(beds=bed1).each(featurefuncs.extend_fields, 4)
             md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4)
-            md_merged_bed1.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile1)
+            md_merged_bed1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile1)
             # md_merged_bed1.saveas(md_bedfile1)
-            md_merged_bed2.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
+            md_merged_bed2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile2)
             # md_merged_bed2.saveas(md_bedfile2)
 
     elif method == 'tfit clean':
@@ -104,7 +105,7 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         size_cut = 200
         cleaned_bed = clean_bed(beds=bed1+bed2, size_cut=size_cut)
         # cleaned_bed.each(center_feature).each(extend_feature, size=largewindow).saveas(combined_file)
-        cleaned_bed.saveas(combined_file)
+        cleaned_bed.remove_invalid().saveas(combined_file)
         if md:
             md_bedfile1 = tempdir / "md_bedfile1.clean.bed"
             md_bedfile2 = tempdir / "md_bedfile2.clean.bed"
@@ -121,16 +122,16 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         combined_file = tempdir / 'combined_file.intersectall.bed'
         intersected_bed = intersect_bed(beds=bed1+bed2)
         # intersected_bed.each(center_feature).each(extend_feature, size=largewindow).saveas(combined_file)
-        intersected_bed.saveas(combined_file)
+        intersected_bed.remove_invalid().saveas(combined_file)
         if md:
             md_bedfile1 = tempdir / "md_bedfile1.intersect.bed"
             md_bedfile2 = tempdir / "md_bedfile2.intersect.bed"
             md_intersected_bed1 = intersect_bed(beds=bed1)
             md_intersected_bed2 = intersect_bed(beds=bed2)
-            # md_intersected_bed1.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile1)
-            md_intersected_bed1.saveas(combined_file)
-            # md_intersected_bed2.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
-            md_intersected_bed2.saveas(combined_file)
+            md_intersected_bed1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile1)
+            # md_intersected_bed1.saveas(combined_file)
+            md_intersected_bed2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile2)
+            # md_intersected_bed2.saveas(combined_file)
 
     #Merge all regions, filter small regions. For MD perform this for each condition
     elif method == 'tfit remove small':
@@ -158,15 +159,15 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         intersected_bed2 = intersect_bed(beds=bed2)
         merged_bed = intersected_bed1.cat(intersected_bed2).merge().sort()
         # merged_bed.each(center_feature).each(extend_feature, size=largewindow).saveas(combined_file)
-        merged_bed.saveas(combined_file)
+        merged_bed.remove_invalid().saveas(combined_file)
         if md:
             md_bedfile1 = tempdir / "md_bedfile1.intersect.bed"
             md_bedfile2 = tempdir / "md_bedfile2.intersect.bed"
             md_intersected_bed1 = intersect_bed(beds=bed1).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
             md_intersected_bed2 = intersect_bed(beds=bed2).each(featurefuncs.extend_fields, 4).each(featurefuncs.rename, '1')
-            md_intersected_bed1.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile1)
+            md_intersected_bed1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile1)
             # md_intersected_bed1.saveas(md_bedfile1)
-            md_intersected_bed2.each(center_feature).each(extend_feature, size=largewindow).saveas(md_bedfile2)
+            md_intersected_bed2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile2)
             # md_intersected_bed2.saveas(md_bedfile2)
     
     else:
@@ -314,5 +315,9 @@ def extend_feature(feature, size=0):
         the modified feature
     '''
     feature.start = feature.start - size
+    if feature.start < 0:
+        feature.start = 0
     feature.stop = feature.stop + size
     return feature
+
+    
