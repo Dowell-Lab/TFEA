@@ -21,7 +21,7 @@
  
 <H2 id="Pipeline">TFEA Pipeline</H2>
  
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/TFEA_Pipeline2.png)
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/TFEAPipeline.png)
  
 <br></br>
 
@@ -352,10 +352,12 @@ These secondary analyses can also take pre-processed input similar to TFEA. See 
 Below are all the possible flags that can be provided to TFEA with a short description and default values.
 
 ```
-usage: TFEA [-h] [--output OUTPUT] [--bed1 [BED1 [BED1 ...]]]
-            [--bed2 [BED2 [BED2 ...]]] [--bam1 [BAM1 [BAM1 ...]]]
-            [--bam2 [BAM2 [BAM2 ...]]] [--label1 LABEL1] [--label2 LABEL2]
-            [--config CONFIG] [--sbatch SBATCH] [--test-install] [--test-full]
+usage: TFEA [-h] [--output DIR]
+            [--bed1 [FILE1 FILE2 ... FILEN [FILE1 FILE2 ... FILEN ...]]]
+            [--bed2 [FILE1 FILE2 ... FILEN [FILE1 FILE2 ... FILEN ...]]]
+            [--bam1 [BAM1 [BAM1 ...]]] [--bam2 [BAM2 [BAM2 ...]]]
+            [--label1 LABEL1] [--label2 LABEL2] [--config CONFIG]
+            [--sbatch SBATCH] [--test-install] [--test-full]
             [--combined_file COMBINED_FILE] [--ranked_file RANKED_FILE]
             [--fasta_file FASTA_FILE] [--md] [--mdd]
             [--md_bedfile1 MD_BEDFILE1] [--md_bedfile2 MD_BEDFILE2]
@@ -366,13 +368,15 @@ usage: TFEA [-h] [--output OUTPUT] [--bed1 [BED1 [BED1 ...]]]
             [--combine {intersect/merge,merge all,tfit clean,tfit remove small,False}]
             [--rank {deseq,fc,False}] [--scanner {fimo,genome hits}]
             [--enrichment {auc,auc_bgcorrect}] [--debug]
-            [--genomefasta GENOMEFASTA] [--fimo_thresh FIMO_THRESH]
-            [--fimo_motifs FIMO_MOTIFS] [--fimo_background FIMO_BACKGROUND]
+            [--genomefasta GENOMEFASTA] [--fimo_motifs FIMO_MOTIFS]
+            [--fimo_thresh FIMO_THRESH] [--fimo_background FIMO_BACKGROUND]
             [--genomehits GENOMEHITS] [--singlemotif SINGLEMOTIF]
             [--permutations PERMUTATIONS] [--largewindow LARGEWINDOW]
             [--smallwindow SMALLWINDOW] [--dpi DPI] [--padjcutoff PADJCUTOFF]
-            [--pvalcutoff PVALCUTOFF] [--plotall] [--output_type {txt,html}]
-            [--cpus CPUS]
+            [--plotall] [--output_type {txt,html}] [--cpus CPUS] [--mem MEM]
+            [--motif_annotations MOTIF_ANNOTATIONS] [--bootstrap BOOTSTRAP]
+            [--basemean_cut BASEMEAN_CUT] [--rerun [RERUN [RERUN ...]]]
+            [--gc GC]
 
 Transcription Factor Enrichment Analysis (TFEA)
 
@@ -382,12 +386,11 @@ optional arguments:
 Main Inputs:
   Inputs required for full pipeline
 
-  --output OUTPUT, -o OUTPUT
-                        Full path to output directory. If it exists, overwrite
+  --output DIR, -o DIR  Full path to output directory. If it exists, overwrite
                         its contents.
-  --bed1 [BED1 [BED1 ...]]
+  --bed1 [FILE1 FILE2 ... FILEN [FILE1 FILE2 ... FILEN ...]]
                         Bed files associated with condition 1
-  --bed2 [BED2 [BED2 ...]]
+  --bed2 [FILE1 FILE2 ... FILEN [FILE1 FILE2 ... FILEN ...]]
                         Bed files associated with condition 2
   --bam1 [BAM1 [BAM1 ...]]
                         Sorted bam files associated with condition 1. Must be
@@ -470,21 +473,17 @@ Module Switches:
                         Method for calculating enrichment
   --debug               Print memory and CPU usage to stderr
 
-Fasta Options:
-  Options for performing conversion of bed to fasta
-
-  --genomefasta GENOMEFASTA
-                        Genomic fasta file
-
 Scanner Options:
   Options for performing motif scanning
 
-  --fimo_thresh FIMO_THRESH
-                        P-value threshold for calling FIMO motif hits.
-                        Default: 1e-6
+  --genomefasta GENOMEFASTA
+                        Genomic fasta file
   --fimo_motifs FIMO_MOTIFS
                         Full path to a .meme formatted motif databse file.
                         Some databases included in motif_databases folder.
+  --fimo_thresh FIMO_THRESH
+                        P-value threshold for calling FIMO motif hits.
+                        Default: 1e-6
   --fimo_background FIMO_BACKGROUND
                         Options for choosing mononucleotide background
                         distribution to use with FIMO. {'largewindow',
@@ -518,9 +517,6 @@ Output Options:
   --padjcutoff PADJCUTOFF
                         A p-adjusted cutoff value that determines some
                         plotting output.
-  --pvalcutoff PVALCUTOFF
-                        A p-value cutoff value that determines some plotting
-                        output.
   --plotall             Plot graphs for all motifs.Warning: This will make
                         TFEA run much slower andwill result in a large output
                         folder.
@@ -534,6 +530,21 @@ Miscellaneous Options:
   --cpus CPUS           Number of processes to run in parallel. Note:
                         Increasing this value will significantly increase
                         memory footprint. Default: 1
+  --mem MEM             Amount of memory to request forsbatch script. Default:
+                        50gb
+  --motif_annotations MOTIF_ANNOTATIONS
+                        A bed file specifying genomic coordinates for genes
+                        corresponding to motifs. Motif name must be in the 4th
+                        column and match what is in the database.
+  --bootstrap BOOTSTRAP
+                        Amount to subsample motifhits to. Set to False to turn
+                        off. Default: False
+  --basemean_cut BASEMEAN_CUT
+                        Basemean cutoff value for inputted regions. Default: 0
+  --rerun [RERUN [RERUN ...]]
+                        Rerun TFEA in all folders of aspecified directory.
+                        Default: False
+  --gc GC               Perform GC-correction. Default: True
 ```
 
 <br></br>
