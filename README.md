@@ -8,11 +8,16 @@
    - <A href="#MEMESuite">MEME Suite</A>
      - <A href="#ImageMagick">Image Magick</A>
    - <A href="#FIJIModules">FIJI Modules</A>
-4. <A href="#Usage">Usage</A>
+4. <A href="#BasicUsage">Basic Usage</A>
+   - <A href="#TestingTFEA">Testing TFEA</A>
+   - <A href="#RunningTFEA">Running TFEA</A>
+5. <A href="#AdvancedUsage">Advanced Usage</A>
    - <A href="#ConfigurationFile">Configuration File</A>
    - <A href="#UsingSBATCH">Using SBATCH</A>
    - <A href="#PreProcessedInputs">Pre-Processed Inputs</A>
    - <A href="#SecondaryAnalysis">Secondary Analysis (MD, MDD)</A>
+   - <A href="#FPKM">Measuring TF FPKM</A>
+   - <A href="RerunningTFEA">Rerunning TFEA</A>
    - <A href="#HelpMessage">Help Message</A>
 6. <A href="#ExampleOutput">Example Output</A>
 7. <A href="#ContactInformation">Contact Information</A>
@@ -111,14 +116,14 @@ pip3 install --user .
   ```
 
 <br></br>
-<H2 id="Usage">Usage</H2>
+<H2 id="BasicUsage">BasicUsage</H2>
 
 Once installed, TFEA can be run from anywhere, try:
 
 ```
 TFEA --help
 ```
-
+<H3 id="TestingTFEA">Testing TFEA</H3>
 To make sure TFEA is installed properly, run the following tests:
 
 <b>*Note:*</b> If you chose to skip installations because you were going to run TFEA using the --sbatch flag, make sure you load the appropriate modules on FIJI or these tests will fail. Also, beware that the --test-full test can be memory and CPU intensive and you might get yelled at if you execute it on the FIJI head node.
@@ -134,43 +139,36 @@ If on a compute cluster with slurm the --sbatch flag is compatible with --test-f
 TFEA --test-full --sbatch your_email@address.com
 ```
 
-Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below is the minimum required input to run the full TFEA pipeline. Test files are provided within the 'test_files' directory in this repository.
-
-Using flags
+<H3 id="RunningTFEA">Running TFEA</H3>
+Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below are the minimum required inputs to run the full TFEA pipeline. Test files are provided in './TFEA/test/test_files' within this repository.
 
 ```
 TFEA --output ./test_files/test_output \
---bed1 ./test_files/SRR1105736.tfit_bidirs.chr22.bed ./test_files/SRR1105737.tfit_bidirs.chr22.bed \
---bed2 ./test_files/SRR1105738.tfit_bidirs.chr22.bed ./test_files/SRR1105739.tfit_bidirs.chr22.bed \
---bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
---bam2 ./test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
---label1 condition1 --label2 condition2 \
---genomefasta ./test_files/chr22.fa \
---fimo_motifs ./test_files/test_database.meme
+--bed1 ./TFEA/test/test_files/SRR1105736.tfit_bidirs.chr22.bed ./TFEA/test/test_files/SRR1105737.tfit_bidirs.chr22.bed \
+--bed2 ./TFEA/test/test_files/SRR1105738.tfit_bidirs.chr22.bed ./TFEA/test/test_files/SRR1105739.tfit_bidirs.chr22.bed \
+--bam1 ./TFEA/test/test_files/SRR1105736.sorted.chr22.subsample.bam ./TFEA/test/test_files/SRR1105737.sorted.chr22.subsample.bam \
+--bam2 ./TFEA/test/test_files/SRR1105738.sorted.chr22.subsample.bam ./TFEA/test/test_files/SRR1105739.sorted.chr22.subsample.bam \
+--label1 DMSO --label2 Nutlin \
+--genomefasta ./TFEA/test/test_files/chr22.fa \
+--fimo_motifs ./TFEA/test/test_files/test_database.meme
 ```
 
-Using a <A href="#ConfigurationFile">config file</A> (config file may be combined with flag inputs)
+<H2 id="AdvancedUsage">Advanced Usage</H2> 
+<H3 id="ConfigurationFile">Configuration File</H3>
+TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. For example:
 
 ```
 TFEA --config ./test_files/test_config.ini
 ```
 
-On FIJI using <A href="#UsingSBATCH">sbatch</A> (supported with config or flag inputs)
-
-```
-TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
-```
-
-
-<H3 id="ConfigurationFile">Configuration File</H3>
-TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. This can be helpful to keep track of different TFEA runs and because you can use variables within the config file. For documentation on config files and what you can do with them see <a href="https://docs.python.org/3.6/library/configparser.html#supported-ini-file-structure">Supported INI File Structure</a> and <a href="https://docs.python.org/3.6/library/configparser.html#interpolation-of-values">Interpolation of values (ExtendedInterpolation)</a>
+This can be helpful to keep track of different TFEA runs and because you can use variables within the config file to clean up your input. For documentation on config files and what you can do with them see <a href="https://docs.python.org/3.6/library/configparser.html#supported-ini-file-structure">Supported INI File Structure</a> and <a href="https://docs.python.org/3.6/library/configparser.html#interpolation-of-values">Interpolation of values (ExtendedInterpolation)</a>
 
 <b>*Notes:*</b>
 
-1. Section headers (ex: `[OUTPUT]`) don't matter but you need to have at least ONE section header to be a viable .ini file
-2. Capitalization of variables doesn't matter
-3. Feel free to specify any additional variables you like, TFEA will only parse variables that match a flag input
-4. If both flag inputs and configuration file inputs are provided, TFEA uses command line flag inputs preferrentially
+1. Section headers (ex: `[OUTPUT]`) don't matter but you need to have at least ONE section header to be a viable .ini file.
+2. Capitalization of variables doesn't matter.
+3. Feel free to specify any additional variables you like (variables are bash-like), TFEA will only parse variables that match a flag input.
+4. If an input is provided both as a flag and in a configuration file, TFEA prioritizes the command line flag input.
 
 Below is an example of a configuration file (./test_files/test_config.ini):
 
@@ -199,51 +197,24 @@ PLOTALL=True
 
 
 <H3 id="UsingSBATCH">Using SBATCH</H3>
-Specifying the `--sbatch` flag will submit TFEA to a compute cluster assuming you are logged into one. Below are the default node configuration settings, this can be changed within cluster_scripts/run_main.sbatch. See here the sbatch code used:
+Specifying the `--sbatch` flag will submit TFEA to a compute cluster assuming you are logged into one. If the `--sbatch` flag is specified, it MUST be followed by an e-mail address to send job information to. For example:
 
-  ```qsub
-  #!/bin/bash
 
-  ###Name the job
-  #SBATCH --job-name=TFEA
+```
+TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
+```
 
-  ###Specify the queue
-  #SBATCH -p short
+Additionally, the following flags can be used to change some of the job parameters:
 
-  ###Specify WallTime
-  #SBATCH --time=24:00:00
+```
+  --cpus CPUS           Number of processes to run in parallel. Warning:
+                        Increasing this value will significantly increase
+                        memory footprint. Default: 1
+  --mem MEM             Amount of memory to request forsbatch script. Default:
+                        50gb
+```
 
-  ### Specify the number of nodes/cores
-  #SBATCH --ntasks=10
-
-  ### Allocate the amount of memory needed
-  #SBATCH --mem=20gb
-
-  ### Set error and output locations. These will be automatically updated to the output directory.
-  #SBATCH --error /scratch/Users/user/e_and_o/%x.err
-  #SBATCH --output /scratch/Users/user/e_and_o/%x.out
-
-  ### Set your email address. This is changed automatically
-  #SBATCH --mail-type=ALL
-  #SBATCH --mail-user=jonathan.rubin@colorado.edu
-
-  ### Load required modules
-  module purge
-  module load python/3.6.3
-  module load python/3.6.3/matplotlib/1.5.1
-  module load python/3.6.3/scipy/0.17.1
-  module load python/3.6.3/numpy/1.14.1
-  module load python/3.6.3/htseq/0.9.1
-  module load python/3.6.3/pybedtools/0.7.10
-
-  module load bedtools/2.25.0
-  module load meme/5.0.3
-
-  ### now call your program
-
-  python3 ${cmd}
-  ```
-<b>*Note:*</b> For TFEA to properly run a job, the python call within the sbatch script: `python3 ${cmd}` <b>MUST NOT BE CHANGED</b>
+<b>*Note:*</b> `--cpus` also works without the `--sbatch` flag
 
 
 <H3 id="PreProcessedInputs">Using Pre-processed Inputs</H3>
@@ -347,6 +318,56 @@ TFEA --output ./test_files/test_output \
 
 These secondary analyses can also take pre-processed input similar to TFEA. See the 'Secondary Analysis Inputs' section in the <A href="#HelpMessage">help message</A> for more information.
 
+<H3 id="FPKM">Measuring TF FPKM</H3>
+TFEA will also measure the FPKM of TF genes within your data if desired. This requires input into the `--motif_annotations` flag which is a bed file with motif names as the 4th column. Example:
+
+```
+chr1	3698045	3733079	P73_HUMAN.H11MO.0.A	0	+
+chr1	6579990	6589212	ZBT48_HUMAN.H11MO.0.C	0	+
+chr1	15941868	15948495	ZBT17_HUMAN.H11MO.0.A	0	-
+chr1	23359447	23368005	ZN436_HUMAN.H11MO.0.C	0	-
+```
+
+This special bed file can be generated from a .meme database file using a tab-separated 2-column file containing motif names to gene names and a gene annotation file:
+
+Example of a motif_to_gene.tsv (this was generated on the HOCOMOCO v11 website):
+
+```
+Model	Transcription factor
+ANDR_HUMAN.H11MO.0.A	AR
+AP2A_HUMAN.H11MO.0.A	TFAP2A
+AP2C_HUMAN.H11MO.0.A	TFAP2C
+ASCL1_HUMAN.H11MO.0.A	ASCL1
+```
+
+Example of gene annotations:
+
+```
+chr1	11873	14409	DDX11L1;NR_046018;chr1:11873-14409	0	+
+chr1	14361	29370	WASH7P;NR_024540;chr1:14361-29370	0	-
+chr1	17368	17436	MIR6859-1;NR_106918;chr1:17368-17436	0	-
+chr1	17368	17436	MIR6859-4;NR_128720;chr1:17368-17436	0	-
+chr1	17368	17436	MIR6859-3;NR_107063;chr1:17368-17436	0	-
+```
+
+The script works by looking for gene names that correspond to each motif within the 4th column of the gene annotation file. It expects the 4th column to be ';' delimited.
+
+Already generated motif_annotation.bed files (and also intermediate .tsv files) are located within './motif_files/'
+
+<H3 id="RerunningTFEA">Rerunning TFEA</H3>
+TFEA can be easily rerun given one or multiple TFEA output folders. This works simply by rerunning the rerun.sh script which contains all command-line flag inputs. TFEA also automatically creates a copy of your configuration file (if used) within the output folder which is then also used when rerunning (so no need to worry about editing the original configuration file). To rerun a single TFEA output folder:
+
+```
+TFEA --rerun ./test_files/test_output
+```
+
+The `--rerun` flag also supports patterns containing wildcards to rerun all TFEA output folders that match. For example:
+
+```
+TFEA --rerun ./test_files/test*
+```
+
+This works by looking recursively into all folders and subfolders for rerun.sh scripts and then executing `sh rerun.sh`, so use with caution!
 
 <H3 id="HelpMessage">Help Message</H3>
 Below are all the possible flags that can be provided to TFEA with a short description and default values.
