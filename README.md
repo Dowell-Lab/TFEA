@@ -143,7 +143,7 @@ TFEA --test-full --sbatch your_email@address.com
 Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below are the minimum required inputs to run the full TFEA pipeline. Test files are provided in './TFEA/test/test_files' within this repository.
 
 ```
-TFEA --output ./test_files/test_output \
+TFEA --output ./TFEA/test/test_files/test_output \
 --bed1 ./TFEA/test/test_files/SRR1105736.tfit_bidirs.chr22.bed ./TFEA/test/test_files/SRR1105737.tfit_bidirs.chr22.bed \
 --bed2 ./TFEA/test/test_files/SRR1105738.tfit_bidirs.chr22.bed ./TFEA/test/test_files/SRR1105739.tfit_bidirs.chr22.bed \
 --bam1 ./TFEA/test/test_files/SRR1105736.sorted.chr22.subsample.bam ./TFEA/test/test_files/SRR1105737.sorted.chr22.subsample.bam \
@@ -158,7 +158,7 @@ TFEA --output ./test_files/test_output \
 TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. For example:
 
 ```
-TFEA --config ./test_files/test_config.ini
+TFEA --config ./TFEA/test/test_files/test_config.ini
 ```
 
 This can be helpful to keep track of different TFEA runs and because you can use variables within the config file to clean up your input. For documentation on config files and what you can do with them see <a href="https://docs.python.org/3.6/library/configparser.html#supported-ini-file-structure">Supported INI File Structure</a> and <a href="https://docs.python.org/3.6/library/configparser.html#interpolation-of-values">Interpolation of values (ExtendedInterpolation)</a>
@@ -174,19 +174,19 @@ Below is an example of a configuration file (./test_files/test_config.ini):
 
   ```bash
 [OUTPUT]
-OUTPUT='./test_files/test_output/'
+OUTPUT='./TFEA/test/test_files/test_output/'
 LABEL1='Condition 1'
 LABEL2='Condition 2'
 
 [DATA]
-TEST_FILES='./test_files/'
+TEST_FILES='./TFEA/test/test_files/'
 BED1=[${TEST_FILES}+'SRR1105736.tfit_bidirs.chr22.bed',${TEST_FILES}+'SRR1105737.tfit_bidirs.chr22.bed']
 BED2=[${TEST_FILES}+'SRR1105738.tfit_bidirs.chr22.bed',${TEST_FILES}+'SRR1105739.tfit_bidirs.chr22.bed']
 BAM1=[${TEST_FILES}+'SRR1105736.sorted.chr22.subsample.bam', ${TEST_FILES}+'SRR1105737.sorted.chr22.subsample.bam']
 BAM2=[${TEST_FILES}+'SRR1105738.sorted.chr22.subsample.bam', ${TEST_FILES}+'SRR1105739.sorted.chr22.subsample.bam']
 
 [MODULES]
-TEST_FILES='./test_files/'
+TEST_FILES='./TFEA/test/test_files/' #You need to re-initialize variables within each [MODULE]
 FIMO_MOTIFS=${TEST_FILES}+'test_database.meme'
 GENOMEFASTA=${TEST_FILES}+'chr22.fa'
 
@@ -201,7 +201,7 @@ Specifying the `--sbatch` flag will submit TFEA to a compute cluster assuming yo
 
 
 ```
-TFEA --config ./test_files/test_config.ini --sbatch your_email@address.com
+TFEA --config ./TFEA/test/test_files/test_config.ini --sbatch your_email@address.com
 ```
 
 Additionally, the following flags can be used to change some of the job parameters:
@@ -237,13 +237,13 @@ chr22	17158022	17160214
 
 Usage with TFEA
 ```
-TFEA --output ./test_files/test_output \
---combined_file ./test_files/test_combined_file.bed \
---bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
---bam2 ./test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
+TFEA --output ./TFEA/test/test_files/test_output \
+--combined_file ./TFEA/test/test_files/test_combined_file.bed \
+--bam1 ./TFEA/test/test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
+--bam2 ./TFEA/test/test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
 --label1 condition1 --label2 condition2 \
---genomefasta ./test_files/chr22.fa \
---fimo_motifs ./test_files/test_database.meme
+--genomefasta ./TFEA/test/test_files/chr22.fa \
+--fimo_motifs ./TFEA/test/test_files/test_database.meme
 ```
 
 <H4>ranked_file</H4>
@@ -267,11 +267,11 @@ chr22	31176104	31179104
 Usage with TFEA
 
 ```
-TFEA --output ./test_files/test_output \
---ranked_file ./test_files/test_ranked_file.bed \
+TFEA --output ./TFEA/test/test_files/test_output \
+--ranked_file ./TFEA/test/test_files/test_ranked_file.bed \
 --label1 condition1 --label2 condition2 \
---genomefasta ./test_files/chr22.fa \
---fimo_motifs ./test_files/test_database.meme
+--genomefasta ./TFEA/test/test_files/chr22.fa \
+--fimo_motifs ./TFEA/test/test_files/test_database.meme
 ```
 
 <H4>fasta_file</H4>
@@ -295,24 +295,24 @@ CTGAGCACCCCCCACCAGCCA...GGAGACGGGGCCTTTGT
 Usage with TFEA
 
 ```
-TFEA --output ./test_files/test_output \
---fasta_file ./test_files/test_fasta_file.fa \
+TFEA --output ./TFEA/test/test_files/test_output \
+--fasta_file ./TFEA/test/test_files/test_fasta_file.fa \
 --label1 condition1 --label2 condition2 \
---genomefasta ./test_files/chr22.fa \
---fimo_motifs ./test_files/test_database.meme
+--genomefasta ./TFEA/test/test_files/chr22.fa \
+--fimo_motifs ./TFEA/test/test_files/test_database.meme
 ```
 
 <H3 id="SecondaryAnalysis">Secondary Analysis</H3>
 TFEA can also perform MD-Score analysis and differential MD-Score analysis. This can be switched on easily if running the full pipeline:
 
 ```
-TFEA --output ./test_files/test_output \
---combined_file ./test_files/test_combined_file.bed \
---bam1 ./test_files/SRR1105736.sorted.chr22.subsample.bam ./test_files/SRR1105737.sorted.chr22.subsample.bam \
---bam2 ./test_files/SRR1105738.sorted.chr22.subsample.bam ./test_files/SRR1105739.sorted.chr22.subsample.bam \
+TFEA --output ./TFEA/test/test_files/test_output \
+--combined_file ./TFEA/test/test_files/test_combined_file.bed \
+--bam1 ./TFEA/test/test_files/SRR1105736.sorted.chr22.subsample.bam ./TFEA/test/test_files/SRR1105737.sorted.chr22.subsample.bam \
+--bam2 ./TFEA/test/test_files/SRR1105738.sorted.chr22.subsample.bam ./TFEA/test/test_files/SRR1105739.sorted.chr22.subsample.bam \
 --label1 condition1 --label2 condition2 \
---genomefasta ./test_files/chr22.fa \
---fimo_motifs ./test_files/test_database.meme \
+--genomefasta ./TFEA/test/test_files/chr22.fa \
+--fimo_motifs ./TFEA/test/test_files/test_database.meme \
 --md --mdd
 ```
 
@@ -358,13 +358,13 @@ Already generated motif_annotation.bed files (and also intermediate .tsv files) 
 TFEA can be easily rerun given one or multiple TFEA output folders. This works simply by rerunning the rerun.sh script which contains all command-line flag inputs. TFEA also automatically creates a copy of your configuration file (if used) within the output folder which is then also used when rerunning (so no need to worry about editing the original configuration file). To rerun a single TFEA output folder:
 
 ```
-TFEA --rerun ./test_files/test_output
+TFEA --rerun ./TFEA/test/test_files/test_output
 ```
 
 The `--rerun` flag also supports patterns containing wildcards to rerun all TFEA output folders that match. For example:
 
 ```
-TFEA --rerun ./test_files/test*
+TFEA --rerun ./TFEA/test/test_files/test*
 ```
 
 This works by looking recursively into all folders and subfolders for rerun.sh scripts and then executing `sh rerun.sh`, so use with caution!
@@ -574,7 +574,7 @@ Miscellaneous Options:
 TFEA will output all files and folders into the directory specified by the `--output` flag. The output directory structure is as follows:
 
 ```
-test_output
+./TFEA/test/test_output
 │   rerun.sh
 │   test_config.ini
 │   inputs.txt
@@ -614,7 +614,7 @@ A brief description of the files contained within this output directory are belo
 This bash script can be used at any time to regenerate a TFEA output folder in its entirety, run it using:
 
 ```
-sh ./test_output/rerun.sh
+sh ./TFEA/test/test_output/rerun.sh
 ```
 
 <H3 id="">test_config.ini</H3>
