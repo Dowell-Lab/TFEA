@@ -126,7 +126,7 @@ TFEA --help
 <H3 id="TestingTFEA">Testing TFEA</H3>
 To make sure TFEA is installed properly, run the following tests:
 
-<b>*Note:*</b> If you chose to skip installations because you were going to run TFEA using the --sbatch flag, make sure you load the appropriate modules on FIJI or these tests will fail. Also, beware that the --test-full test can be memory and CPU intensive and you might get yelled at if you execute it on the FIJI head node.
+<b>*Note:*</b> If you chose to skip installations because you were going to run TFEA using the --sbatch flag, make sure you load the appropriate modules on FIJI or these tests will fail.
 
 ```
 TFEA --test-install
