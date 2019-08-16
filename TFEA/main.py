@@ -15,6 +15,7 @@ def run():
     #==============================================================================
     import sys
     import subprocess
+    import shutil
     from pathlib import Path
     #Add TFEA srcdirectory into path
     srcdirectory = Path(__file__).absolute().parent
@@ -160,6 +161,11 @@ def run():
     output.main()
 
     print("TFEA done. Output in:", config.vars['OUTPUT'], file=sys.stderr)
+
+    #Delete temp_files directory
+    #==============================================================================
+    if not config.vars['DEBUG']:
+        shutil.rmtree(config.vars['TEMPDIR'])
 
     #==============================================================================
     #END OF MAIN SCRIPT

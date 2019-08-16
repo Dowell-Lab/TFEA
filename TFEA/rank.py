@@ -702,7 +702,7 @@ def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions,
         return meta_profile_dict
     else:
         meta_profile_folder = tempdir / 'meta_profile'
-        meta_profile_folder.mkdir()
+        meta_profile_folder.mkdir(exist_ok=True)
         
         for key in meta_profile_dict:
             for i, profile in enumerate(meta_profile_dict[key]):

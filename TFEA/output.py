@@ -710,7 +710,7 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
             </div>
         </div>
         <div class="row">
-            <div style="float: left; width: 600px; padding-right:50px">
+            <div style="float: left; width: 100%; padding-right:50px">
                 <p>Forward:</p>
                 <img src="./"""+direct_logo+"""" \
                     alt="Forward Logo">
@@ -719,7 +719,7 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                 <img src="./"""+reverse_logo+"""" \
                     alt="Reverse Logo">
             </div>
-            <div style="float:right; width: 600px">
+            <div style="float:right; width: 100%">
                 <img src="./"""+motif+"""_simulation_plot.svg" \
                     alt="Simulation Plot">
             </div>

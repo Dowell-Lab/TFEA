@@ -26,7 +26,7 @@ import subprocess
 import warnings
 import pathlib
 import json
-from statistics import mean
+from statistics import mean, median
 
 import numpy as np
 from scipy import stats
@@ -257,7 +257,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
                     xvals=xvals, label1=label1, label2=label2, ylim=ylim, 
                     title='Q1 (n=' + str(len(q1_meta_retain)) + ')', 
                     largewindow=largewindow)
-        ax3.legend(loc='best', fontsize='small')
+        ax3.legend(loc='best', fontsize='small', frameon=False)
         metaplot(q2posprofile1, q2negprofile1, q2posprofile2, q2negprofile2, ax=ax4, 
                     xvals=xvals, label1=label1, label2=label2, ylim=ylim, 
                     title='Q2 (n=' + str(len(q2_meta_retain)) + ')', 
@@ -297,7 +297,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
 
     plt.tight_layout()
     plt.savefig(os.path.join(figuredir, motif + '_enrichment_plot.svg'), 
-                dpi=dpi, bbox_inches='tight')
+                format='svg')#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
     #Simulation Plot
@@ -318,7 +318,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
 
     ax.bar(auc-offset,ylim_max,color='green',width=width*2, linewidth=0, label='Corrected AUC')[0]
 
-    ax.legend()
+    ax.legend(frameon=False)
 
     # height = corrected_rect.get_height()
 
@@ -339,8 +339,8 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     ax.set_xlabel('Area Under the Curve (AUC)', fontsize=14)
 
     plt.tight_layout()
-    plt.savefig(os.path.join(figuredir, motif + '_simulation_plot.svg'), 
-                dpi=dpi, bbox_inches='tight')
+    F.savefig(os.path.join(figuredir, motif + '_simulation_plot.svg'), 
+                format='svg')#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
@@ -381,11 +381,15 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
         if c_index != None:
             sigc = [scatter.to_rgba(c) for c,p in zip(clist,plist) if p<p_cutoff]
             ax.scatter(sigx, sigy, c=sigc, #marker='x', 
-                        edgecolor='r',  linewidth=2, s=50, label=f'p < {p_cutoff}')
+                        edgecolor='r',  linewidth=2, s=50)
+            legend = ax.scatter([1], [0], c='w', edgecolor='r', linewidth=2, 
+                                    s=50, label=f'p < {p_cutoff}')
         else:
-            ax.scatter(sigx, sigy, color='red', edgecolor='',  s=50, 
-            label=f'p < {p_cutoff}')
-        ax.legend(loc='best')
+            ax.scatter(sigx, sigy, color='red', edgecolor='',  s=50)
+            legend = ax.scatter([1], [0], color='red', edgecolor='',  s=50, 
+                                    label=f'p < {p_cutoff}')
+        ax.legend(loc='best', frameon=False)
+        legend.remove()
 
     # ylist = [i[1] for i in results]
     # xlist = [math.log(i[2], 10) if i[2] != 0 else 0 for i in results]
@@ -407,8 +411,8 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     if ylimits != None:
         ax.set_ylim(ylimits)
 
-    # plt.tight_layout()
-    F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
+    plt.tight_layout()
+    F.savefig(str(savepath), format='svg')#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
@@ -445,8 +449,8 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
 
-    # plt.tight_layout()
-    F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
+    plt.tight_layout()
+    F.savefig(str(savepath), format='svg')#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
@@ -487,7 +491,8 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     ax.set_ylabel(ylabel, fontsize=14)
     ax.set_xlabel(xlabel, fontsize=14)
 
-    F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
+    plt.tight_layout()
+    F.savefig(str(savepath), format='svg')#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
@@ -523,13 +528,13 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     
     if linear_regression != None:
         slope, intercept, r_value, p_value, _ = linear_regression
-        s = ("y = (" + str("%.3g" % slope) + ")x + " + str("%.3g" % intercept)
-            + "\nR$^2$ = " + str("%.3g" % r_value**2)
-            + "\np-val = " + str("%.3g" % p_value))
+        s = ("y = (" + str("%.2g" % slope) + ")x + " + str("%.2g" % intercept)
+            + "\nR$^2$ = " + str("%.2g" % r_value**2)
+            + "\np-val = " + str("%.2g" % p_value))
         ax.plot([0,1],[intercept, slope+intercept], color='r', alpha=0.5, label=s, 
                 linewidth=5)
 
-        ax.legend(loc='best')
+        ax.legend(loc='best', frameon=False)
 
     ax.axhline(0, linestyle='--', alpha=0.5, linewidth=2, c='k')
     ax.set_xlim([0,1])
@@ -544,7 +549,8 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     if ylimits != None:
         ax.set_ylim(ylimits)
 
-    F.savefig(str(savepath), dpi=dpi) #, bbox_inches='tight')
+    plt.tight_layout()
+    F.savefig(str(savepath), format='svg')#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
@@ -681,7 +687,10 @@ def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
 #==============================================================================
 def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     #This is the rank metric fill plot
-    ax.fill_between(xvals, 0, yvals,facecolor='grey',edgecolor="")
+    posvals = [(x,y) for x,y in zip(xvals,yvals) if y > 0]
+    negvals = [(x,y) for x,y in zip(xvals,yvals) if y < 0]
+    ax.fill_between([x for x,_ in posvals], 0, [y for _,y in posvals],facecolor='red',edgecolor="")
+    ax.fill_between([x for x,_ in negvals], 0, [y for _,y in negvals],facecolor='blue',edgecolor="")
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=False, top=False, 
@@ -778,8 +787,10 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     cbar.set_ticks([0, 0.25, 0.5, 0.75, 1], ['0', '0.25', '0.5', '0.75', '1'])
     cbar.set_label('Relative Rank (n=' + str(len(x)) + ')', rotation=270, 
                         labelpad=20)
-    plt.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.svg'), dpi=dpi)
+    plt.tight_layout()
+    F.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.svg'), format='svg')#, dpi=dpi)
                 # bbox_inches='tight')
+    plt.close()
 
 if __name__ == "__main__":
     results_file = '/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA_outputs/Allen2014/v5_outputs/20190620_DMSO_Nutlin_fimohits/results.txt'

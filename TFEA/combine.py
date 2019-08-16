@@ -30,7 +30,8 @@ from TFEA import exceptions
 #Main Script
 #==============================================================================
 def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None, 
-        md=None, largewindow=None, scanner=None, debug=False, jobid=None):
+        md=None, largewindow=None, scanner=None, debug=False, label1=None, 
+        label2=None, jobid=None):
     '''This is the main script of the combine function that is called within
         TFEA. Default arguments are assigned to variables within config.vars.
 
@@ -76,13 +77,40 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         md=config.vars['MD']
         largewindow=config.vars['LARGEWINDOW']
         scanner=config.vars['SCANNER']
+        label1 = config.vars['LABEL1']
+        label2 = config.vars['LABEL2']
         debug = config.vars['DEBUG']
         jobid = config.vars['JOBID']
 
     print("Combining Regions...", end=' ', flush=True, file=sys.stderr)
 
+    #Use MuMerge to merge bed files
+    if method == 'mumerge':
+        mumerge_input = tempdir / 'mumerge_input.txt'
+        combined_file = tempdir / 'combined_file.mumerge'
+        #Write MuMerge input file
+        with open(mumerge_input, 'w') as F:
+            F.write("#file\tsampid\tgroup\n")
+            for i,bedpath in enumerate(bed1, 1):
+                F.write(f'{bedpath}\t{label1}{i}\t{label1}\n')
+            for i,bedpath in enumerate(bed2, 1):
+                F.write(f'{bedpath}\t{label2}{i}\t{label2}\n')
+        
+        #MuMerge Command - output to combined_file.mumerge.bed
+        mumerge(mumerge_input, combined_file)
+
+        #Perform simple merge same as merge all for md bed files
+        if md:
+            md_bedfile1 = tempdir / "md_bedfile1.merge.bed"
+            md_bedfile2 = tempdir / "md_bedfile2.merge.bed"
+            md_merged_bed1 = merge_bed(beds=bed1).each(featurefuncs.extend_fields, 4)
+            md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4)
+            md_merged_bed1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile1)
+            md_merged_bed2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile2)
+        
+
     #Merge all bed regions, for MD merge condition replicates
-    if method == 'merge all':
+    elif method == 'mergeall':
         combined_file = tempdir / "combined_file.mergeall.bed"
         merged_bed = merge_bed(beds=bed1+bed2)
         # merged_bed.each(center_feature).each(extend_feature, size=largewindow).saveas(combined_file)
@@ -99,7 +127,7 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
             md_merged_bed2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile2)
             # md_merged_bed2.saveas(md_bedfile2)
 
-    elif method == 'tfit clean':
+    elif method == 'tfitclean':
         # combined_file = tfit_clean(beds=bed1+bed2, tempdir=tempdir)
         combined_file = tempdir / "combined_file.tfitclean.bed"
         size_cut = 200
@@ -118,7 +146,7 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
 
 
     #Intersect all bed regions, for MD intersect condition replicates
-    elif method == 'intersect all':
+    elif method == 'intersectall':
         combined_file = tempdir / 'combined_file.intersectall.bed'
         intersected_bed = intersect_bed(beds=bed1+bed2)
         # intersected_bed.each(center_feature).each(extend_feature, size=largewindow).saveas(combined_file)
@@ -134,7 +162,7 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
             # md_intersected_bed2.saveas(combined_file)
 
     #Merge all regions, filter small regions. For MD perform this for each condition
-    elif method == 'tfit remove small':
+    elif method == 'tfitremovesmall':
         # combined_file = tfit_remove_small(beds=bed1+bed2, tempdir=tempdir)
         size_cut = 200
         combined_file = tempdir / "combined_file.mergeallnosmall.bed"
@@ -273,6 +301,42 @@ def clean_bed(beds=None, size_cut=None):
     clean_bed = large_bed.cat(small_bed).merge().sort()
 
     return clean_bed
+
+#==============================================================================
+def mumerge(input_file, output_basename, 
+            mumerge_path=Path(__file__).absolute().parent / 'mumerge.py'):
+    '''This function runs MuMerge, a script written by Jacob T. Stanley that 
+        merges a list of bed files in a probabilistic way.
+        
+    Parameters
+    ----------
+    input_file: path to .txt file
+        A .txt file formatted according to MuMerge specifications. From doc:
+            Input file containing bedfiles, sample ID's, and replicate groupings. Input
+            file (indicated by the '-i' flag) should be of the following (tab delimited)
+            format:
+
+            #file   sampid  group
+            /full/file/path/filename1.bed   sampid1 A
+            /full/file/path/filename2.bed   sampid2 B
+            ...
+            
+            Header line indicated by '#' character must be included and fields must
+            follow the same order as non-header lines. The order of subsequent lines does
+            matter. 'group' identifiers should group files that are technical/biological
+            replicates. Different experimental conditions should recieve different 'group'
+            identifiers. The 'group' identifier can be of type 'int' or 'str'. If 'sampid'
+            is not specified, then default sample ID's will be used.
+            
+    output_basename: Path to output file without file extension
+        From doc:
+            Output file basename (full path, sans extension).
+            WARNING: will overwrite any existing file)'''
+    mumerge_command = [mumerge_path, '-i', input_file, '-o', output_basename]
+    try:
+        subprocess.check_output(mumerge_command, stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as e:
+        raise exceptions.SubprocessError(e.stderr.decode())
 
 #Pybedtools each() functions
 #==============================================================================

@@ -38,7 +38,7 @@ def count_fasta(fasta):
     fasta : string
         full path to a fasta (.fa) file
         
-    Retunrs
+    Returns
     -------
     count : int
         number of regions in the fasta file
@@ -50,7 +50,7 @@ def count_fasta(fasta):
     return count
 
 #==============================================================================
-def get_sequence_indices(fasta=None, sequence_n=None):
+def get_sequence_indices(fasta=None, sequence_n=None, seed=None):
     '''
     Get the indices of sequences to pull from a fasta file
     
@@ -68,7 +68,13 @@ def get_sequence_indices(fasta=None, sequence_n=None):
         a list of indices corresponding to sequences to pull from the inputted fasta file
     '''
     total_sequences = count_fasta(fasta)
-    sequence_pull = np.random.choice(total_sequences, size=int(sequence_n), replace=False)
+    if seed != None:
+        sequence_pull = np.random.choice(total_sequences, size=int(sequence_n), 
+                                            replace=False)
+    else:
+        np.random.seed(seed)
+        sequence_pull = np.random.choice(total_sequences, size=int(sequence_n), 
+                                            replace=False)
     
     return sequence_pull
 

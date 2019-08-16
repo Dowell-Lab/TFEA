@@ -56,6 +56,12 @@ def read_arguments():
                         "condition 1"), dest='LABEL1')
     inputs.add_argument('--label2', help=("An informative label for "
                         "condition 2"), dest='LABEL2')
+    inputs.add_argument('--genomefasta', help=("Genomic fasta file"), 
+                            dest='GENOMEFASTA')
+    inputs.add_argument('--fimo_motifs', help=("Full path to a .meme "
+                        "formatted motif databse file. Some "
+                        "databases included in motif_files "
+                        "folder."), dest='FIMO_MOTIFS')
     inputs.add_argument('--config','-c', help=("A configuration file that a "
                         "user may use instead of specifying flags. Command "
                         "line flags will overwrite options within the config "
@@ -131,39 +137,33 @@ def read_arguments():
                                      dest='MDD_PERCENT')
 
     # Module switches
-    module_switches = parser.add_argument_group('Module Switches', 
-                                            'Switches for different modules')
+    module_switches = parser.add_argument_group('Modules', 
+                                            'Options for different modules')
     module_switches.add_argument('--combine', help=("Method for combining input "
-                                    "bed files"), choices=['intersect/merge', 
-                                    'merge all', 'tfit clean', 
-                                    'tfit remove small', False], dest='COMBINE')
+                                    "bed files. Default: mumerge"), 
+                                    choices=['mumerge','intersect/merge', 
+                                    'mergeall', 'tfitclean', 
+                                    'tfitremovesmall'], dest='COMBINE')
     module_switches.add_argument('--rank', help=("Method for ranking combined "
                                     "bed file"), choices=['deseq', 'fc', False], 
                                     dest='RANK')
     module_switches.add_argument('--scanner', help=("Method for scanning fasta "
-                                    "files for motifs"), choices=['fimo', 
-                                    'genome hits'], dest='SCANNER')
+                                    "files for motifs. Default: fimo"), 
+                                    choices=['fimo', 'genome hits'], 
+                                    dest='SCANNER')
     module_switches.add_argument('--enrichment', help=("Method for calculating "
-                                    "enrichment"), choices=['auc', 
+                                    "enrichment. Default: auc"), choices=['auc', 
                                     'auc_bgcorrect'], dest='ENRICHMENT')
-    module_switches.add_argument('--debug', help=("Print memory and CPU usage to stderr"), 
-                                    action='store_true', dest='DEBUG', default=None)
 
     # Scanner Options
     scanner_options = parser.add_argument_group('Scanner Options', 
                                         'Options for performing motif scanning')
-    scanner_options.add_argument('--genomefasta', help=("Genomic fasta file"), 
-                                    dest='GENOMEFASTA')
-    scanner_options.add_argument('--fimo_motifs', help=("Full path to a .meme "
-                                    "formatted motif databse file. Some "
-                                    "databases included in motif_databases "
-                                    "folder."), dest='FIMO_MOTIFS')
     scanner_options.add_argument('--fimo_thresh', help=("P-value threshold for "
                                     "calling FIMO motif hits. Default: 1e-6"), 
                                     dest='FIMO_THRESH')
     scanner_options.add_argument('--fimo_background', help=("Options for "
                                     "choosing mononucleotide background "
-                                    "distribution to use with FIMO. "
+                                    "distribution to use with FIMO. Default: largewindow"
                                     "{'largewindow', 'smallwindow', int, file}"),
                                     dest='FIMO_BACKGROUND')
     scanner_options.add_argument('--genomehits', help=("A folder containing "
@@ -215,11 +215,11 @@ def read_arguments():
     #Miscellaneous Options
     misc_options = parser.add_argument_group('Miscellaneous Options', 'Other options.')
     misc_options.add_argument('--cpus', help=("Number of processes to run "
-                                "in parallel. Note: Increasing this value will "
+                                "in parallel. Warning: Increasing this value will "
                                 "significantly increase memory footprint. "
                                 "Default: 1"), dest='CPUS')
-    misc_options.add_argument('--mem', help=("Amount of memory to request for"
-                                "sbatch script. Default: 50gb"), dest='MEM')
+    misc_options.add_argument('--mem', help=("Amount of memory to request for "
+                                "sbatch script. Default: 20gb"), dest='MEM')
     misc_options.add_argument('--motif_annotations', help=("A bed file "
                                 "specifying genomic coordinates for genes "
                                 "corresponding to motifs. Motif name must "
@@ -236,8 +236,13 @@ def read_arguments():
                                 nargs='*', dest='RERUN')
     misc_options.add_argument('--gc', help=("Perform GC-correction. Default: True"), 
                                 dest='GC')
+    misc_options.add_argument('--debug', help=("Print memory and CPU usage to "
+                                    "stderr. Also retain temporary files."), 
+                                    action='store_true', dest='DEBUG', default=None)
 
-    #Set default arguments and possible options or types
+    #Set default arguments and possible options or types within arg_defaults
+    #dict. For example:
+    #arg_defaults = {'InputVariable': [Default_value, [list of possible types]}
     # Notes: 
     # 1. 'PosixList' is a special keyword that defines a list of PosixPaths.
     #     this value is handled later in the code
@@ -246,7 +251,7 @@ def read_arguments():
     #
     #       CORRECT:
     #       -------
-    #       'FIMO_BACKGROUND': 'largewindow', [int, str] 
+    #       'FIMO_BACKGROUND': ['largewindow', [int, str]]
     #       if FIMO_BACKGROUND == 'largewindow':
     #           int(FIMO_BACKGROUND) results in error so str(FIMO_BACKGROUND)
     #       if FIMO_BACKGROUND == 5:
@@ -254,7 +259,7 @@ def read_arguments():
     #
     #       INCORRECT:
     #       ---------
-    #       'FIMO_BACKGROUND': 'largewindow', [str, int] 
+    #       'FIMO_BACKGROUND': ['largewindow', [str, int]]
     #       if FIMO_BACKGROUND == 'largewindow':
     #           str(FIMO_BACKGROUND) is fine
     #       if FIMO_BACKGROUND == 5:
@@ -288,7 +293,7 @@ def read_arguments():
                     'MDD_FASTA2': [False, [Path, bool]],
                     'MDD_PVAL': [0.2, [float, bool]],
                     'MDD_PERCENT': [False, [float, bool]],
-                    'COMBINE': ['merge all', [str, bool]],
+                    'COMBINE': ['mumerge', [str, bool]],
                     'RANK': ['deseq', [str, bool]],
                     'SCANNER': ['fimo', [str, bool]],
                     'ENRICHMENT': ['auc', [str]],
@@ -306,7 +311,7 @@ def read_arguments():
                     'PADJCUTOFF': [0.001, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'CPUS': [1, [int]], 
-                    'MEM': ['50gb', [str]],
+                    'MEM': ['20gb', [str]],
                     'BOOTSTRAP': [False, [int, bool]],
                     'MOTIF_ANNOTATIONS': [False, [Path, bool]],
                     'BASEMEAN_CUT': [0, [int]],

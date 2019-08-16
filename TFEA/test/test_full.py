@@ -51,8 +51,8 @@ class TestMain(unittest.TestCase):
                     self.testdir / 'SRR1105737.sorted.chr22.subsample.bam']
         self.bam2 = [self.testdir / 'SRR1105738.sorted.chr22.subsample.bam', 
                     self.testdir / 'SRR1105739.sorted.chr22.subsample.bam']
-        self.label1 = 'condition1'
-        self.label2 = 'condition2'
+        self.label1 = 'DMSO'
+        self.label2 = 'Nutlin'
         self.genomefasta = self.testdir / 'chr22.fa'
         self.ranked_file = self.testdir / 'ranked_file.bed'
 
@@ -80,9 +80,10 @@ class TestMain(unittest.TestCase):
                     '--motif_annotation', self.testdir / 'test_motif_annotation.bed',
                     '--output_type', 'html', 
                     '--plotall',
-                    '--combine', 'merge all',
+                    '--combine', 'mergeall',
                     '--md', '--mdd',
                     '--debug',
+                    '--cpus', '2',
                     '--padjcutoff', '0.1']
         # try:
         print('\n============================================', 

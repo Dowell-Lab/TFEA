@@ -19,10 +19,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from TFEA import scanner
-from TFEA import enrichment
-from TFEA import exceptions
-from TFEA import multiprocess
+import numpy as np
+from scipy import stats
+
+
+from TFEA.simulate import pull_sequences
+from TFEA.simulate import motif_insert
 
 #Run function
 #==============================================================================
@@ -33,87 +35,66 @@ def run():
         sys.exit(1)
     parser = parser.parse_args()
     output = Path(parser.output)
-    parent_folder = output.parent
-    if parser.sbatch and parser.sbatch != 'False':
-        script = Path(__file__).absolute().parent / 'simulate.sbatch'
-        args = sys.argv
-        args[args.index('--sbatch')+1] = 'False'
-        try:
-            subprocess.run(["sbatch", 
-                                "--job-name=TFEA_simulate",
-                                "--error=" + (parent_folder / "%x.err").as_posix(), 
-                                "--output=" + (parent_folder / "%x.out").as_posix(), 
-                                "--mail-user=" + parser.sbatch, 
-                                "--export=cmd=" + ' '.join(args), 
-                                "--ntasks=" + str(parser.cpus),
-                                "--mem=" + str(parser.mem),
-                                script], stderr=subprocess.PIPE, 
-                                stdout=subprocess.PIPE, check=True)
-            print(("TFEA-simulate has been submitted using an sbatch script. \nIt can be "
-                "monitored using:\ntail -f " + str(parent_folder / "TFEA_simulate.err")))
-            sys.exit()
-        except subprocess.CalledProcessError as e:
-            raise exceptions.SubprocessError(e.stderr.decode())
 
-    if parser.random_folder:
-        random_folder = Path(parser.random_folder)
-    elif parser.random_fasta:
-        from TFEA.simulate import pull_sequences
-        keyword_args = dict(fasta_file=parser.random_fasta, 
-                            sequence_n=parser.sequences)
-        args = [parent_folder / (str(i) + 'Random.fa') for i in range(int(parser.simulations))]
-        multiprocess.main(function=pull_sequences.run, args=args, 
-                            kwargs=keyword_args, debug=False, 
-                            jobid=None, cpus=int(parser.cpus))
-        # pull_sequences.run(parser.random_fasta, simulations=parser.simulations,
-        #                     sequence_n=parser.sequences, output=parent_folder)
-        random_folder = parent_folder
+    #Get random sequences used to insert motifs from a fasta file
+    if parser.random_fasta:
+        sequence_pull = pull_sequences.get_sequence_indices(fasta=parser.random_fasta, 
+                                                            sequence_n=parser.sequence_n, 
+                                                            seed=parser.seed)
+        sequences = pull_sequences.pull_sequences(fasta=parser.random_fasta, 
+                                                    sequence_pull=sequence_pull, 
+                                                    sequence_n=parser.sequence_n)
     else:
         print("This part still under construction")
         sys.exit()
 
-    motif_counts = {}
-    simulations = 0
-    for fasta_file in random_folder.glob('*.fa'):
-        print("Scanning:", str(fasta_file),file=sys.stderr)
-        motif_distances, _, _, _, _ = scanner.main(use_config=False, 
-                        fasta_file=fasta_file, scanner='fimo', 
-                        md=False, largewindow=parser.largewindow, 
-                        smallwindow=parser.smallwindow, 
-                        fimo_background='largewindow', 
-                        genomefasta=parser.genomefasta, tempdir=parent_folder, 
-                        fimo_motifs=parser.motifs, singlemotif=False, 
-                        fimo_thresh=parser.fimo_thresh, debug=False, mdd=False, 
-                        jobid=0, cpus=int(parser.cpus))
-        results, _, _ = enrichment.main(use_config=False, 
-                        motif_distances=motif_distances, 
-                        enrichment='auc', permutations=1000, debug=False, 
-                        largewindow=parser.largewindow, 
-                        smallwindow=parser.smallwindow, 
-                        md=False, mdd=False, p_cutoff=0,
-                        cpus=int(parser.cpus), jobid=0, output_type='txt')
-        for result in results:
-            motif = result[0]
-            padj = result[-1]
-            if motif not in motif_counts:
-                motif_counts[motif] = [padj]
-            else:
-                motif_counts[motif].append(padj)
-        
-        simulations += 1
+    #Determine which motifs will be inserted into fasta file
+    include_motifs = parser.include_motifs.split(',') if parser.include_motifs != None else None
+    exclude_motifs = parser.exclude_motifs.split(',') if parser.exclude_motifs != None else None
+    if exclude_motifs != None and include_motifs == None:
+        include_motifs = [m for m in get_motifs(parser.motifs) if m not in exclude_motifs]
+
     
-    with open(output, 'w') as outfile:
-        user_input = vars(parser)
-        for key in user_input:
-            outfile.write('#' + key + '=' + str(user_input[key]) + '\n')
-        outfile.write('#Simulations=' + str(simulations) + '\n')
-        outfile.write('#Motif\tP-adj1, P-adj2, ..., P-adjn\n')
-        for motif in motif_counts:
-            outfile.write(motif + '\t' + ','.join([str("%.3g" % padj) for padj in motif_counts[motif]]) + '\n')
-    
-    if not parser.keep_fasta:
-        for fasta_file in random_folder.glob('*.fa'):
-            fasta_file.unlink()
+
+    #For each motif insert it at desired locations based on insert_parameters
+    if include_motifs != None:
+        #Create insert parameters used to determine where to insert motifs
+        insert_parameters = zip(parser.distance_mu.split(','), 
+                                parser.distance_sigma.split(','), 
+                                parser.rank_range.split(','), 
+                                parser.motif_number.split(','))
+        #Loop through motifs to insert and insert the motif in the randomly pulled
+        # sequences
+        for motif in include_motifs:
+            for d_mu, d_sigma, rank_range, motif_number in insert_parameters:
+                distance_pdf = list(stats.norm.pdf(np.arange(parser.largewindow+1), 
+                                    loc=parser.largewindow - int(d_mu), 
+                                    scale=int(d_sigma)))
+                distance_pdf_sum = sum(distance_pdf)
+                if distance_pdf_sum < 1:
+                    distance_pdf = [x+((1-distance_pdf_sum)/len(distance_pdf)) for x in distance_pdf]
+                rank_pdf = [0] * parser.sequence_n
+                start, stop = [int(x) for x in rank_range.split('-')]
+                if stop-start != 0:
+                    equal_probability = 1/(stop - start)
+                    rank_pdf[start:stop] = [equal_probability for _ in range(stop-start)]
+                    rank_pdf[start] = rank_pdf[start] + 1.0 - sum(rank_pdf[start:stop])
+                    sequences = motif_insert.insert_single_motif(sequences=sequences, 
+                                                    sequence_n=parser.sequence_n, 
+                                                    motif_database=parser.motifs, 
+                                                    motif=motif, 
+                                                    rank_pdf=rank_pdf, 
+                                                    distance_pdf=distance_pdf, 
+                                                    motif_number=int(motif_number),
+                                                    seed=parser.seed)
+    write_fasta(sequences=sequences, outputpath=output) #Write output
+
+    #Optionally, split fasta for use with MDD-scores
+    if parser.mdd != False:
+        split_fasta(fasta_file=output, 
+                    output_file1=output.parent / (output.stem + '.mdd1.fa'), 
+                    output_file2=output.parent / (output.stem + '.mdd2.fa'), 
+                    percent=float(parser.mdd))
 
 
 #Argument Parsing
@@ -124,37 +105,103 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description=("Simulate data to determine "
                                                 "false positive rate"))
 
-    parser.add_argument('--output', '-o', help=("Full path to output file."))
+    parser.add_argument('--output', '-o', help=("Full path to output fasta file."))
     parser.add_argument('--motifs', '-m', help=("Full path to a .meme formatted "
-                        "databse with TF motifs"))
-    parser.add_argument('--fimo_thresh', help=("P-value threshold for "
-                                    "calling FIMO motif hits. Default: 1e-6"), 
-                                    default=1e-6)
-    parser.add_argument('--genomefasta', help=("Genomic fasta file"))
-    parser.add_argument('--simulations', '-n', help=("Number of simulations "
-                        "to run"), type=int)
-    parser.add_argument('--sequences', '-s', help=("Number of sequences to use "
-                        "per simulation"), type=int)
-    parser.add_argument('--random_fasta', '-r', help=("Full path to a fasta file "
-                        "containing random sequences from which to pull [optional]"), 
+                                                "databse with TF motifs"))
+    parser.add_argument('--include_motifs', '-i', help=("Comma-delimited list "
+                                                        "of motifs to "
+                                                        "include from the .meme "
+                                                        "database"))
+    parser.add_argument('--exclude_motifs', '-e', help=("Comma-delimited list "
+                                                        "of motifs to "
+                                                        "exclude from the "
+                                                        ".meme database"))
+    parser.add_argument('--random_fasta', '-f', help=("Full path to a fasta file "
+                                                        "containing random "
+                                                        "sequences from which "
+                                                        "to pull [optional]"), 
                         default=False)
-    parser.add_argument('--padjcutoff', help=("P-Adjusted cutoff to be "
-                        "considered as signficant. Default: 0.01"), default=0.01)
-    parser.add_argument('--random_folder', '-f', help=("Full path to a folder "
-                        "containing fasta files [optional]"), 
-                        default=False)
-    parser.add_argument('--keep_fasta', help=("Turn on to keep fasta files"), 
-                        action='store_true')
-    parser.add_argument('--cpus', help=("Number of cpus to use"), default=1, 
+    parser.add_argument('--genomefasta', help=("Genomic fasta file. Required "
+                                                "if random_fasta not provided"))
+    parser.add_argument('--sequence_n', '-s', help=("Number of sequences to use "
+                                                    "per simulation. "
+                                                    "Default: 10000"), 
                         type=int)
-    parser.add_argument('--sbatch', help=("Use to submit an sbatch job"), 
-                        metavar="EMAIL", default=False)
-    parser.add_argument('--mem', help=("Amount of memory to use (use only with "
-                        "sbatch argument)"), default='10gb')
+    parser.add_argument('--seed', help=("Seed for random state. Default: Time"), 
+                        type=int)           
     parser.add_argument('--largewindow', help=("Largewindow. Default: 1500"), 
                         default=1500)
     parser.add_argument('--smallwindow', help=("Smallwindow. Default: 150"), 
                         default=150)
+    parser.add_argument('--distance_mu', '-dm', help=("Average distance to add "
+                        "a motif from middle. Can be multiple comma-separated "
+                        "averages (Ex: '0,5') but must correspond to the number of "
+                        "sigmas, rank ranges, and motif numbers."))
+    parser.add_argument('--distance_sigma', '-ds', help=("Variance of the "
+                        "distance to add a motif from mu. Can be multiple "
+                        "comma-separated sigmas (Ex: '150,300') but must correspond "
+                        "to the number of mus, rank ranges, and motif numbers."))
+    parser.add_argument('--rank_range', '-rr', help=("Rank range in which to "
+                        "add a motif. Can be multiple comma-separated ranges "
+                        "(Ex: '0-100,500-10000') but must correspond to the number "
+                        "of mus, sigmas, and motif numbers."))
+    parser.add_argument('--motif_number', '-mn', help=("Number of motifs to "
+                        "insert at given mu, sigma, and range. Can be multiple "
+                        "comma-separated numbers (Ex: '100,100') but must "
+                        "correspond to the number of mu, sigmas, and rank "
+                        "ranges. Cannot be more than the number of regions "
+                        "within ranked ranges."))
+    parser.add_argument('--mdd', help=("Determines percentage at which to "
+                        "split fasta file for MDD analysis. Default: False"), 
+                        default=False)
                         
     return parser
 
+#==============================================================================
+def get_motifs(motif_database):
+    motif_list = list()
+    with open(motif_database,'r') as F:
+        for line in F:
+            if 'MOTIF' in line:
+                motif_list.append(line.strip().split()[-1])
+    return motif_list
+
+#==============================================================================
+def write_fasta(sequences=None, outputpath=None):
+    '''
+    Writes a fasta file given a list of sequences. Each fasta region will be named arbitrarily.
+    
+    Parameters
+    ----------
+    sequences : list or array
+        a list of strings containing sequences to write into a fasta file
+        
+    outputpath : str
+        a string pointing to a full path to an output file (inlcudes filename)
+        
+    Returns
+    -------
+    None
+    '''
+    sequence_counter = 1
+    with open(outputpath,'w') as outfile:
+        for sequence in sequences:
+            outfile.write('>' + str(sequence_counter) + '\n')
+            outfile.write(sequence + '\n')
+            sequence_counter += 1
+
+#==============================================================================
+def split_fasta(fasta_file=None, output_file1=None, output_file2=None, 
+                    percent=None):
+    line_cutoff = sum([1 for line in Path(fasta_file).read_text().split('\n')])*percent - 1
+    with open(output_file1, 'w') as outfile1:
+        with open(output_file2, 'w') as outfile2:
+            with open(fasta_file) as F:
+                i = 0
+                for line in F:
+                    if i < line_cutoff:
+                        outfile2.write(line)
+                    else:
+                        outfile1.write(line)
+                        
+                    i += 1
