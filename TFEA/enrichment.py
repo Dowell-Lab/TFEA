@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 
 '''This module calculates enrichment statistics for TF motifs across inputted
@@ -44,7 +44,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
             jobid=None, pvals=None, fcs=None, p_cutoff=None, figuredir=None, 
             plotall=False, fimo_motifs=None, meta_profile_dict=None, 
             label1=None, label2=None, dpi=None, motif_fpkm={}, bootstrap=False,
-            gc=None):
+            gc=None, plot_format=None):
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -117,10 +117,10 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         meta_profile_dict = config.vars['META_PROFILE']
         label1 = config.vars['LABEL1']
         label2 = config.vars['LABEL2']
-        dpi = config.vars['DPI']
         output_type = config.vars['OUTPUT_TYPE']
         bootstrap = config.vars['BOOTSTRAP']
         gc = config.vars['GC']
+        plot_format = config.vars['PLOT_FORMAT']
         try:
             motif_fpkm = config.vars['MOTIF_FPKM']
         except:
@@ -161,9 +161,9 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                         p_cutoff=p_cutoff, figuredir=figuredir, 
                         largewindow=largewindow, fimo_motifs=fimo_motifs, 
                         meta_profile_dict=meta_profile_dict, label1=label1, 
-                        label2=label2, dpi=dpi, fcs=fcs, motif_fpkm=motif_fpkm, 
+                        label2=label2, fcs=fcs, motif_fpkm=motif_fpkm, 
                         tests=len(motif_distances), bootstrap=bootstrap, 
-                        gc_correct=gc_correct)
+                        gc_correct=gc_correct, plot_format=plot_format)
         results = multiprocess.main(function=auc_simulate_and_plot, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
@@ -172,9 +172,9 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                 title='TFEA GC-Plot', 
                                 xlabel='Motif GC-content',
                                 ylabel='Non-corrected Area Under the Curve (AUC)', 
-                                savepath=figuredir / 'TFEA_GC.svg', 
+                                savepath=figuredir / ('TFEA_GC.' + plot_format), 
                                 linear_regression=linear_regression,
-                                dpi=dpi, 
+                                plot_format=plot_format, 
                                 x_index=4,
                                 y_index=1, 
                                 c_index=2,
@@ -313,7 +313,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
                         largewindow=None, fimo_motifs=None, 
                         meta_profile_dict=None, label1=None, label2=None, 
                         dpi=None, fcs=None, tests=None, motif_fpkm=None, 
-                        bootstrap=False, gc_correct=None):
+                        bootstrap=False, gc_correct=None, plot_format=None):
     '''Calculates an enrichment score using the area under the curve. This
         method is not as sensitive to artifacts as other methods. It works well
         as an asymmetry detector and will be good at picking up cases where
@@ -397,13 +397,13 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
                                         fimo_motifs=fimo_motifs, 
                                         largewindow=largewindow, 
                                         score=plotting_score, 
-                                        use_config=use_config, dpi=dpi, 
+                                        use_config=use_config, 
                                         pvals=pvals, fcs=fcs, 
                                         cumscore=plotting_cumscore, 
                                         sim_auc=sim_auc, auc=auc,
                                         meta_profile_dict=meta_profile_dict, 
                                         label1=label1, label2=label2, 
-                                        offset=offset)
+                                        offset=offset, plot_format=plot_format)
     except Exception as e:
         # This prints the type, value, and stack trace of the
         # current exception being handled.

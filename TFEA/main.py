@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 '''This is the main script that runs when the TFEA package is run.
 '''
@@ -46,14 +46,14 @@ def run():
     '''
     test_install = parser.parse_args().TEST_INSTALL
     if test_install:
-        subprocess.call(["python3", srcdirectory / 'test' / 'test_install.py'])
+        subprocess.call(["python3.7", srcdirectory / 'test' / 'test_install.py'])
         sys.exit()
         
     test_full = parser.parse_args().TEST_FULL
     if test_full:
         sbatch = parser.parse_args().SBATCH
         if not sbatch:
-            subprocess.call(["python3", srcdirectory / 'test' / 'test_full.py'])
+            subprocess.call(["python3.7", srcdirectory / 'test' / 'test_full.py'])
             sys.exit()
         else:
             error_file = str(srcdirectory / 'test' / 'test_files' / 'TFEA_test.err')

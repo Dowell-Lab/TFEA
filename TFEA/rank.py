@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 
 '''This module takes as input a count file produced from the COUNT module or 
@@ -39,7 +39,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
             bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
             largewindow=None, mdd=False, mdd_bedfile1=False, mdd_bedfile2=False, 
             motif_annotations=False, debug=False, jobid=None, figuredir=None, 
-            output_type=None, basemean_cut=None):
+            output_type=None, basemean_cut=None, plot_format=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -115,6 +115,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         jobid = config.vars['JOBID']
         output_type = config.vars['OUTPUT_TYPE']
         basemean_cut = config.vars['BASEMEAN_CUT']
+        plot_format = config.vars['PLOT_FORMAT']
         meta_profile_dict = {}
     print("Ranking regions...", flush=True, file=sys.stderr)
 
@@ -141,7 +142,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
-                                    basemean_cut=basemean_cut)
+                                    basemean_cut=basemean_cut, plot_format=plot_format)
         if output_type == 'html':
             print("\tGenerating Meta-Profile per Quartile:", file=sys.stderr)
             q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
@@ -444,7 +445,7 @@ write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt')
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
             label2=None, largewindow=None, rank=None, figuredir=None, 
-            basemean_cut=None):
+            basemean_cut=None, plot_format=None):
     #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                         count_file=count_file, label1=label1, label2=label2)
@@ -465,7 +466,8 @@ def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None,
 
     
     plot.plot_deseq_MA(deseq_file=deseq_file, label1=label1, label2=label2, 
-                        figuredir=figuredir, basemean_cut=basemean_cut)
+                        figuredir=figuredir, basemean_cut=basemean_cut, 
+                        plot_format=plot_format)
 
     ranked_file = deseq_parse(deseq_file=deseq_file, tempdir=tempdir, 
                                 largewindow=largewindow, rank=rank, 

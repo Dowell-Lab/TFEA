@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 
 '''This module only contains scripts that plot things in matplotlib. 
@@ -18,6 +18,7 @@ import math
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
+matplotlib.rcParams['savefig.dpi'] = 100
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
@@ -37,10 +38,10 @@ from TFEA import exceptions
 #==============================================================================
 def plot_individual_graphs(use_config=True, distances=None, figuredir=None, 
                             fimo_motifs=None, largewindow=1500, score=None, 
-                            dpi=100, pvals=None, fcs=None, 
+                            pvals=None, fcs=None, 
                             cumscore=None, sim_auc=None, auc=None,
                             meta_profile_dict=None, label1=None, label2=None, 
-                            motif=None, offset=None):
+                            motif=None, offset=None, plot_format=None):
     '''This function plots all TFEA related graphs for an individual motif
     '''
     if use_config:
@@ -50,14 +51,14 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
         figuredir=config.vars['FIGUREDIR']
         largewindow=config.vars['LARGEWINDOW']
         fimo_motifs = config.vars['FIMO_MOTIFS']
-        dpi = config.vars['DPI']
         label1 = config.vars['LABEL1']
         label2 = config.vars['LABEL2']
         meta_profile_dict = config.vars['META_PROFILE']
+        plot_format = config.vars['PLOT_FORMAT']
 
     #Create MEME logos
     if fimo_motifs:
-        meme_logo(fimo_motifs, motif, figuredir)
+        meme_logo(fimo_motifs, motif, figuredir, plot_format=plot_format)
     else:
         print("No MEME database inputted, logos will not be displayed.")
 
@@ -296,8 +297,8 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
                     title=f'Q4(n={len(q4_distances)}')
 
     plt.tight_layout()
-    plt.savefig(os.path.join(figuredir, motif + '_enrichment_plot.svg'), 
-                format='svg')#, dpi=dpi, bbox_inches='tight')
+    plt.savefig(os.path.join(figuredir, motif + f'_enrichment_plot.{plot_format}'), 
+                format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
     #Simulation Plot
@@ -339,14 +340,15 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     ax.set_xlabel('Area Under the Curve (AUC)', fontsize=14)
 
     plt.tight_layout()
-    F.savefig(os.path.join(figuredir, motif + '_simulation_plot.svg'), 
-                format='svg')#, dpi=dpi, bbox_inches='tight')
+    F.savefig(os.path.join(figuredir, motif + f'_simulation_plot.{plot_format}'), 
+                format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
 def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None, 
                     ylabel=None, x_index=None, y_index=None, c_index=None,
-                    p_index=None, savepath=None, dpi=100, ylimits=None):
+                    p_index=None, savepath=None, ylimits=None, 
+                    plot_format=None):
     '''Plot an MA plot. Note: x-values will be transformed to log10
 
     Parameters
@@ -412,12 +414,12 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
         ax.set_ylim(ylimits)
 
     plt.tight_layout()
-    F.savefig(str(savepath), format='svg')#, dpi=dpi, bbox_inches='tight')
+    F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
 def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None, 
-                        ylabel=None, savepath=None, dpi=100):
+                        ylabel=None, savepath=None, plot_format=None):
     '''This function plots graphs that are displayed on the main results.html 
         filethat correspond to results relating to all analyzed TFs.
 
@@ -450,13 +452,14 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
                     labelbottom=True)
 
     plt.tight_layout()
-    F.savefig(str(savepath), format='svg')#, dpi=dpi, bbox_inches='tight')
+    F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
 def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None, 
                         ylabel=None, savepath=None, dpi=100, x_index=None,
-                        y_index=None, p_index=None, s_index=None, c_index=None):
+                        y_index=None, p_index=None, s_index=None, c_index=None, 
+                        plot_format=None):
     ylist = [i[y_index] for i in results]
     xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in results]
     plist = [i[p_index] for i in results]
@@ -492,14 +495,14 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     ax.set_xlabel(xlabel, fontsize=14)
 
     plt.tight_layout()
-    F.savefig(str(savepath), format='svg')#, dpi=dpi, bbox_inches='tight')
+    F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
 def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None, 
                         ylabel=None, savepath=None, dpi=100, x_index=None,
                         y_index=None, p_index=None, c_index=None, 
-                        linear_regression=None, ylimits=None):
+                        linear_regression=None, ylimits=None, plot_format=None):
 
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
@@ -550,20 +553,20 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
         ax.set_ylim(ylimits)
 
     plt.tight_layout()
-    F.savefig(str(savepath), format='svg')#, dpi=dpi, bbox_inches='tight')
+    F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
 
 #==============================================================================
-def meme_logo(motif_file, motif_ID, figuredir):
+def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
     '''Runs meme2images that creates logo images
     '''
     meme2images_command = ['meme2images', '-rc', '-eps', '-motif', motif_ID, 
                             motif_file, figuredir]
     motif_ID = motif_ID.replace('.', '_')
     imagemagick_command = ['convert', figuredir / ('logo'+motif_ID+'.eps'), 
-                            figuredir / ('logo'+motif_ID+'.svg')]
+                            figuredir / (f'logo{motif_ID}.{plot_format}')]
     imagemagick_rc_command = ['convert', figuredir / ('logo'+motif_ID+'.eps'), 
-                            figuredir / ('logo_rc'+motif_ID+'.svg')]
+                            figuredir / (f'logo_rc{motif_ID}.{plot_format}')]
     try:
         subprocess.check_output(meme2images_command, stderr=subprocess.PIPE)
         subprocess.check_output(imagemagick_command, stderr=subprocess.PIPE)
@@ -712,7 +715,7 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
 
 #==============================================================================
 def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None, 
-                    dpi=100, basemean_cut=0):
+                    dpi=100, basemean_cut=0, plot_format=None):
     '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
     to the figuredir directory created in TFEA output folder
 
@@ -788,7 +791,7 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     cbar.set_label('Relative Rank (n=' + str(len(x)) + ')', rotation=270, 
                         labelpad=20)
     plt.tight_layout()
-    F.savefig(os.path.join(figuredir, 'DESEQ_MA_Plot.svg'), format='svg')#, dpi=dpi)
+    F.savefig(os.path.join(figuredir, f'DESEQ_MA_Plot.{plot_format}'), format=plot_format)#, dpi=dpi)
                 # bbox_inches='tight')
     plt.close()
 
@@ -809,12 +812,12 @@ if __name__ == "__main__":
                     xlabel="GC-content", 
                     ylabel="AUC", 
                     savepath='/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA_outputs/Allen2014/v5_outputs/20190620_DMSO_Nutlin_fimohits/newMA_plot.png', 
-                    dpi=100)
+                    plot_format='png')
 
     plot_global_gc(results, p_cutoff=0.001, title='GC-Plot', xlabel='G-C', 
                         ylabel='y-axis', 
                         savepath='/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA_outputs/Allen2014/v5_outputs/20190620_DMSO_Nutlin_fimohits/newGC_plot.png', 
-                        dpi=100, 
+                        plot_format='png', 
                         x_index=3,
                         y_index=1, 
                         c_index=4,

@@ -39,4 +39,4 @@ module load meme/5.0.3
 ### now call your program
 
 ### python ${src} --config ${config} --sbatch SUBMITTED
-python3 ${cmd}
+python3.7 ${cmd}

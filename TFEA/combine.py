@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 
 '''This file contains a list of functions associated with combining regions
@@ -18,6 +18,7 @@ import os
 import sys
 import time
 import datetime
+import subprocess
 from pathlib import Path
 
 import pybedtools
@@ -98,6 +99,7 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         
         #MuMerge Command - output to combined_file.mumerge.bed
         mumerge(mumerge_input, combined_file)
+        combined_file = Path(str(combined_file) + '_MUMERGE.bed')
 
         #Perform simple merge same as merge all for md bed files
         if md:
@@ -332,7 +334,7 @@ def mumerge(input_file, output_basename,
         From doc:
             Output file basename (full path, sans extension).
             WARNING: will overwrite any existing file)'''
-    mumerge_command = [mumerge_path, '-i', input_file, '-o', output_basename]
+    mumerge_command = ['python3', mumerge_path, '-i', input_file, '-o', output_basename]
     try:
         subprocess.check_output(mumerge_command, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:

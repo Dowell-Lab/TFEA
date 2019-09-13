@@ -5,6 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(name='tfea',
                     version='3.0.1',
+                    python_requires='>=3.7',
                     description='Transcription Factor Enrichment Analysis',
                     url='https://github.com/jdrubin91/TFEA.git',
                     author='Jonathan Rubin',

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 '''This file contains a list of independent functions that do not call other 
     functions
@@ -197,12 +197,12 @@ def read_arguments():
     # Output Options
     output_options = parser.add_argument_group('Output Options', 
                                                 'Options for the output.')
-    output_options.add_argument('--dpi', help=("Resolution of output figures. "
-                                    "Default: 100"), 
-                                    dest='DPI')
     output_options.add_argument('--padjcutoff', help=("A p-adjusted cutoff "
                                     "value that determines some plotting output."), 
                                     dest='PADJCUTOFF')
+    output_options.add_argument('--plot_format', help=("Format of saved figures. "
+                                    "Default: png"), choices=['png', 'svg', 'pdf'], 
+                                    dest='PLOT_FORMAT')
     output_options.add_argument('--plotall', help=("Plot graphs for all motifs."
                                     "Warning: This will make TFEA run much slower and"
                                     "will result in a large output folder."), 
@@ -232,7 +232,8 @@ def read_arguments():
                                 "for inputted regions. Default: 0"), 
                                 dest='BASEMEAN_CUT')
     misc_options.add_argument('--rerun', help=("Rerun TFEA in all folders of a"
-                                "specified directory. Default: False"), 
+                                "specified directory. Used as a standalone flag."
+                                "Default: False"), 
                                 nargs='*', dest='RERUN')
     misc_options.add_argument('--gc', help=("Perform GC-correction. Default: True"), 
                                 dest='GC')
@@ -307,7 +308,6 @@ def read_arguments():
                     'PERMUTATIONS': [1000, [int]], 
                     'LARGEWINDOW': [1500, [int]], 
                     'SMALLWINDOW': [150, [int]], 
-                    'DPI': [100, [int]], 
                     'PADJCUTOFF': [0.001, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'CPUS': [1, [int]], 
@@ -317,7 +317,8 @@ def read_arguments():
                     'BASEMEAN_CUT': [0, [int]],
                     'RERUN': [False, ['PosixList', bool]],
                     'GC': [True, [bool]],
-                    'PLOTALL': [False, [bool]]}
+                    'PLOTALL': [False, [bool]],
+                    'PLOT_FORMAT': ['png', [str]]}
 
     #Save default arguments in config
     from TFEA import config

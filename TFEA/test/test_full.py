@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 
 '''This module contains several basic test cases to determine whether TFEA
@@ -80,7 +80,7 @@ class TestMain(unittest.TestCase):
                     '--motif_annotation', self.testdir / 'test_motif_annotation.bed',
                     '--output_type', 'html', 
                     '--plotall',
-                    '--combine', 'mergeall',
+                    '--combine', 'mumerge',
                     '--md', '--mdd',
                     '--debug',
                     '--cpus', '2',
@@ -174,4 +174,9 @@ class TestMain(unittest.TestCase):
     #     print(len(merged_bed1), len(merged_bed2))
 
 if __name__ == '__main__':
+    import sys
+    from pathlib import Path
+    # Add TFEA srcdirectory into path
+    srcdirectory = Path(__file__).absolute().parent.parent
+    sys.path.insert(0, srcdirectory)
     unittest.main(verbosity=2, failfast=True)

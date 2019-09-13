@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.7
 # -*- coding: utf-8 -*-
 
 '''This file contains a list of functions associated with outputting a ranked
@@ -29,7 +29,7 @@ from TFEA import plot
 def main(use_config=True, outputdir=None, results=None, md_results=None, 
             mdd_results=None, motif_distances=None, md=False, mdd=False, 
             debug=False, jobid=None, output_type=False, p_cutoff=None, 
-            dpi=100):
+            plot_format=None):
     '''This script creates output files associated with TFEA
     '''
     start_time = time.time()
@@ -52,8 +52,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
         label2 = config.vars['LABEL2']
         plotall = config.vars['PLOTALL']
         singlemotif = config.vars['SINGLEMOTIF']
-        dpi = config.vars['DPI']
-
+        plot_format = config.vars['PLOT_FORMAT']
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
     TFEA_header = ['#TF', 'AUC', 'Corrected AUC','Events', 'GC','FPKM', 'P-adj', 'Corrected P-adj']
@@ -70,8 +69,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
                         xlabel='Log10(Motif Hits)', 
                         ylabel='Corrected Area Under the Curve (AUC)', 
-                        savepath=figuredir / 'TFEA_MA.svg', 
-                        dpi=dpi, 
+                        savepath=figuredir / (f'TFEA_MA.{plot_format}'), 
+                        plot_format=plot_format, 
                         c_index=1,
                         x_index=3,
                         y_index=2,
@@ -97,8 +96,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                 title='MD MA-Plot', 
                                 xlabel='Log10(Motif Hits)', 
                                 ylabel='MD-Score Difference', 
-                                savepath=figuredir / 'MD_MA.svg',  
-                                dpi=dpi, 
+                                savepath=figuredir / (f'MD_MA.{plot_format}'),  
+                                plot_format=plot_format, 
                                 x_index=2,
                                 y_index=1,
                                 p_index=-1)
@@ -106,8 +105,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                     title='MD Volcano Plot', 
                                     xlabel='MD-Score Difference', 
                                     ylabel='-log10(P-val)', 
-                                    savepath=figuredir / 'MD_volcano.svg', 
-                                    dpi=dpi)
+                                    savepath=figuredir / (f'MD_volcano.{plot_format}'), 
+                                    plot_format=plot_format)
     if mdd:
         header = ['#TF', 'MD-Score', 'Events', 'p-val']
         txt_output(outputdir=outputdir, results=mdd_results, 
@@ -116,8 +115,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                 title='MDD MA-Plot', 
                                 xlabel='Log10(Motif Hits)', 
                                 ylabel='Differential MD-Score Difference', 
-                                savepath=figuredir / 'MDD_MA.svg', 
-                                dpi=dpi, 
+                                savepath=figuredir / (f'MDD_MA.{plot_format}'), 
+                                plot_format=plot_format, 
                                 x_index=2,
                                 y_index=1,
                                 p_index=-1)
@@ -125,8 +124,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                     title='MDD Volcano Plot', 
                                     xlabel='Differential MD-Score Difference', 
                                     ylabel='-log10(P-val)', 
-                                    savepath=figuredir / 'MDD_volcano.svg', 
-                                    dpi=dpi)
+                                    savepath=figuredir / (f'MDD_volcano.{plot_format}'), 
+                                    plot_format=plot_format)
     
     total_time = time.time() - start_time
     if use_config:
@@ -146,13 +145,13 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                     padj_cutoff=padj_cutoff, 
                                     singlemotif=singlemotif, 
                                     plotall=plotall, auc_index=1, 
-                                    padj_index=-1)
+                                    padj_index=-1, plot_format=plot_format)
         html_output(results=results, results_header=TFEA_header,
                     description=description,
                     module_list=module_list, 
                     outputdir=outputdir, label1=label1, label2=label2, 
                     padj_cutoff=padj_cutoff, plotall=plotall, auc_index=1, 
-                    padj_index=-1, sortindex=sort_index)
+                    padj_index=-1, sortindex=sort_index, plot_format=plot_format)
         
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
@@ -179,7 +178,7 @@ def txt_output(results=None, outputdir=None, outname=None,
 def html_output(results=None, module_list=None, outputdir=None,
                 label1=None, label2=None, padj_cutoff=None, plotall=None, 
                 results_header=None, description=None,
-                auc_index=1, padj_index=-1, sortindex=None):
+                auc_index=1, padj_index=-1, sortindex=None, plot_format=None):
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -335,23 +334,25 @@ def html_output(results=None, module_list=None, outputdir=None,
         <h1>""" + label1 + """ vs. """ + label2 + """ TFEA Results</h1>
         <div class="row">
             <div style="float: left; width: 100%">
-                <img src="./plots/TFEA_GC.svg" alt="TFEA GC-Plot" title="AUC vs. GC-content of all motifs analyzed before GC-correction.">
+                <img src="./plots/TFEA_GC."""+plot_format+"""" alt="TFEA GC-Plot" title="AUC vs. GC-content of all motifs analyzed before GC-correction.">
             </div>
-            <div style="float: right; width: 100%">
-                <img src="./plots/TFEA_MA.svg" alt="TFEA MA-Plot" style="float: right" title="AUC vs. number of motif hits in input regions.">
+            <div style="float: left; width: 100%">
+                <img src="./plots/TFEA_MA."""+plot_format+"""" alt="TFEA MA-Plot" style="float: right" title="AUC vs. number of motif hits in input regions.">
             </div>
         </div>
         <div class="row">
             <div style="float: left; width:100%">
-                <img src="./plots/DESEQ_MA_Plot.svg" alt="Region DE-Seq Plot" title="DE-Seq MA plot using the input regions.">
+                <img src="./plots/DESEQ_MA_Plot."""+plot_format+"""" alt="Region DE-Seq Plot" title="DE-Seq MA plot using the input regions.">
             </div>
             <div id="User Inputs" style="margin: auto; width: 80%">
-                <p><b>PADJ < """ + str(padj_cutoff) + """</b></p>
+                <p><b>p-adj < """ + str(padj_cutoff) + """</b></p>
                 <p><a href="./inputs.txt">User Inputs</a></p>
-                <p><a href="./plots/MD_MA.svg">MD MA-Plot</a> | \
-                    <a href="./plots/MD_volcano.svg">MD VolcanoPlot</a></p>
-                <p><a href="./plots/MDD_MA.svg">MDD MA-Plot</a> | \
-                    <a href="./plots/MDD_volcano.svg">MDD VolcanoPlot</a></p>
+                <p><a href="./md_results.txt">MD Results</a> | \
+                    <a href="./plots/MD_MA."""+plot_format+"""">MD MA-Plot</a> | \
+                    <a href="./plots/MD_volcano."""+plot_format+"""">MD VolcanoPlot</a></p>
+                <p><a href="./mdd_results.txt">MDD Results</a> | \
+                    <a href="./plots/MDD_MA."""+plot_format+"""">MDD MA-Plot</a> | \
+                    <a href="./plots/MDD_volcano."""+plot_format+"""">MDD VolcanoPlot</a></p>
                 <table>
                     <tr>
                         <th>Module</th>
@@ -524,7 +525,8 @@ def summary_html_output(config_object=None, outputdir=None):
 #==============================================================================
 def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                                 singlemotif=None, plotall=None, 
-                                results_header=None, auc_index=1, padj_index=3):
+                                results_header=None, auc_index=1, padj_index=3, 
+                                plot_format=None):
     '''Creates the main html output and also individual html outputs for each
         motif
     
@@ -632,8 +634,8 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                     PREV_MOTIF = negativelist[negativelist.index(motif)-1]
                 except IndexError:
                     PREV_MOTIF = negativelist[len(negativelist)]
-            direct_logo = "logo" + motif.replace('.','_') + ".svg"
-            reverse_logo = "logo_rc" + motif.replace('.','_') + ".svg"
+            direct_logo = "logo" + motif.replace('.','_') + f'.{plot_format}'
+            reverse_logo = "logo_rc" + motif.replace('.','_') + f'.{plot_format}'
             outfile = open(os.path.join(outputdir, 'plots', motif 
                             + '.results.html'),'w')
             outfile.write("""<!DOCTYPE html>
@@ -705,7 +707,7 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
         <div>
             <div style="float: left; width 1250px; padding-bottom:50px; \
                 padding-top:50px">
-                <img src="./"""+motif+"""_enrichment_plot.svg" \
+                <img src="./"""+motif+"""_enrichment_plot."""+plot_format+"""" \
                     alt="Enrichment Plot">
             </div>
         </div>
@@ -720,7 +722,7 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                     alt="Reverse Logo">
             </div>
             <div style="float:right; width: 100%">
-                <img src="./"""+motif+"""_simulation_plot.svg" \
+                <img src="./"""+motif+"""_simulation_plot."""+plot_format+"""" \
                     alt="Simulation Plot">
             </div>
         </div>
