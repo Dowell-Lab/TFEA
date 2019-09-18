@@ -60,8 +60,8 @@ class TestMain(unittest.TestCase):
         self.fimo_motifs = self.testdir / 'test_database.meme'
         self.genomehits = self.testdir / 'test_genome_hits'
 
-        touch_command = "touch " + str(self.testdir / '*.bai')
-        subprocess.run(touch_command, check=True, shell=True)
+        # touch_command = "touch " + str(self.testdir / '*.bai')
+        # subprocess.run(touch_command, check=True, shell=True)
     
     def test_full(self):
         shutil.rmtree(self.testdir / 'test_output', ignore_errors=True)

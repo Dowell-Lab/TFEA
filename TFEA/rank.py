@@ -227,6 +227,10 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
     # pybed_count.saveas(count_file, trackline=("#chrom\tstart\tstop\tregion\t" 
     #                                             + '\t'.join([label1]*len(bam1)) + "\t" 
     #                                             + '\t'.join([label2]*len(bam2)) + "\n"))
+    
+    for bamfile in bam1+bam2:
+        samtools_index_command = ["samtools", "index", bamfile]
+        subprocess.run(samtools_index_command)
 
     #Bedtools implementation
     multicov_command = ["bedtools", "multicov", 
@@ -457,7 +461,7 @@ def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None,
     deseq_file = tempdir / 'DESeq.res.txt'
     with open(deseqout, 'w') as output:
         exitcode = subprocess.run(["Rscript", "--vanilla", deseqR], stdout=output, 
-                            stderr=output)
+                                    stderr=output)
     if exitcode.returncode != 0:
         errormessage = deseqout.read_text()
         if 'Error' in errormessage:
