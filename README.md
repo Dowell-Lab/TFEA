@@ -5,6 +5,7 @@
 2. <A href="#InstallationandRequirements">Installation and Requirements</A>
    - <A href="#DESeq">DESeq</A>
    - <A href="#Bedtools">Bedtools</A>
+   - <A href="#Samtools">Samtools</A>
    - <A href="#MEMESuite">MEME Suite</A>
      - <A href="#ImageMagick">Image Magick</A>
    - <A href="#FIJIModules">FIJI Modules</A>
@@ -76,6 +77,16 @@ pip3 install --user .
   
   ```
   module load bedtools/2.25.0
+  ```
+  
+  <H3 id="Samtools">Samtools</H3>
+  TFEA uses samtools to index bam files. Samtools download and install instructions can be found here:
+  <a href="http://www.htslib.org/download/">Samtools Download and Install</a>
+  
+  If you are on FIJI compute cluster, bedtools is available as a module:
+  
+  ```
+  module load samtools/1.8
   ```
   
   <H3 id="MEMESuite">MEME Suite</H3>
