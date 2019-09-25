@@ -342,7 +342,8 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     plt.tight_layout()
     F.savefig(os.path.join(figuredir, motif + f'_simulation_plot.{plot_format}'), 
                 format=plot_format)#, dpi=dpi, bbox_inches='tight')
-    plt.close()
+    plt.close(F)
+    print('hello')
 
 #==============================================================================
 def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None, 

@@ -378,15 +378,15 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         #Calculate p-value
         mu = np.mean(sim_auc)
         sigma = np.std(sim_auc)
-        p = min(stats.norm.cdf(auc,mu,sigma), 1-stats.norm.cdf(auc,mu,sigma))
+        p = min(stats.norm.logcdf(auc,mu,sigma), stats.norm.logsf(auc,mu,sigma))
         if math.isnan(p):
-            p = 1.0
-        p = p*tests if p*tests <=1 else 1
+            p = 0
+        p = p+np.log(tests) if p+np.log(tests) <= 0 else 0
 
-        corrected_p = min(stats.norm.cdf(corrected_auc,mu,sigma), 1-stats.norm.cdf(corrected_auc,mu,sigma))
+        corrected_p = min(stats.norm.logcdf(corrected_auc,mu,sigma), stats.norm.logsf(corrected_auc,mu,sigma))
         if math.isnan(corrected_p):
-            corrected_p = 1.0
-        corrected_p = corrected_p*tests if corrected_p*tests <=1 else 1
+            corrected_p = 0
+        corrected_p = corrected_p+np.log(tests) if corrected_p+np.log(tests) <= 0 else 0
 
         if plotall or (output_type=='html' and p < p_cutoff):
             from TFEA import plot

@@ -62,7 +62,6 @@ class TestMain(unittest.TestCase):
 
         # touch_command = "touch " + str(self.testdir / '*.bai')
         # subprocess.run(touch_command, check=True, shell=True)
-    
     def test_full(self):
         shutil.rmtree(self.testdir / 'test_output', ignore_errors=True)
         TFEA_path = Path(__file__).absolute().parent.parent
