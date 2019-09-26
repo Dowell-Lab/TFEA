@@ -430,12 +430,12 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
         by the user
     '''
     xlist = [i[1] for i in results]
-    ylist = [-math.log(i[-1], 10) if i[-1] != 0 else 0 for i in results]
+    ylist = [-i[-1] if i[-1] != 0 else 0 for i in results]
     plist = [i[-1] for i in results]
 
     sigx = [x for x, p in zip(xlist, plist) if p < p_cutoff]
     sigy = [p for x, p in zip(ylist, plist) if p < p_cutoff]
-    sigy = [-math.log(p, 10) if p != 0 else 0 for p in sigy]
+    sigy = [-p if p != 0 else 0 for p in sigy]
 
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
@@ -444,7 +444,7 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     ax.set_title(title, fontsize=14)
     ax.set_ylabel(ylabel, fontsize=14)
     ax.set_xlabel(xlabel, fontsize=14)
-    ax.axhline(-math.log(p_cutoff, 10), linestyle='--', color='black')
+    ax.axhline(-p_cutoff, 10, linestyle='--', color='black')
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
 
