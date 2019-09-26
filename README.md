@@ -27,7 +27,7 @@
  
 <H2 id="Pipeline">TFEA Pipeline</H2>
  
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/TFEAPipeline.png)
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/TFEAPipelinev2.png)
  
 <br></br>
 
