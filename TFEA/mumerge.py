@@ -16,14 +16,12 @@ import os
 import socket
 import argparse
 import time
-import datetime
 import operator
 import math
 import numpy as np
 from collections import defaultdict
 from collections import Counter
 from functools import reduce
-from itertools import combinations
 
 ### SOME LOW LEVEL FUNCTIONS THAT GET UTILIZED IN THE MAJOR FUNCTIONS #########
 def normal(x, pos, sig, scale):
@@ -42,11 +40,8 @@ def overlap_check(a, b):
     another
     '''
     val = (a[0] - b[1]) * (a[1] - b[0])
-    if val < 0:
-        return True
-    else:
-        return False
-    
+    return val < 0
+
 
 def chromesome_list():
     '''
@@ -291,8 +286,7 @@ def bedfile_reader(file, bedGraph=False, print_header=False, count=False):
     if count == True:
         print("Number of regions: ", counter)
         return bed_list, counter
-    else:
-        return bed_list
+    return bed_list
 
 ###############################################################################
 ### USED IN MU_DICT_GENERATOR() 
@@ -467,7 +461,7 @@ def prob_list_generator(xvals, params=None, dist="normal"):
         # evaluate the normal dist at all points in xvals
         y_i = [normal(x, mu_pos, mu_sig, 1) for x in xvals]
     elif dist == "uni":
-        y_i = (1 if x >= params[0] and x <= params[1] else 0 for x in xvals)
+        y_i = (1 if params[0] <= x <= params[1] else 0 for x in xvals)
     else:
         raise ValueError("Must specify either 'normal' or 'uni' for 'dist'")
     return y_i
