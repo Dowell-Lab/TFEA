@@ -333,7 +333,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         except KeyError:
             fpkm = nan
         distances = distances[1:]
-        distances_abs = [abs(x)  if x != '.' else x for x in distances]
+        distances_abs = (abs(x)  if x != '.' else x for x in distances)
 
         hits = len([x for x in distances_abs if x != '.'])
 
@@ -347,7 +347,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         q3 = int(round(len(distances)*.75))
         middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
         try:
-            average_distance = float(sum(middledistancehist))/float(len(middledistancehist))
+            average_distance = np.mean(middledistancehist)#float(sum(middledistancehist))/float(len(middledistancehist))
         except ZeroDivisionError:
             return [motif, 0, 0, hits, gc, fpkm, 1.0, 1.0]
         
