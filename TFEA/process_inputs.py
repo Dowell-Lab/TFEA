@@ -430,7 +430,7 @@ def verify_arguments(parser=None):
     #If a config file is specified, parse its arguments
     configfile_dict = dict()
     configfile = parser.parse_args().CONFIG
-    if configfile != None:
+    if configfile is not None:
         configfile_dict = parse_config(configfile=configfile)
 
     #Overwrite config file args with command line flag args
@@ -441,7 +441,7 @@ def verify_arguments(parser=None):
         #Decide which value to use
         if key in configfile_dict and parser_dict[key] is None:
             value = configfile_dict[key] #User did not specify a flag but specified variable in config file
-        elif parser_dict[key] != None:
+        elif parser_dict[key] is not None:
             value = parser_dict[key] #User specified a flag (overwrites config file)
         else:
             value = arg_defaults[key][0] #Nothing specified, use default argument

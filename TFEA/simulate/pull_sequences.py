@@ -68,7 +68,7 @@ def get_sequence_indices(fasta=None, sequence_n=None, seed=None):
         a list of indices corresponding to sequences to pull from the inputted fasta file
     '''
     total_sequences = count_fasta(fasta)
-    if seed != None:
+    if seed is not None:
         sequence_pull = np.random.choice(total_sequences, size=int(sequence_n), 
                                             replace=False)
     else:

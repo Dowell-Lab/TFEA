@@ -49,15 +49,15 @@ def run():
         sys.exit()
 
     #Determine which motifs will be inserted into fasta file
-    include_motifs = parser.include_motifs.split(',') if parser.include_motifs != None else None
-    exclude_motifs = parser.exclude_motifs.split(',') if parser.exclude_motifs != None else None
-    if exclude_motifs != None and include_motifs is None:
+    include_motifs = parser.include_motifs.split(',') if parser.include_motifs is not None else None
+    exclude_motifs = parser.exclude_motifs.split(',') if parser.exclude_motifs is not None else None
+    if exclude_motifs is not None and include_motifs is None:
         include_motifs = [m for m in get_motifs(parser.motifs) if m not in exclude_motifs]
 
     
 
     #For each motif insert it at desired locations based on insert_parameters
-    if include_motifs != None:
+    if include_motifs is not None:
         #Create insert parameters used to determine where to insert motifs
         insert_parameters = zip(parser.distance_mu.split(','), 
                                 parser.distance_sigma.split(','), 

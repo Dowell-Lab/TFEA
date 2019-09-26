@@ -527,7 +527,7 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
         directory.
     '''
     fimo_out = tempdir / (motif+'.fimo.bed')
-    if bg_file != None:
+    if bg_file is not None:
         command = ("fimo", "--skip-matched-sequence", 
                     "--verbosity", "1", 
                     "--thresh", str(thresh),
@@ -738,14 +738,14 @@ def bedtools_closest(motif, genomehits=None, ranked_center_file=None,
             for line in F:
                 linelist = line.strip('\n').split('\t')
                 distance = int(linelist[-1])
-                if rank_index != None:
+                if rank_index is not None:
                     rank = int(linelist[rank_index].split(',')[-1])
                     ranks.append(rank)
                 if abs(distance) <= distance_cutoff:
                     distances.append(distance)
                 else:
                     distances.append('.')
-        if rank_index != None:
+        if rank_index is not None:
             distances = [x for i,x in sorted(zip(ranks,distances))]
         closest_out.unlink()
 

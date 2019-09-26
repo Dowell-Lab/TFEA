@@ -265,7 +265,7 @@ def get_auc_gc(distances, fimo_motifs=None):
         #sort distances based on the ranks from TF bed file
         #and calculate the absolute distance
         motif = distances[0]
-        if fimo_motifs != None:
+        if fimo_motifs is not None:
             gc = get_gc(motif=motif, motif_database=fimo_motifs)
         nan = float('Nan')
         distances = distances[1:]
@@ -326,7 +326,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         motif = distances[0]
         nan = float('Nan')
         gc = nan
-        if fimo_motifs != None:
+        if fimo_motifs is not None:
             gc = get_gc(motif=motif, motif_database=fimo_motifs)
         try:
             fpkm = motif_fpkm[motif]

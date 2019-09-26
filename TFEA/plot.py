@@ -365,7 +365,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     # import sys
     # print(clean_results, file=sys.stderr)
     xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in clean_results]
-    if c_index != None:
+    if c_index is not None:
         clist = [i[c_index] for i in clean_results]
         clist = [y-c for y,c in zip(ylist,clist)]
         max_c = abs(max([x for x in clist if x == x], key=abs))
@@ -377,11 +377,11 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     else:
         scatter = ax.scatter(xlist, ylist, edgecolor='', color='navy', s=50)
 
-    if p_index != None:
+    if p_index is not None:
         plist = [i[p_index] for i in clean_results]
         sigx = [x for x,p in zip(xlist,plist) if p<p_cutoff]
         sigy = [y for y,p in zip(ylist,plist) if p<p_cutoff]
-        if c_index != None:
+        if c_index is not None:
             sigc = [scatter.to_rgba(c) for c,p in zip(clist,plist) if p<p_cutoff]
             ax.scatter(sigx, sigy, c=sigc, #marker='x', 
                         edgecolor='r',  linewidth=2, s=50)
@@ -411,7 +411,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
-    if ylimits != None:
+    if ylimits is not None:
         ax.set_ylim(ylimits)
 
     plt.tight_layout()
@@ -465,7 +465,7 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in results]
     plist = [i[p_index] for i in results]
 
-    if s_index != None:
+    if s_index is not None:
         slist = [i[s_index] for i in results]
         print(slist)
         slist = [((s/max([sigs for sigs, p in zip(slist,plist) if p < p_cutoff]))**2)*100 if p < p_cutoff else 50 for s,p in zip(slist,plist) ]
@@ -477,7 +477,7 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     
     clist = np.zeros((len(results),4))
     clist = np.array([[1.0, 0, 0, 0] if p < p_cutoff else [0, 0, 0.4, 0] for p in plist])
-    if c_index != None:
+    if c_index is not None:
         tempclist = [i[c_index] for i in results]
         max_val = max(tempclist)
         tempclist = [math.sqrt(c/max_val) for c in tempclist]
@@ -522,7 +522,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     cbar = plt.colorbar(scatter)
     cbar.set_label('AUC Correction', rotation=270, labelpad=20)
 
-    if p_index != None:
+    if p_index is not None:
         plist = [i[p_index] for i in clean_results]
         sigx = [x for x,p in zip(xlist,plist) if p<p_cutoff]
         sigy = [y for y,p in zip(ylist,plist) if p<p_cutoff]
@@ -530,7 +530,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
         ax.scatter(sigx, sigy, c=sigc, #marker='x', 
                         edgecolor='r', linewidth=2, s=50)
     
-    if linear_regression != None:
+    if linear_regression is not None:
         slope, intercept, r_value, p_value, _ = linear_regression
         s = ("y = (" + str("%.2g" % slope) + ")x + " + str("%.2g" % intercept)
             + "\nR$^2$ = " + str("%.2g" % r_value**2)
@@ -550,7 +550,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
 
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
-    if ylimits != None:
+    if ylimits is not None:
         ax.set_ylim(ylimits)
 
     plt.tight_layout()
@@ -632,7 +632,7 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
     # locs = [str(float(x)/1000.0) for x in locs]
     # ax.set_xticklabels(locs)
     ax.set_xticks([-largewindow, 0, largewindow])
-    if title != None:
+    if title is not None:
         ax.set_title(title, fontsize=14)
 
 #==============================================================================
