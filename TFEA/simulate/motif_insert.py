@@ -25,14 +25,14 @@ def insert_single_motif(sequences=None, sequence_n=None, motif_database=None,
     PSSM = get_PSSM(motif_database=motif_database, motif=motif)
             
     #Get ranks and positions to insert motif
-    if rank_inserts == None:
+    if rank_inserts is None:
         # rank_inserts = get_rank_inserts(sequence_n=sequence_n, 
         #                                 rank_pdf=rank_pdf, seed=seed)
         rank_inserts = get_fixednumber_rank_inserts(sequence_n=sequence_n, 
                                                     rank_pdf=rank_pdf, 
                                                     motif_number=motif_number, 
                                                     seed=seed)
-    if distance_inserts == None:
+    if distance_inserts is None:
         distance_inserts = get_distance_inserts(sequence_n=sequence_n, 
                                                 distance_pdf=distance_pdf, 
                                                 rank_insert_size=len(rank_inserts), 
@@ -82,7 +82,7 @@ def get_PSSM(motif_database=None, motif=None):
 
 #==============================================================================
 def get_rank_inserts(sequence_n=None, rank_pdf=None, seed=None):
-    if seed == None:
+    if seed is None:
         rank_inserts = list(np.random.choice(sequence_n, size=(sequence_n), 
                         replace=True, p=rank_pdf))
     else:
@@ -95,7 +95,7 @@ def get_rank_inserts(sequence_n=None, rank_pdf=None, seed=None):
 #==============================================================================
 def get_distance_inserts(sequence_n=None, distance_pdf=None, 
                             rank_insert_size=None, seed=None):
-    if seed == None:
+    if seed is None:
         distance_inserts = list(np.random.choice(len(distance_pdf), 
                             size=(rank_insert_size), p=distance_pdf))
     else:
@@ -108,7 +108,7 @@ def get_distance_inserts(sequence_n=None, distance_pdf=None,
 #==============================================================================
 def get_fixednumber_rank_inserts(sequence_n=None, rank_pdf=None, 
                                     motif_number=None, seed=None):
-    if seed == None:
+    if seed is None:
         rank_inserts = list(np.random.choice(sequence_n, size=(motif_number), 
                             replace=False, p=rank_pdf))
     else:

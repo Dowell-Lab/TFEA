@@ -704,7 +704,7 @@ def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions,
             elif key[-1] == '2':
                 profile = [[y/mil_map2 for y in x] for x in profile]
             meta_profile_dict[key] = profile
-    if tempdir == None:
+    if tempdir is None:
         return meta_profile_dict
     else:
         meta_profile_folder = tempdir / 'meta_profile'

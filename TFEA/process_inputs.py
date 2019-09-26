@@ -439,7 +439,7 @@ def verify_arguments(parser=None):
     arg_defaults = config.arg_defaults
     for key in arg_defaults:
         #Decide which value to use
-        if key in configfile_dict and parser_dict[key] == None:
+        if key in configfile_dict and parser_dict[key] is None:
             value = configfile_dict[key] #User did not specify a flag but specified variable in config file
         elif parser_dict[key] != None:
             value = parser_dict[key] #User specified a flag (overwrites config file)

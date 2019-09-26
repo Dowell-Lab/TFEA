@@ -51,7 +51,7 @@ def run():
     #Determine which motifs will be inserted into fasta file
     include_motifs = parser.include_motifs.split(',') if parser.include_motifs != None else None
     exclude_motifs = parser.exclude_motifs.split(',') if parser.exclude_motifs != None else None
-    if exclude_motifs != None and include_motifs == None:
+    if exclude_motifs != None and include_motifs is None:
         include_motifs = [m for m in get_motifs(parser.motifs) if m not in exclude_motifs]
 
     
