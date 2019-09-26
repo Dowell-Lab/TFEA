@@ -1,17 +1,5 @@
-#!/usr/bin/env python3.7
-# -*- coding: utf-8 -*-
-
-'''This file contains the mumerge python script that combines multiple bed files
-    across replicates and conditions into a single merged bed file.
-'''
-#==============================================================================
-__author__ = 'Jacob T. Stanley'
-__credits__ = ['Jacob T. Stanley', 'Robin D. Dowell']
-__maintainer__ = 'Jacob T. Stanley'
-__email__ = 'Jacob.Stanley@colorado.edu'
-#==============================================================================
-
 import sys
+sys.path.append('C:\\Users\\Jacob\\Dropbox\\0DOWELL\\muMerge\\mumerge\\')
 import os
 import socket
 import argparse
@@ -24,6 +12,8 @@ from collections import defaultdict
 from collections import Counter
 from functools import reduce
 from itertools import combinations
+
+import mumerge_test_unit as mt
 
 ### SOME LOW LEVEL FUNCTIONS THAT GET UTILIZED IN THE MAJOR FUNCTIONS #########
 def normal(x, pos, sig, scale):
@@ -46,7 +36,7 @@ def overlap_check(a, b):
         return True
     else:
         return False
-    
+
 
 def chromesome_list():
     '''
@@ -90,6 +80,7 @@ def normalizer(values, scaler=1, integral=False):
     return scaled_values
 
 
+###############################################################################
 # This function processes the initial inputs by arg parsing, defining variables
 # and then generating the merged bedfile from the inputted sample bedfiles.
 # This function is just a container for the code and doesn't take any inputs 
@@ -126,13 +117,15 @@ def inputs_processor():
         "used.\n")
 
     # This dictionary stories all the parsed and processed args
-    outdict = {'bedfiles': [],
-                'sampids': [],
-                'groupings': [],
-                'merged': None,
-                'output': None,
-                'weights': None,
-                'verbose': False}
+    outdict = {
+        'bedfiles': [],
+        'sampids': [],
+        'groupings': [],
+        'merged': None,
+        'output': None,
+        'weights': None,
+        'verbose': False
+        }
 
     parser = argparse.ArgumentParser(description=description_text)
     # ADDITIONAL HELP TEXT FLAG
@@ -162,7 +155,6 @@ def inputs_processor():
     parser.add_argument('-v', '--verbose',
                         action='store_true',
                         help="Verbose printing during processing.")
-
 
     args = parser.parse_args()
 
@@ -244,6 +236,36 @@ def inputs_processor():
     return outdict
 
 
+###############################################################################
+def log_initializer(tfit_filenames, groupings, miscallfile, logfile):
+    '''
+    This function writes all the header/preamble info to the miscalls and log
+    files.
+    '''
+
+    # Write to miscall and log files
+    miscallfile.write("# This file contains regions which were identified not "
+                    "to contain a tfit call after merging. Hand check these.")
+
+    logfile.write("Running: {}\n".format(sys.argv[0]))
+    logfile.write("Python:\n{}\n".format(sys.version))
+    logfile.write("Hostname: {}\n".format(socket.gethostname()))
+    logfile.write("\n# Sample_ID \t Filename\n")
+
+    for i, f in enumerate(tfit_filenames):
+        logfile.write("{} \t {}\n".format(sampids[i], f))
+
+    logfile.write("\nOutput path: {}\n".format(outfilename))
+    logfile.write("'bedtools merge' bedfile: {}\n".format(union_bedfile))
+    logfile.write("Miscalls bedfile: {}\n".format(miscallfilename))
+    logfile.write("muMerge output bedfile: {}\n".format(outbedfile))
+
+    logfile.write("\nGroupings:\n")
+    for i , group in enumerate(groupings):
+        logfile.write("{}\t{}\n".format(i, group))
+
+
+###############################################################################
 # This function reads a bed file into a list of tuples, to be used as input
 # "interest_regions" in tfit_dict_initializer()
 def bedfile_reader(file, bedGraph=False, print_header=False, count=False):
@@ -254,8 +276,6 @@ def bedfile_reader(file, bedGraph=False, print_header=False, count=False):
     interpreted as coverage.
 
     TODO: Incorporate the bedGraph functionality, write docstring
-
-    NOTE: POSSIBLY DELETE THIS, SINCE IT'S NOT UTILIZED
     '''
     with open(file) as f:
             # Initialize output list and counter
@@ -297,7 +317,6 @@ def bedfile_reader(file, bedGraph=False, print_header=False, count=False):
 ###############################################################################
 ### USED IN MU_DICT_GENERATOR() 
 ###############################################################################
-
 # This function initializes the tfit dictionary
 def tfit_dict_initializer(interest_regions, 
                           chromesome_flag=True,
@@ -322,7 +341,7 @@ def tfit_dict_initializer(interest_regions,
             tfit_dict[chromesome][(start, stop)] = []             
     return tfit_dict
 
-
+###############################################################################
 # This function scans a single tfit file and populates the tfit call regions 
 # into the provided dict
 def tfit_file_reader(filename, sampid, tfit_dict):
@@ -383,7 +402,7 @@ def tfit_file_reader(filename, sampid, tfit_dict):
                     continue
     return tfit_dict
 
-
+###############################################################################
 # This function reads in, from an input path, a list of tfit output files and 
 # a list of regions within these files to check for tfit calls. It outputs a 
 # dict of the form 
@@ -464,6 +483,7 @@ def prob_list_generator(xvals, params=None, dist="normal"):
     if dist == "normal":
         mu_pos = round((params[1] + params[0]) / 2)
         mu_sig = (params[1] - params[0]) / 4      ## THIS 4 IS A KEY FACTOR IN INTERPRETTING TFIT INTERVALS!!
+        #mu_sig = (params[1] - params[0]) * 2
         # evaluate the normal dist at all points in xvals
         y_i = [normal(x, mu_pos, mu_sig, 1) for x in xvals]
     elif dist == "uni":
@@ -472,7 +492,7 @@ def prob_list_generator(xvals, params=None, dist="normal"):
         raise ValueError("Must specify either 'normal' or 'uni' for 'dist'")
     return y_i
 
-    
+###############################################################################
 # THIS IS ONE OF THE TWO FUNCTIONS I'M USING TO AVOID SOME LOGICAL CHECKS IN 
 # THE PROB_CALCULATOR()
 def prob_product(sample_prob_list):
@@ -494,7 +514,7 @@ def prob_sum(sample_prob_list):
     joint_prob_list = [sum(i) for i in zip(*sample_prob_list)]
     return joint_prob_list
 
-
+###############################################################################
 # This function generates lists of probabilities values from the tfit_dict 
 # (mu, sig)
 def prob_list_formatter(region, mu_list, dist="normal"):
@@ -503,6 +523,7 @@ def prob_list_formatter(region, mu_list, dist="normal"):
     This function sort of supplants the mu_viz_prep() function I wrote in the
     jupyter notebook
     calls: prob_list_generator()?
+    TODO: Rewrite docstring
     '''
     # Define base position values in the region
     xvals = [x for x in  range(region[0], region[1])]
@@ -520,7 +541,7 @@ def prob_list_formatter(region, mu_list, dist="normal"):
     region_dict = defaultdict(list)
     region_dict = {sample : [] for sample in samp_list}
 
-    # Loop over all the mu's in the initial mu_list input and generate a y_i 
+    # Loop over all the mu in the initial mu_list input and generate a y_i 
     # array for either normal or uni distributions
     for mu in mu_list:
         values = prob_list_generator(xvals, mu, dist=dist)
@@ -533,16 +554,17 @@ def prob_list_formatter(region, mu_list, dist="normal"):
 
     return dict(region_dict)
 
-
+###############################################################################
 # This function calculates joint/cummulative probabilties for two or more 
-# matched lists of probabilty data
+# equal length lists of probabilty data
 def combined_prob_calculator(sample_prob_dict, groups=None):
     '''
     This calculates the combined probability by taking the product WITHIN 
     groups and sum BETWEEN groups. This assumes that each of the probability 
     lists contained in sample_prob_dict have been properly normalized. 
     
-    'sample_prob_dict' of the form {'sampID': [y_1, ..., y_i]}
+    'sample_prob_dict' of the form {'sampID': [y_1, ..., y_i]} where y_i are
+    probability values for positions x_i
     'groups' are of the form 
     [[cond1_rep1, cond1_rep2, ...], [cond2_rep1, cond2_rep2, ...], ...] 
     where each element is a string corresponding to the sampleID for that 
@@ -550,6 +572,7 @@ def combined_prob_calculator(sample_prob_dict, groups=None):
 
     Calls: normalizer()?
     TODO: Update docstring, code review of commented out lines
+    NOTE: THE WEIGHTING SCHEME COULD BE ADDED INTO THIS FUNCTION
     '''
     # First, define a uniform dist to be added for samples with no tfit calls
     list_len = len(list(sample_prob_dict.values())[0])
@@ -558,17 +581,17 @@ def combined_prob_calculator(sample_prob_dict, groups=None):
     cond_list = []
     for condition in groups:
         rep_list = []
-        len_cond = len(condition)
+        rep_num = len(condition)
         counter = 0
         for replicate in condition:
-            if replicate in sample_prob_dict:
+            if replicate in sample_prob_dict.keys():
                 rep_list.append(sample_prob_dict[replicate])
             else:
                 rep_list.append(uni_list)
                 counter = counter + 1
-#                continue
+
         rep_product = prob_product(rep_list)
-        if counter < len_cond:
+        if counter < rep_num:
 #            rep_len = len(rep_list)
 #            rep_product = [i ** (1/rep_len) for i in rep_product]
 #            rep_product = normalizer(rep_product, scaler=1, integral=True)
@@ -576,11 +599,11 @@ def combined_prob_calculator(sample_prob_dict, groups=None):
         else:
             continue
     
-        combined_prob = prob_sum(cond_list)
+    combined_prob = prob_sum(cond_list)
 
     return combined_prob
 
-
+###############################################################################
 ## This function locates the positions of the local maxima in a list
 def maxima_loc(samp_list, shift=0):
     '''
@@ -604,6 +627,7 @@ def maxima_loc(samp_list, shift=0):
     
     return maxima_indicies
 
+###############################################################################
 ## This function extracts the (mu, sig) values from the tfit_dict for a given
 # chr and region and outputs the list of tuples.
 def mu_sig_extract(mu_list):
@@ -618,6 +642,7 @@ def mu_sig_extract(mu_list):
 
     return mu_sig_list
 
+###############################################################################
 ## This function determins which of the newly identified mu positions to keep 
 # and which to discard. At this point sigma is absent. The tuples are only 
 # (mu_pos, mu_prob)
@@ -633,6 +658,7 @@ def mu_ranker(mus, num):
 
     return final_sorted_mu
 
+###############################################################################
 ## This function finds the tfit mu-calls that are closest to each likelihood
 # maxima located by maxima_loc(), and record the sigma for that tfit call,
 # assigning it to the respective maxima.
@@ -663,7 +689,7 @@ def sigma_assigner(new_mu, old_mu_sig):
 
     return new_mu_updated
 
-
+###############################################################################
 ## This function resolves collisions between newly calculated bed intervals 
 # (i.e. the new mu-sig). If two overlap, then the intervals are shrunk to 
 # where the intervals touch.
@@ -703,6 +729,7 @@ def collision_resolver(mu_sig_list):
 
     return mus
 
+###############################################################################
 ## This function defines the boundaries of the bed region, using the updated
 # sigmas (from sigma_assigner()) and outputs a list of strings formatted as 
 # bedfile regions.
@@ -716,14 +743,15 @@ def bed_line_formatter(chromosome, mu_sig_list):
         start = str(round(mu[0] - mu[1]))
         stop = str(round(mu[0] + mu[1]))
         bed_lines.append("\t".join([chromosome, start, stop]) + "\n")
-    
+#        avg = str(round((int(start) + int(stop)) / 2))
+#        bed_lines.append("\t".join([chromosome, start, stop, avg]) + "\n")
+
     return bed_lines
 
 
 ###############################################################################
 ## MAIN
 ###############################################################################
-
 '''
 What do I have to do? 
     1) *Figure out why some of the 'new_mu' lists are empty
@@ -755,42 +783,24 @@ logfile = open(outfilename + '.log', 'w')
 miscallfilename = outfilename + '_MISCALLS.bed'
 miscallfile = open(miscallfilename, 'w')
 
-# Write to miscall and log files
-miscallfile.write("# This file contains regions which were identified not to "
-                "contain a tfit call after merging. Hand check these.")
-
-logfile.write("Running: {}\n".format(sys.argv[0]))
-logfile.write("Python:\n{}\n".format(sys.version))
-logfile.write("Hostname: {}\n".format(socket.gethostname()))
-logfile.write("\n# Sample_ID \t Filename\n")
-
-for i, f in enumerate(tfit_filenames):
-    logfile.write("{} \t {}\n".format(sampids[i], f))
-
-logfile.write("\nOutput path: {}\n".format(outfilename))
-logfile.write("'bedtools merge' bedfile: {}\n".format(union_bedfile))
-logfile.write("Miscalls bedfile: {}\n".format(miscallfilename))
-logfile.write("muMerge output bedfile: {}\n".format(outbedfile))
-
-logfile.write("\nGroupings:\n")
-for i , group in enumerate(groupings):
-    logfile.write("{}\t{}\n".format(i, group))
+## Writes the initial, summary data in the miscalls and log files
+log_initializer(tfit_filenames, groupings, miscallfile, logfile)
 
 if verbose:
     sys.stdout.write("\nGenerating 'bedtools merge' bedfile...\n")
 ## Load merged bedfile
 merge_regions = bedfile_reader(union_bedfile,
-                                bedGraph=False,
-                                print_header=False,
-                                count=False)
+                            bedGraph=False,
+                            print_header=False,
+                            count=False)
 if verbose:
     sys.stdout.write("Building Tfit-regions dictionary...\n")
 ## Generate tfit dictionary, of form 
-# {'chr#': {(reg_start, reg_stop): [(mu_start, mu_stop, cov, 'sampID'), ...]}}
+# {'chr#': {(reg_start,reg_stop): [(mu_start,mu_stop,cov,'sampID'), ...]}}
 tfit_dict = mu_dict_generator(list(tfit_filenames),
-                                merge_regions,
-                                sampids = list(sampids),
-                                verbose = verbose)
+                            merge_regions,
+                            sampids = list(sampids),
+                            verbose = verbose)
 
 # Count up the total number of regions (to be logged and printed out)
 total = 0
@@ -819,20 +829,21 @@ with open(outbedfile, 'w') as output:
             
             # Status counter and update at stdout
             if verbose:
-                count += 1
-                sys.stdout.write("\rProcessing {} of {} regions"
+                sys.stdout.write("\rProcessed {} of {} regions"
                                    .format(count, total))
+                count += 1
 
-            # Extract Tfit calls from region
+            # Select Tfit calls for one region
             mu_list = tfit_dict[chromosome][region]
+#            print(chromosome, region, (region[0]+region[1])/2, mu_list)
 
             # Calculate average number of tfit calls per sample (rounds up)
             avg_num_mu = math.ceil(len(mu_list) / num_samps)
 
             # Generate prob dict (func of base pos) for region of tfit calls
             sample_prob_dict = prob_list_formatter(region, 
-                                                      mu_list, 
-                                                      dist="normal") #CHECK!!!
+                                                    mu_list, 
+                                                    dist="normal") #CHECK!!!
 
             # Calculate combined probability array (function of base position),
             # from 'groups' and the probability lists in sample_prob_dict() 
@@ -841,21 +852,23 @@ with open(outbedfile, 'w') as output:
 
             # Locate local maxima (shifted to range of 'region')
             potential_mu = maxima_loc(comb_prob, shift=region[0]) #CHECK!!!
+            
 
             # Determine which updated mu locations to keep
             new_mu = mu_ranker(potential_mu, avg_num_mu) #MISSING!!!!
 
             # If new_mu is empty, log in 'miscalls' and skip to next region
             if len(new_mu) == 0:
-                miscallfile.write("\t".join([chromosome, 
-                                            region[0], 
-                                            region[1], 
-                                            mu_list]))
+                miscallfile.write("\n")
+                miscallfile.write("\t".join([str(chromosome), 
+                                            str(region[0]), 
+                                            str(region[1]), 
+                                            str(mu_list)]))
                 continue
 
             # Extract (mu, sig) tuples for region from compiled tfit_dict
             old_mu_sig = mu_sig_extract(mu_list) #DONE!!!
-            #print(new_mu, "LEN(OLD):", len(old_mu_sig), chromosome, region)
+#            print(new_mu, "LEN(OLD):", len(old_mu_sig), chromosome, region)
 
             # Calculate updated sigma values for each updated mu location
             new_mu_sig = sigma_assigner(new_mu, old_mu_sig) #DONE!!!
@@ -865,7 +878,7 @@ with open(outbedfile, 'w') as output:
 
             # Convert final (mu, sig) to bed line format and write to output
             bedlines = bed_line_formatter(chromosome, final_mu_sig) #DONE!!!
-
+            
             # Write updated bedlines to output file
             for line in bedlines:
                 output.write(line)

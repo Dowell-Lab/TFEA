@@ -110,7 +110,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         mdd = config.vars['MDD']
         cpus = config.vars['CPUS']
         jobid = config.vars['JOBID']
-        p_cutoff = config.vars['PADJCUTOFF']
+        p_cutoff = math.log(config.vars['PADJCUTOFF'],10)
         figuredir = config.vars['FIGUREDIR']
         plotall = config.vars['PLOTALL']
         fimo_motifs = config.vars['FIMO_MOTIFS']
@@ -382,11 +382,13 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         if math.isnan(p):
             p = 0
         p = p+np.log(tests) if p+np.log(tests) <= 0 else 0
+        p = p*math.log(np.e, 10)
 
         corrected_p = min(stats.norm.logcdf(corrected_auc,mu,sigma), stats.norm.logsf(corrected_auc,mu,sigma))
         if math.isnan(corrected_p):
             corrected_p = 0
         corrected_p = corrected_p+np.log(tests) if corrected_p+np.log(tests) <= 0 else 0
+        corrected_p = corrected_p*math.log(np.e, 10)
 
         if plotall or (output_type=='html' and p < p_cutoff):
             from TFEA import plot
