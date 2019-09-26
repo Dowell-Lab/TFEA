@@ -40,4 +40,4 @@ module load samtools/1.8
 ### now call your program
 
 ### python ${src} --config ${config} --sbatch SUBMITTED
-python3.7 ${cmd}
+python3 ${cmd}
