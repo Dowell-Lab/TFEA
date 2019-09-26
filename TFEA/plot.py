@@ -343,7 +343,6 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     F.savefig(os.path.join(figuredir, motif + f'_simulation_plot.{plot_format}'), 
                 format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close(F)
-    print('hello')
 
 #==============================================================================
 def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None, 
@@ -386,11 +385,11 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
             ax.scatter(sigx, sigy, c=sigc, #marker='x', 
                         edgecolor='r',  linewidth=2, s=50)
             legend = ax.scatter([1], [0], c='w', edgecolor='r', linewidth=2, 
-                                    s=50, label=f'p < {p_cutoff}')
+                                    s=50, label=f'p < 1e{p_cutoff}')
         else:
             ax.scatter(sigx, sigy, color='red', edgecolor='',  s=50)
             legend = ax.scatter([1], [0], color='red', edgecolor='',  s=50, 
-                                    label=f'p < {p_cutoff}')
+                                    label=f'p < 1e{p_cutoff}')
         ax.legend(loc='best', frameon=False)
         legend.remove()
 

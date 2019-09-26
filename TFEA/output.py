@@ -46,7 +46,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
         debug = config.vars['DEBUG']
         jobid = config.vars['JOBID']
         output_type = config.vars['OUTPUT_TYPE']
-        p_cutoff = config.vars['PADJCUTOFF']
+        p_cutoff = math.log(config.vars['PADJCUTOFF'],10)
         padj_cutoff = config.vars['PADJCUTOFF']
         label1 = config.vars['LABEL1']
         label2 = config.vars['LABEL2']
