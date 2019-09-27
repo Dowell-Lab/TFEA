@@ -357,6 +357,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     F.savefig(os.path.join(figuredir, motif + f'_simulation_plot.{plot_format}'), 
                 format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close(F)
+    return
 
 #==============================================================================
 @force_gc
@@ -431,6 +432,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
+    return
 
 #==============================================================================
 @force_gc
@@ -470,6 +472,7 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
+    return
 
 #==============================================================================
 @force_gc
@@ -514,6 +517,7 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
+    return
 
 #==============================================================================
 @force_gc
@@ -573,6 +577,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
+    return
 
 #==============================================================================
 @force_gc
@@ -592,6 +597,7 @@ def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
         subprocess.check_output(imagemagick_rc_command, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
         raise exceptions.SubprocessError(e.stderr.decode())
+    return
 
 #==============================================================================
 @force_gc
@@ -623,6 +629,7 @@ def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None,
     ax.set_ylim(ylim)
     ax.set_xlim([-largewindow, largewindow])
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.3g'))
+    return
 
 #==============================================================================
 @force_gc
@@ -654,6 +661,7 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
     ax.set_xticks([-largewindow, 0, largewindow])
     if title is not None:
         ax.set_title(title, fontsize=14)
+    return
 
 #==============================================================================
 @force_gc
@@ -669,6 +677,7 @@ def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
                     labelbottom=False)
     ax.set_ylim([0,1])
     ax.set_xlim(xlimits)
+    return
 
 #==============================================================================
 @force_gc
@@ -693,6 +702,7 @@ def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None,
     ax.set_xlim(xlimits)
     ax.set_ylim([-int(largewindow),int(largewindow)])
     ax.set_ylabel('Distance (kb)', fontsize=10)
+    return
 
 #==============================================================================
 @force_gc
@@ -710,6 +720,7 @@ def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
     ax.set_xlim([0, 1])
     ax.set_ylim([0, 1])
     ax.set_ylabel('Score', fontsize=10)
+    return
 
 #==============================================================================
 @force_gc
@@ -737,6 +748,7 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     #                 alpha=0.25)
     # except ValueError:
     #     pass
+    return
 
 #==============================================================================
 @force_gc
@@ -820,6 +832,7 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     F.savefig(os.path.join(figuredir, f'DESEQ_MA_Plot.{plot_format}'), format=plot_format)#, dpi=dpi)
                 # bbox_inches='tight')
     plt.close()
+    return
 
 if __name__ == "__main__":
     results_file = '/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA_outputs/Allen2014/v5_outputs/20190620_DMSO_Nutlin_fimohits/results.txt'
