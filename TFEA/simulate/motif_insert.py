@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.7
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 '''This file contains scripts to generate motif annotation files from a motif 
     names.tsv file and a bed annotation file that has ';' delimited gene names
