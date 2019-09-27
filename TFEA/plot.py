@@ -34,8 +34,22 @@ from scipy import stats
 
 from TFEA import exceptions
 
+## GC Decorator
+import gc
+import functools
+def force_gc(func):
+    @functools.wraps(func)
+    def force_gc_decorator(*args, **kwargs):
+        # Do something before
+        value = func(*args, **kwargs)
+        # Do something after
+        gc.collect(2)
+        return value
+    return force_gc_decorator
+
 #Functions
 #==============================================================================
+@force_gc
 def plot_individual_graphs(use_config=True, distances=None, figuredir=None, 
                             fimo_motifs=None, largewindow=1500, score=None, 
                             pvals=None, fcs=None, 
@@ -345,6 +359,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     plt.close(F)
 
 #==============================================================================
+@force_gc
 def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None, 
                     ylabel=None, x_index=None, y_index=None, c_index=None,
                     p_index=None, savepath=None, ylimits=None, 
@@ -418,6 +433,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     plt.close()
 
 #==============================================================================
+@force_gc
 def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None, 
                         ylabel=None, savepath=None, plot_format=None):
     '''This function plots graphs that are displayed on the main results.html 
@@ -456,6 +472,7 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     plt.close()
 
 #==============================================================================
+@force_gc
 def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None, 
                         ylabel=None, savepath=None, dpi=100, x_index=None,
                         y_index=None, p_index=None, s_index=None, c_index=None, 
@@ -499,6 +516,7 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     plt.close()
 
 #==============================================================================
+@force_gc
 def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None, 
                         ylabel=None, savepath=None, dpi=100, x_index=None,
                         y_index=None, p_index=None, c_index=None, 
@@ -557,6 +575,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     plt.close()
 
 #==============================================================================
+@force_gc
 def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
     '''Runs meme2images that creates logo images
     '''
@@ -575,6 +594,7 @@ def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
         raise exceptions.SubprocessError(e.stderr.decode())
 
 #==============================================================================
+@force_gc
 def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None, 
                 xvals=None, label1=None, label2=None, title=None, ylim=None, 
                 largewindow=None):
@@ -605,6 +625,7 @@ def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None,
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.3g'))
 
 #==============================================================================
+@force_gc
 def heatmap(distances, ax=None, xlim=None, bins=None, title=None, 
             largewindow=None):
     counts, edges = np.histogram(distances, bins=bins)
@@ -635,6 +656,7 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
         ax.set_title(title, fontsize=14)
 
 #==============================================================================
+@force_gc
 def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
     #This is the enrichment score plot (i.e. line plot)
     ax.plot(xvals,yvals,color='green')
@@ -649,6 +671,7 @@ def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
     ax.set_xlim(xlimits)
 
 #==============================================================================
+@force_gc
 def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None, 
                 xlabel=False):
     #This is the barplot right below the enrichment score line plot
@@ -672,6 +695,7 @@ def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None,
     ax.set_ylabel('Distance (kb)', fontsize=10)
 
 #==============================================================================
+@force_gc
 def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
     norm    = matplotlib.colors.Normalize(vmin=min(colorarray), 
                                             vmax=max(colorarray))
@@ -688,6 +712,7 @@ def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
     ax.set_ylabel('Score', fontsize=10)
 
 #==============================================================================
+@force_gc
 def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     #This is the rank metric fill plot
     posvals = [(x,y) for x,y in zip(xvals,yvals) if y > 0]
@@ -714,6 +739,7 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     #     pass
 
 #==============================================================================
+@force_gc
 def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None, 
                     dpi=100, basemean_cut=0, plot_format=None):
     '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
