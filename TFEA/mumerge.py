@@ -13,8 +13,6 @@ from collections import Counter
 from functools import reduce
 from itertools import combinations
 
-import mumerge_test_unit as mt
-
 ### SOME LOW LEVEL FUNCTIONS THAT GET UTILIZED IN THE MAJOR FUNCTIONS #########
 def normal(x, pos, sig, scale):
     '''
