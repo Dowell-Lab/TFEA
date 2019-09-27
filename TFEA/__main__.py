@@ -19,6 +19,5 @@ srcdirectory = Path(__file__).absolute().parent
 sys.path.insert(0, srcdirectory)
 
 from TFEA import main
-import cProfile
 
-cProfile.run("main.run()", "/scratch/Users/zama8258/TFEA_DEV/TFEA.profile")
+main.run()
