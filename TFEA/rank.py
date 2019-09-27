@@ -21,7 +21,7 @@ import time
 import datetime
 import subprocess
 import warnings
-import json
+import ujson
 from pathlib import Path
 from multiprocessing import Manager
 
@@ -713,13 +713,13 @@ def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions,
         for key in meta_profile_dict:
             for i, profile in enumerate(meta_profile_dict[key]):
                 profile_file = meta_profile_folder / (f'{key}_{i}')
-                profile_file.write_text(json.dumps(profile))
+                profile_file.write_text(ujson.dumps(profile))
                 
         return meta_profile_folder
 
         #JSON
         # meta_profile_file = tempdir / 'meta_profile.json'
-        # meta_profile_file.write_text(json.dumps(meta_profile_dict))
+        # meta_profile_file.write_text(ujson.dumps(meta_profile_dict))
 
         # return meta_profile_file
 

@@ -17,16 +17,16 @@ import os
 import math
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')
-matplotlib.rcParams['savefig.dpi'] = 100
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter
+matplotlib.use('Agg')
+matplotlib.rcParams['savefig.dpi'] = 100
 import subprocess
 import warnings
 import pathlib
-import json
+import ujson
 from statistics import mean, median
 
 import numpy as np
@@ -125,55 +125,55 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     #Initiate meta plots
     if type(meta_profile_dict) == pathlib.PosixPath: #or type(meta_profile_dict) == dict and len(meta_profile_dict) != 0:
         
-        q1posprofile1 = [json.loads((meta_profile_dict / f'q1posprofile1_{i}').read_text()) for i in q1_meta_retain]
+        q1posprofile1 = [ujson.loads((meta_profile_dict / f'q1posprofile1_{i}').read_text()) for i in q1_meta_retain]
         q1posprofile1 = [x for x in map(mean, zip(*q1posprofile1))]
         
-        q1negprofile1 = [json.loads((meta_profile_dict / f'q1negprofile1_{i}').read_text()) for i in q1_meta_retain]
+        q1negprofile1 = [ujson.loads((meta_profile_dict / f'q1negprofile1_{i}').read_text()) for i in q1_meta_retain]
         q1negprofile1 = [x for x in map(mean, zip(*q1negprofile1))]
         
-        q1posprofile2 = [json.loads((meta_profile_dict / f'q1posprofile2_{i}').read_text()) for i in q1_meta_retain]
+        q1posprofile2 = [ujson.loads((meta_profile_dict / f'q1posprofile2_{i}').read_text()) for i in q1_meta_retain]
         q1posprofile2 = [x for x in map(mean, zip(*q1posprofile2))]
         
-        q1negprofile2 = [json.loads((meta_profile_dict / f'q1negprofile2_{i}').read_text()) for i in q1_meta_retain]
+        q1negprofile2 = [ujson.loads((meta_profile_dict / f'q1negprofile2_{i}').read_text()) for i in q1_meta_retain]
         q1negprofile2 = [x for x in map(mean, zip(*q1negprofile2))]
         
-        q2posprofile1 = [json.loads((meta_profile_dict / f'q2posprofile1_{i}').read_text()) for i in q2_meta_retain]
+        q2posprofile1 = [ujson.loads((meta_profile_dict / f'q2posprofile1_{i}').read_text()) for i in q2_meta_retain]
         q2posprofile1 = [x for x in map(mean, zip(*q2posprofile1))]
         
-        q2negprofile1 = [json.loads((meta_profile_dict / f'q2negprofile1_{i}').read_text()) for i in q2_meta_retain]
+        q2negprofile1 = [ujson.loads((meta_profile_dict / f'q2negprofile1_{i}').read_text()) for i in q2_meta_retain]
         q2negprofile1 = [x for x in map(mean, zip(*q2negprofile1))]
         
-        q2posprofile2 = [json.loads((meta_profile_dict / f'q2posprofile2_{i}').read_text()) for i in q2_meta_retain]
+        q2posprofile2 = [ujson.loads((meta_profile_dict / f'q2posprofile2_{i}').read_text()) for i in q2_meta_retain]
         q2posprofile2 = [x for x in map(mean, zip(*q2posprofile2))]
         
-        q2negprofile2 = [json.loads((meta_profile_dict / f'q2negprofile2_{i}').read_text()) for i in q2_meta_retain]
+        q2negprofile2 = [ujson.loads((meta_profile_dict / f'q2negprofile2_{i}').read_text()) for i in q2_meta_retain]
         q2negprofile2 = [x for x in map(mean, zip(*q2negprofile2))]
         
-        q3posprofile1 = [json.loads((meta_profile_dict / f'q3posprofile1_{i}').read_text()) for i in q3_meta_retain]
+        q3posprofile1 = [ujson.loads((meta_profile_dict / f'q3posprofile1_{i}').read_text()) for i in q3_meta_retain]
         q3posprofile1 = [x for x in map(mean, zip(*q3posprofile1))]
         
-        q3negprofile1 = [json.loads((meta_profile_dict / f'q3negprofile1_{i}').read_text()) for i in q3_meta_retain]
+        q3negprofile1 = [ujson.loads((meta_profile_dict / f'q3negprofile1_{i}').read_text()) for i in q3_meta_retain]
         q3negprofile1 = [x for x in map(mean, zip(*q3negprofile1))]
         
-        q3posprofile2 = [json.loads((meta_profile_dict / f'q3posprofile2_{i}').read_text()) for i in q3_meta_retain]
+        q3posprofile2 = [ujson.loads((meta_profile_dict / f'q3posprofile2_{i}').read_text()) for i in q3_meta_retain]
         q3posprofile2 = [x for x in map(mean, zip(*q3posprofile2))]
         
-        q3negprofile2 = [json.loads((meta_profile_dict / f'q3negprofile2_{i}').read_text()) for i in q3_meta_retain]
+        q3negprofile2 = [ujson.loads((meta_profile_dict / f'q3negprofile2_{i}').read_text()) for i in q3_meta_retain]
         q3negprofile2 = [x for x in map(mean, zip(*q3negprofile2))]
         
-        q4posprofile1 = [json.loads((meta_profile_dict / f'q4posprofile1_{i}').read_text()) for i in q4_meta_retain]
+        q4posprofile1 = [ujson.loads((meta_profile_dict / f'q4posprofile1_{i}').read_text()) for i in q4_meta_retain]
         q4posprofile1 = [x for x in map(mean, zip(*q4posprofile1))]
         
-        q4negprofile1 = [json.loads((meta_profile_dict / f'q4negprofile1_{i}').read_text()) for i in q4_meta_retain]
+        q4negprofile1 = [ujson.loads((meta_profile_dict / f'q4negprofile1_{i}').read_text()) for i in q4_meta_retain]
         q4negprofile1 = [x for x in map(mean, zip(*q4negprofile1))]
         
-        q4posprofile2 = [json.loads((meta_profile_dict / f'q4posprofile2_{i}').read_text()) for i in q4_meta_retain]
+        q4posprofile2 = [ujson.loads((meta_profile_dict / f'q4posprofile2_{i}').read_text()) for i in q4_meta_retain]
         q4posprofile2 = [x for x in map(mean, zip(*q4posprofile2))]
         
-        q4negprofile2 = [json.loads((meta_profile_dict / f'q4negprofile2_{i}').read_text()) for i in q4_meta_retain]
+        q4negprofile2 = [ujson.loads((meta_profile_dict / f'q4negprofile2_{i}').read_text()) for i in q4_meta_retain]
         q4negprofile2 = [x for x in map(mean, zip(*q4negprofile2))]
-        # #JSON
-        # meta_profile_dict = json.loads(meta_profile_dict.read_text())
+        # #UJSON
+        # meta_profile_dict = ujson.loads(meta_profile_dict.read_text())
         
         #Pickle
         # with open(meta_profile_dict, 'rb') as f:

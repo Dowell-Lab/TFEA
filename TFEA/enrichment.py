@@ -25,7 +25,7 @@ import traceback
 import numpy as np
 import math
 import pathlib
-import json
+import ujson
 import shutil
 from scipy import stats
 from multiprocessing import Manager
@@ -333,7 +333,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         except KeyError:
             fpkm = nan
         distances = distances[1:]
-        distances_abs = (abs(x)  if x != '.' else x for x in distances)
+        distances_abs = [abs(x)  if x != '.' else x for x in distances]
 
         hits = len([x for x in distances_abs if x != '.'])
 
@@ -352,13 +352,15 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
             return [motif, 0, 0, hits, gc, fpkm, 1.0, 1.0]
         
         score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
-        total = sum(score)
+        total = np.sum(score)
 
         binwidth = 1.0/float(len(distances_abs))
-        normalized_score = [(float(x)/total)*binwidth for x in score]
+        normalized_score = np.multiply(np.divide(score, total), binwidth)
+        #[(float(x)/total)*binwidth for x in score]
         cumscore = np.cumsum(normalized_score)
         trend = np.append(np.arange(0,1,1.0/float(len(cumscore)))[1:], 1.0)
-        trend = [x*binwidth for x in trend]
+        trend = np.multiply(trend, binwidth)
+        # trend = [x*binwidth for x in trend]
 
         #The AUC is the relative to the "random" line
         auc = np.trapz(cumscore) - np.trapz(trend)
@@ -392,7 +394,8 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
 
         if plotall or (output_type=='html' and p < p_cutoff):
             from TFEA import plot
-            plotting_score = [(float(x)/total) for x in score]
+            plotting_score = np.divide(score, total)
+            # [(float(x)/total) for x in score]
             plotting_cumscore = np.cumsum(plotting_score)
             plot.plot_individual_graphs(motif=motif, distances=distances, 
                                         figuredir=figuredir, 
