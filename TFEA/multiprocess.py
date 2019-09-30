@@ -27,7 +27,7 @@ from TFEA import config
 
 #Main Script
 #==============================================================================
-def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=None):
+def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=1):
     '''This is the main script of the multiprocessing module. It is written
         to simplify code in other modules. It performs parallel processing
         using python's built-in multiprocessing module on a function given

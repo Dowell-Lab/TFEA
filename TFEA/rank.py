@@ -677,22 +677,22 @@ def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions,
     else:
         print("\tToo many regions to parallelize over. Performing computation in serial.", 
                 file=sys.stderr)
-        meta_profile_tuples = []
-        meta_profile_tuples.append(meta_profile(regionlist=q1regions, 
+        meta_profile_tuples = np.empty(4,dtype=list)
+        meta_profile_tuples[0] = meta_profile(regionlist=q1regions, 
                                             largewindow=largewindow, bam1=bam1, 
-                                            bam2=bam2))
+                                            bam2=bam2)
 
-        meta_profile_tuples.append(meta_profile(regionlist=q2regions, 
+        meta_profile_tuples[1] = meta_profile(regionlist=q2regions, 
                                             largewindow=largewindow, bam1=bam1, 
-                                            bam2=bam2))
+                                            bam2=bam2)
 
-        meta_profile_tuples.append(meta_profile(regionlist=q3regions, 
+        meta_profile_tuples[2] = meta_profile(regionlist=q3regions, 
                                             largewindow=largewindow, bam1=bam1, 
-                                            bam2=bam2))
+                                            bam2=bam2)
         
-        meta_profile_tuples.append(meta_profile(regionlist=q4regions, 
+        meta_profile_tuples[3] = meta_profile(regionlist=q4regions, 
                                             largewindow=largewindow, bam1=bam1, 
-                                            bam2=bam2))
+                                            bam2=bam2)
 
     meta_profile_dict = {}
     mil_map1 = sum(millions_mapped[:len(bam1)])/len(bam1)/1e6
@@ -717,7 +717,7 @@ def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions,
                 
         return meta_profile_folder
 
-        #JSON
+        #JSON single file
         # meta_profile_file = tempdir / 'meta_profile.json'
         # meta_profile_file.write_text(json.dumps(meta_profile_dict))
 
@@ -741,9 +741,9 @@ def meta_profile(regionlist=None, largewindow=None, bam1=None, bam2=None):
     Parameters
     ----------
     regionlist : list
-        a list of regions of interest. Format [(chrom, start, stop), (), ...]
-    region_file : string
-        full path to a bed file containing regions of interest.
+        a list of regions of interest. Format: [(chrom, start, stop), (), ...]
+        First value is special 'key_prefix' which simply keeps track of which
+        quartile we're in.
     largewindow : float
         the window with which to compute profiles for
     bam1 : list
@@ -884,6 +884,118 @@ def meta_profile(regionlist=None, largewindow=None, bam1=None, bam2=None):
     # negprofile1 = [[x/mil_map1 for x in negprofile1]]
     # posprofile2 = [[x/mil_map2 for x in posprofile2]]
     # negprofile2 = [[x/mil_map2 for x in negprofile2]]
+
+
+    return (key_prefix + 'posprofile1', posprofile1), (key_prefix + 'negprofile1', negprofile1), (key_prefix + 'posprofile2', posprofile2), (key_prefix + 'negprofile2', negprofile2)
+
+def meta_profile_bg(regionlist=None, largewindow=None, bg1=None, bg2=None):
+    '''This function returns average profiles for given regions of interest.
+        A user may input either a list of regions or a bed file
+    Parameters
+    ----------
+    regionlist : list
+        a list of regions of interest. Format: [(chrom, start, stop), (), ...].
+        First value is special 'key_prefix' which simply keeps track of which
+        quartile we're in.
+    largewindow : float
+        the window with which to compute profiles for
+    bg1 : list
+        a list of full paths to bedgraph files corresponding to a condition or 
+        treatment
+    bg2 : list
+        a list of full paths to bedgraph files corresponding to a condition or 
+        treatment
+        
+    Returns
+    -------
+    posprofile1 : list
+        profile for the positive strand corresponding to condition 1. Each 
+        value in the list is a bp
+    negprofile1 : list
+        profile for the negative strand corresponding to condition 1. Each 
+        value in the list is a bp
+    posprofile2 : list
+        profile for the positive strand corresponding to condition 2. Each 
+        value in the list is a bp
+    negprofile2 : list
+        profile for the negative strand corresponding to condition 2. Each 
+        value in the list is a bp
+    Raises
+    ------
+    '''
+    key_prefix = regionlist[0]
+    number_of_regions = len(regionlist[1:])
+    regions={}
+    posprofile1 = np.empty((number_of_regions, 2*int(largewindow)))
+    negprofile1 = np.empty((number_of_regions, 2*int(largewindow)))
+    posprofile2 = np.empty((number_of_regions, 2*int(largewindow)))
+    negprofile2 = np.empty((number_of_regions, 2*int(largewindow)))
+    file_counters = [0 for _ in range(len(bg1+bg2))]
+    for chrom, start, stop in regionlist[1:]:
+        if chrom not in regions:
+            regions[chrom] = []
+        regions[chrom]
+
+    if len(hts_bam1) == 0 or len(hts_bam2) == 0:
+        raise ValueError("One of bam1 or bam2 variables is empty.")
+
+    rep1number = float(len(hts_bam1))
+    rep2number = float(len(hts_bam2))
+    for i, window in enumerate(regions):
+        avgposprofile1 = np.zeros(2*int(largewindow))
+        avgnegprofile1 = np.zeros(2*int(largewindow))
+        for sortedbamfile in hts_bam1:
+            tempposprofile = np.zeros(2*int(largewindow))
+            tempnegprofile = np.zeros(2*int(largewindow))
+            for almnt in sortedbamfile[ window ]:
+                if almnt.iv.strand == '+':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window = almnt.iv.end - window.end \
+                                    + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                if almnt.iv.strand == '-':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+
+            avgposprofile1 = np.add(avgposprofile1, tempposprofile)
+            avgnegprofile1 = np.add(avgnegprofile1, tempnegprofile)
+        avgposprofile1 = avgposprofile1/rep1number
+        avgnegprofile1 = avgnegprofile1/rep1number
+        posprofile1[i] = avgposprofile1
+        negprofile1[i] = avgnegprofile1
+
+        avgposprofile2 = np.zeros(2*int(largewindow))
+        avgnegprofile2 = np.zeros(2*int(largewindow))
+        for sortedbamfile in hts_bam2:
+            tempposprofile = np.zeros(2*int(largewindow))
+            tempnegprofile = np.zeros(2*int(largewindow))
+            for almnt in sortedbamfile[ window ]:
+                if almnt.iv.strand == '+':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempposprofile[ start_in_window : end_in_window ] += 1.0
+                if almnt.iv.strand == '-':
+                    start_in_window = almnt.iv.start - window.start
+                    end_in_window   = almnt.iv.end - window.end \
+                                        + 2*int(largewindow)
+                    start_in_window = max( start_in_window, 0 )
+                    end_in_window = min( end_in_window, 2*int(largewindow) )
+                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+            avgposprofile2 = np.add(avgposprofile2, tempposprofile)
+            avgnegprofile2 = np.add(avgnegprofile2, tempnegprofile)
+        avgposprofile2 = avgposprofile2/rep2number
+        avgnegprofile2 = avgnegprofile2/rep2number
+        posprofile2[i] = avgposprofile2
+        negprofile2[i] = avgnegprofile2
 
 
     return (key_prefix + 'posprofile1', posprofile1), (key_prefix + 'negprofile1', negprofile1), (key_prefix + 'posprofile2', posprofile2), (key_prefix + 'negprofile2', negprofile2)

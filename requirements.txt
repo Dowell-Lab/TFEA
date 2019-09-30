@@ -4,3 +4,5 @@ numpy==1.16.4
 pybedtools==0.8.0
 HTSeq==0.11.2
 psutil==5.6.2
+cython==0.29.13
+ncls==0.0.44
