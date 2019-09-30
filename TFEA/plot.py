@@ -17,16 +17,16 @@ import os
 import math
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')
-matplotlib.rcParams['savefig.dpi'] = 100
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter
+matplotlib.use('Agg')
+matplotlib.rcParams['savefig.dpi'] = 100
 import subprocess
 import warnings
 import pathlib
-import json
+import ujson
 from statistics import mean, median
 
 import numpy as np
@@ -34,8 +34,22 @@ from scipy import stats
 
 from TFEA import exceptions
 
+## GC Decorator
+import gc
+import functools
+def force_gc(func):
+    @functools.wraps(func)
+    def force_gc_decorator(*args, **kwargs):
+        # Do something before
+        value = func(*args, **kwargs)
+        # Do something after
+        gc.collect(2)
+        return value
+    return force_gc_decorator
+
 #Functions
 #==============================================================================
+@force_gc
 def plot_individual_graphs(use_config=True, distances=None, figuredir=None, 
                             fimo_motifs=None, largewindow=1500, score=None, 
                             pvals=None, fcs=None, 
@@ -125,55 +139,55 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     #Initiate meta plots
     if type(meta_profile_dict) == pathlib.PosixPath: #or type(meta_profile_dict) == dict and len(meta_profile_dict) != 0:
         
-        q1posprofile1 = [json.loads((meta_profile_dict / f'q1posprofile1_{i}').read_text()) for i in q1_meta_retain]
+        q1posprofile1 = [ujson.loads((meta_profile_dict / f'q1posprofile1_{i}').read_text()) for i in q1_meta_retain]
         q1posprofile1 = [x for x in map(mean, zip(*q1posprofile1))]
         
-        q1negprofile1 = [json.loads((meta_profile_dict / f'q1negprofile1_{i}').read_text()) for i in q1_meta_retain]
+        q1negprofile1 = [ujson.loads((meta_profile_dict / f'q1negprofile1_{i}').read_text()) for i in q1_meta_retain]
         q1negprofile1 = [x for x in map(mean, zip(*q1negprofile1))]
         
-        q1posprofile2 = [json.loads((meta_profile_dict / f'q1posprofile2_{i}').read_text()) for i in q1_meta_retain]
+        q1posprofile2 = [ujson.loads((meta_profile_dict / f'q1posprofile2_{i}').read_text()) for i in q1_meta_retain]
         q1posprofile2 = [x for x in map(mean, zip(*q1posprofile2))]
         
-        q1negprofile2 = [json.loads((meta_profile_dict / f'q1negprofile2_{i}').read_text()) for i in q1_meta_retain]
+        q1negprofile2 = [ujson.loads((meta_profile_dict / f'q1negprofile2_{i}').read_text()) for i in q1_meta_retain]
         q1negprofile2 = [x for x in map(mean, zip(*q1negprofile2))]
         
-        q2posprofile1 = [json.loads((meta_profile_dict / f'q2posprofile1_{i}').read_text()) for i in q2_meta_retain]
+        q2posprofile1 = [ujson.loads((meta_profile_dict / f'q2posprofile1_{i}').read_text()) for i in q2_meta_retain]
         q2posprofile1 = [x for x in map(mean, zip(*q2posprofile1))]
         
-        q2negprofile1 = [json.loads((meta_profile_dict / f'q2negprofile1_{i}').read_text()) for i in q2_meta_retain]
+        q2negprofile1 = [ujson.loads((meta_profile_dict / f'q2negprofile1_{i}').read_text()) for i in q2_meta_retain]
         q2negprofile1 = [x for x in map(mean, zip(*q2negprofile1))]
         
-        q2posprofile2 = [json.loads((meta_profile_dict / f'q2posprofile2_{i}').read_text()) for i in q2_meta_retain]
+        q2posprofile2 = [ujson.loads((meta_profile_dict / f'q2posprofile2_{i}').read_text()) for i in q2_meta_retain]
         q2posprofile2 = [x for x in map(mean, zip(*q2posprofile2))]
         
-        q2negprofile2 = [json.loads((meta_profile_dict / f'q2negprofile2_{i}').read_text()) for i in q2_meta_retain]
+        q2negprofile2 = [ujson.loads((meta_profile_dict / f'q2negprofile2_{i}').read_text()) for i in q2_meta_retain]
         q2negprofile2 = [x for x in map(mean, zip(*q2negprofile2))]
         
-        q3posprofile1 = [json.loads((meta_profile_dict / f'q3posprofile1_{i}').read_text()) for i in q3_meta_retain]
+        q3posprofile1 = [ujson.loads((meta_profile_dict / f'q3posprofile1_{i}').read_text()) for i in q3_meta_retain]
         q3posprofile1 = [x for x in map(mean, zip(*q3posprofile1))]
         
-        q3negprofile1 = [json.loads((meta_profile_dict / f'q3negprofile1_{i}').read_text()) for i in q3_meta_retain]
+        q3negprofile1 = [ujson.loads((meta_profile_dict / f'q3negprofile1_{i}').read_text()) for i in q3_meta_retain]
         q3negprofile1 = [x for x in map(mean, zip(*q3negprofile1))]
         
-        q3posprofile2 = [json.loads((meta_profile_dict / f'q3posprofile2_{i}').read_text()) for i in q3_meta_retain]
+        q3posprofile2 = [ujson.loads((meta_profile_dict / f'q3posprofile2_{i}').read_text()) for i in q3_meta_retain]
         q3posprofile2 = [x for x in map(mean, zip(*q3posprofile2))]
         
-        q3negprofile2 = [json.loads((meta_profile_dict / f'q3negprofile2_{i}').read_text()) for i in q3_meta_retain]
+        q3negprofile2 = [ujson.loads((meta_profile_dict / f'q3negprofile2_{i}').read_text()) for i in q3_meta_retain]
         q3negprofile2 = [x for x in map(mean, zip(*q3negprofile2))]
         
-        q4posprofile1 = [json.loads((meta_profile_dict / f'q4posprofile1_{i}').read_text()) for i in q4_meta_retain]
+        q4posprofile1 = [ujson.loads((meta_profile_dict / f'q4posprofile1_{i}').read_text()) for i in q4_meta_retain]
         q4posprofile1 = [x for x in map(mean, zip(*q4posprofile1))]
         
-        q4negprofile1 = [json.loads((meta_profile_dict / f'q4negprofile1_{i}').read_text()) for i in q4_meta_retain]
+        q4negprofile1 = [ujson.loads((meta_profile_dict / f'q4negprofile1_{i}').read_text()) for i in q4_meta_retain]
         q4negprofile1 = [x for x in map(mean, zip(*q4negprofile1))]
         
-        q4posprofile2 = [json.loads((meta_profile_dict / f'q4posprofile2_{i}').read_text()) for i in q4_meta_retain]
+        q4posprofile2 = [ujson.loads((meta_profile_dict / f'q4posprofile2_{i}').read_text()) for i in q4_meta_retain]
         q4posprofile2 = [x for x in map(mean, zip(*q4posprofile2))]
         
-        q4negprofile2 = [json.loads((meta_profile_dict / f'q4negprofile2_{i}').read_text()) for i in q4_meta_retain]
+        q4negprofile2 = [ujson.loads((meta_profile_dict / f'q4negprofile2_{i}').read_text()) for i in q4_meta_retain]
         q4negprofile2 = [x for x in map(mean, zip(*q4negprofile2))]
-        # #JSON
-        # meta_profile_dict = json.loads(meta_profile_dict.read_text())
+        # #UJSON
+        # meta_profile_dict = ujson.loads(meta_profile_dict.read_text())
         
         #Pickle
         # with open(meta_profile_dict, 'rb') as f:
@@ -343,8 +357,10 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     F.savefig(os.path.join(figuredir, motif + f'_simulation_plot.{plot_format}'), 
                 format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close(F)
+    return
 
 #==============================================================================
+@force_gc
 def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None, 
                     ylabel=None, x_index=None, y_index=None, c_index=None,
                     p_index=None, savepath=None, ylimits=None, 
@@ -364,7 +380,7 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     # import sys
     # print(clean_results, file=sys.stderr)
     xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in clean_results]
-    if c_index != None:
+    if c_index is not None:
         clist = [i[c_index] for i in clean_results]
         clist = [y-c for y,c in zip(ylist,clist)]
         max_c = abs(max([x for x in clist if x == x], key=abs))
@@ -376,11 +392,11 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     else:
         scatter = ax.scatter(xlist, ylist, edgecolor='', color='navy', s=50)
 
-    if p_index != None:
+    if p_index is not None:
         plist = [i[p_index] for i in clean_results]
         sigx = [x for x,p in zip(xlist,plist) if p<p_cutoff]
         sigy = [y for y,p in zip(ylist,plist) if p<p_cutoff]
-        if c_index != None:
+        if c_index is not None:
             sigc = [scatter.to_rgba(c) for c,p in zip(clist,plist) if p<p_cutoff]
             ax.scatter(sigx, sigy, c=sigc, #marker='x', 
                         edgecolor='r',  linewidth=2, s=50)
@@ -410,14 +426,16 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
-    if ylimits != None:
+    if ylimits is not None:
         ax.set_ylim(ylimits)
 
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
+    return
 
 #==============================================================================
+@force_gc
 def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None, 
                         ylabel=None, savepath=None, plot_format=None):
     '''This function plots graphs that are displayed on the main results.html 
@@ -454,8 +472,10 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
+    return
 
 #==============================================================================
+@force_gc
 def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None, 
                         ylabel=None, savepath=None, dpi=100, x_index=None,
                         y_index=None, p_index=None, s_index=None, c_index=None, 
@@ -464,7 +484,7 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     xlist = [math.log(i[x_index], 10) if i[x_index] != 0 else 0 for i in results]
     plist = [i[p_index] for i in results]
 
-    if s_index != None:
+    if s_index is not None:
         slist = [i[s_index] for i in results]
         print(slist)
         slist = [((s/max([sigs for sigs, p in zip(slist,plist) if p < p_cutoff]))**2)*100 if p < p_cutoff else 50 for s,p in zip(slist,plist) ]
@@ -476,7 +496,7 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     
     clist = np.zeros((len(results),4))
     clist = np.array([[1.0, 0, 0, 0] if p < p_cutoff else [0, 0, 0.4, 0] for p in plist])
-    if c_index != None:
+    if c_index is not None:
         tempclist = [i[c_index] for i in results]
         max_val = max(tempclist)
         tempclist = [math.sqrt(c/max_val) for c in tempclist]
@@ -497,8 +517,10 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
+    return
 
 #==============================================================================
+@force_gc
 def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None, 
                         ylabel=None, savepath=None, dpi=100, x_index=None,
                         y_index=None, p_index=None, c_index=None, 
@@ -521,7 +543,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     cbar = plt.colorbar(scatter)
     cbar.set_label('AUC Correction', rotation=270, labelpad=20)
 
-    if p_index != None:
+    if p_index is not None:
         plist = [i[p_index] for i in clean_results]
         sigx = [x for x,p in zip(xlist,plist) if p<p_cutoff]
         sigy = [y for y,p in zip(ylist,plist) if p<p_cutoff]
@@ -529,7 +551,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
         ax.scatter(sigx, sigy, c=sigc, #marker='x', 
                         edgecolor='r', linewidth=2, s=50)
     
-    if linear_regression != None:
+    if linear_regression is not None:
         slope, intercept, r_value, p_value, _ = linear_regression
         s = ("y = (" + str("%.2g" % slope) + ")x + " + str("%.2g" % intercept)
             + "\nR$^2$ = " + str("%.2g" % r_value**2)
@@ -549,14 +571,16 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
 
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
-    if ylimits != None:
+    if ylimits is not None:
         ax.set_ylim(ylimits)
 
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
+    return
 
 #==============================================================================
+@force_gc
 def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
     '''Runs meme2images that creates logo images
     '''
@@ -573,8 +597,10 @@ def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
         subprocess.check_output(imagemagick_rc_command, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
         raise exceptions.SubprocessError(e.stderr.decode())
+    return
 
 #==============================================================================
+@force_gc
 def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None, 
                 xvals=None, label1=None, label2=None, title=None, ylim=None, 
                 largewindow=None):
@@ -603,8 +629,10 @@ def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None,
     ax.set_ylim(ylim)
     ax.set_xlim([-largewindow, largewindow])
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.3g'))
+    return
 
 #==============================================================================
+@force_gc
 def heatmap(distances, ax=None, xlim=None, bins=None, title=None, 
             largewindow=None):
     counts, edges = np.histogram(distances, bins=bins)
@@ -631,10 +659,12 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
     # locs = [str(float(x)/1000.0) for x in locs]
     # ax.set_xticklabels(locs)
     ax.set_xticks([-largewindow, 0, largewindow])
-    if title != None:
+    if title is not None:
         ax.set_title(title, fontsize=14)
+    return
 
 #==============================================================================
+@force_gc
 def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
     #This is the enrichment score plot (i.e. line plot)
     ax.plot(xvals,yvals,color='green')
@@ -647,8 +677,10 @@ def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
                     labelbottom=False)
     ax.set_ylim([0,1])
     ax.set_xlim(xlimits)
+    return
 
 #==============================================================================
+@force_gc
 def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None, 
                 xlabel=False):
     #This is the barplot right below the enrichment score line plot
@@ -670,8 +702,10 @@ def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None,
     ax.set_xlim(xlimits)
     ax.set_ylim([-int(largewindow),int(largewindow)])
     ax.set_ylabel('Distance (kb)', fontsize=10)
+    return
 
 #==============================================================================
+@force_gc
 def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
     norm    = matplotlib.colors.Normalize(vmin=min(colorarray), 
                                             vmax=max(colorarray))
@@ -686,8 +720,10 @@ def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
     ax.set_xlim([0, 1])
     ax.set_ylim([0, 1])
     ax.set_ylabel('Score', fontsize=10)
+    return
 
 #==============================================================================
+@force_gc
 def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     #This is the rank metric fill plot
     posvals = [(x,y) for x,y in zip(xvals,yvals) if y > 0]
@@ -712,8 +748,10 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     #                 alpha=0.25)
     # except ValueError:
     #     pass
+    return
 
 #==============================================================================
+@force_gc
 def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None, 
                     dpi=100, basemean_cut=0, plot_format=None):
     '''Plots the DE-Seq MA-plot using the full regions of interest and saves it
@@ -794,6 +832,7 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     F.savefig(os.path.join(figuredir, f'DESEQ_MA_Plot.{plot_format}'), format=plot_format)#, dpi=dpi)
                 # bbox_inches='tight')
     plt.close()
+    return
 
 if __name__ == "__main__":
     results_file = '/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA_outputs/Allen2014/v5_outputs/20190620_DMSO_Nutlin_fimohits/results.txt'
