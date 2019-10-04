@@ -28,6 +28,7 @@ from multiprocessing import Manager
 from pybedtools import BedTool
 import HTSeq as hts
 import numpy as np
+from ncls import NCLS
 
 from TFEA import exceptions
 from TFEA import multiprocess
@@ -101,6 +102,8 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         scanner=config.vars['SCANNER']
         bam1=config.vars['BAM1']
         bam2=config.vars['BAM2']
+        bg1=config.vars['BG1']
+        bg2=config.vars['BG2']
         tempdir=config.vars['TEMPDIR']
         label1=config.vars['LABEL1']
         label2=config.vars['LABEL2']
@@ -121,12 +124,26 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
 
     #Begin by counting reads from bam files over the combined_file produced
     # by the combine module
-    count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
+    if bam1 and bam2:
+        count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
                             tempdir=tempdir, label1=label1, label2=label2)
-    millions_mapped = sum_reads(count_file=count_file, sample_number=len(bam1+bam2))
+        sample_number = len(bam1+bam2)
+    elif bg1 and bg2:
+        count_file = count_reads_bedtools(bedfile=combined_file, bg1=bg1, 
+                                        bg2=bg2, tempdir=tempdir, label1=label1, 
+                                        label2=label2)
+        sample_number = len(bg1+bg2)
+    millions_mapped = sum_reads(count_file=count_file, sample_number=sample_number)
     if motif_annotations:
-        motif_fpkm = motif_count_reads(bedfile=motif_annotations, 
+        if bam1 and bam2:
+            motif_fpkm = motif_count_reads(bedfile=motif_annotations, 
                                             bam1=bam1, bam2=bam2, 
+                                            tempdir=tempdir, 
+                                            label1=label1, label2=label2, 
+                                            millions_mapped=millions_mapped)
+        elif bg1 and bg2:
+            motif_fpkm = motif_count_reads_bg(bedfile=motif_annotations, 
+                                            bg1=bg1, bg2=bg2, 
                                             tempdir=tempdir, 
                                             label1=label1, label2=label2, 
                                             millions_mapped=millions_mapped)
@@ -138,7 +155,14 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         raise exceptions.FileEmptyError("Error in RANK module. Counting failed.")
 
     if rank == 'deseq' or rank == 'fc':
-        ranked_file, pvals, fcs = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
+        if bam1 and bam2:
+            ranked_file, pvals, fcs = deseq(bam1=bam1, bam2=bam2, tempdir=tempdir, 
+                                    count_file=count_file, label1=label1, 
+                                    label2=label2, largewindow=largewindow, 
+                                    rank=rank, figuredir=figuredir, 
+                                    basemean_cut=basemean_cut, plot_format=plot_format)
+        elif bg1 and bg2:
+            ranked_file, pvals, fcs = deseq(bam1=bg1, bam2=bg2, tempdir=tempdir, 
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
@@ -147,10 +171,10 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
             print("\tGenerating Meta-Profile per Quartile:", file=sys.stderr)
             q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
             meta_profile_dict = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
-                                bam1=bam1, bam2=bam2, largewindow=largewindow, 
-                                millions_mapped=millions_mapped, tempdir=tempdir)
-            # manager = Manager()
-            # meta_profile_dict = manager.dict(meta_profile_dict)
+                                bam1=bam1, bam2=bam2, bg1=bg1, bg2=bg2, 
+                                largewindow=largewindow, 
+                                millions_mapped=millions_mapped, 
+                                tempdir=tempdir)
     else:
         raise exceptions.InputError("RANK option not recognized.")
     if os.stat(ranked_file).st_size == 0:
@@ -257,6 +281,86 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
     return count_file_header
 
 #==============================================================================
+def count_reads_bedtools(bedfile=None, bg1=None, bg2=None, tempdir=None, label1=None, 
+                            label2=None):
+    '''Counts reads across regions in a given bed file using bam files inputted
+        by a user
+
+    Parameters
+    ----------
+    bedfile : string
+        full path to a bed file containing full regions of interest which will 
+        be counted using bedtools multicov
+
+    bg1 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    bg2 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    label1 : string
+        the name of the treatment or condition corresponding to bg1 list
+
+    label2 : string
+        the name of the treatment or condition corresponding to bg2 list
+
+    Returns
+    -------
+    None
+    '''
+    #This os.system call runs bedtools multicov to count reads in all specified
+    #BAMs for given regions in BED
+    count_file = tempdir / "count_file.bed"
+    count_file_header = tempdir / "count_file.header.bed"
+
+    #pybedtools implementation (incomplete)
+    # pybed_count = BedTool(bedfile.as_posix()).multi_bam_coverage(bams=bg1+bg2)
+    # pybed_count.saveas(count_file, trackline=("#chrom\tstart\tstop\tregion\t" 
+    #                                             + '\t'.join([label1]*len(bg1)) + "\t" 
+    #                                             + '\t'.join([label2]*len(bg2)) + "\n"))
+
+    #Bedtools implementation
+    multicov_command = ["bedtools", "map", 
+                        "-a", bedfile, ] + bg1+bg2 + ["-bed", bedfile]
+    multicov_command = ""
+    bedfile = str(bedfile)
+    for i,bgfile in enumerate(bg1+bg2):
+        bgfile = f"<(awk -F'\\t' -v OFS='\\t' 'function abs(x) {{return ((x < 0.0) ? -x : x)}} {{print $1,$2,$3,abs($4)}}' {bgfile})"
+        if i == 0:
+            multicov_command = "bedtools map -null 0 -o sum -c 4 -a "+bedfile+" -b "+bgfile+" | "
+        else:
+            multicov_command = multicov_command + "bedtools map -null 0 -o sum -c 4 -a stdin -b "+bgfile
+    with open(count_file, 'w') as outfile:
+        try:
+            subprocess.run(['/bin/bash','-c', multicov_command],
+                            stdout=outfile, stderr=subprocess.PIPE, check=True)
+        except subprocess.CalledProcessError as e:
+            raise exceptions.SubprocessError(e.stderr.decode())
+
+    # This section adds a header to the count_file and reformats it to remove 
+    # excess information and add a column with the region for later use
+    outfile = open(count_file_header, 'w')
+    outfile.write("#chrom\tstart\tstop\tregion\t" 
+                    + '\t'.join([label1]*len(bg1)) + "\t" 
+                    + '\t'.join([label2]*len(bg2)) + "\n")
+
+    with open(count_file) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            chrom,start,stop = line[:3]
+            counts = line[-(len(bg1)+len(bg2)):]
+            outfile.write('\t'.join([chrom,start,stop]) + "\t" 
+                            + chrom + ":" + start + "-" + stop + "\t"
+                            + '\t'.join(counts) + "\n")
+    outfile.close()
+    return count_file_header
+
+#==============================================================================
 def motif_count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, 
                             label1=None, label2=None, millions_mapped=None):
     '''Counts reads across regions in a given bed file using bam files inputted
@@ -319,6 +423,88 @@ def motif_count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None,
             chrom,start,stop,motif = line[:4]
             length = float(stop) - float(start)
             fpkm = [float(c)/(m/1000000.0)/(length/1000.0) for c,m in zip(line[-(len(bam1)+len(bam2)):], millions_mapped)]
+            motif_fpkm[motif] = np.mean(fpkm)
+            outfile.write('\t'.join([chrom,start,stop]) + "\t" 
+                            + motif + "\t"
+                            + '\t'.join([str(f) for f in fpkm]) + "\n")
+    outfile.close()
+    return motif_fpkm
+
+#==============================================================================
+def motif_count_reads_bg(bedfile=None, bg1=None, bg2=None, tempdir=None, 
+                            label1=None, label2=None, millions_mapped=None):
+    '''Counts reads across regions in a given bed file using bam files inputted
+        by a user
+
+    Parameters
+    ----------
+    bedfile : string
+        full path to a bed file containing full regions of interest which will 
+        be counted using bedtools multicov
+
+    bam1 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    bam2 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    label1 : string
+        the name of the treatment or condition corresponding to bam1 list
+
+    label2 : string
+        the name of the treatment or condition corresponding to bam2 list
+
+    Returns
+    -------
+    None
+    '''
+    #This os.system call runs bedtools multicov to count reads in all specified
+    #BAMs for given regions in BED
+    count_file = tempdir / "motif_counts.bed"
+    count_file_header = tempdir / "motif_counts.header.fpkm.bed"
+
+    #pybedtools implementation (incomplete)
+    # pybed_count = BedTool(bedfile.as_posix()).multi_bam_coverage(bams=bam1+bam2)
+    # pybed_count.saveas(count_file, trackline=("#chrom\tstart\tstop\tregion\t" 
+    #                                             + '\t'.join([label1]*len(bam1)) + "\t" 
+    #                                             + '\t'.join([label2]*len(bam2)) + "\n"))
+
+    #Bedtools implementation
+    multicov_command = ["bedtools", "map", 
+                        "-a", bedfile, ] + bg1+bg2 + ["-bed", bedfile]
+    multicov_command = ""
+    bedfile = str(bedfile)
+    for i,bgfile in enumerate(bg1+bg2):
+        bgfile = f"<(awk -F'\\t' -v OFS='\\t' 'function abs(x) {{return ((x < 0.0) ? -x : x)}} {{print $1,$2,$3,abs($4)}}' {bgfile})"
+        if i == 0:
+            multicov_command = "bedtools map -null 0 -c 4 -a "+bedfile+" -b "+bgfile+" | "
+        else:
+            multicov_command = multicov_command + "bedtools map -null 0 -c 4 -a stdin -b "+bgfile
+    with open(count_file, 'w') as outfile:
+        try:
+            subprocess.run(['/bin/bash','-c', multicov_command],
+                            stdout=outfile, stderr=subprocess.PIPE, check=True)
+        except subprocess.CalledProcessError as e:
+            raise exceptions.SubprocessError(e.stderr.decode())
+
+    # This section adds a header to the count_file and reformats it to remove 
+    # excess information and add a column with the region for later use
+    outfile = open(count_file_header, 'w')
+    outfile.write("#chrom\tstart\tstop\tregion\t" 
+                    + '\t'.join([label1]*len(bg1)) + "\t" 
+                    + '\t'.join([label2]*len(bg2)) + "\n")
+    motif_fpkm = {}
+    with open(count_file) as F:
+        for line in F:
+            line = line.strip('\n').split('\t')
+            chrom,start,stop,motif = line[:4]
+            length = float(stop) - float(start)
+            fpkm = [float(c)/(m/1000000.0)/(length/1000.0) for c,m in zip(line[-(len(bg1)+len(bg2)):], millions_mapped)]
             motif_fpkm[motif] = np.mean(fpkm)
             outfile.write('\t'.join([chrom,start,stop]) + "\t" 
                             + motif + "\t"
@@ -660,43 +846,57 @@ def quartile_split(ranked_file):
     return q1regions, q2regions, q3regions, q4regions
 #==============================================================================
 def meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
-                            bam1=None, bam2=None, largewindow=None,
+                            bam1=None, bam2=None, bg1=None, bg2=None, 
+                            largewindow=None,
                             tempdir=None, millions_mapped=None):
     '''This function creates a metaprofile from 4 regions and stores them in
         a dictionary. 
     '''
-    q1regions = ['q1'] + q1regions
-    q2regions = ['q2'] + q2regions
-    q3regions = ['q3'] + q3regions
-    q4regions = ['q4'] + q4regions
-    kwargs = dict(largewindow=largewindow, bam1=bam1, bam2=bam2)
-    if len(q1regions + q2regions + q3regions + q4regions)*largewindow < 6e7:
+    if len(q1regions + q2regions + q3regions + q4regions)*largewindow < 6e7 and bam1 and bam2:
+        q1regions = ['q1'] + q1regions
+        q2regions = ['q2'] + q2regions
+        q3regions = ['q3'] + q3regions
+        q4regions = ['q4'] + q4regions
+        kwargs = dict(largewindow=largewindow, bam1=bam1, bam2=bam2)
         meta_profile_tuples = multiprocess.main(function=meta_profile, 
-                            args=[q1regions, q2regions, q3regions, q4regions], 
-                            kwargs=kwargs)
-    else:
+                        args=[q1regions, q2regions, q3regions, q4regions], 
+                        kwargs=kwargs)
+    elif bam1 and bam2:
         print("\tToo many regions to parallelize over. Performing computation in serial.", 
                 file=sys.stderr)
+        q1regions = ['q1'] + q1regions
+        q2regions = ['q2'] + q2regions
+        q3regions = ['q3'] + q3regions
+        q4regions = ['q4'] + q4regions
         meta_profile_tuples = np.empty(4,dtype=list)
         meta_profile_tuples[0] = meta_profile(regionlist=q1regions, 
-                                            largewindow=largewindow, bam1=bam1, 
-                                            bam2=bam2)
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
 
         meta_profile_tuples[1] = meta_profile(regionlist=q2regions, 
-                                            largewindow=largewindow, bam1=bam1, 
-                                            bam2=bam2)
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
 
         meta_profile_tuples[2] = meta_profile(regionlist=q3regions, 
-                                            largewindow=largewindow, bam1=bam1, 
-                                            bam2=bam2)
-        
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+    
         meta_profile_tuples[3] = meta_profile(regionlist=q4regions, 
-                                            largewindow=largewindow, bam1=bam1, 
-                                            bam2=bam2)
+                                        largewindow=largewindow, bam1=bam1, 
+                                        bam2=bam2)
+    elif bg1 and bg2:
+        regionlist = q1regions+q2regions+q3regions+q4regions
+        meta_profile_tuples = meta_profile_bg(regionlist=regionlist, 
+                                                largewindow=largewindow, 
+                                                bg1=bg1, bg2=bg2)
 
     meta_profile_dict = {}
-    mil_map1 = sum(millions_mapped[:len(bam1)])/len(bam1)/1e6
-    mil_map2 = sum(millions_mapped[-len(bam2):])/len(bam2)/1e6
+    if bam1 and bam2:
+        mil_map1 = sum(millions_mapped[:len(bam1)])/len(bam1)/1e6
+        mil_map2 = sum(millions_mapped[-len(bam2):])/len(bam2)/1e6
+    elif bg1 and bg2:
+        mil_map1 = sum(millions_mapped[:len(bg1)])/len(bg1)/1e6
+        mil_map2 = sum(millions_mapped[-len(bg2):])/len(bg2)/1e6
     for profile_list in meta_profile_tuples:
         for key, profile in profile_list:
             if key[-1] == '1':
@@ -888,6 +1088,7 @@ def meta_profile(regionlist=None, largewindow=None, bam1=None, bam2=None):
 
     return (key_prefix + 'posprofile1', posprofile1), (key_prefix + 'negprofile1', negprofile1), (key_prefix + 'posprofile2', posprofile2), (key_prefix + 'negprofile2', negprofile2)
 
+#==============================================================================
 def meta_profile_bg(regionlist=None, largewindow=None, bg1=None, bg2=None):
     '''This function returns average profiles for given regions of interest.
         A user may input either a list of regions or a bed file
@@ -923,79 +1124,186 @@ def meta_profile_bg(regionlist=None, largewindow=None, bg1=None, bg2=None):
     Raises
     ------
     '''
-    key_prefix = regionlist[0]
-    number_of_regions = len(regionlist[1:])
-    regions={}
-    posprofile1 = np.empty((number_of_regions, 2*int(largewindow)))
-    negprofile1 = np.empty((number_of_regions, 2*int(largewindow)))
-    posprofile2 = np.empty((number_of_regions, 2*int(largewindow)))
-    negprofile2 = np.empty((number_of_regions, 2*int(largewindow)))
-    file_counters = [0 for _ in range(len(bg1+bg2))]
-    for chrom, start, stop in regionlist[1:]:
-        if chrom not in regions:
-            regions[chrom] = []
-        regions[chrom]
+    number_of_regions = len(regionlist)
+    total_window = 2*int(largewindow)
+    
+    posprofile1 = np.empty((number_of_regions, total_window))
+    negprofile1 = np.empty((number_of_regions, total_window))
+    posprofile2 = np.empty((number_of_regions, total_window))
+    negprofile2 = np.empty((number_of_regions, total_window))
 
-    if len(hts_bam1) == 0 or len(hts_bam2) == 0:
-        raise ValueError("One of bam1 or bam2 variables is empty.")
+    #Create a dictionary formatted {'chrom': rank: (start, stop, rank)}
+    region_dict = {}
+    for i, (chrom, start, stop) in enumerate(regionlist):
+        start = int(start)
+        stop = int(stop)
+        if chrom not in region_dict:
+            region_dict[chrom] = {}
+        region_dict[chrom][i] = (start, stop, i)
 
-    rep1number = float(len(hts_bam1))
-    rep2number = float(len(hts_bam2))
-    for i, window in enumerate(regions):
-        avgposprofile1 = np.zeros(2*int(largewindow))
-        avgnegprofile1 = np.zeros(2*int(largewindow))
-        for sortedbamfile in hts_bam1:
-            tempposprofile = np.zeros(2*int(largewindow))
-            tempnegprofile = np.zeros(2*int(largewindow))
-            for almnt in sortedbamfile[ window ]:
-                if almnt.iv.strand == '+':
-                    start_in_window = almnt.iv.start - window.start
-                    end_in_window = almnt.iv.end - window.end \
-                                    + 2*int(largewindow)
-                    start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(largewindow) )
-                    tempposprofile[ start_in_window : end_in_window ] += 1.0
-                if almnt.iv.strand == '-':
-                    start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end \
-                                        + 2*int(largewindow)
-                    start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(largewindow) )
-                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
+    current_chrom = None
+    id_pointer = {}
+    for bgfile in bg1:
+        with open(bgfile, 'r') as F:
+            for i, line in enumerate(F):
+                if '#' not in line[0]:
+                    chrom, start, stop, value = line.strip().split('\t')
+                    start = int(start)
+                    stop = int(stop)
+                    value = int(value)
+                    if current_chrom == None: #If starting, initialize
+                        current_chrom = chrom
+                        id_pointer[i] = (chrom, start, stop, value)
+                        bedgraph_regions = [(start, stop, i)]
+                    elif chrom != current_chrom: #If new chrom transition:
+                        #1. Perform intersect computation
+                        reg_starts, reg_stops, reg_ids = zip(*[region_dict[chrom][i] for i in region_dict[chrom]])
+                        bg_starts, bg_stops, bg_ids = zip(*bedgraph_regions)
+                        region_ncls = NCLS(np.array(reg_starts), 
+                                            np.array(reg_stops), 
+                                            np.array(reg_ids))
+                        all_overlap_ids = region_ncls.all_overlaps_both(np.array(bg_starts), 
+                                                            np.array(bg_stops), 
+                                                            np.array(bg_ids))
+                        #2. Add profile 
+                        for i, j in np.column_stack((all_overlap_ids[0], all_overlap_ids[1])):
+                            chrom, bg_start, bg_stop, bg_value = id_pointer[i]
+                            reg_start, reg_stop, _ = region_dict[chrom][j]
+                            j_start = bg_start - reg_start if bg_start - reg_start > 0 else 0
+                            j_stop = bg_stop - reg_start if bg_stop - reg_start < total_window else total_window
+                            if bg_value > 0:
+                                posprofile1[j][j_start:j_stop] += bg_value
+                            else:
+                                negprofile1[j][j_start:j_stop] += bg_value
+                        
+                        #3. Initialize new round
+                        current_chrom = chrom
+                        id_pointer = {}
+                        id_pointer[i] = (chrom, start, stop, value)
+                        bedgraph_regions = [(start, stop, i)]
+                    else: #If in same chormosome, continue appending to list
+                        bedgraph_regions.append((start,stop,i))
+                        id_pointer[i] = (chrom, start, stop, value)
+        #Reached end of file. Perform computation and profiling 
+        #1. Perform intersect computation and profiling
+        reg_starts, reg_stops, reg_ids = zip(*[region_dict[chrom][i] for i in region_dict[chrom]])
+        bg_starts, bg_stops, bg_ids = zip(*bedgraph_regions)
+        region_ncls = NCLS(np.array(reg_starts), 
+                            np.array(reg_stops), 
+                            np.array(reg_ids))
+        all_overlap_ids = region_ncls.all_overlaps_both(np.array(bg_starts), 
+                                                        np.array(bg_stops), 
+                                                        np.array(bg_ids))
+        
+        for i, j in np.column_stack((all_overlap_ids[0], all_overlap_ids[1])):
+            chrom, bg_start, bg_stop, bg_value = id_pointer[i]
+            reg_start, reg_stop, _ = region_dict[chrom][j]
+            j_start = bg_start - reg_start if bg_start - reg_start > 0 else 0
+            j_stop = bg_stop - reg_start if bg_stop - reg_start < total_window else total_window
+            if bg_value > 0:
+                posprofile1[j][j_start:j_stop] += bg_value
+            else:
+                negprofile1[j][j_start:j_stop] += bg_value
 
-            avgposprofile1 = np.add(avgposprofile1, tempposprofile)
-            avgnegprofile1 = np.add(avgnegprofile1, tempnegprofile)
-        avgposprofile1 = avgposprofile1/rep1number
-        avgnegprofile1 = avgnegprofile1/rep1number
-        posprofile1[i] = avgposprofile1
-        negprofile1[i] = avgnegprofile1
+    for bgfile in bg2:
+        with open(bgfile, 'r') as F:
+            for i, line in enumerate(F):
+                if '#' not in line[0]:
+                    chrom, start, stop, value = line.strip().split('\t')
+                    start = int(start)
+                    stop = int(stop)
+                    value = int(value)
+                    if current_chrom == None: #If starting, initialize
+                        current_chrom = chrom
+                        id_pointer[i] = (chrom, start, stop, value)
+                        bedgraph_regions = [(start, stop, i)]
+                    elif chrom != current_chrom: #If new chrom transition:
+                        #1. Perform intersect computation
+                        reg_starts, reg_stops, reg_ids = zip(*[region_dict[chrom][i] for i in region_dict[chrom]])
+                        bg_starts, bg_stops, bg_ids = zip(*bedgraph_regions)
+                        region_ncls = NCLS(np.array(reg_starts), 
+                                            np.array(reg_stops), 
+                                            np.array(reg_ids))
+                        all_overlap_ids = region_ncls.all_overlaps_both(np.array(bg_starts), 
+                                                            np.array(bg_stops), 
+                                                            np.array(bg_ids))
+                        #2. Add profile 
+                        for i, j in np.column_stack((all_overlap_ids[0], all_overlap_ids[1])):
+                            chrom, bg_start, bg_stop, bg_value = id_pointer[i]
+                            reg_start, reg_stop, _ = region_dict[chrom][j]
+                            j_start = bg_start - reg_start if bg_start - reg_start > 0 else 0
+                            j_stop = bg_stop - reg_start if bg_stop - reg_start < total_window else total_window
+                            if bg_value > 0:
+                                posprofile2[j][j_start:j_stop] += bg_value
+                            else:
+                                negprofile2[j][j_start:j_stop] += bg_value
+                        
+                        #3. Initialize new round
+                        current_chrom = chrom
+                        id_pointer = {}
+                        id_pointer[i] = (chrom, start, stop, value)
+                        bedgraph_regions = [(start, stop, i)]
+                    else: #If in same chormosome, continue appending to list
+                        bedgraph_regions.append((start,stop,i))
+                        id_pointer[i] = (chrom, start, stop, value)
+        #Reached end of file. Perform computation and profiling 
+        #1. Perform intersect computation and profiling
+        reg_starts, reg_stops, reg_ids = zip(*[region_dict[chrom][i] for i in region_dict[chrom]])
+        bg_starts, bg_stops, bg_ids = zip(*bedgraph_regions)
+        region_ncls = NCLS(np.array(reg_starts), 
+                            np.array(reg_stops), 
+                            np.array(reg_ids))
+        all_overlap_ids = region_ncls.all_overlaps_both(np.array(bg_starts), 
+                                                        np.array(bg_stops), 
+                                                        np.array(bg_ids))
+        
+        for i, j in np.column_stack((all_overlap_ids[0], all_overlap_ids[1])):
+            chrom, bg_start, bg_stop, bg_value = id_pointer[i]
+            reg_start, reg_stop, _ = region_dict[chrom][j]
+            j_start = bg_start - reg_start if bg_start - reg_start > 0 else 0
+            j_stop = bg_stop - reg_start if bg_stop - reg_start < total_window else total_window
+            if bg_value > 0:
+                posprofile2[j][j_start:j_stop] += bg_value
+            else:
+                negprofile2[j][j_start:j_stop] += bg_value
+    
+    q1 = int(round(np.percentile(np.arange(1, len(regionlist),1), 25)))
+    q2 = int(round(np.percentile(np.arange(1, len(regionlist),1), 50)))
+    q3 = int(round(np.percentile(np.arange(1, len(regionlist),1), 75)))
 
-        avgposprofile2 = np.zeros(2*int(largewindow))
-        avgnegprofile2 = np.zeros(2*int(largewindow))
-        for sortedbamfile in hts_bam2:
-            tempposprofile = np.zeros(2*int(largewindow))
-            tempnegprofile = np.zeros(2*int(largewindow))
-            for almnt in sortedbamfile[ window ]:
-                if almnt.iv.strand == '+':
-                    start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end \
-                                        + 2*int(largewindow)
-                    start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(largewindow) )
-                    tempposprofile[ start_in_window : end_in_window ] += 1.0
-                if almnt.iv.strand == '-':
-                    start_in_window = almnt.iv.start - window.start
-                    end_in_window   = almnt.iv.end - window.end \
-                                        + 2*int(largewindow)
-                    start_in_window = max( start_in_window, 0 )
-                    end_in_window = min( end_in_window, 2*int(largewindow) )
-                    tempnegprofile[ start_in_window : end_in_window ] += -1.0
-            avgposprofile2 = np.add(avgposprofile2, tempposprofile)
-            avgnegprofile2 = np.add(avgnegprofile2, tempnegprofile)
-        avgposprofile2 = avgposprofile2/rep2number
-        avgnegprofile2 = avgnegprofile2/rep2number
-        posprofile2[i] = avgposprofile2
-        negprofile2[i] = avgnegprofile2
+    q1posprofile1 = posprofile1[:q1]
+    q1negprofile1 = negprofile1[:q1]
+    q1posprofile2 = posprofile2[:q1]
+    q1negprofile2 = negprofile2[:q1]
 
+    q2posprofile1 = posprofile1[q1:q2]
+    q2negprofile1 = negprofile1[q1:q2]
+    q2posprofile2 = posprofile2[q1:q2]
+    q2negprofile2 = negprofile2[q1:q2]
 
-    return (key_prefix + 'posprofile1', posprofile1), (key_prefix + 'negprofile1', negprofile1), (key_prefix + 'posprofile2', posprofile2), (key_prefix + 'negprofile2', negprofile2)
+    q3posprofile1 = posprofile1[q2:q3]
+    q3negprofile1 = negprofile1[q2:q3]
+    q3posprofile2 = posprofile2[q2:q3]
+    q3negprofile2 = negprofile2[q2:q3]
+
+    q4posprofile1 = posprofile1[q3:]
+    q4negprofile1 = negprofile1[q3:]
+    q4posprofile2 = posprofile2[q3:]
+    q4negprofile2 = negprofile2[q3:]
+
+    return np.array([[('q1' + 'posprofile1', q1posprofile1), 
+                    ('q1' + 'negprofile1', q1negprofile1), 
+                    ('q1' + 'posprofile2', q1posprofile2), 
+                    ('q1' + 'negprofile2', q1negprofile2)],
+                    [('q2' + 'posprofile1', q2posprofile1), 
+                    ('q2' + 'negprofile1', q2negprofile1), 
+                    ('q2' + 'posprofile2', q2posprofile2), 
+                    ('q2' + 'negprofile2', q2negprofile2)],
+                    [('q3' + 'posprofile1', q3posprofile1), 
+                    ('q3' + 'negprofile1', q3negprofile1), 
+                    ('q3' + 'posprofile2', q3posprofile2), 
+                    ('q3' + 'negprofile2', q3negprofile2)],
+                    [('q4' + 'posprofile1', q4posprofile1), 
+                    ('q4' + 'negprofile1', q4negprofile1), 
+                    ('q4' + 'posprofile2', q4posprofile2), 
+                    ('q4' + 'negprofile2', q4negprofile2)]])

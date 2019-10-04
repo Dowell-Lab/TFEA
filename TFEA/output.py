@@ -403,11 +403,16 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr style="color: red;">
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
-                for number_result in motif_result[1:]:
+                for number_result in motif_result[1:-2]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
+                for number_result in motif_result[-2:]:
+                    if number_result < -3:
+                        outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             elif plotall:
@@ -415,11 +420,16 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
-                for number_result in motif_result[1:]:
+                for number_result in motif_result[1:-2]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
+                for number_result in motif_result[-2:]:
+                    if number_result < -3:
+                        outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 
@@ -427,11 +437,16 @@ def html_output(results=None, module_list=None, outputdir=None,
                 outfile.write("""
             <tr>
                 <td>"""+motif+"""</td>""")
-                for number_result in motif_result[1:]:
+                for number_result in motif_result[1:-2]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
+                for number_result in motif_result[-2:]:
+                    if number_result < -3:
+                        outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 
@@ -460,11 +475,16 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr style="color: red;">
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
-                for number_result in motif_result[1:]:
+                for number_result in motif_result[1:-2]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
+                for number_result in motif_result[-2:]:
+                    if number_result < -3:
+                        outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             elif plotall:
@@ -472,22 +492,32 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
-                for number_result in motif_result[1:]:
+                for number_result in motif_result[1:-2]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
+                for number_result in motif_result[-2:]:
+                    if number_result < -3:
+                        outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             else:
                 outfile.write("""
             <tr>
                 <td>"""+motif+"""</td>""")
-                for number_result in motif_result[1:]:
+                for number_result in motif_result[1:-2]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
+                for number_result in motif_result[-2:]:
+                    if number_result < -3:
+                        outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
+                    else:
+                        outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 

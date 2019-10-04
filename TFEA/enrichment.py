@@ -339,7 +339,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
 
         #Filter any TFs/files without any hits
         if hits == 0:
-            return [motif, 0, 0, hits, gc, fpkm, 1.0, 1.0]
+            return [motif, 0, 0, hits, gc, fpkm, 0, 0]
 
         #Get -exp() of distance and get cumulative scores
         #Filter distances into quartiles to get middle distribution
@@ -349,7 +349,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         try:
             average_distance = np.mean(middledistancehist)#float(sum(middledistancehist))/float(len(middledistancehist))
         except ZeroDivisionError:
-            return [motif, 0, 0, hits, gc, fpkm, 1.0, 1.0]
+            return [motif, 0, 0, hits, gc, fpkm, 0, 0]
         
         score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
         total = np.sum(score)

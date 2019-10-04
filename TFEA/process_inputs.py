@@ -52,6 +52,12 @@ def read_arguments():
     inputs.add_argument('--bam2', nargs='*', help=("Sorted bam files "
                         "associated with condition 2. Must be indexed."), 
                         dest='BAM2')
+    inputs.add_argument('--bg1', nargs='*', help=("Sorted bedGraph files "
+                        "associated with condition 1. Must be indexed."), 
+                        dest='BG1')
+    inputs.add_argument('--bg2', nargs='*', help=("Sorted bedGraph files "
+                        "associated with condition 2. Must be indexed."), 
+                        dest='BG2')
     inputs.add_argument('--label1', help=("An informative label for "
                         "condition 1"), dest='LABEL1')
     inputs.add_argument('--label2', help=("An informative label for "
@@ -273,6 +279,8 @@ def read_arguments():
                     'BED2': [False, ['PosixList', bool]], 
                     'BAM1': [False, ['PosixList', bool]], 
                     'BAM2': [False, ['PosixList', bool]],
+                    'BG1': [False, ['PosixList', bool]], 
+                    'BG2': [False, ['PosixList', bool]],
                     'LABEL1': ['condition1', [str]],
                     'LABEL2': ['condition2', [str]],
                     'CONFIG': [False, [Path, bool]],
@@ -531,10 +539,8 @@ def verify_arguments(parser=None):
             if not config.vars['MDD_BEDFILE2'] and not config.vars['MDD_FASTA2']:
                 raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE2 or MDD_FASTA2')
     else:
-        if not config.vars['BAM1']:
-            raise exceptions.InputError('RANK module switched on but BAM1 not specified')
-        if not config.vars['BAM2']:
-            raise exceptions.InputError('RANK module switched on but BAM2 not specified')
+        if not (config.vars['BAM1'] and config.vars['BAM2']) and not (config.vars['BG1'] and config.vars['BG2']):
+            raise exceptions.InputError('RANK module switched on but one of (BAM1, BAM2) or (BG1, BG2) not specified')
         if not config.vars['LABEL1']:
             raise exceptions.InputError('RANK module switched on but LABEL1 not specified')
         if not config.vars['LABEL2']:

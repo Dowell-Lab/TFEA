@@ -51,6 +51,10 @@ class TestMain(unittest.TestCase):
                     self.testdir / 'SRR1105737.sorted.chr22.subsample.bam']
         self.bam2 = [self.testdir / 'SRR1105738.sorted.chr22.subsample.bam', 
                     self.testdir / 'SRR1105739.sorted.chr22.subsample.bam']
+        self.bg1 = [self.testdir / 'SRR1105736.chr22.bedGraph', 
+                    self.testdir / 'SRR1105737.chr22.bedGraph']
+        self.bg2 = [self.testdir / 'SRR1105738.chr22.bedGraph', 
+                    self.testdir / 'SRR1105739.chr22.bedGraph']
         self.label1 = 'DMSO'
         self.label2 = 'Nutlin'
         self.genomefasta = self.testdir / 'chr22.fa'
@@ -58,6 +62,7 @@ class TestMain(unittest.TestCase):
 
         self.count_file = self.testdir / 'count_file.header.bed'
         self.fimo_motifs = self.testdir / 'test_database.meme'
+        # self.fimo_motifs = self.testdir.parent.parent.parent / 'motif_files' / 'best_curated_Human.meme'
         self.genomehits = self.testdir / 'test_genome_hits'
 
         # touch_command = "touch " + str(self.testdir / '*.bai')
