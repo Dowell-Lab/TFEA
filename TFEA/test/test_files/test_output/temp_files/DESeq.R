@@ -8,7 +8,8 @@ conds <- c("DMSO", "Nutlin")
 
 cds <- newCountDataSet( countsTable, conds )
 cds <- estimateSizeFactors( cds )
-sizeFactors(cds)                                                               
+print("Size Factors")
+print(sizeFactors(cds))
 cds <- estimateDispersions( cds ,method="blind",                         sharingMode="fit-only")
 
 res <- nbinomTest( cds, "DMSO", "Nutlin" )

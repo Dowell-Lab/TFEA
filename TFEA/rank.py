@@ -597,6 +597,8 @@ ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable,
                                             design = ~ treatment)
 
 dds <- DESeq(ddsFullCountTable)
+print("Size Factors")
+print(sizeFactors(dds))
 res <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
                                                             "'''+label1+'''"))
 res$fc <- 2^(res$log2FoldChange)
@@ -622,7 +624,8 @@ conds <- c('''  + ', '.join(['"'+label1+'"']*len(bam1))
 
 cds <- newCountDataSet( countsTable, conds )
 cds <- estimateSizeFactors( cds )
-sizeFactors(cds)                                                               
+print("Size Factors")
+print(sizeFactors(cds))
 cds <- estimateDispersions( cds ,method="blind", \
                         sharingMode="fit-only")
 

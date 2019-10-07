@@ -35,5 +35,6 @@ locfit 1.5-9.1 	 2013-03-22
 Loading required package: lattice
     Welcome to 'DESeq'. For improved performance, usability and
     functionality, please consider migrating to 'DESeq2'.
+[1] "Size Factors"
      DMSO    Nutlin 
 0.5835585 1.7136241 

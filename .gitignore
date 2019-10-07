@@ -1,3 +1,6 @@
+# Test output directory
+/TFEA/test/test_files/test_output/
+
 # Compiled python modules.
 *.pyc
 *.py~
