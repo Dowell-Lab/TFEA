@@ -51,6 +51,7 @@ RERUN = False
 GC = True
 PLOTALL = True
 PLOT_FORMAT = png
+METAPROFILE = False
 COMBINEtime = 0
 COUNTtime = 0
 RANKtime = 0

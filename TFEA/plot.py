@@ -302,13 +302,13 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
         heatmap(q4_distances, ax=ax10, xlim=xlim, bins=bins, largewindow=largewindow)
     else:
         heatmap(q1_distances, ax=ax7, xlim=xlim, bins=bins, largewindow=largewindow, 
-                    title=f'Q1(n={len(q1_distances)})')
+                    title=f'Q1 (n={len(q1_distances)})')
         heatmap(q2_distances, ax=ax8, xlim=xlim, bins=bins, largewindow=largewindow, 
-                    title=f'Q2(n={len(q2_distances)}')
+                    title=f'Q2 (n={len(q2_distances)})')
         heatmap(q3_distances, ax=ax9, xlim=xlim, bins=bins, largewindow=largewindow, 
-                    title=f'Q3(n={len(q3_distances)}')
+                    title=f'Q3 (n={len(q3_distances)})')
         heatmap(q4_distances, ax=ax10, xlim=xlim, bins=bins, largewindow=largewindow, 
-                    title=f'Q4(n={len(q4_distances)}')
+                    title=f'Q4 (n={len(q4_distances)})')
 
     plt.tight_layout()
     plt.savefig(os.path.join(figuredir, motif + f'_enrichment_plot.{plot_format}'), 

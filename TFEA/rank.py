@@ -119,6 +119,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         basemean_cut = config.vars['BASEMEAN_CUT']
         plot_format = config.vars['PLOT_FORMAT']
         meta_profile_dict = {}
+        metaprofile = config.vars['METAPROFILE']
     print("Ranking regions...", flush=True, file=sys.stderr)
 
     #Begin by counting reads from bam files over the combined_file produced
@@ -166,7 +167,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
                                     basemean_cut=basemean_cut, plot_format=plot_format)
-        if output_type == 'html':
+        if output_type == 'html' and metaprofile:
             print("\tGenerating Meta-Profile per Quartile:", file=sys.stderr)
             q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
             meta_profile_dict = meta_profile_quartiles(q1regions, q2regions, q3regions, q4regions, 
@@ -174,6 +175,8 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
                                 largewindow=largewindow, 
                                 millions_mapped=millions_mapped, 
                                 tempdir=tempdir)
+        else:
+            meta_profile_dict = False
     else:
         raise exceptions.InputError("RANK option not recognized.")
     if os.stat(ranked_file).st_size == 0:

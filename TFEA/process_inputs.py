@@ -213,6 +213,11 @@ def read_arguments():
                                     "Warning: This will make TFEA run much slower and"
                                     "will result in a large output folder."), 
                                     action='store_true', dest='PLOTALL', default=None)
+    output_options.add_argument('--metaprofile', help=("Create meta profile "
+                                    "plots per quartile. Warning: This will "
+                                    "make TFEA run much slower and consume a "
+                                    "lot more memory."), 
+                                    action='store_true', dest='METAPROFILE', default=None)
     output_options.add_argument('--output_type', help="Specify output type. Selecting "
                                     "html will increase processing time and "
                                     "memory usage. Default: txt", 
@@ -326,7 +331,8 @@ def read_arguments():
                     'RERUN': [False, ['PosixList', bool]],
                     'GC': [True, [bool]],
                     'PLOTALL': [False, [bool]],
-                    'PLOT_FORMAT': ['png', [str]]}
+                    'PLOT_FORMAT': ['png', [str]],
+                    'METAPROFILE': [False, [bool]]}
 
     #Save default arguments in config
     from TFEA import config
