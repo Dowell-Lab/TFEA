@@ -375,8 +375,11 @@ TFEA has a subpackage that is capable of generating simulated data for testing. 
 The purpose of this subpackage is to embed motif instances into fasta sequences that can be generated randomly or be from an experimental dataset (e.g. untreated control sample). There are several key flags that control this process (each of these may be a comma-delimited list of values that would indicate multiple instances of motif adding):
 
 `--distance_mu` : This flag controls where the center of the distribution is located (note: only normal distributions are supported at this point)
+
 `--distance_sigma` : Controls the standard deviation of the normal distribution
+
 `--rank_range` : Controls the range of sequences in which to add a motif
+
 `--motif_number` : Controls the number of motifs to add to your range of sequences
 
 
