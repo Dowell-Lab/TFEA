@@ -18,6 +18,7 @@
    - <A href="#PreProcessedInputs">Pre-Processed Inputs</A>
    - <A href="#SecondaryAnalysis">Secondary Analysis (MD, MDD)</A>
    - <A href="#FPKM">Measuring TF FPKM</A>
+   - <A href="#SimulatedData">Generating Simulated Data</A>
    - <A href="RerunningTFEA">Rerunning TFEA</A>
    - <A href="#HelpMessage">Help Message</A>
 6. <A href="#ExampleOutput">Example Output</A>
@@ -365,6 +366,22 @@ chr1	17368	17436	MIR6859-3;NR_107063;chr1:17368-17436	0	-
 The script works by looking for gene names that correspond to each motif within the 4th column of the gene annotation file. It expects the 4th column to be ';' delimited.
 
 Already generated motif_annotation.bed files (and also intermediate .tsv files) are located within './motif_files/'
+
+<H3 id="SimulatedData">Generating Simulated Data</H3>
+TFEA has a subpackage that is capable of generating simulated data for testing. If you have installed TFEA, it can be invoked with:
+
+```TFEA-simulate --help```
+
+The purpose of this subpackage is to embed motif instances into fasta sequences that can be generated randomly or be from an experimental dataset (e.g. untreated control sample). There are several key flags that control this process (each of these may be a comma-delimited list of values that would indicate multiple instances of motif adding):
+
+`--distance_mu` : This flag controls where the center of the distribution is located (note: only normal distributions are supported at this point)
+
+`--distance_sigma` : Controls the standard deviation of the normal distribution
+
+`--rank_range` : Controls the range of sequences in which to add a motif
+
+`--motif_number` : Controls the number of motifs to add to your range of sequences
+
 
 <H3 id="RerunningTFEA">Rerunning TFEA</H3>
 TFEA can be easily rerun given one or multiple TFEA output folders. This works simply by rerunning the rerun.sh script which contains all command-line flag inputs. TFEA also automatically creates a copy of your configuration file (if used) within the output folder which is then also used when rerunning (so no need to worry about editing the original configuration file). To rerun a single TFEA output folder:
