@@ -110,7 +110,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         mdd = config.vars['MDD']
         cpus = config.vars['CPUS']
         jobid = config.vars['JOBID']
-        p_cutoff = math.log(config.vars['PADJCUTOFF'],10)
+        p_cutoff = np.log(config.vars['PADJCUTOFF'])
         figuredir = config.vars['FIGUREDIR']
         plotall = config.vars['PLOTALL']
         fimo_motifs = config.vars['FIMO_MOTIFS']

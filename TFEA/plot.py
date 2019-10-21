@@ -400,12 +400,21 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
             sigc = [scatter.to_rgba(c) for c,p in zip(clist,plist) if p<p_cutoff]
             ax.scatter(sigx, sigy, c=sigc, #marker='x', 
                         edgecolor='r',  linewidth=2, s=50)
-            legend = ax.scatter([1], [0], c='w', edgecolor='r', linewidth=2, 
-                                    s=50, label=f'p < 1e{p_cutoff}')
+            if p_cutoff < -3:
+                legend = ax.scatter([1], [0], color='white', edgecolor='r',  s=50, 
+                                    label=f'p < 1e{int(p_cutoff*np.log10(np.e))}')
+            else:
+                legend = ax.scatter([1], [0], color='white', edgecolor='r',  s=50, 
+                                    label=f'p < {str("%.3g" % np.e**p_cutoff)}')
         else:
             ax.scatter(sigx, sigy, color='red', edgecolor='',  s=50)
-            legend = ax.scatter([1], [0], color='red', edgecolor='',  s=50, 
-                                    label=f'p < 1e{p_cutoff}')
+            if p_cutoff < -3:
+                legend = ax.scatter([1], [0], color='red', edgecolor='',  s=50, 
+                                    label=f'p < 1e{int(p_cutoff*np.log10(np.e))}')
+            else:
+                legend = ax.scatter([1], [0], color='red', edgecolor='',  s=50, 
+                                    label=f'p < {str("%.3g" % np.e**p_cutoff)}')
+            
         ax.legend(loc='best', frameon=False)
         legend.remove()
 
@@ -426,6 +435,8 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     if ylimits is not None:
         ax.set_ylim(ylimits)
 
@@ -468,7 +479,8 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
 
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
-
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
@@ -542,6 +554,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
                             vmax=max_c, vmin=-max_c)
     cbar = plt.colorbar(scatter)
     cbar.set_label('AUC Correction', rotation=270, labelpad=20)
+    cbar.outline.set_visible(False)
 
     if p_index is not None:
         plist = [i[p_index] for i in clean_results]
@@ -571,6 +584,8 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
 
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     if ylimits is not None:
         ax.set_ylim(ylimits)
 
@@ -627,7 +642,7 @@ def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None,
                     labelbottom=False)
     ax.set_ylabel('Reads per Millions Mapped',fontsize=10)
     ax.set_ylim(ylim)
-    ax.set_xlim([-largewindow, largewindow])
+    ax.set_xlim([-int(largewindow), int(largewindow)])
     ax.yaxis.set_major_formatter(FormatStrFormatter('%.3g'))
     return
 
@@ -658,7 +673,7 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
     # print(locs, file=sys.stderr)
     # locs = [str(float(x)/1000.0) for x in locs]
     # ax.set_xticklabels(locs)
-    ax.set_xticks([-largewindow, 0, largewindow])
+    ax.set_xticks([-int(largewindow), 0, int(largewindow)])
     if title is not None:
         ax.set_title(title, fontsize=14)
     return
@@ -696,9 +711,8 @@ def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None,
         ax.tick_params(axis='x', which='both', bottom=False, top=False, 
                         labelbottom=False)
 
-    plt.sca(ax)
-    plt.yticks([-int(largewindow),0,int(largewindow)],
-                [str(largewindow/-1000.0), '0', str(largewindow/1000.0)])
+    ax.set_yticks([-int(largewindow),0,int(largewindow)])
+    ax.set_yticklabels([str(largewindow/-1000.0), '0', str(largewindow/1000.0)])
     ax.set_xlim(xlimits)
     ax.set_ylim([-int(largewindow),int(largewindow)])
     ax.set_ylabel('Distance (kb)', fontsize=10)
@@ -821,6 +835,8 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     if basemean_cut != 0:
         ax.axvline(math.log(basemean_cut, 10), linestyle='--', c='k', alpha=0.5)
     cbar = plt.colorbar()
@@ -828,6 +844,7 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     cbar.set_ticks([0, 0.25, 0.5, 0.75, 1], ['0', '0.25', '0.5', '0.75', '1'])
     cbar.set_label('Relative Rank (n=' + str(len(x)) + ')', rotation=270, 
                         labelpad=20)
+    cbar.outline.set_visible(False)
     plt.tight_layout()
     F.savefig(os.path.join(figuredir, f'DESEQ_MA_Plot.{plot_format}'), format=plot_format)#, dpi=dpi)
                 # bbox_inches='tight')

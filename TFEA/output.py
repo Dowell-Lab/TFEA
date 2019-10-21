@@ -46,8 +46,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
         debug = config.vars['DEBUG']
         jobid = config.vars['JOBID']
         output_type = config.vars['OUTPUT_TYPE']
-        p_cutoff = math.log(config.vars['PADJCUTOFF'],10)
-        padj_cutoff = config.vars['PADJCUTOFF']
+        p_cutoff = np.log(config.vars['PADJCUTOFF'])
+        padj_cutoff = np.log(config.vars['PADJCUTOFF'])
         label1 = config.vars['LABEL1']
         label2 = config.vars['LABEL2']
         plotall = config.vars['PLOTALL']
@@ -63,7 +63,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                     'FPKM of the gene associated with the motif if an annotation is provided',
                     'Adjusted P-value (Bonferroni)',
                     'Adjusted P-value (Bonferroni) after GC correction']
-    sort_index = [5, 2, 1, -1]
+    sort_index = [5, 3, 2, -1]
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
                 sortindex=sort_index, header=TFEA_header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
@@ -108,7 +108,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                     savepath=figuredir / (f'MD_volcano.{plot_format}'), 
                                     plot_format=plot_format)
     if mdd:
-        header = ['#TF', 'MD-Score', 'Events', 'p-val']
+        header = ['#TF', 'MDD-Score', 'Events', 'p-val']
         txt_output(outputdir=outputdir, results=mdd_results, 
                     outname='mdd_results.txt', header=header, sortindex=[-1])
         plot.plot_global_MA(mdd_results, p_cutoff=p_cutoff, 
@@ -344,9 +344,13 @@ def html_output(results=None, module_list=None, outputdir=None,
             <div style="float: left; width:100%">
                 <img src="./plots/DESEQ_MA_Plot."""+plot_format+"""" alt="Region DE-Seq Plot" title="DE-Seq MA plot using the input regions.">
             </div>
-            <div id="User Inputs" style="margin: auto; width: 80%">
-                <p><b>p-adj < """ + str(padj_cutoff) + """</b></p>
-                <p><a href="./inputs.txt">User Inputs</a></p>
+            <div id="User Inputs" style="margin: auto; width: 80%">""")
+    if padj_cutoff < -3:
+        outfile.write(f"                <p><b>p-adj < 1e{int(padj_cutoff*np.log10(np.e))}</b></p>")
+    else:
+        outfile.write(f'                <p><b>p-adj < {str("%.3g" % np.e**padj_cutoff)}</b></p>')
+    outfile.write("""                <p><a href="./inputs.txt">User Inputs</a> | \
+                    <a href="./results.txt">Text Results</a></p>
                 <p><a href="./md_results.txt">MD Results</a> | \
                     <a href="./plots/MD_MA."""+plot_format+"""">MD MA-Plot</a> | \
                     <a href="./plots/MD_volcano."""+plot_format+"""">MD VolcanoPlot</a></p>

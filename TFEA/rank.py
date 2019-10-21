@@ -28,7 +28,6 @@ from multiprocessing import Manager
 from pybedtools import BedTool
 import HTSeq as hts
 import numpy as np
-from ncls import NCLS
 
 from TFEA import exceptions
 from TFEA import multiprocess
@@ -1127,6 +1126,7 @@ def meta_profile_bg(regionlist=None, largewindow=None, bg1=None, bg2=None):
     Raises
     ------
     '''
+    from ncls import NCLS
     number_of_regions = len(regionlist)
     total_window = 2*int(largewindow)
     

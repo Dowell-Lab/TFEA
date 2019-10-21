@@ -90,25 +90,32 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         mumerge_input = tempdir / 'mumerge_input.txt'
         combined_file = tempdir / 'combined_file.mumerge'
         #Write MuMerge input file
-        with open(mumerge_input, 'w') as F:
-            F.write("#file\tsampid\tgroup\n")
-            for i,bedpath in enumerate(bed1, 1):
-                F.write(f'{bedpath}\t{label1}{i}\t{label1}\n')
-            for i,bedpath in enumerate(bed2, 1):
-                F.write(f'{bedpath}\t{label2}{i}\t{label2}\n')
+        # with open(mumerge_input, 'w') as F:
+        #     F.write("#file\tsampid\tgroup\n")
+        #     for i,bedpath in enumerate(bed1, 1):
+        #         F.write(f'{bedpath}\t{label1}{i}\t{label1}\n')
+        #     for i,bedpath in enumerate(bed2, 1):
+        #         F.write(f'{bedpath}\t{label2}{i}\t{label2}\n')
         
         #MuMerge Command - output to combined_file.mumerge.bed
-        mumerge(mumerge_input, combined_file)
-        combined_file = Path(str(combined_file) + '_MUMERGE.bed')
+        combined_file = mumerge(mumerge_input, combined_file, bed1=bed1, 
+                                bed2=bed2, label1=label1, label2=label2)
+        # combined_file = Path(str(combined_file) + '_MUMERGE.bed')
 
         #Perform simple merge same as merge all for md bed files
         if md:
-            md_bedfile1 = tempdir / "md_bedfile1.merge.bed"
-            md_bedfile2 = tempdir / "md_bedfile2.merge.bed"
-            md_merged_bed1 = merge_bed(beds=bed1).each(featurefuncs.extend_fields, 4)
-            md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4)
-            md_merged_bed1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile1)
-            md_merged_bed2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile2)
+            md_bedfile1 = tempdir / "md_bedfile1.mumerge"
+            md_mumerge_input1 = tempdir / "md_mumerge_input1.txt"
+            md_bedfile1 = mumerge(md_mumerge_input1, md_bedfile1, bed1=bed1, 
+                                    label1=label1, label2=label2)
+            md_bedfile2 = tempdir / "md_bedfile2.mumerge"
+            md_mumerge_input2 = tempdir / "md_mumerge_input2.txt"
+            md_bedfile2 = mumerge(md_mumerge_input2, md_bedfile2, bed2=bed2, 
+                                    label1=label1, label2=label2)
+            # md_merged_bed1 = merge_bed(beds=bed1).each(featurefuncs.extend_fields, 4)
+            # md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4)
+            # md_merged_bed1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile1)
+            # md_merged_bed2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile2)
         
 
     #Merge all bed regions, for MD merge condition replicates
@@ -305,7 +312,8 @@ def clean_bed(beds=None, size_cut=None):
     return clean_bed
 
 #==============================================================================
-def mumerge(input_file, output_basename, 
+def mumerge(input_file, output_basename, bed1=[], bed2=[], label1=None, 
+            label2=None,
             mumerge_path=Path(__file__).absolute().parent / 'mumerge.py'):
     '''This function runs MuMerge, a script written by Jacob T. Stanley that 
         merges a list of bed files in a probabilistic way.
@@ -334,11 +342,21 @@ def mumerge(input_file, output_basename,
         From doc:
             Output file basename (full path, sans extension).
             WARNING: will overwrite any existing file)'''
+    with open(input_file, 'w') as F:
+            F.write("#file\tsampid\tgroup\n")
+            for i,bedpath in enumerate(bed1, 1):
+                F.write(f'{bedpath}\t{label1}{i}\t{label1}\n')
+            for i,bedpath in enumerate(bed2, 1):
+                F.write(f'{bedpath}\t{label2}{i}\t{label2}\n')
+        
     mumerge_command = ['python3', mumerge_path, '-i', input_file, '-o', output_basename]
     try:
         subprocess.check_output(mumerge_command, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
         raise exceptions.SubprocessError(e.stderr.decode())
+    combined_file = Path(str(output_basename) + '_MUMERGE.bed')
+
+    return combined_file
 
 #Pybedtools each() functions
 #==============================================================================
