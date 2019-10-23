@@ -172,7 +172,14 @@ def txt_output(results=None, outputdir=None, outname=None,
             results.sort(key=lambda x: x[index], reverse=True)
         results.sort(key=lambda x: x[sortindex[-1]])
         for values in results:
-            outfile.write('\t'.join([str(x) for x in values])+'\n')
+            for number_result in values[:-2]:
+                outfile.write(f'{number_result}\t')
+            for number_result in values[-2:]:
+                if number_result < -3:
+                    outfile.write(f"1e{int(number_result*np.log10(np.e))}\t")
+                else:
+                    outfile.write(str("%.3g" % np.e**number_result)+ "\t")
+            outfile.write('\n')
 
 #==============================================================================
 def html_output(results=None, module_list=None, outputdir=None,

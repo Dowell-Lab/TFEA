@@ -84,6 +84,7 @@ class TestMain(unittest.TestCase):
                     '--motif_annotation', self.testdir / 'test_motif_annotation.bed',
                     '--output_type', 'html', 
                     '--plotall',
+                    '--metaprofile',
                     '--combine', 'mumerge',
                     '--md', '--mdd',
                     '--debug',

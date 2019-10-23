@@ -1,3 +1,0 @@
-#file	sampid	group
-/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA/TFEA/test/test_files/SRR1105736.tfit_bidirs.chr22.bed	DMSO1	DMSO
-/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA/TFEA/test/test_files/SRR1105738.tfit_bidirs.chr22.bed	Nutlin1	Nutlin
