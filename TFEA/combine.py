@@ -108,10 +108,17 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
             md_mumerge_input1 = tempdir / "md_mumerge_input1.txt"
             md_bedfile1 = mumerge(md_mumerge_input1, md_bedfile1, bed1=bed1, 
                                     label1=label1, label2=label2)
+            md_pybedtool1 = BedTool(str(md_bedfile1))
+            md_bedfile1 = tempdir / "md_bedfile1.mumerge.final.bed"
+            md_pybedtool1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile1)
             md_bedfile2 = tempdir / "md_bedfile2.mumerge"
             md_mumerge_input2 = tempdir / "md_mumerge_input2.txt"
             md_bedfile2 = mumerge(md_mumerge_input2, md_bedfile2, bed2=bed2, 
                                     label1=label1, label2=label2)
+            md_pybedtool2 = BedTool(str(md_bedfile2))
+            md_bedfile2 = tempdir / "md_bedfile2.mumerge.final.bed"
+            md_pybedtool2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile2)
+
             # md_merged_bed1 = merge_bed(beds=bed1).each(featurefuncs.extend_fields, 4)
             # md_merged_bed2 = merge_bed(beds=bed2).each(featurefuncs.extend_fields, 4)
             # md_merged_bed1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(md_bedfile1)

@@ -91,7 +91,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
     if md:
         header = ['#TF', 'MD-Score', 'Events', 'p-val']
         txt_output(outputdir=outputdir, results=md_results, 
-                    outname='md_results.txt', header=header, sortindex=[-1])
+                    outname='md_results.txt', header=header, sortindex=[-1], 
+                    log=False)
         plot.plot_global_MA(md_results, p_cutoff=p_cutoff, 
                                 title='MD MA-Plot', 
                                 xlabel='Log10(Motif Hits)', 
@@ -110,7 +111,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
     if mdd:
         header = ['#TF', 'MDD-Score', 'Events', 'p-val']
         txt_output(outputdir=outputdir, results=mdd_results, 
-                    outname='mdd_results.txt', header=header, sortindex=[-1])
+                    outname='mdd_results.txt', header=header, sortindex=[-1],
+                    log=False)
         plot.plot_global_MA(mdd_results, p_cutoff=p_cutoff, 
                                 title='MDD MA-Plot', 
                                 xlabel='Log10(Motif Hits)', 
@@ -162,7 +164,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 #Functions
 #==============================================================================
 def txt_output(results=None, outputdir=None, outname=None, 
-                header=None, sortindex=None):
+                header=None, sortindex=None, log=True):
     with open(os.path.join(outputdir, outname), 'w') as outfile:
         if type(header) == list:
             outfile.write('\t'.join(header) + '\n')
@@ -171,15 +173,19 @@ def txt_output(results=None, outputdir=None, outname=None,
         for index in sortindex[:-1]:
             results.sort(key=lambda x: x[index], reverse=True)
         results.sort(key=lambda x: x[sortindex[-1]])
-        for values in results:
-            for number_result in values[:-2]:
-                outfile.write(f'{number_result}\t')
-            for number_result in values[-2:]:
-                if number_result < -3:
-                    outfile.write(f"1e{int(number_result*np.log10(np.e))}\t")
-                else:
-                    outfile.write(str("%.3g" % np.e**number_result)+ "\t")
-            outfile.write('\n')
+        if log:
+            for values in results:
+                for number_result in values[:-2]:
+                    outfile.write(f'{number_result}\t')
+                for number_result in values[-2:]:
+                    if number_result < -3:
+                        outfile.write(f"1e{int(number_result*np.log10(np.e))}\t")
+                    else:
+                        outfile.write(str("%.3g" % np.e**number_result)+ "\t")
+                outfile.write('\n')
+        else:
+            for values in results:
+                outfile.write('\t'.join([str(x) for x in values]) + '\n')
 
 #==============================================================================
 def html_output(results=None, module_list=None, outputdir=None,
