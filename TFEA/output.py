@@ -681,8 +681,8 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                     PREV_MOTIF = negativelist[negativelist.index(motif)-1]
                 except IndexError:
                     PREV_MOTIF = negativelist[len(negativelist)]
-            direct_logo = "logo" + motif.replace('.','_') + f'.{plot_format}'
-            reverse_logo = "logo_rc" + motif.replace('.','_') + f'.{plot_format}'
+            direct_logo = "logo" + motif.replace('.','_') + f'.png'
+            reverse_logo = "logo_rc" + motif.replace('.','_') + f'.png'
             outfile = open(os.path.join(outputdir, 'plots', motif 
                             + '.results.html'),'w')
             outfile.write("""<!DOCTYPE html>
