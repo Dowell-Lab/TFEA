@@ -86,6 +86,7 @@ class TestMain(unittest.TestCase):
                     '--plotall',
                     '--metaprofile',
                     '--combine', 'mumerge',
+                    # '--mdd_percent', '0.2',
                     '--md', '--mdd',
                     '--debug',
                     '--cpus', '2',
