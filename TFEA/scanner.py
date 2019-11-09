@@ -247,8 +247,8 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                 config.vars['MD_DISTANCES2'] = md_distances2
         
         if mdd:
-            print("\tMDD:", file=sys.stderr)
-            print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
+            # print("\tMDD:", file=sys.stderr)
+            # print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
             # fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta1, 
             #                 tempdir=tempdir, motifdatabase=fimo_motifs, 
             #                 thresh=fimo_thresh, 
@@ -344,8 +344,8 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                 config.vars['MD_DISTANCES1'] = md_distances1
                 config.vars['MD_DISTANCES2'] = md_distances2
         if mdd:
-            print("\tMDD:", file=sys.stderr)
-            print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
+            # print("\tMDD:", file=sys.stderr)
+            # print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
             # mdd_bedfile1 = get_center(bedfile=mdd_bedfile1, outname=mdd_bedfile1)
             # bedtools_distance_keywords = dict(genomehits=genomehits, 
             #                                     ranked_center_file=mdd_bedfile1, 
