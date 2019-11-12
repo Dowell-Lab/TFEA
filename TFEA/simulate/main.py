@@ -65,14 +65,18 @@ def run():
                                 parser.motif_number.split(','))
         #Loop through motifs to insert and insert the motif in the randomly pulled
         # sequences
+        window_size = parser.largewindow*2
         for motif in include_motifs:
             for d_mu, d_sigma, rank_range, motif_number in insert_parameters:
-                distance_pdf = list(stats.norm.pdf(np.arange(parser.largewindow+1), 
-                                    loc=parser.largewindow - int(d_mu), 
-                                    scale=int(d_sigma)))
-                distance_pdf_sum = sum(distance_pdf)
-                if distance_pdf_sum < 1:
-                    distance_pdf = [x+((1-distance_pdf_sum)/len(distance_pdf)) for x in distance_pdf]
+                if d_sigma != 'uniform':
+                    distance_pdf = list(stats.norm.pdf(np.arange(window_size+1), 
+                                        loc=parser.largewindow - int(d_mu), 
+                                        scale=int(d_sigma)))
+                    distance_pdf_sum = sum(distance_pdf)
+                    if distance_pdf_sum < 1:
+                        distance_pdf = [x+((1-distance_pdf_sum)/len(distance_pdf)) for x in distance_pdf]
+                elif d_sigma == 'uniform':
+                    distance_pdf = [1.0/float(window_size+1) for _ in range(window_size+1)]
                 rank_pdf = [0] * parser.sequence_n
                 start, stop = [int(x) for x in rank_range.split('-')]
                 if stop-start != 0:
@@ -130,9 +134,9 @@ def parse_arguments():
     parser.add_argument('--seed', help=("Seed for random state. Default: Time"), 
                         type=int)           
     parser.add_argument('--largewindow', help=("Largewindow. Default: 1500"), 
-                        default=1500)
+                        default=1500, type=int)
     parser.add_argument('--smallwindow', help=("Smallwindow. Default: 150"), 
-                        default=150)
+                        default=150, type=int)
     parser.add_argument('--distance_mu', '-dm', help=("Average distance to add "
                         "a motif from middle. Can be multiple comma-separated "
                         "averages (Ex: '0,5') but must correspond to the number of "
@@ -140,7 +144,9 @@ def parse_arguments():
     parser.add_argument('--distance_sigma', '-ds', help=("Variance of the "
                         "distance to add a motif from mu. Can be multiple "
                         "comma-separated sigmas (Ex: '150,300') but must correspond "
-                        "to the number of mus, rank ranges, and motif numbers."))
+                        "to the number of mus, rank ranges, and motif numbers."
+                        "If 'uniform' specified, a uniform distribution will be"
+                        " used spanning the entire region."))
     parser.add_argument('--rank_range', '-rr', help=("Rank range in which to "
                         "add a motif. Can be multiple comma-separated ranges "
                         "(Ex: '0-100,500-10000') but must correspond to the number "

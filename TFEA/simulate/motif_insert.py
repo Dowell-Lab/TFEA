@@ -163,11 +163,17 @@ def insert_motif(PSSM=None, alphabet=['A','C','G','T'], rank_inserts=None,
                 start = sequence_length-motif_length
                 stop = sequence_length
 
+            
+            # print(f"Motif inserted: {start}-{stop}")
+            # print(f'Previous Sequence {sequence_to_modify[start:stop]}')
+
             for j in range(start,stop):
                 sequence_to_modify = (sequence_to_modify[:j] 
                                         + alphabet[np.random.choice(len(alphabet), p=PSSM[j-start])] #Pull from PSSM
 #                                         + alphabet[PSSM[j-start].index(max(PSSM[j-start]))] #Consensus
                                         + sequence_to_modify[j + 1:])
+            
+            # print(f'Modified Sequence {sequence_to_modify[start:stop]}')
         
         modified_sequences[i] = sequence_to_modify
         
