@@ -604,7 +604,7 @@ def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
     motif_ID = motif_ID.replace('.', '_')
     imagemagick_command = ['convert', figuredir / ('logo'+motif_ID+'.eps'), 
                             figuredir / (f'logo{motif_ID}.png')]
-    imagemagick_rc_command = ['convert', figuredir / ('logo'+motif_ID+'.eps'), 
+    imagemagick_rc_command = ['convert', figuredir / ('logo_rc'+motif_ID+'.eps'), 
                             figuredir / (f'logo_rc{motif_ID}.png')]
     try:
         subprocess.check_output(meme2images_command, stderr=subprocess.PIPE)
