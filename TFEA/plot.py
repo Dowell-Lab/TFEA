@@ -326,12 +326,12 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     ylim_max = ax.get_ylim()[1]
 
     if offset != 0:
-        ax.bar(auc,ylim_max,color='red',width=width*2, linewidth=0, label='Non-Corrected AUC')[0]
+        ax.bar(auc,ylim_max,color='red',width=width*2, linewidth=0, label='Non-Corrected E-Score')[0]
         # height = non_corrected_rect.get_height()
         # ax.text(non_corrected_rect.get_x() + non_corrected_rect.get_width()/2., 
         #         1.05*height, 'Non-Corected AUC', ha='center', va='bottom')
 
-    ax.bar(auc-offset,ylim_max,color='green',width=width*2, linewidth=0, label='Corrected AUC')[0]
+    ax.bar(auc-offset,ylim_max,color='green',width=width*2, linewidth=0, label='Corrected E-Score')[0]
 
     ax.legend(frameon=False)
 
@@ -349,9 +349,9 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     ax.tick_params(axis='x', which='both', bottom=False, top=False, 
                     labelbottom=True)
 
-    ax.set_title('Distribution of Simulated AUC values', fontsize=14)
+    ax.set_title('Distribution of Simulated E-Scores', fontsize=14)
     ax.set_ylabel('Number of Simulations', fontsize=14)
-    ax.set_xlabel('Area Under the Curve (AUC)', fontsize=14)
+    ax.set_xlabel('E-Score', fontsize=14)
 
     plt.tight_layout()
     F.savefig(os.path.join(figuredir, motif + f'_simulation_plot.{plot_format}'), 
@@ -553,7 +553,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='viridis',
                             vmax=max_c, vmin=-max_c)
     cbar = plt.colorbar(scatter)
-    cbar.set_label('AUC Correction', rotation=270, labelpad=20)
+    cbar.set_label('E-Score Correction', rotation=270, labelpad=20)
     cbar.outline.set_visible(False)
 
     if p_index is not None:
@@ -866,7 +866,7 @@ if __name__ == "__main__":
                     p_index=-1,
                     ylimits=[-0.5,0.5],
                     xlabel="GC-content", 
-                    ylabel="AUC", 
+                    ylabel="E-Score", 
                     savepath='/Users/joru1876/Google_Drive/Colorado_University/Jonathan/TFEA_outputs/Allen2014/v5_outputs/20190620_DMSO_Nutlin_fimohits/newMA_plot.png', 
                     plot_format='png')
 

@@ -347,10 +347,10 @@ def html_output(results=None, module_list=None, outputdir=None,
         <h1>""" + label1 + """ vs. """ + label2 + """ TFEA Results</h1>
         <div class="row">
             <div style="float: left; width: 100%">
-                <img src="./plots/TFEA_GC."""+plot_format+"""" alt="TFEA GC-Plot" title="AUC vs. GC-content of all motifs analyzed before GC-correction.">
+                <img src="./plots/TFEA_GC."""+plot_format+"""" alt="TFEA GC-Plot" title="E-Score vs. GC-content of all motifs analyzed before GC-correction.">
             </div>
             <div style="float: left; width: 100%">
-                <img src="./plots/TFEA_MA."""+plot_format+"""" alt="TFEA MA-Plot" style="float: right" title="AUC vs. number of motif hits in input regions.">
+                <img src="./plots/TFEA_MA."""+plot_format+"""" alt="TFEA MA-Plot" style="float: right" title="E-Score vs. number of motif hits in input regions.">
             </div>
         </div>
         <div class="row">
@@ -398,8 +398,8 @@ def html_output(results=None, module_list=None, outputdir=None,
             </div>
         </div>
         <div>
-            <div id="Positive AUC Value" style="float: left; width:45%">
-                <h1>Positive AUC Value</h1>
+            <div id="Positive E-Score" style="float: left; width:45%">
+                <h1>Positive E-Score</h1>
                 <table> 
                     <tr>
                     """)
@@ -472,8 +472,8 @@ def html_output(results=None, module_list=None, outputdir=None,
         </table>
     </div>
 
-    <div id="Negative AUC Value" style="float: right; width: 45%">
-        <h1>Negative AUC Value</h1>
+    <div id="Negative E-Score" style="float: right; width: 45%">
+        <h1>Negative E-Score</h1>
         <table> 
             <tr>
                 """)

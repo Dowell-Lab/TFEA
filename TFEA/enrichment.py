@@ -153,7 +153,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                 gc_correct[key] = offset
 
 
-        print('\tCalculating AUC:', file=sys.stderr)
+        print('\tCalculating E-Score:', file=sys.stderr)
         # manager = Manager()
         # meta_profile_dict = manager.dict(meta_profile_dict)
         auc_keywords = dict(permutations=permutations, use_config=use_config, 
