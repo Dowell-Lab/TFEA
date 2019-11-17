@@ -71,19 +71,35 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
     '''
     start_time = time.time()
     if use_config:
-        bed1=config.vars['BED1']
-        bed2=config.vars['BED2']
-        method=config.vars['COMBINE']
-        tempdir=config.vars['TEMPDIR']
-        md=config.vars['MD']
-        largewindow=config.vars['LARGEWINDOW']
-        scanner=config.vars['SCANNER']
+        bed1 = config.vars['BED1']
+        bed2 = config.vars['BED2']
+        method = config.vars['COMBINE']
+        tempdir = config.vars['TEMPDIR']
+        md = config.vars['MD']
+        md_bedfile1 = config.vars['MD_BEDFILE1']
+        md_bedfile2 = config.vars['MD_BEDFILE2']
+        largewindow = config.vars['LARGEWINDOW']
+        scanner = config.vars['SCANNER']
         label1 = config.vars['LABEL1']
         label2 = config.vars['LABEL2']
         debug = config.vars['DEBUG']
         jobid = config.vars['JOBID']
 
+
     print("Combining Regions...", end=' ', flush=True, file=sys.stderr)
+
+    if md_bedfile1 and md_bedfile2:
+        centered_md_bedfile1 = tempdir / 'md_bedfile1.centered.bed'
+        centered_md_bedfile2 = tempdir / 'md_bedfile2.centered.bed'
+        md = md and (not md_bedfile1 or not md_bedfile2) #Boolean to determine whether to generate MD bed files
+        md_pybedtool1 = BedTool(str(md_bedfile1))
+        md_pybedtool1.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(centered_md_bedfile1)
+        md_pybedtool2 = BedTool(str(md_bedfile2))
+        md_pybedtool2.each(center_feature).each(extend_feature, size=largewindow).remove_invalid().saveas(centered_md_bedfile2)
+        if use_config:
+            config.vars['MD_BEDFILE1'] = centered_md_bedfile1 
+            config.vars['MD_BEDFILE2'] = centered_md_bedfile2
+        
 
     #Use MuMerge to merge bed files
     if method == 'mumerge':
