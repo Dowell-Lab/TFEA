@@ -742,8 +742,8 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     #This is the rank metric fill plot
     posvals = [(x,y) for x,y in zip(xvals,yvals) if y > 0]
     negvals = [(x,y) for x,y in zip(xvals,yvals) if y < 0]
-    ax.fill_between([x for x,_ in posvals], 0, [y for _,y in posvals],facecolor='red',edgecolor="")
-    ax.fill_between([x for x,_ in negvals], 0, [y for _,y in negvals],facecolor='blue',edgecolor="")
+    ax.fill_between([x for x,_ in posvals], 0, [y for _,y in posvals],facecolor='#d76127',edgecolor="")
+    ax.fill_between([x for x,_ in negvals], 0, [y for _,y in negvals],facecolor='#7570b3',edgecolor="")
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=False, top=False, 
