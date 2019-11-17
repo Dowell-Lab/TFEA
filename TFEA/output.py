@@ -55,9 +55,9 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
         plot_format = config.vars['PLOT_FORMAT']
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
-    TFEA_header = ['#TF', 'AUC', 'Corrected AUC','Events', 'GC','FPKM', 'P-adj', 'Corrected P-adj']
-    description = ['Motif Name', 'Area Under the Curve', 
-                    'Area Under the Curve following GC correction',
+    TFEA_header = ['#TF', 'E-Score', 'Corrected E-Score','Events', 'GC','FPKM', 'P-adj', 'Corrected P-adj']
+    description = ['Motif Name', 'Enrichment Score', 
+                    'Enrichment Score following GC correction',
                     'Number of motif instances within analyzed regions',
                     'GC-content of motif',
                     'FPKM of the gene associated with the motif if an annotation is provided',
@@ -68,7 +68,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                 sortindex=sort_index, header=TFEA_header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
                         xlabel='Log10(Motif Hits)', 
-                        ylabel='Corrected Area Under the Curve (AUC)', 
+                        ylabel='E-Score', 
                         savepath=figuredir / (f'TFEA_MA.{plot_format}'), 
                         plot_format=plot_format, 
                         c_index=1,

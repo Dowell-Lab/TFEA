@@ -171,7 +171,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         plot.plot_global_gc(results, p_cutoff=p_cutoff, 
                                 title='TFEA GC-Plot', 
                                 xlabel='Motif GC-content',
-                                ylabel='Non-corrected Area Under the Curve (AUC)', 
+                                ylabel='Non-corrected E-Score', 
                                 savepath=figuredir / ('TFEA_GC.' + plot_format), 
                                 linear_regression=linear_regression,
                                 plot_format=plot_format, 
@@ -297,7 +297,7 @@ def get_auc_gc(distances, fimo_motifs=None):
         trend = [x*binwidth for x in trend]
 
         #The AUC is the relative to the "random" line
-        auc = np.trapz(cumscore) - np.trapz(trend)
+        auc = (np.trapz(cumscore) - np.trapz(trend))*2
 
     except Exception as e:
         # This prints the type, value, and stack trace of the
@@ -363,7 +363,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         # trend = [x*binwidth for x in trend]
 
         #The AUC is the relative to the "random" line
-        auc = np.trapz(cumscore) - np.trapz(trend)
+        auc = (np.trapz(cumscore) - np.trapz(trend))*2
         offset = 0
         if motif in gc_correct:
             offset = gc_correct[motif]
@@ -441,7 +441,7 @@ def permute_auc(distances=None, trend=None, permutations=None):
         cum_distances = np.cumsum(random_distances)
         es = np.trapz(cum_distances)
         auc = es - triangle_area
-        es_permute[i] = auc
+        es_permute[i] = auc*2
 
     return es_permute
 
@@ -511,7 +511,7 @@ def permute_auc_bootstrap(original_distances=None, trend=None, permutations=None
         cum_distances = np.cumsum(random_distances)
         es = np.trapz(cum_distances)
         auc = es - triangle_area
-        es_permute.append(auc)
+        es_permute.append(auc*2)
 
     return es_permute
 
