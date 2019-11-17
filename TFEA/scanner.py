@@ -282,7 +282,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                     cutoff = int(len([p for p in sorted_pvals if p < mdd_pval]))
                     mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
                     mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
-                print(f'\r\t Completed: {i}/{len(motif_distances)} ', end=' ', flush=True, file=sys.stderr)
+                # print(f'\r\t Completed: {i}/{len(motif_distances)} ', end=' ', flush=True, file=sys.stderr)
             if use_config:
                 config.vars['MDD_DISTANCES1'] = mdd_distances1
                 config.vars['MDD_DISTANCES2'] = mdd_distances2
