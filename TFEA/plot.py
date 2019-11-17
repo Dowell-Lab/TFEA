@@ -545,11 +545,11 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     ylist = [i[y_index] for i in clean_results]
     xlist = [i[x_index] for i in clean_results]
     clist = [i[c_index] for i in clean_results]
-    max_c = abs(max([x for x in clist if x == x], key=abs))
     # import sys
     # print("GC c-list:", clist, file=sys.stderr)
     # print("GC max_c:", max_c, file=sys.stderr)
     clist = [c-y for y,c in zip(ylist,clist)]
+    max_c = abs(max([x for x in clist if x == x], key=abs))
     scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='viridis',
                             vmax=max_c, vmin=-max_c)
     cbar = plt.colorbar(scatter)
