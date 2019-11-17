@@ -35,7 +35,7 @@ module load python/3.6.3
 
 module load bedtools/2.25.0
 module load meme/5.0.3
-module load samtools/1.8
+module load samtools/1.3.1
 module load gcc/7.1.0
 
 ### now call your program
