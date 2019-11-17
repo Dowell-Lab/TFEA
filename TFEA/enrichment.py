@@ -179,7 +179,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                 y_index=1, 
                                 c_index=2,
                                 p_index=-1,
-                                ylimits=[-0.5,0.5])
+                                ylimits=[-1,1])
 
         
         # results = list()

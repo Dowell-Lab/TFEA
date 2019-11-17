@@ -75,7 +75,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                         x_index=3,
                         y_index=2,
                         p_index=-1,
-                        ylimits=[-0.5,0.5])
+                        ylimits=[-1,1])
     # plot.plot_global_volcano(results, p_cutoff=p_cutoff, title='TFEA Volcano Plot', 
     #                 xlabel='Area Under the Curve (AUC)', 
     #                 ylabel='-log10(P-adj)', 
@@ -101,7 +101,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                 plot_format=plot_format, 
                                 x_index=2,
                                 y_index=1,
-                                p_index=-1)
+                                p_index=-1,
+                                ylimits=[-1,1])
         plot.plot_global_volcano(md_results, p_cutoff=p_cutoff, 
                                     title='MD Volcano Plot', 
                                     xlabel='MD-Score Difference', 
@@ -121,7 +122,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                 plot_format=plot_format, 
                                 x_index=2,
                                 y_index=1,
-                                p_index=-1)
+                                p_index=-1,
+                                ylimits=[-1,1])
         plot.plot_global_volcano(mdd_results, p_cutoff=p_cutoff, 
                                     title='MDD Volcano Plot', 
                                     xlabel='Differential MD-Score Difference', 
