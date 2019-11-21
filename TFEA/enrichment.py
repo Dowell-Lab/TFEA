@@ -293,7 +293,7 @@ def get_auc_gc(distances, fimo_motifs=None):
         binwidth = 1.0/float(len(distances_abs))
         normalized_score = [(float(x)/total)*binwidth for x in score]
         cumscore = np.cumsum(normalized_score)
-        trend = np.append(np.arange(0,1,1.0/float(len(cumscore)))[1:], 1.0)
+        trend = np.append(np.arange(0,1,1.0/float(len(cumscore) - 1)), 1.0)
         trend = [x*binwidth for x in trend]
 
         #The AUC is the relative to the "random" line
@@ -358,7 +358,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         normalized_score = np.multiply(np.divide(score, total), binwidth)
         #[(float(x)/total)*binwidth for x in score]
         cumscore = np.cumsum(normalized_score)
-        trend = np.append(np.arange(0,1,1.0/float(len(cumscore)))[1:], 1.0)
+        trend = np.append(np.arange(0,1,1.0/float(len(cumscore) - 1)), 1.0)
         trend = np.multiply(trend, binwidth)
         # trend = [x*binwidth for x in trend]
 
