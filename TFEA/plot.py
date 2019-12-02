@@ -545,9 +545,6 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     ylist = [i[y_index] for i in clean_results]
     xlist = [i[x_index] for i in clean_results]
     clist = [i[c_index] for i in clean_results]
-    # import sys
-    # print("GC c-list:", clist, file=sys.stderr)
-    # print("GC max_c:", max_c, file=sys.stderr)
     clist = [c-y for y,c in zip(ylist,clist)]
     max_c = abs(max([x for x in clist if x == x], key=abs))
     scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='viridis',
@@ -620,21 +617,21 @@ def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None,
                 xvals=None, label1=None, label2=None, title=None, ylim=None, 
                 largewindow=None):
     if len(posprofile1) != 0:
-        ax.plot(xvals,posprofile1,color='blue',label=label1)
+        ax.plot(xvals,posprofile1,color='#7570b3',label=label1)
     else:
-        ax.plot(xvals, [0 for x in xvals], color='blue',label=label1)
+        ax.plot(xvals, [0 for x in xvals], color='#7570b3',label=label1)
     if len(negprofile1) != 0:
-        ax.plot(xvals,negprofile1,color='blue')
+        ax.plot(xvals,negprofile1,color='#7570b3')
     else:
-        ax.plot(xvals,[0 for x in xvals],color='blue')
+        ax.plot(xvals,[0 for x in xvals],color='#7570b3')
     if len(posprofile2) != 0:
-        ax.plot(xvals,posprofile2,color='red',label=label2)
+        ax.plot(xvals,posprofile2,color='#d76127',label=label2)
     else:
-        ax.plot(xvals,[0 for x in xvals],color='red',label=label2)
+        ax.plot(xvals,[0 for x in xvals],color='#d76127',label=label2)
     if len(negprofile2) != 0:
-        ax.plot(xvals,negprofile2,color='red')
+        ax.plot(xvals,negprofile2,color='#d76127')
     else:
-        ax.plot(xvals,[0 for x in xvals],color='red')
+        ax.plot(xvals,[0 for x in xvals],color='#d76127')
     ax.set_title(title,fontsize=14)
     ax.tick_params(axis='y', which='both', left=False, right=False, 
                     labelleft=True)
