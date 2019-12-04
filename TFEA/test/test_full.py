@@ -59,6 +59,7 @@ class TestMain(unittest.TestCase):
         self.label2 = 'Nutlin'
         self.genomefasta = self.testdir / 'chr22.fa'
         self.ranked_file = self.testdir / 'ranked_file.bed'
+        self.fasta_file = self.testdir / 'ranked_file.fa'
 
         self.count_file = self.testdir / 'count_file.header.bed'
         self.fimo_motifs = self.testdir / 'test_database.meme'
@@ -108,6 +109,40 @@ class TestMain(unittest.TestCase):
         # self.assertTrue((self.testdir / 'test_output' / 'summary.html').exists())
         # self.assertTrue((self.testdir / 'test_rep1' / 'md_results.txt').exists())
         # self.assertTrue((self.testdir / 'test_rep1' / 'mdd_results.txt').exists())
+
+    # def test_fasta_file(self):
+    #     shutil.rmtree(self.testdir / 'test_output', ignore_errors=True)
+    #     TFEA_path = Path(__file__).absolute().parent.parent
+    #     command = ['nice', '-n', '19',
+    #                 'python3', TFEA_path, 
+    #                 '--output', self.testdir / 'test_output', 
+    #                 '--fasta_file', self.fasta_file, 
+    #                 '--label1', self.label1, 
+    #                 '--label2', self.label2,
+    #                 '--fimo_motifs', self.fimo_motifs,  
+    #                 '--motif_annotation', self.testdir / 'test_motif_annotation.bed',
+    #                 '--output_type', 'html', 
+    #                 '--plotall',
+    #                 '--debug',
+    #                 '--cpus', '2',
+    #                 '--padjcutoff', '0.1']
+    #     # try:
+    #     print('\n============================================', 
+    #             file=sys.stderr, flush=True)
+    #     for output in execute(command):
+    #         try:
+    #             print('\t', output.decode(), end="", flush=True)
+    #         except:
+    #             print('\t', output, end="", flush=True)
+    #         # subprocess.check_output(command, stderr=subprocess.PIPE)
+    #     # except subprocess.CalledProcessError as e:
+    #     #     raise exceptions.SubprocessError(e.stderr.decode())
+
+    #     self.assertTrue((self.testdir / 'test_output' / 'results.txt').exists())
+    #     self.assertTrue((self.testdir / 'test_output' / 'results.html').exists())
+    #     # self.assertTrue((self.testdir / 'test_output' / 'summary.html').exists())
+    #     # self.assertTrue((self.testdir / 'test_rep1' / 'md_results.txt').exists())
+    #     # self.assertTrue((self.testdir / 'test_rep1' / 'mdd_results.txt').exists())
 
     # def test_genome_hits(self):
     #     shutil.rmtree(self.testdir / 'test_output', ignore_errors=True)
