@@ -148,13 +148,13 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                                     outputdir=outputdir, 
                                     padj_cutoff=padj_cutoff, 
                                     singlemotif=singlemotif, 
-                                    plotall=plotall, auc_index=1, 
+                                    plotall=plotall, auc_index=2, 
                                     padj_index=-1, plot_format=plot_format)
         html_output(results=results, results_header=TFEA_header,
                     description=description,
                     module_list=module_list, 
                     outputdir=outputdir, label1=label1, label2=label2, 
-                    padj_cutoff=padj_cutoff, plotall=plotall, auc_index=1, 
+                    padj_cutoff=padj_cutoff, plotall=plotall, auc_index=2, 
                     padj_index=-1, sortindex=sort_index, plot_format=plot_format)
         
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
