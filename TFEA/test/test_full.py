@@ -59,7 +59,7 @@ class TestMain(unittest.TestCase):
         self.label2 = 'Nutlin'
         self.genomefasta = self.testdir / 'chr22.fa'
         self.ranked_file = self.testdir / 'ranked_file.bed'
-        self.fasta_file = self.testdir / 'ranked_file.fa'
+        self.fasta_file = self.testdir / 'test_fasta_file.fa'
 
         self.count_file = self.testdir / 'count_file.header.bed'
         self.fimo_motifs = self.testdir / 'test_database.meme'
