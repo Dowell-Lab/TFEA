@@ -321,7 +321,7 @@ def read_arguments():
                     'PERMUTATIONS': [1000, [int]], 
                     'LARGEWINDOW': [1500, [int]], 
                     'SMALLWINDOW': [150, [int]], 
-                    'PADJCUTOFF': [1e-7, [float]], 
+                    'PADJCUTOFF': [1e-6, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'CPUS': [1, [int]], 
                     'MEM': ['20gb', [str]],
