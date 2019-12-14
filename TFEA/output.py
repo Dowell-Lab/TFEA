@@ -656,9 +656,9 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
     #For each TF motif with an PADJ value less than a cutoff, an html file is 
     #created to be used in results.html
     positivelist = [x[0] for x in results 
-                    if x[1] >= 0 and (plotall or x[-1] < padj_cutoff)]
+                    if x[auc_index] >= 0 and (plotall or x[-1] < padj_cutoff)]
     negativelist = [x[0] for x in results 
-                    if x[1] < 0 and (plotall or x[-1] < padj_cutoff)]
+                    if x[auc_index] < 0 and (plotall or x[-1] < padj_cutoff)]
 
     for i in range(len(results)):
         motif = results[i][0]
