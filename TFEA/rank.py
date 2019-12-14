@@ -664,11 +664,11 @@ def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None,
                         figuredir=figuredir, basemean_cut=basemean_cut, 
                         plot_format=plot_format)
 
-    ranked_file = deseq_parse(deseq_file=deseq_file, tempdir=tempdir, 
+    ranked_file, pvals, fcs = deseq_parse(deseq_file=deseq_file, tempdir=tempdir, 
                                 largewindow=largewindow, rank=rank, 
                                 basemean_cut=basemean_cut)
 
-    return ranked_file
+    return ranked_file, pvals, fcs
 
 #==============================================================================
 def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None, 
