@@ -247,42 +247,45 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                 config.vars['MD_DISTANCES2'] = md_distances2
         
         if mdd:
-            # print("\tMDD:", file=sys.stderr)
-            # print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
-            # fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta1, 
-            #                 tempdir=tempdir, motifdatabase=fimo_motifs, 
-            #                 thresh=fimo_thresh, 
-            #                 largewindow=largewindow)
-            # mdd_distances1 = multiprocess.main(function=fimo, args=motif_list, 
-            #                                     kwargs=fimo_keywords, 
-            #                                     debug=debug, jobid=jobid,
-            #                                     cpus=cpus)
+            print("\tMDD:", file=sys.stderr)
+            print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
+            fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta1, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+            mdd_distances1 = multiprocess.main(function=fimo, args=motif_list, 
+                                                kwargs=fimo_keywords, 
+                                                debug=debug, jobid=jobid,
+                                                cpus=cpus)
             
-            # fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta2, 
-            #                 tempdir=tempdir, motifdatabase=fimo_motifs, 
-            #                 thresh=fimo_thresh, 
-            #                 largewindow=largewindow)
-            # mdd_distances2 = multiprocess.main(function=fimo, args=motif_list, 
-            #                                     kwargs=fimo_keywords, 
-            #                                     debug=debug, jobid=jobid,
-            #                                     cpus=cpus)
-            mdd_distances1 = []
-            mdd_distances2 = []
-            for i, single_motif_distances in enumerate(motif_distances, 1):
-                motif = single_motif_distances[0]
-                mdd_distances = single_motif_distances[1:]
-                mdd_sorted_indices = np.argsort(pvals)
-                mdd_sorted_distances = [mdd_distances[i] for i in mdd_sorted_indices]
-                if mdd_percent != False:
-                    cutoff = int(len(mdd_sorted_distances)*mdd_percent)
-                    mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
-                    mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
-                else:
-                    sorted_pvals = [pvals[i] for i in mdd_sorted_indices]
-                    cutoff = int(len([p for p in sorted_pvals if p < mdd_pval]))
-                    mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
-                    mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
-                # print(f'\r\t Completed: {i}/{len(motif_distances)} ', end=' ', flush=True, file=sys.stderr)
+            fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta2, 
+                            tempdir=tempdir, motifdatabase=fimo_motifs, 
+                            thresh=fimo_thresh, 
+                            largewindow=largewindow)
+            mdd_distances2 = multiprocess.main(function=fimo, args=motif_list, 
+                                                kwargs=fimo_keywords, 
+                                                debug=debug, jobid=jobid,
+                                                cpus=cpus)
+            # mdd_distances1 = []
+            # mdd_distances2 = []
+            # mdd_sorted_indices = np.argsort(pvals)
+            # for i, single_motif_distances in enumerate(motif_distances, 1):
+            #     motif = single_motif_distances[0]
+            #     mdd_distances = single_motif_distances[1:]
+            #     print("pval len:", len(pvals), file=sys.stderr)
+            #     print("mdd_indices len:", len(mdd_sorted_indices), file=sys.stderr)
+            #     print("mdd_dist len:", len(mdd_distances), file=sys.stderr)
+            #     mdd_sorted_distances = [mdd_distances[i] for i in mdd_sorted_indices]
+            #     if mdd_percent != False:
+            #         cutoff = int(len(mdd_sorted_distances)*mdd_percent)
+            #         mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
+            #         mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
+            #     else:
+            #         sorted_pvals = [pvals[i] for i in mdd_sorted_indices]
+            #         cutoff = int(len([p for p in sorted_pvals if p < mdd_pval]))
+            #         mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
+            #         mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
+            #     # print(f'\r\t Completed: {i}/{len(motif_distances)} ', end=' ', flush=True, file=sys.stderr)
             if use_config:
                 config.vars['MDD_DISTANCES1'] = mdd_distances1
                 config.vars['MDD_DISTANCES2'] = mdd_distances2
@@ -344,48 +347,48 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
                 config.vars['MD_DISTANCES1'] = md_distances1
                 config.vars['MD_DISTANCES2'] = md_distances2
         if mdd:
-            # print("\tMDD:", file=sys.stderr)
-            # print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
-            # mdd_bedfile1 = get_center(bedfile=mdd_bedfile1, outname=mdd_bedfile1)
-            # bedtools_distance_keywords = dict(genomehits=genomehits, 
-            #                                     ranked_center_file=mdd_bedfile1, 
-            #                                     tempdir=tempdir, 
-            #                                     distance_cutoff=largewindow)
+            print("\tMDD:", file=sys.stderr)
+            print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
+            mdd_bedfile1 = get_center(bedfile=mdd_bedfile1, outname=mdd_bedfile1)
+            bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                                ranked_center_file=mdd_bedfile1, 
+                                                tempdir=tempdir, 
+                                                distance_cutoff=largewindow)
 
-            # mdd_distances1 = multiprocess.main(function=bedtools_closest, 
-            #                                 args=motif_list, 
-            #                                 kwargs=bedtools_distance_keywords, 
-            #                                 debug=debug, jobid=jobid,
-            #                                 cpus=cpus)
+            mdd_distances1 = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug, jobid=jobid,
+                                            cpus=cpus)
 
-            # mdd_bedfile2 = get_center(bedfile=mdd_bedfile2, outname=mdd_bedfile2)
-            # bedtools_distance_keywords = dict(genomehits=genomehits, 
-            #                                     ranked_center_file=mdd_bedfile2, 
-            #                                     tempdir=tempdir, 
-            #                                     distance_cutoff=largewindow)
+            mdd_bedfile2 = get_center(bedfile=mdd_bedfile2, outname=mdd_bedfile2)
+            bedtools_distance_keywords = dict(genomehits=genomehits, 
+                                                ranked_center_file=mdd_bedfile2, 
+                                                tempdir=tempdir, 
+                                                distance_cutoff=largewindow)
 
-            # mdd_distances2 = multiprocess.main(function=bedtools_closest, 
-            #                                 args=motif_list, 
-            #                                 kwargs=bedtools_distance_keywords, 
-            #                                 debug=debug, jobid=jobid,
-            #                                 cpus=cpus)
-            mdd_distances1 = []
-            mdd_distances2 = []
-            for i, single_motif_distances in enumerate(motif_distances, 1):
-                motif = single_motif_distances[0]
-                mdd_distances = single_motif_distances[1:]
-                mdd_sorted_indices = np.argsort(pvals)
-                mdd_sorted_distances = [mdd_distances[i] for i in mdd_sorted_indices]
-                if mdd_percent != False:
-                    cutoff = int(len(mdd_sorted_distances)*mdd_percent)
-                    mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
-                    mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
-                else:
-                    sorted_pvals = [pvals[i] for i in mdd_sorted_indices]
-                    cutoff = int(len([p for p in sorted_pvals if p < mdd_pval]))
-                    mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
-                    mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
-                print(f'\r\t Completed: {i}/{len(motif_distances)} ', end=' ', flush=True, file=sys.stderr)
+            mdd_distances2 = multiprocess.main(function=bedtools_closest, 
+                                            args=motif_list, 
+                                            kwargs=bedtools_distance_keywords, 
+                                            debug=debug, jobid=jobid,
+                                            cpus=cpus)
+            # mdd_distances1 = []
+            # mdd_distances2 = []
+            # mdd_sorted_indices = np.argsort(pvals)
+            # for i, single_motif_distances in enumerate(motif_distances, 1):
+            #     motif = single_motif_distances[0]
+            #     mdd_distances = single_motif_distances[1:]
+            #     mdd_sorted_distances = [mdd_distances[i] for i in mdd_sorted_indices]
+            #     if mdd_percent != False:
+            #         cutoff = int(len(mdd_sorted_distances)*mdd_percent)
+            #         mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
+            #         mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
+            #     else:
+            #         sorted_pvals = [pvals[i] for i in mdd_sorted_indices]
+            #         cutoff = int(len([p for p in sorted_pvals if p < mdd_pval]))
+            #         mdd_distances2.append([motif] + mdd_sorted_distances[:cutoff])
+            #         mdd_distances1.append([motif] + mdd_sorted_distances[cutoff:])
+            #    # print(f'\r\t Completed: {i}/{len(motif_distances)} ', end=' ', flush=True, file=sys.stderr)
             if use_config:
                 config.vars['MDD_DISTANCES1'] = mdd_distances1
                 config.vars['MDD_DISTANCES2'] = mdd_distances2
