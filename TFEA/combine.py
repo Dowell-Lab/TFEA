@@ -116,6 +116,9 @@ def main(use_config=True, bed1=None, bed2=None, method=None, tempdir=None,
         #MuMerge Command - output to combined_file.mumerge.bed
         combined_file = mumerge(mumerge_input, combined_file, bed1=bed1, 
                                 bed2=bed2, label1=label1, label2=label2)
+        clean_combined_file = tempdir / 'combined_file.mumerge.clean.bed'
+        combined_pybedtool = BedTool(str(combined_file))
+        combined_pybedtool.remove_invalid().saveas(clean_combined_file)
         # combined_file = Path(str(combined_file) + '_MUMERGE.bed')
 
         #Perform simple merge same as merge all for md bed files
