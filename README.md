@@ -37,7 +37,7 @@
 To install, this package and all python3 dependencies:
 
 ```
-git clone https://github.com/jdrubin91/TFEA.git
+git clone https://github.com/Dowell-Lab/TFEA
 cd /full/path/to/TFEA/
 pip3 install --user .
 ```
