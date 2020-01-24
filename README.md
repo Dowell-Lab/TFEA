@@ -42,6 +42,8 @@ cd /full/path/to/TFEA/
 pip3 install --user .
 ```
 
+This should take no longer than several minutes.
+
 <b>*Note:*</B> If you plan to run TFEA only on FIJI using the --sbatch flag, then you only need to install DESeq and DESeq2. Otherwise, follow the instructions below for installing all TFEA dependencies.
 
   <H3 id="DESeq">DESeq</H3>
@@ -145,6 +147,8 @@ To make sure TFEA is installed properly, run the following tests:
 TFEA --test-install
 TFEA --test-full
 ```
+
+These should each take no longer than several minutes to run
 
 If on a compute cluster with slurm the --sbatch flag is compatible with --test-full and is recommended on FIJI. Execute like so:
 
