@@ -746,7 +746,17 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                     </tr>
                     <tr>
                         <td>"""+motif+"""</td>""")
-            for number_result in results[i][1:]:
+            # for number_result in results[i][1:]:
+            #     if number_result < -1:
+            #         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
+            #     else:
+            #         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
+            for number_result in results[i][1:-2]:
+                try:
+                    outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                except TypeError:
+                    outfile.write("<td>" + str(number_result) + "</td>\n")
+            for number_result in results[i][-2:]:
                 if number_result < -1:
                     outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                 else:
