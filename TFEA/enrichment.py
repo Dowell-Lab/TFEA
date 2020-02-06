@@ -346,6 +346,10 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         q1 = int(round(len(distances)*.25))
         q3 = int(round(len(distances)*.75))
         middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
+        #In the case where there are no hits in the middle two quartiles, then
+        #don't perform computation
+        if len(middledistancehist) == 0:
+            return [motif, 0, 0, hits, gc, fpkm, 0, 0]
         try:
             average_distance = np.mean(middledistancehist)#float(sum(middledistancehist))/float(len(middledistancehist))
         except ZeroDivisionError:

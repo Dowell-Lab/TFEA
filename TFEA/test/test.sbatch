@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -euxo pipefail
-
 ###Name the job
 #SBATCH --job-name=TFEA_test
 
@@ -9,7 +7,7 @@ set -euxo pipefail
 #SBATCH -p short
 
 ###Specify WallTime
-#SBATCH --time=0:10:00
+#SBATCH --time=2:00:00
 
 ### Specify the number of nodes/cores
 #SBATCH --ntasks=1
@@ -29,6 +27,7 @@ set -euxo pipefail
 module purge
 
 module load python/3.6.3
+module load R/3.6.1
 # module load python/3.6.3/matplotlib/1.5.1
 # module load python/3.6.3/scipy/0.17.1
 # module load python/3.6.3/numpy/1.14.1

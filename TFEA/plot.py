@@ -14,6 +14,7 @@ __email__ = 'Jonathan.Rubin@colorado.edu'
 #Imports
 #==============================================================================
 import os
+import sys
 import math
 import numpy as np
 import matplotlib
@@ -321,6 +322,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     bins=100
     maximum = max(sim_auc)
     minimum = min(sim_auc)
+
     ax.hist(sim_auc,bins=bins, linewidth=0)
     width = (maximum-minimum)/100.0
     ylim_max = ax.get_ylim()[1]
@@ -339,7 +341,6 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
 
     # ax.text(corrected_rect.get_x() + corrected_rect.get_width()/2., 
     #         1.05*height, 'Corrected AUC', ha='center', va='bottom')
-
     ax.set_xlim([min(minimum,auc, auc-offset)-(width*40), max(maximum,auc,auc-offset)+(width*40)])
 
     ax.set_ylim([0,(1.05*ylim_max)+5])
@@ -608,7 +609,7 @@ def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
         subprocess.check_output(imagemagick_command, stderr=subprocess.PIPE)
         subprocess.check_output(imagemagick_rc_command, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
-        raise exceptions.SubprocessError(e.stderr.decode())
+        print(e.stderr.decode(), flush=True, file=sys.stdout)
     return
 
 #==============================================================================
