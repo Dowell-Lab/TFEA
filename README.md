@@ -3,6 +3,7 @@
 
 1. <A href="#Pipeline">Pipeline</A>
 2. <A href="#InstallationandRequirements">Installation and Requirements</A>
+   - <A href="#TFEA">TFEA</A>
    - <A href="#DESeq">DESeq</A>
    - <A href="#Bedtools">Bedtools</A>
    - <A href="#Samtools">Samtools</A>
@@ -34,15 +35,21 @@
 
 <H2 id="InstallationandRequirements">Installation and Requirements</H2>
 
+   <H3 id="TFEA">TFEA</H3>
+
 To install, this package and all python3 dependencies:
 
 ```
-git clone https://github.com/Dowell-Lab/TFEA
-cd /full/path/to/TFEA/
-pip3 install --user .
+python3 -m pip install tfea
 ```
 
 This should take no longer than several minutes.
+
+Once successfully installed, you should be able to run the tfea command from anywhere, try:
+
+```
+TFEA --help
+```
 
 <b>*Note:*</B> If you plan to run TFEA only on FIJI using the --sbatch flag, then you only need to install DESeq and DESeq2. Otherwise, follow the instructions below for installing all TFEA dependencies.
 
@@ -132,12 +139,6 @@ This should take no longer than several minutes.
 
 <br></br>
 <H2 id="BasicUsage">BasicUsage</H2>
-
-Once installed, TFEA can be run from anywhere, try:
-
-```
-TFEA --help
-```
 <H3 id="TestingTFEA">Testing TFEA</H3>
 To make sure TFEA is installed properly, run the following tests:
 
