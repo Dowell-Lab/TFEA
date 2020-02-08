@@ -1,0 +1,112 @@
+Bootstrap: docker
+From: ubuntu:latest
+
+%help
+Singularity container for TFEA
+
+%post
+cd $HOME
+export DEBIAN_FRONTEND=noninteractive
+DEBIAN_FRONTEND=noninteractive apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -yq r-base
+apt-get update -yq
+apt-get install -yq python3 python3-pip build-essential
+DEBIAN_FRONTEND=noninteractive apt-get install -yq wget
+DEBIAN_FRONTEND=noninteractive apt-get install -yq bzip2
+DEBIAN_FRONTEND=noninteractive apt-get install -yq tar
+
+#Install TFEA and Python3 dependencies
+pip3 install tfea
+
+# #Install DESeq and DESeq2
+# DEBIAN_FRONTEND=noninteractive apt-get install -yq aptitude
+# DEBIAN_FRONTEND=noninteractive apt-get install -yq libcurl4-openssl-dev
+# DEBIAN_FRONTEND=noninteractive apt-get install -yq libxml2-dev
+# DEBIAN_FRONTEND=noninteractive apt-get install -yq r-cran-latticeextra
+# R -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager')"
+# R -e "BiocManager::install(c('GenomeInfoDb','XML','annotate','latticeExtra','Hmisc','DESeq', 'DESeq2'))"
+
+# # Install bedtools
+# wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary
+# mv bedtools.static.binary /usr/bin/bedtools
+# chmod a+x /usr/bin/bedtools
+
+
+# #Install samtools
+# wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2
+# bzip2 -d samtools-1.10.tar.bz2
+# tar -xf samtools-1.10.tar
+# cd samtools-1.10
+# ./configure --prefix=/usr/
+# make
+# make install
+# cd $HOME
+
+#Install MEME
+wget https://www.cpan.org/src/5.0/perl-5.30.1.tar.gz
+tar -xzf perl-5.30.1.tar.gz
+cd perl-5.30.1
+./Configure -des -Dprefix=$HOME/localperl
+make
+make test
+make install
+cd $HOME
+cpan XML::Simple
+cpan HTML::Treebuilder
+cpan JSON
+cpan File::Which
+cpan Log::Log4perl
+cpan Math::CDF
+cpan XML::Compile::SOAP11
+cpan XML::Compile::WSDL11
+DEBIAN_FRONTEND=noninteractive apt-get install -yq zlib1g-dev
+DEBIAN_FRONTEND=noninteractive apt-get install -yq libexpat1-dev
+DEBIAN_FRONTEND=noninteractive apt-get install -yq ghostscript
+wget http://meme-suite.org/meme-software/5.1.1/meme-5.1.1.tar.gz
+tar zxf meme-5.1.1.tar.gz
+cd meme-5.1.1
+./configure --prefix=$HOME/meme --with-url=http://meme-suite.org/ --enable-build-libxml2 --enable-build-libxslt
+make
+make test
+make install
+perl scripts/dependencies.pl
+cd $HOME
+
+##Install ImageMagick
+DEBIAN_FRONTEND=noninteractive apt-get install -yq imagemagick
+
+echo 'PATH1'
+echo $PATH
+PATH=$HOME/meme/bin:$HOME/meme/libexec/meme-5.1.1:$HOME/meme-5.1.1/src/:$HOME:$PATH
+export PATH
+echo 'PATH2'
+echo $PATH
+
+echo 'export PATH=$HOME/meme/bin:$HOME/meme/libexec/meme-5.1.1:$HOME/meme-5.1.1/src/:$HOME:$PATH' >>$SINGULARITY_ENVIRONMENT
+echo 'PATH3'
+echo $PATH
+# echo 'export SINGULARITYENV_PREPEND_PATH=$HOME/meme/bin:$HOME/meme/libexec/meme-5.1.1:$HOME/meme-5.1.1/src/:$HOME' >>$SINGULARITYENV_PREPEND_PATH
+# echo 'PATH4'
+# echo $PATH
+
+# ls /root/meme
+# ls /root/meme/bin
+# ls /root/meme-5.1.1
+# ls /root/meme-5.1.1/src
+
+%files
+
+%runscript
+multiqc
+
+%test
+TFEA --test-install
+TFEA --test-full
+
+%environment
+LC_ALL=C.UTF-8
+LANG=C.UTF-8
+PATH=$HOME/meme/bin:$HOME/meme/libexec/meme-5.1.1:$HOME/meme-5.1.1/src/:$HOME:$PATH
+export PATH
+SINGULARITYENV_PREPEND_PATH=$HOME/meme/bin:$HOME/meme/libexec/meme-5.1.1:$HOME/meme-5.1.1/src/:$HOME
+export SINGULARITYENV_PREPEND_PATH

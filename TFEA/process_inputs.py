@@ -19,6 +19,7 @@ import argparse
 import subprocess
 from pathlib import Path
 
+import TFEA
 from TFEA import exceptions
 
 #Functions
@@ -32,7 +33,7 @@ def read_arguments():
         a parser object from argparse built-in python library
     '''
     parser = argparse.ArgumentParser(description=("Transcription Factor Enrichment "
-                                                    "Analysis (TFEA)"))
+                                                    "Analysis (TFEA) v" + TFEA.__version__))
 
     # The main inputs into TFEA to run the complete pipeline
     inputs = parser.add_argument_group('Main Inputs', 
