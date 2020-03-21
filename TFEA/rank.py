@@ -255,7 +255,7 @@ def count_reads(bedfile=None, bam1=None, bam2=None, tempdir=None, label1=None,
     #                                             + '\t'.join([label2]*len(bam2)) + "\n"))
     
     for bamfile in bam1+bam2:
-        samtools_index_command = ["samtools", "index", bamfile]
+        samtools_index_command = ["samtools",  "index", "-b", bamfile]
         subprocess.run(samtools_index_command)
 
     #Bedtools implementation
