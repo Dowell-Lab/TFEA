@@ -462,9 +462,9 @@ def verify_arguments(parser=None):
             value = arg_defaults[key][0] #Nothing specified, use default argument
 
         #Cast to correct type
-        if value in ('True' ,'true', True): #Detect True explicitly
+        if type(value) != int and value in ('True' ,'true', True): #Detect True explicitly but dont consider 1s and 0s as bools
             config_dict[key] = True
-        elif value in ('False', 'false', False): #Detect False explicitly
+        elif type(value) != int and value in ('False', 'false', False): #Detect False explicitly but dont consider 1s and 0s as bools
             config_dict[key] = False
         elif 'PosixList' in arg_defaults[key][1]: #Handle special 'PosixList' type
             types = arg_defaults[key][1]

@@ -8,7 +8,7 @@ __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
                 'Robin D. Dowell']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 #Built-in Python3 Imports
 #==============================================================================
