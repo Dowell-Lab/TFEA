@@ -561,6 +561,9 @@ def verify_arguments(parser=None):
 
     if not config.vars['FASTA_FILE'] and not config.vars['GENOMEFASTA']:
         raise exceptions.InputError('User inputs require GENOMEFASTA')
+    
+    if config.vars['GC'] and not config.vars['FIMO_MOTIFS']:
+        raise exceptions.InputError('GC correction requires FIMO_MOTIFS, etiher turn off GC correction or provide a .meme database')
 
     print("User arguments verified, all required inputs present and not conflicting.", 
             file=sys.stderr)

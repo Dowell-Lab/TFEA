@@ -167,7 +167,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         results = multiprocess.main(function=auc_simulate_and_plot, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
-
+                                    
         plot.plot_global_gc(results, p_cutoff=p_cutoff, 
                                 title='TFEA GC-Plot', 
                                 xlabel='Motif GC-content',
@@ -326,8 +326,10 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         motif = distances[0]
         nan = float('Nan')
         gc = nan
-        if fimo_motifs is not None:
+        if fimo_motifs:
             gc = get_gc(motif=motif, motif_database=fimo_motifs)
+        else:
+            gc = nan
         try:
             fpkm = motif_fpkm[motif]
         except KeyError:

@@ -668,21 +668,21 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
             if auc >= 0:
                 try:
                     NEXT_MOTIF = positivelist[positivelist.index(motif)+1]
-                except IndexError:
-                    NEXT_MOTIF = positivelist[0]
+                except (IndexError, ValueError):
+                    NEXT_MOTIF = positivelist[0] if len(positivelist) != 0 else ''
                 try:
                     PREV_MOTIF = positivelist[positivelist.index(motif)-1]
-                except IndexError:
-                    PREV_MOTIF = positivelist[len(positivelist)]
+                except (IndexError, ValueError):
+                    PREV_MOTIF = positivelist[len(positivelist)] if len(positivelist) != 0 else ''
             else:
                 try:
                     NEXT_MOTIF = negativelist[negativelist.index(motif)+1]
-                except IndexError:
-                    NEXT_MOTIF = negativelist[0]
+                except (IndexError, ValueError):
+                    NEXT_MOTIF = negativelist[0] if len(negativelist) != 0 else ''
                 try:
                     PREV_MOTIF = negativelist[negativelist.index(motif)-1]
-                except IndexError:
-                    PREV_MOTIF = negativelist[len(negativelist)]
+                except (IndexError, ValueError):
+                    PREV_MOTIF = negativelist[len(negativelist)] if len(negativelist) != 0 else ''
             direct_logo = "logo" + motif.replace('.','_') + f'.png'
             reverse_logo = "logo_rc" + motif.replace('.','_') + f'.png'
             outfile = open(os.path.join(outputdir, 'plots', motif 

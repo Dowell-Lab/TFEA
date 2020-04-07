@@ -377,6 +377,9 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     clean_results = [i for i in results if i[y_index] == i[y_index] and i[x_index] == i[x_index]]
+    if len(clean_results) == 0:
+        print("No results to plot", file=sys.stderr)
+        return
     ylist = [i[y_index] for i in clean_results]
     # import sys
     # print(clean_results, file=sys.stderr)
@@ -384,7 +387,10 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     if c_index is not None:
         clist = [i[c_index] for i in clean_results]
         clist = [y-c for y,c in zip(ylist,clist)]
-        max_c = abs(max([x for x in clist if x == x], key=abs))
+        try:
+            max_c = abs(max([x for x in clist if x == x], key=abs))
+        except:
+            max_c = 1
         # import sys
         # print("MA c-list:", clist, file=sys.stderr)
         # print("MA max_c:", max_c, file=sys.stderr)
@@ -543,11 +549,17 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     ax = plt.subplot(111)
     #Remove Nans from results
     clean_results = [i for i in results if i[y_index] == i[y_index] and i[x_index] == i[x_index]]
+    if len(clean_results) == 0:
+        print("No results to plot", file=sys.stderr)
+        return
     ylist = [i[y_index] for i in clean_results]
     xlist = [i[x_index] for i in clean_results]
     clist = [i[c_index] for i in clean_results]
     clist = [c-y for y,c in zip(ylist,clist)]
-    max_c = abs(max([x for x in clist if x == x], key=abs))
+    try:
+        max_c = abs(max([x for x in clist if x == x], key=abs))
+    except:
+        max_c = 1
     scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='viridis',
                             vmax=max_c, vmin=-max_c)
     cbar = plt.colorbar(scatter)
