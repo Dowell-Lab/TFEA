@@ -65,25 +65,38 @@ def main(function=None, args=None, kwargs=None, debug=False, jobid=None, cpus=1)
     #     p.close()
     #     p.join()
 
-    #Method 2 
-    print(f'\t Completed: 0/{len(args)} ', end=' ', file=sys.stderr)
-    with mp.Pool(cpus) as p:
-        p.daemon = False #Allow child processes to spawn new processes
+    #Method 2
+    if cpus == 1: #If only one processor requested, do not use multiprocess module
+        print(f'\t Completed: 0/{len(args)} ', end=' ', file=sys.stderr)
         results = list()
         # print_in_place(f'\t Completed: 0/{len(args)} ', file=sys.stderr)
-        for i, x in enumerate(p.imap_unordered(helper_single, [(function, arg, kwargs, debug) for arg in args]), 1):
-            # sys.stderr.write("\033[K")
-            # sys.stderr.write(f'\r\t Completed: {i}/{len(args)} ')
-            # sys.stderr.flush()
+        for i, arg in enumerate(args, 1):
+            x = function(arg, **kwargs)
             print(f'\r\t Completed: {i}/{len(args)} ', end=' ', flush=True, file=sys.stderr)
-            # print_in_place(f'\t Completed: {i}/{len(args)} ', file=sys.stderr)
             if debug:
                 current_mem_usage(jobid, processes=cpus, end=' ')
                 # current_mem_usage(jobid, in_place=True)
             results.append(x)
-        p.close()
-        p.join()
-    print('', file=sys.stderr)
+        print('', file=sys.stderr)
+    else:
+        print(f'\t Completed: 0/{len(args)} ', end=' ', file=sys.stderr)
+        with mp.Pool(cpus) as p:
+            p.daemon = False #Allow child processes to spawn new processes
+            results = list()
+            # print_in_place(f'\t Completed: 0/{len(args)} ', file=sys.stderr)
+            for i, x in enumerate(p.imap_unordered(helper_single, [(function, arg, kwargs, debug) for arg in args]), 1):
+                # sys.stderr.write("\033[K")
+                # sys.stderr.write(f'\r\t Completed: {i}/{len(args)} ')
+                # sys.stderr.flush()
+                print(f'\r\t Completed: {i}/{len(args)} ', end=' ', flush=True, file=sys.stderr)
+                # print_in_place(f'\t Completed: {i}/{len(args)} ', file=sys.stderr)
+                if debug:
+                    current_mem_usage(jobid, processes=cpus, end=' ')
+                    # current_mem_usage(jobid, in_place=True)
+                results.append(x)
+            p.close()
+            p.join()
+        print('', file=sys.stderr)
 
     #Method 3
     # with mp.get_context("spawn").Pool(maxtasksperchild=10, processes=cpus) as p:
