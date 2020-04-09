@@ -23,7 +23,7 @@ import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter
 matplotlib.use('Agg')
-matplotlib.rcParams['savefig.dpi'] = 100
+matplotlib.rcParams.update({'font.size': 18})
 import subprocess
 import warnings
 import pathlib
@@ -70,6 +70,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
         label2 = config.vars['LABEL2']
         meta_profile_dict = config.vars['META_PROFILE']
         plot_format = config.vars['PLOT_FORMAT']
+        matplotlib.rcParams['savefig.dpi'] = config.vars['DPI']
 
     #Create MEME logos
     if fimo_motifs:
@@ -104,14 +105,14 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
 
 
     #Set up plotting space
-    plt.figure(figsize=(15.5,12))
+    plt.figure(figsize=(15.5,15))
     outer_gs = gridspec.GridSpec(2, 1, height_ratios=[2,1])
     enrichment_gs = gridspec.GridSpecFromSubplotSpec(4, 1, 
                                                     subplot_spec=outer_gs[0], 
                                                     height_ratios=[4, 1, 4, 2], 
-                                                    hspace=.1)
+                                                    hspace=.2)
     meta_gs = gridspec.GridSpecFromSubplotSpec(3, 4, subplot_spec=outer_gs[1], 
-                                                    hspace=0.1, wspace=0.3)
+                                                    hspace=0.1, wspace=0.2)
 
     #Create Enrichment Plot
     xvals = np.linspace(start=0, stop=1, num=len(cumscore))
@@ -272,8 +273,9 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
         metaplot(q1posprofile1, q1negprofile1, q1posprofile2, q1negprofile2, ax=ax3, 
                     xvals=xvals, label1=label1, label2=label2, ylim=ylim, 
                     title='Q1 (n=' + str(len(q1_meta_retain)) + ')', 
-                    largewindow=largewindow)
-        ax3.legend(loc='best', fontsize='small', frameon=False)
+                    largewindow=largewindow, ylabel=True)
+        ax3.legend(bbox_to_anchor=(0, 1.15),loc='lower left', fontsize='small', 
+                    fancybox=True, shadow=True)#, frameon=False)
         metaplot(q2posprofile1, q2negprofile1, q2posprofile2, q2negprofile2, ax=ax4, 
                     xvals=xvals, label1=label1, label2=label2, ylim=ylim, 
                     title='Q2 (n=' + str(len(q2_meta_retain)) + ')', 
@@ -350,9 +352,9 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     ax.tick_params(axis='x', which='both', bottom=False, top=False, 
                     labelbottom=True)
 
-    ax.set_title('Distribution of Simulated E-Scores', fontsize=14)
-    ax.set_ylabel('Number of Simulations', fontsize=14)
-    ax.set_xlabel('E-Score', fontsize=14)
+    ax.set_title('Distribution of Simulated E-Scores')
+    ax.set_ylabel('Number of Simulations')
+    ax.set_xlabel('E-Score')
 
     plt.tight_layout()
     F.savefig(os.path.join(figuredir, motif + f'_simulation_plot.{plot_format}'), 
@@ -435,9 +437,9 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     # ax.scatter(xlist, ylist, color='navy', edgecolor='', s=50)
     # ax.scatter(sigx, sigy, color='red', edgecolor='', s=50)
 
-    ax.set_title(title, fontsize=14)
-    ax.set_ylabel(ylabel, fontsize=14)
-    ax.set_xlabel(xlabel, fontsize=14)
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
@@ -477,9 +479,9 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
     ax = plt.subplot(111)
     ax.scatter(xlist, ylist, color='navy', edgecolor='', s=50)
     ax.scatter(sigx, sigy, color='red', edgecolor='', s=50)
-    ax.set_title(title, fontsize=14)
-    ax.set_ylabel(ylabel, fontsize=14)
-    ax.set_xlabel(xlabel, fontsize=14)
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
     ax.axhline(-p_cutoff, 10, linestyle='--', color='black')
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
@@ -529,9 +531,9 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
         ax.scatter(xlist, ylist, color=clist, edgecolor='', s=slist)
-    ax.set_title(title, fontsize=14)
-    ax.set_ylabel(ylabel, fontsize=14)
-    ax.set_xlabel(xlabel, fontsize=14)
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
 
     plt.tight_layout()
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
@@ -586,9 +588,9 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
 
     ax.axhline(0, linestyle='--', alpha=0.5, linewidth=2, c='k')
     ax.set_xlim([0,1])
-    ax.set_title(title, fontsize=14)
-    ax.set_ylabel(ylabel, fontsize=14)
-    ax.set_xlabel(xlabel, fontsize=14)
+    ax.set_title(title)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
 
@@ -628,7 +630,7 @@ def meme_logo(motif_file, motif_ID, figuredir, plot_format=None):
 @force_gc
 def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None, 
                 xvals=None, label1=None, label2=None, title=None, ylim=None, 
-                largewindow=None):
+                largewindow=None, ylabel=False):
     if len(posprofile1) != 0:
         ax.plot(xvals,posprofile1,color='#7570b3',label=label1)
     else:
@@ -645,15 +647,23 @@ def metaplot(posprofile1, negprofile1, posprofile2, negprofile2, ax=None,
         ax.plot(xvals,negprofile2,color='#d76127')
     else:
         ax.plot(xvals,[0 for x in xvals],color='#d76127')
-    ax.set_title(title,fontsize=14)
-    ax.tick_params(axis='y', which='both', left=False, right=False, 
-                    labelleft=True)
-    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
+    ax.set_title(title)
+    # ax.tick_params(axis='y', which='both', left=True, right=False, 
+    #                 labelleft=True)
+    ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=False)
-    ax.set_ylabel('Reads per Millions Mapped',fontsize=10)
+    ax.set_yticks([ylim[0], 0, ylim[1]])
+    if ylabel:
+        ax.set_ylabel('Reads per\nMillions Mapped',fontsize=14, labelpad=-20)
+    else:
+        ax.set_yticklabels([])
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    # ax.spines['bottom'].set_visible(False)
     ax.set_ylim(ylim)
     ax.set_xlim([-int(largewindow), int(largewindow)])
-    ax.yaxis.set_major_formatter(FormatStrFormatter('%.3g'))
+    ax.set_xticks([-int(largewindow), 0, int(largewindow)])
+    # ax.yaxis.set_major_formatter(FormatStrFormatter('%.3g'))
     return
 
 #==============================================================================
@@ -676,7 +686,7 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
                     labelleft=False) 
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
-    ax.set_xlabel('Motif Distance to Center (bp)')
+    ax.set_xlabel('Motif Distance\nto Center (kb)')
     # ax.set_xticks(ax.get_xticks())
     # locs = [item.get_text() for item in ax.get_xticklabels()]
     # import sys
@@ -684,8 +694,15 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
     # locs = [str(float(x)/1000.0) for x in locs]
     # ax.set_xticklabels(locs)
     ax.set_xticks([-int(largewindow), 0, int(largewindow)])
+    ax.set_xticklabels([str(-int(largewindow)/1000), 
+                        '0', 
+                        str(int(largewindow)/1000)])
     if title is not None:
-        ax.set_title(title, fontsize=14)
+        ax.set_title(title)
+    
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
     return
 
 #==============================================================================
@@ -694,8 +711,8 @@ def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
     #This is the enrichment score plot (i.e. line plot)
     ax.plot(xvals,yvals,color='green')
     ax.plot([0, 1],[0, 1], '--', alpha=0.75)
-    ax.set_title(title, fontsize=14)
-    ax.set_ylabel('Enrichment Score (ES)', fontsize=10)
+    ax.set_title(title)
+    ax.set_ylabel('Enrichment Curve', fontsize=14)
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=False, top=False, 
@@ -716,7 +733,7 @@ def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None,
     if xlabel:
         ax.tick_params(axis='x', which='both', bottom=False, top=False, 
                     labelbottom=True)
-        ax.set_xlabel('Relative Rank (n='+str(len(xvals))+')', fontsize=14)
+        ax.set_xlabel('Relative Rank (n='+str(len(xvals))+')')
     else:
         ax.tick_params(axis='x', which='both', bottom=False, top=False, 
                         labelbottom=False)
@@ -725,7 +742,7 @@ def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None,
     ax.set_yticklabels([str(largewindow/-1000.0), '0', str(largewindow/1000.0)])
     ax.set_xlim(xlimits)
     ax.set_ylim([-int(largewindow),int(largewindow)])
-    ax.set_ylabel('Distance (kb)', fontsize=10)
+    ax.set_ylabel('Distance (kb)', fontsize=14, labelpad=-5)
     return
 
 #==============================================================================
@@ -743,7 +760,7 @@ def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
                     labelbottom=False)
     ax.set_xlim([0, 1])
     ax.set_ylim([0, 1])
-    ax.set_ylabel('Score', fontsize=10)
+    ax.set_ylabel('Score', fontsize=14)
     return
 
 #==============================================================================
@@ -756,13 +773,14 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     ax.fill_between([x for x,_ in negvals], 0, [y for _,y in negvals],facecolor='#7570b3',edgecolor="")
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
-    ax.tick_params(axis='x', which='both', bottom=False, top=False, 
+    ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
     ylim = math.fabs(max([x for x in yvals if -500 < x < 500],key=abs))
     ax.yaxis.set_ticks([int(-ylim), 0, int(ylim)])
     ax.set_xlim(xlimits)
-    ax.set_xlabel('Relative Rank (n='+str(len(xvals))+')', fontsize=14)
-    ax.set_ylabel('Rank Metric', fontsize=10)
+    ax.set_xticklabels(['0','0.2','0.4','0.6','0.8','1'])
+    ax.set_xlabel('Relative Rank (n='+str(len(xvals))+')')
+    ax.set_ylabel('Rank Metric', fontsize=14)
     # try:
     #     ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
     # except ValueError:
@@ -838,9 +856,9 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
     plt.scatter(x=x,y=y,c=c,edgecolor='', cmap="RdYlGn")
-    ax.set_title("DE-Seq MA-Plot",fontsize=14)
-    ax.set_ylabel("Log2 Fold-Change ("+label2+"/"+label1+")",fontsize=14)
-    ax.set_xlabel("Log10 Average Expression",fontsize=14)
+    ax.set_title("DE-Seq MA-Plot")
+    ax.set_ylabel("Log2 Fold-Change ("+label2+"/"+label1+")")
+    ax.set_xlabel("Log10 Average Expression")
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 

@@ -210,6 +210,8 @@ def read_arguments():
     output_options.add_argument('--plot_format', help=("Format of saved figures. "
                                     "Default: png"), choices=['png', 'svg', 'pdf'], 
                                     dest='PLOT_FORMAT')
+    output_options.add_argument('--dpi', help=("Resolution of saved figures. "
+                                    "Applies to png. Default: 100"), dest='DPI')
     output_options.add_argument('--plotall', help=("Plot graphs for all motifs."
                                     "Warning: This will make TFEA run much slower and"
                                     "will result in a large output folder."), 
@@ -333,6 +335,7 @@ def read_arguments():
                     'GC': [True, [bool]],
                     'PLOTALL': [False, [bool]],
                     'PLOT_FORMAT': ['png', [str]],
+                    'DPI': [100, [int]], 
                     'METAPROFILE': [False, [bool]]}
 
     #Save default arguments in config

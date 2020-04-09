@@ -90,8 +90,10 @@ class TestMain(unittest.TestCase):
                     # '--mdd_percent', '0.2',
                     '--md', '--mdd',
                     '--debug',
-                    '--cpus', '2',
-                    '--padjcutoff', '0.1']
+                    '--cpus', '1',
+                    '--padjcutoff', '0.1',
+                    '--plot_format', 'pdf',
+                    '--dpi', '600']
         # try:
         print('\n============================================', 
                 file=sys.stderr, flush=True)
