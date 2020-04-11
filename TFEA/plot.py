@@ -396,10 +396,10 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
         # import sys
         # print("MA c-list:", clist, file=sys.stderr)
         # print("MA max_c:", max_c, file=sys.stderr)
-        scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='viridis',
+        scatter = ax.scatter(xlist, ylist, edgecolors=None, c=clist, s=50, cmap='viridis',
                                 vmax=max_c, vmin=-max_c)
     else:
-        scatter = ax.scatter(xlist, ylist, edgecolor='', color='navy', s=50)
+        scatter = ax.scatter(xlist, ylist, edgecolors=None, color='navy', s=50)
 
     if p_index is not None:
         plist = [i[p_index] for i in clean_results]
@@ -408,20 +408,20 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
         if c_index is not None:
             sigc = [scatter.to_rgba(c) for c,p in zip(clist,plist) if p<p_cutoff]
             ax.scatter(sigx, sigy, c=sigc, #marker='x', 
-                        edgecolor='r',  linewidth=2, s=50)
+                        edgecolors='r',  linewidth=2, s=50)
             if p_cutoff < -3:
-                legend = ax.scatter([1], [0], color='white', edgecolor='r',  s=50, 
+                legend = ax.scatter([1], [0], color='white', edgecolors='r',  s=50, 
                                     label=f'p < 1e{int(p_cutoff*np.log10(np.e))}')
             else:
-                legend = ax.scatter([1], [0], color='white', edgecolor='r',  s=50, 
+                legend = ax.scatter([1], [0], color='white', edgecolors='r',  s=50, 
                                     label=f'p < {str("%.3g" % np.e**p_cutoff)}')
         else:
-            ax.scatter(sigx, sigy, color='red', edgecolor='',  s=50)
+            ax.scatter(sigx, sigy, color='red', edgecolors=None,  s=50)
             if p_cutoff < -3:
-                legend = ax.scatter([1], [0], color='red', edgecolor='',  s=50, 
+                legend = ax.scatter([1], [0], color='red', edgecolors=None,  s=50, 
                                     label=f'p < 1e{int(p_cutoff*np.log10(np.e))}')
             else:
-                legend = ax.scatter([1], [0], color='red', edgecolor='',  s=50, 
+                legend = ax.scatter([1], [0], color='red', edgecolors=None,  s=50, 
                                     label=f'p < {str("%.3g" % np.e**p_cutoff)}')
             
         ax.legend(loc='best', frameon=False)
@@ -434,8 +434,8 @@ def plot_global_MA(results, p_cutoff=None, title=None, xlabel=None,
     # sigx = [x for x, p in zip(xlist, plist) if p < p_cutoff]
     # sigy = [y for y, p in zip(ylist, plist) if p < p_cutoff]
 
-    # ax.scatter(xlist, ylist, color='navy', edgecolor='', s=50)
-    # ax.scatter(sigx, sigy, color='red', edgecolor='', s=50)
+    # ax.scatter(xlist, ylist, color='navy', edgecolors=None, s=50)
+    # ax.scatter(sigx, sigy, color='red', edgecolors=None, s=50)
 
     ax.set_title(title)
     ax.set_ylabel(ylabel)
@@ -477,8 +477,8 @@ def plot_global_volcano(results, p_cutoff=None, title=None, xlabel=None,
 
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    ax.scatter(xlist, ylist, color='navy', edgecolor='', s=50)
-    ax.scatter(sigx, sigy, color='red', edgecolor='', s=50)
+    ax.scatter(xlist, ylist, color='navy', edgecolors=None, s=50)
+    ax.scatter(sigx, sigy, color='red', edgecolors=None, s=50)
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
@@ -530,7 +530,7 @@ def plot_global_z_v(results, p_cutoff=None, title=None, xlabel=None,
     ax = plt.subplot(111)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
-        ax.scatter(xlist, ylist, color=clist, edgecolor='', s=slist)
+        ax.scatter(xlist, ylist, color=clist, edgecolors=None, s=slist)
     ax.set_title(title)
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
@@ -562,7 +562,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
         max_c = abs(max([x for x in clist if x == x], key=abs))
     except:
         max_c = 1
-    scatter = ax.scatter(xlist, ylist, edgecolor='', c=clist, s=50, cmap='viridis',
+    scatter = ax.scatter(xlist, ylist, edgecolors=None, c=clist, s=50, cmap='viridis',
                             vmax=max_c, vmin=-max_c)
     cbar = plt.colorbar(scatter)
     cbar.set_label('E-Score Correction', rotation=270, labelpad=20)
@@ -574,7 +574,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
         sigy = [y for y,p in zip(ylist,plist) if p<p_cutoff]
         sigc = [scatter.to_rgba(c) for c,p in zip(clist,plist) if p<p_cutoff]
         ax.scatter(sigx, sigy, c=sigc, #marker='x', 
-                        edgecolor='r', linewidth=2, s=50)
+                        edgecolors='r', linewidth=2, s=50)
     
     if linear_regression is not None:
         slope, intercept, r_value, p_value, _ = linear_regression
@@ -726,7 +726,7 @@ def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
 def scatterplot(ax=None, xvals=None, yvals=None, xlimits=None, largewindow=None, 
                 xlabel=False):
     #This is the barplot right below the enrichment score line plot
-    ax.scatter(xvals, yvals, edgecolor="", color="black", 
+    ax.scatter(xvals, yvals, edgecolors=None, color="black", 
                     s=10, alpha=0.25)
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True) 
@@ -753,7 +753,7 @@ def barplot(ax=None, xvals=None, colorarray=None, xlimits=None):
     cmap    = cm.Greys
     m       = cm.ScalarMappable(norm=norm, cmap=cmap)
     colors  = [m.to_rgba(c) for c in colorarray] 
-    ax.bar(xvals, [1 for x in xvals], width=1.0/len(xvals), edgecolor="", color=colors)
+    ax.bar(xvals, [1 for x in xvals], width=1.0/len(xvals), edgecolor=None, color=colors)
     ax.tick_params(axis='y', which='both', left=False, right=False, 
                     labelleft=False) 
     ax.tick_params(axis='x', which='both', bottom=False, top=False, 
@@ -769,8 +769,8 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     #This is the rank metric fill plot
     posvals = [(x,y) for x,y in zip(xvals,yvals) if y > 0]
     negvals = [(x,y) for x,y in zip(xvals,yvals) if y < 0]
-    ax.fill_between([x for x,_ in posvals], 0, [y for _,y in posvals],facecolor='#d76127',edgecolor="")
-    ax.fill_between([x for x,_ in negvals], 0, [y for _,y in negvals],facecolor='#7570b3',edgecolor="")
+    ax.fill_between([x for x,_ in posvals], 0, [y for _,y in posvals],facecolor='#d76127',edgecolors=None)
+    ax.fill_between([x for x,_ in negvals], 0, [y for _,y in negvals],facecolor='#7570b3',edgecolors=None)
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
@@ -855,7 +855,7 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     #Creates an MA-Plot of the region expression
     F = plt.figure(figsize=(7,6))
     ax = plt.subplot(111)
-    plt.scatter(x=x,y=y,c=c,edgecolor='', cmap="RdYlGn")
+    plt.scatter(x=x,y=y,c=c,edgecolors=None, cmap="RdYlGn")
     ax.set_title("DE-Seq MA-Plot")
     ax.set_ylabel("Log2 Fold-Change ("+label2+"/"+label1+")")
     ax.set_xlabel("Log10 Average Expression")
