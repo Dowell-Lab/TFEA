@@ -26,7 +26,7 @@
 ### Load required modules
 module purge
 
-module load python/3.6.3
+module load python/3.7.4
 module load R/3.6.1
 # module load python/3.6.3/matplotlib/1.5.1
 # module load python/3.6.3/scipy/0.17.1
@@ -40,6 +40,10 @@ module load samtools/1.3.1
 module load gcc/7.1.0
 
 ### now call your program
+
+if [[ ${venv} != . ]]; then
+    source ${venv}/bin/activate
+fi
 
 ### python ${src} --config ${config} --sbatch SUBMITTED
 python3 ${cmd}

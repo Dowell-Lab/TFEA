@@ -52,6 +52,7 @@ def run():
     test_full = parser.parse_args().TEST_FULL
     if test_full:
         sbatch = parser.parse_args().SBATCH
+        venv = parser.parse_args().VENV
         if not sbatch:
             subprocess.call(["python3", srcdirectory / 'test' / 'test_full.py'])
             sys.exit()
@@ -62,6 +63,7 @@ def run():
                                 "--error=" + error_file, 
                                 "--output=" +  output_file,
                                 "--mail-user=" + sbatch,
+                                "--export=venv="+ venv, 
                                 srcdirectory / 'test' / 'test.sbatch'])
             print(("TFEA tests submitted as sbatch job. It can be "
                     "monitored using:\ntail -f " + error_file))

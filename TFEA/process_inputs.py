@@ -42,11 +42,9 @@ def read_arguments():
                         "If it exists, overwrite its contents."), dest='OUTPUT', 
                         metavar='DIR')
     inputs.add_argument('--bed1', nargs='*', help=("Bed files associated with "
-                        "condition 1"), dest='BED1', 
-                        metavar='FILE1 FILE2 ... FILEN')
+                        "condition 1"), dest='BED1')
     inputs.add_argument('--bed2', nargs='*', help=("Bed files associated with "
-                        "condition 2"), dest='BED2', 
-                        metavar='FILE1 FILE2 ... FILEN')
+                        "condition 2"), dest='BED2')
     inputs.add_argument('--bam1', nargs='*', help=("Sorted bam files "
                         "associated with condition 1. Must be indexed."), 
                         dest='BAM1')
@@ -251,9 +249,11 @@ def read_arguments():
                                 nargs='*', dest='RERUN')
     misc_options.add_argument('--gc', help=("Perform GC-correction. Default: True"), 
                                 dest='GC')
+    misc_options.add_argument('--venv', help=("Full path to virtual environment."),
+                                dest='VENV')
     misc_options.add_argument('--debug', help=("Print memory and CPU usage to "
-                                    "stderr. Also retain temporary files."), 
-                                    action='store_true', dest='DEBUG', default=None)
+                                "stderr. Also retain temporary files."), 
+                                action='store_true', dest='DEBUG', default=None)
 
     #Set default arguments and possible options or types within arg_defaults
     #dict. For example:
@@ -329,6 +329,7 @@ def read_arguments():
                     'CPUS': [1, [int]], 
                     'MEM': ['20gb', [str]],
                     'BOOTSTRAP': [False, [int, bool]],
+                    'VENV': ['.',[Path]],
                     'MOTIF_ANNOTATIONS': [False, [Path, bool]],
                     'BASEMEAN_CUT': [0, [int]],
                     'RERUN': [False, ['PosixList', bool]],
@@ -597,12 +598,16 @@ def create_directories(srcdirectory=None):
         else:
             args.append('--sbatch')
             args.append('SUBMITTED')
+        if '--venv' in args:
+            venv = args[args.index('--venv')+1]
+        else:
+            venv = '.'
         try:
             sbatch_out = subprocess.run(["sbatch", 
                                 "--error=" + (config.vars['E_AND_O'] / "%x.err").as_posix(), 
                                 "--output=" + (config.vars['E_AND_O'] / "%x.out").as_posix(), 
                                 "--mail-user=" + email, 
-                                "--export=cmd=" + ' '.join(args), 
+                                "--export=cmd=" + ' '.join(args) + ',' + 'venv='+ venv, 
                                 "--job-name=TFEA_" + config.vars['OUTPUT'].name, 
                                 "--ntasks=" + str(config.vars['CPUS']),
                                 "--mem=" + str(config.vars['MEM']),
