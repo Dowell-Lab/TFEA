@@ -215,6 +215,7 @@ PLOTALL=True
 
 
 <H3 id="UsingSBATCH">Using SBATCH</H3>
+
 Specifying the `--sbatch` flag will submit TFEA to a compute cluster assuming you are logged into one. If the `--sbatch` flag is specified, it MUST be followed by an e-mail address to send job information to. For example:
 
 
@@ -222,7 +223,7 @@ Specifying the `--sbatch` flag will submit TFEA to a compute cluster assuming yo
 TFEA --config ./TFEA/test/test_files/test_config.ini --sbatch your_email@address.com
 ```
 
-Additionally, the following flags can be used to change some of the job parameters:
+Additionally, the following flags can be used to change some of the job parameters and specify a python virtual environment:
 
 ```
   --cpus CPUS           Number of processes to run in parallel. Warning:
@@ -230,9 +231,10 @@ Additionally, the following flags can be used to change some of the job paramete
                         memory footprint. Default: 1
   --mem MEM             Amount of memory to request forsbatch script. Default:
                         50gb
+  --venv VENV           Full path to virtual environment.
 ```
 
-<b>*Note:*</b> `--cpus` also works without the `--sbatch` flag
+<b>*Note:*</b> `--cpus` also works without the `--sbatch` flag. The `--venv` flag takes the root venv directory, it then activates the venv by calling `source <venv path>/bin/activate`
 
 
 <H3 id="PreProcessedInputs">Using Pre-processed Inputs</H3>
@@ -407,12 +409,12 @@ This works by looking recursively into all folders and subfolders for rerun.sh s
 Below are all the possible flags that can be provided to TFEA with a short description and default values.
 
 ```
-usage: TFEA [-h] [--output DIR]
-            [--bed1 [FILE1 FILE2 ... FILEN [FILE1 FILE2 ... FILEN ...]]]
-            [--bed2 [FILE1 FILE2 ... FILEN [FILE1 FILE2 ... FILEN ...]]]
-            [--bam1 [BAM1 [BAM1 ...]]] [--bam2 [BAM2 [BAM2 ...]]]
-            [--label1 LABEL1] [--label2 LABEL2] [--config CONFIG]
-            [--sbatch SBATCH] [--test-install] [--test-full]
+usage: TFEA [-h] [--output DIR] [--bed1 [BED1 [BED1 ...]]]
+            [--bed2 [BED2 [BED2 ...]]] [--bam1 [BAM1 [BAM1 ...]]]
+            [--bam2 [BAM2 [BAM2 ...]]] [--bg1 [BG1 [BG1 ...]]]
+            [--bg2 [BG2 [BG2 ...]]] [--label1 LABEL1] [--label2 LABEL2]
+            [--genomefasta GENOMEFASTA] [--fimo_motifs FIMO_MOTIFS]
+            [--config CONFIG] [--sbatch SBATCH] [--test-install] [--test-full]
             [--combined_file COMBINED_FILE] [--ranked_file RANKED_FILE]
             [--fasta_file FASTA_FILE] [--md] [--mdd]
             [--md_bedfile1 MD_BEDFILE1] [--md_bedfile2 MD_BEDFILE2]
@@ -420,20 +422,19 @@ usage: TFEA [-h] [--output DIR]
             [--md_fasta1 MD_FASTA1] [--md_fasta2 MD_FASTA2]
             [--mdd_fasta1 MDD_FASTA1] [--mdd_fasta2 MDD_FASTA2]
             [--mdd_pval MDD_PVAL] [--mdd_percent MDD_PERCENT]
-            [--combine {intersect/merge,merge all,tfit clean,tfit remove small,False}]
+            [--combine {mumerge,intersect/merge,mergeall,tfitclean,tfitremovesmall}]
             [--rank {deseq,fc,False}] [--scanner {fimo,genome hits}]
-            [--enrichment {auc,auc_bgcorrect}] [--debug]
-            [--genomefasta GENOMEFASTA] [--fimo_motifs FIMO_MOTIFS]
-            [--fimo_thresh FIMO_THRESH] [--fimo_background FIMO_BACKGROUND]
-            [--genomehits GENOMEHITS] [--singlemotif SINGLEMOTIF]
-            [--permutations PERMUTATIONS] [--largewindow LARGEWINDOW]
-            [--smallwindow SMALLWINDOW] [--dpi DPI] [--padjcutoff PADJCUTOFF]
-            [--plotall] [--output_type {txt,html}] [--cpus CPUS] [--mem MEM]
-            [--motif_annotations MOTIF_ANNOTATIONS] [--bootstrap BOOTSTRAP]
-            [--basemean_cut BASEMEAN_CUT] [--rerun [RERUN [RERUN ...]]]
-            [--gc GC]
+            [--enrichment {auc,auc_bgcorrect}] [--fimo_thresh FIMO_THRESH]
+            [--fimo_background FIMO_BACKGROUND] [--genomehits GENOMEHITS]
+            [--singlemotif SINGLEMOTIF] [--permutations PERMUTATIONS]
+            [--largewindow LARGEWINDOW] [--smallwindow SMALLWINDOW]
+            [--padjcutoff PADJCUTOFF] [--plot_format {png,svg,pdf}]
+            [--dpi DPI] [--plotall] [--metaprofile] [--output_type {txt,html}]
+            [--cpus CPUS] [--mem MEM] [--motif_annotations MOTIF_ANNOTATIONS]
+            [--bootstrap BOOTSTRAP] [--basemean_cut BASEMEAN_CUT]
+            [--rerun [RERUN [RERUN ...]]] [--gc GC] [--venv VENV] [--debug]
 
-Transcription Factor Enrichment Analysis (TFEA)
+Transcription Factor Enrichment Analysis (TFEA) v1.1.1
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -443,9 +444,9 @@ Main Inputs:
 
   --output DIR, -o DIR  Full path to output directory. If it exists, overwrite
                         its contents.
-  --bed1 [FILE1 FILE2 ... FILEN [FILE1 FILE2 ... FILEN ...]]
+  --bed1 [BED1 [BED1 ...]]
                         Bed files associated with condition 1
-  --bed2 [FILE1 FILE2 ... FILEN [FILE1 FILE2 ... FILEN ...]]
+  --bed2 [BED2 [BED2 ...]]
                         Bed files associated with condition 2
   --bam1 [BAM1 [BAM1 ...]]
                         Sorted bam files associated with condition 1. Must be
@@ -453,8 +454,19 @@ Main Inputs:
   --bam2 [BAM2 [BAM2 ...]]
                         Sorted bam files associated with condition 2. Must be
                         indexed.
+  --bg1 [BG1 [BG1 ...]]
+                        Sorted bedGraph files associated with condition 1.
+                        Must be indexed.
+  --bg2 [BG2 [BG2 ...]]
+                        Sorted bedGraph files associated with condition 2.
+                        Must be indexed.
   --label1 LABEL1       An informative label for condition 1
   --label2 LABEL2       An informative label for condition 2
+  --genomefasta GENOMEFASTA
+                        Genomic fasta file
+  --fimo_motifs FIMO_MOTIFS
+                        Full path to a .meme formatted motif databse file.
+                        Some databases included in motif_files folder.
   --config CONFIG, -c CONFIG
                         A configuration file that a user may use instead of
                         specifying flags. Command line flags will overwrite
@@ -515,34 +527,29 @@ Secondary Analysis Inputs:
                         Percentage cutoff for retaining differential regions.
                         Default: False
 
-Module Switches:
-  Switches for different modules
+Modules:
+  Options for different modules
 
-  --combine {intersect/merge,merge all,tfit clean,tfit remove small,False}
-                        Method for combining input bed files
+  --combine {mumerge,intersect/merge,mergeall,tfitclean,tfitremovesmall}
+                        Method for combining input bed files. Default: mumerge
   --rank {deseq,fc,False}
                         Method for ranking combined bed file
   --scanner {fimo,genome hits}
-                        Method for scanning fasta files for motifs
+                        Method for scanning fasta files for motifs. Default:
+                        fimo
   --enrichment {auc,auc_bgcorrect}
-                        Method for calculating enrichment
-  --debug               Print memory and CPU usage to stderr
+                        Method for calculating enrichment. Default: auc
 
 Scanner Options:
   Options for performing motif scanning
 
-  --genomefasta GENOMEFASTA
-                        Genomic fasta file
-  --fimo_motifs FIMO_MOTIFS
-                        Full path to a .meme formatted motif databse file.
-                        Some databases included in motif_databases folder.
   --fimo_thresh FIMO_THRESH
                         P-value threshold for calling FIMO motif hits.
                         Default: 1e-6
   --fimo_background FIMO_BACKGROUND
                         Options for choosing mononucleotide background
-                        distribution to use with FIMO. {'largewindow',
-                        'smallwindow', int, file}
+                        distribution to use with FIMO. Default:
+                        largewindow{'largewindow', 'smallwindow', int, file}
   --genomehits GENOMEHITS
                         A folder containing bed files with pre-calculated
                         motif hits to a genome. For use with 'genome hits'
@@ -568,13 +575,19 @@ Enrichment Options:
 Output Options:
   Options for the output.
 
-  --dpi DPI             Resolution of output figures. Default: 100
   --padjcutoff PADJCUTOFF
                         A p-adjusted cutoff value that determines some
                         plotting output.
+  --plot_format {png,svg,pdf}
+                        Format of saved figures. Default: png
+  --dpi DPI             Resolution of saved figures. Applies to png. Default:
+                        100
   --plotall             Plot graphs for all motifs.Warning: This will make
                         TFEA run much slower andwill result in a large output
                         folder.
+  --metaprofile         Create meta profile plots per quartile. Warning: This
+                        will make TFEA run much slower and consume a lot more
+                        memory.
   --output_type {txt,html}
                         Specify output type. Selecting html will increase
                         processing time and memory usage. Default: txt
@@ -582,11 +595,11 @@ Output Options:
 Miscellaneous Options:
   Other options.
 
-  --cpus CPUS           Number of processes to run in parallel. Note:
+  --cpus CPUS           Number of processes to run in parallel. Warning:
                         Increasing this value will significantly increase
                         memory footprint. Default: 1
-  --mem MEM             Amount of memory to request forsbatch script. Default:
-                        50gb
+  --mem MEM             Amount of memory to request for sbatch script.
+                        Default: 20gb
   --motif_annotations MOTIF_ANNOTATIONS
                         A bed file specifying genomic coordinates for genes
                         corresponding to motifs. Motif name must be in the 4th
@@ -598,8 +611,11 @@ Miscellaneous Options:
                         Basemean cutoff value for inputted regions. Default: 0
   --rerun [RERUN [RERUN ...]]
                         Rerun TFEA in all folders of aspecified directory.
-                        Default: False
+                        Used as a standalone flag.Default: False
   --gc GC               Perform GC-correction. Default: True
+  --venv VENV           Full path to virtual environment.
+  --debug               Print memory and CPU usage to stderr. Also retain
+                        temporary files.
 ```
 
 <br></br>
@@ -664,20 +680,20 @@ A .txt file that contains all user-provided inputs into TFEA
 Contains TFEA results tab-delimited in .txt format. For example:
 
 ```
-#TF     AUC     Events  p-val   p-adj
-P53_HUMAN.H11MO.0.A     0.2795355012578686      5       0.02464223619276762     0.04928447238553524
-SP2_HUMAN.H11MO.0.A     -0.04994116666412335    114     0.027169601555608307    0.054339203111216615
+#TF     E-Score Corrected E-Score       Events  GC      FPKM    P-adj   Corrected P-adj
+ZN121_HUMAN.H11MO.0.C   0.03850103634523616     0.10374224445904234     230     0.5825102880658438      nan     0.637   1e-1
+SP2_HUMAN.H11MO.0.A     -0.14690991996820513    -0.09232220913971645    119     0.7937748120168564      nan     1e0     0.494
 ```
+Column Descriptions:
 
-TF = The name of the motif analyzed
-
-AUC = Area under the curve
-
-Events = Number of motif hits within smallwindow
-
-p-val = P-value
-
-p-adj = adjusted p-value (Bonferroni)
+1. TF - The name of the motif analyzed as it appears in the .meme database or filename within the genome hits directory without the '.bed' extension.
+2. E-Score - The enrichment score of the given motif. Ranges from -1 to 1.
+3. Corrected E-Score - The GC-corrected E-Score. Calculated by fitting a linear regression to the E-Score vs. motif GC content of results and correcting to obtain a flat line.
+4. Events - Number of motif hits within the analyzed regions of interest.
+5. GC - GC content of the analyzed motif
+6. FPKM - FPKM of the gene associated with the analyzed motif, see `--motif_annotations` flag.
+7. P-adj - The adjusted p-value of the motif using the Bonferroni correction (to get the original p-value, simply divide this by the total number of motifs analyzed).
+8. Corrected P-adj - The adjusted p-value after GC-correction.
 
 <H3 id="">md_results.txt and mdd_results.txt</H3>
 Contains tab-delimited results for secondary MD-Score (MDS) and Differential MD-Score (MDD) analysis if these flags were specified
@@ -686,45 +702,17 @@ Contains tab-delimited results for secondary MD-Score (MDS) and Differential MD-
 
 The main results html (if `--output_type 'html'` specified). For example:
 
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleResults.png)
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleResults_v2.png)
 
-1. TFEA MA-plot - An MA-like plot with each dot representing a TF motif analyzed (red=significant below specified p-adj cutoff). On the y-axis is the area under the curve (AUC) which is the main TFEA statistic. On the x-axis is the log10 of the number of motif hits within the largewindow input
-
-2. TFEA Volcano Plot - Similar to the MA-Plot, each dot is a TF motif (red=significant below specified p-adj cutoff). X-axis = area under the curve (AUC). Y-axis = -log10 of the p-adjusted value. Dashed line is the specified p-adjusted cutoff.
-
-3. DE-Seq MA-plot - An actual MA-plot where each dot represents a region specified by the user. On the x-axis is the log10 of the average expression across conditions and replicates. On the y-axis is the log2 fold change between both conditions. The dots on this plot are colored based on how they are ranked.
-
-4. Link to inputs.txt file, MD MA-plot and volcano (if `--md` specified), MDD MA-plot and volcano (if `--mdd` specified), and a table of time to perform each module in TFEA and the total time to run TFEA.
-
-5. A list of TF motifs analyzed that have positive AUC values (headers correspond to the same headers as in results.txt). If red, then this TF motif was significant below the p-adj cutoff. Clickable links will direct to a separate MOTIF.results.html file contained within the plots/ directory in output.
-
-6. A list of TF motifs analyzed that have negative AUC values (headers correspond to the same headers as in results.txt). If red, then this TF motif was significant below the p-adj cutoff. Clickable links will direct to a separate MOTIF.results.html file contained within the plots/ directory in output.
+<b>Figure 1: Main Results Page.</b> An example main results page (i.e. `results.html`). (a) <i>TFEA GC-Plot.</i> A scatter plot showing the raw calculated E-Score as a function of GC-content. A linear regression is fit (red line) to these data to determine if there is a GC-bias. E-Scores are then corrected to flatten the line by subtracting the y-offset from each motif to yield the corrected E-Score. TFs are also colored on the subsequent correction to be applied. (b) <i>TFEA MA-Plot.</i> A scatter plot showing E-Score vs. Log10(Events). Analogous to an MA-Plot produced from DE-Seq, these are a good way to judge believable motifs. The further you go to the right, the more confidence you have in smaller absolute E-Score values. (c) <i>DE-Seq MA-Plot.</i> A scatter plot showing all input ROIs as an MA-Plot showing fold change in reads vs. average reads across conditions. Colored based on the subsequent rank of each ROI. (d) Links to supplementary infromation, secondary analyses performed, and runtime information. (e) Lists of all motifs analyzed separated on positive and negative E-Scores. Significant motifs (or any if `--plotall` is specified) may be clicked to bring up individual motif plots
 
 <H3 id="">MOTIF.results.html</H3>
 
 Each signficant TF motif (or all motifs if `--plotall` specified) will produce its own MOTIF.results.html file contained within the plots/ directory in the specified output directory. All images are also self-contained within the plots/ folder. For example:
 
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleMotifResults.png)
+![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleMotifResults_v2.png)
 
-1. Results for this specific motif (identical to what's reported in results.html)
-
-2. Enrichment line plot - The running sum statistic (green) for the specified TF motif. The blue dashed line indicates the random background expectation. The area under the curve (AUC) is calculated as the area between the green and dashed blue line (directional).
-
-3. Score bar plot - Quantification of the amount added to the running sum statistic at any given point.
-
-4. Motif hit scatter plot - The actual motif hits for each region centered on the region and bounded by the largewindow input.
-
-5. Rank metric fill plot - A visual representation of the ranking metric used (log10(DE-Seq p-value) with direction dependent on fold change)
-
-6. Meta plot - A meta plot of read coverage over regions separated by quartiles.
-
-7. Heat map - A heatmap of motif hits for each quartile
-
-8. The forward motif logo
-
-9. The reverse complement motif logo
-
-10. Simulation plot - The distribution of simulated AUC values (number of simulations specified with `--permutations` flag). The observed AUC is the red bar.
+<b>Figure 2: Individual Motif Results Page.</b> An example individual motif results page. (a) The numerical results for this specific motif. (b) A representation of the running sum statistic which increases from 0 as it travels right based on the distance of an observed motif to the center of each ROI. (c) Representation of the amount added to the running sum at each given location. Similar to GSEA enrichment plots. (d) Scatter plot showing the raw motif hits as a function of distance to ROI center (y-axis) and rank (x-axis). (e) Representation of the ranking metric used to rank ROI. Specifically this is the -log10 of the DE-Seq p-value with an added sign (+/-) based on whether the ROI fold change was positive or negative. (f) Meta plots of all regions that contain a motif hit separated by quartiles (n=number of ROI that go into the plot). (g) Heatmaps that represent motif hit distribution across the n ROI, separated again by quartiles. (h) Forward and reverse motif logos. (i) Simulation plot showing the background simulated distribution in blue, the observed non-corrected E-Score in red, and the GC-corrected E-Score in green.
 
 <br></br>
 
