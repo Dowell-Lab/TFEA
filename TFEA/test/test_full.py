@@ -92,7 +92,7 @@ class TestMain(unittest.TestCase):
                     '--debug',
                     '--cpus', '1',
                     '--padjcutoff', '0.1',
-                    '--plot_format', 'pdf',
+                    '--plot_format', 'png',
                     '--dpi', '600']
         # try:
         print('\n============================================', 

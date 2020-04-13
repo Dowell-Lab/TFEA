@@ -67,7 +67,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
                 sortindex=sort_index, header=TFEA_header)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
-                        xlabel='Log10(Motif Hits)', 
+                        xlabel='$Log_{10}$(Events)', 
                         ylabel='E-Score', 
                         savepath=figuredir / (f'TFEA_MA.{plot_format}'), 
                         plot_format=plot_format, 

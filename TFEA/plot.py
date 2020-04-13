@@ -565,7 +565,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     scatter = ax.scatter(xlist, ylist, edgecolors=None, c=clist, s=50, cmap='viridis',
                             vmax=max_c, vmin=-max_c)
     cbar = plt.colorbar(scatter)
-    cbar.set_label('E-Score Correction', rotation=270, labelpad=20)
+    cbar.set_label('E-Score Correction', rotation=270, labelpad=20, fontsize=14)
     cbar.outline.set_visible(False)
 
     if p_index is not None:
@@ -584,7 +584,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
         ax.plot([0,1],[intercept, slope+intercept], color='r', alpha=0.5, label=s, 
                 linewidth=5)
 
-        ax.legend(loc='best', frameon=False)
+        ax.legend(loc='best', frameon=False, fontsize=14)
 
     ax.axhline(0, linestyle='--', alpha=0.5, linewidth=2, c='k')
     ax.set_xlim([0,1])
@@ -857,8 +857,8 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     ax = plt.subplot(111)
     plt.scatter(x=x,y=y,c=c,edgecolors=None, cmap="RdYlGn")
     ax.set_title("DE-Seq MA-Plot")
-    ax.set_ylabel("Log2 Fold-Change ("+label2+"/"+label1+")")
-    ax.set_xlabel("Log10 Average Expression")
+    ax.set_ylabel("$Log_2$ Fold-Change ("+label2+"/"+label1+")")
+    ax.set_xlabel("$Log_{10}$ Average Expression")
     ax.tick_params(axis='y', which='both', left=True, right=False, 
                     labelleft=True)
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
@@ -871,7 +871,7 @@ def plot_deseq_MA(deseq_file=None, label1=None, label2=None, figuredir=None,
     cbar.ax.invert_yaxis() 
     cbar.set_ticks([0, 0.25, 0.5, 0.75, 1], ['0', '0.25', '0.5', '0.75', '1'])
     cbar.set_label('Relative Rank (n=' + str(len(x)) + ')', rotation=270, 
-                        labelpad=20)
+                        labelpad=20, fontsize=14)
     cbar.outline.set_visible(False)
     plt.tight_layout()
     F.savefig(os.path.join(figuredir, f'DESEQ_MA_Plot.{plot_format}'), format=plot_format)#, dpi=dpi)
