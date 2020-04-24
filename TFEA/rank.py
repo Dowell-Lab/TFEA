@@ -120,6 +120,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         plot_format = config.vars['PLOT_FORMAT']
         meta_profile_dict = {}
         metaprofile = config.vars['METAPROFILE']
+        batch = config.vars['BATCH']
     print("Ranking regions...", flush=True, file=sys.stderr)
 
     #Begin by counting reads from bam files over the combined_file produced
@@ -160,13 +161,15 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
-                                    basemean_cut=basemean_cut, plot_format=plot_format)
+                                    basemean_cut=basemean_cut, plot_format=plot_format, 
+                                    batch=batch)
         elif bg1 and bg2:
             ranked_file, pvals, fcs = deseq(bam1=bg1, bam2=bg2, tempdir=tempdir, 
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
-                                    basemean_cut=basemean_cut, plot_format=plot_format)
+                                    basemean_cut=basemean_cut, plot_format=plot_format, 
+                                    batch=batch)
         if output_type == 'html' and metaprofile:
             print("\tGenerating Meta-Profile per Quartile:", file=sys.stderr)
             q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
@@ -545,7 +548,7 @@ def sum_reads(count_file=None, sample_number=None):
 
 #==============================================================================
 def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None, 
-                        label1=None, label2=None):
+                        label1=None, label2=None, batch=''):
     '''Writes an R script within the tempdir directory in TFEA output to run 
         either DE-Seq or DE-Seq2 depending on the number of user-inputted 
         replicates.
@@ -587,16 +590,25 @@ countsTable <- subset(data, select=c('''
                 +'''))
 
 rownames(countsTable) <- data$region
-conds <- as.data.frame(c(''' 
-                        + ', '.join(['"'+label1+'"']*len(bam1)) 
-                        + ', ' 
-                        + ', '.join(['"'+label2+'"']*len(bam2)) 
-                        + '''))
-
-colnames(conds) <- c("treatment")
-ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable,
-                                            colData = conds,
-                                            design = ~ treatment)
+cond_vector <- c(''' 
+                    + ', '.join(['"'+label1+'"']*len(bam1)) 
+                    + ', ' 
+                    + ', '.join(['"'+label2+'"']*len(bam2)) 
+                    + ''')
+batch <- c('''+','.join(batch)+''')
+if (length(batch) == 0) {
+    conds <- data.frame(cond_vector)
+    colnames(conds) <- c("treatment")
+    ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                colData = conds, 
+                                                design = ~ treatment)
+} else {
+    conds <- data.frame(cond_vector, batch)
+    colnames(conds) <- c("treatment", "batch")
+    ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                colData = conds, 
+                                                design = ~ batch+treatment)
+}
 
 dds <- DESeq(ddsFullCountTable)
 print("Size Factors")
@@ -640,10 +652,11 @@ write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt')
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
             label2=None, largewindow=None, rank=None, figuredir=None, 
-            basemean_cut=None, plot_format=None):
+            basemean_cut=None, plot_format=None, batch=''):
     #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
-                        count_file=count_file, label1=label1, label2=label2)
+                        count_file=count_file, label1=label1, label2=label2, 
+                        batch='')
 
     #Execute the DE-Seq R script
     # with open(tempdir / 'DESeq.Rout', 'w') as stdout:

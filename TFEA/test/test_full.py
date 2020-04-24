@@ -74,15 +74,20 @@ class TestMain(unittest.TestCase):
         command = ['nice', '-n', '19',
                     'python3', TFEA_path, 
                     '--output', self.testdir / 'test_output', 
-                    '--bed1', self.bed1[0], 
-                    '--bed2', self.bed2[0], 
-                    '--bam1', self.bam1[0], 
-                    '--bam2', self.bam2[0], 
+                    '--bed1']+self.bed1+[
+                    '--bed2']+self.bed2+[
+                    '--bam1']+self.bam1+[
+                    '--bam2']+self.bam2+[
+                    # '--bed1', ' '.join([str(x) for x in self.bed1]), 
+                    # '--bed2', ' '.join([str(x) for x in self.bed2]), 
+                    # '--bam1', ' '.join([str(x) for x in self.bam1]), 
+                    # '--bam2', ' '.join([str(x) for x in self.bam2]), 
                     '--label1', self.label1, 
                     '--label2', self.label2,
                     '--genomefasta', self.genomefasta,
                     '--fimo_motifs', self.fimo_motifs,  
                     '--motif_annotation', self.testdir / 'test_motif_annotation.bed',
+                    '--batch', '1,2,1,2',
                     '--output_type', 'html', 
                     '--plotall',
                     '--metaprofile',

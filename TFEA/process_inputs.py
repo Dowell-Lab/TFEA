@@ -226,6 +226,10 @@ def read_arguments():
 
     #Miscellaneous Options
     misc_options = parser.add_argument_group('Miscellaneous Options', 'Other options.')
+    misc_options.add_argument('--batch', help=("Comma-separated list of batches"
+                                " to assign to bam files in order of bam1 files "
+                                "then bam2 files. For use only when ranking "
+                                "with DE-Seq."), dest='BATCH')
     misc_options.add_argument('--cpus', help=("Number of processes to run "
                                 "in parallel. Warning: Increasing this value will "
                                 "significantly increase memory footprint. "
@@ -326,6 +330,7 @@ def read_arguments():
                     'SMALLWINDOW': [150, [int]], 
                     'PADJCUTOFF': [1e-6, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
+                    'BATCH': ['', [str]],
                     'CPUS': [1, [int]], 
                     'MEM': ['20gb', [str]],
                     'BOOTSTRAP': [False, [int, bool]],
