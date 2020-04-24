@@ -15,6 +15,7 @@
    - <A href="#RunningTFEA">Running TFEA</A>
 5. <A href="#AdvancedUsage">Advanced Usage</A>
    - <A href="#ConfigurationFile">Configuration File</A>
+   - <A href="#BatchCorrection">Batch Correction</A>
    - <A href="#UsingSBATCH">Using SBATCH</A>
    - <A href="#PreProcessedInputs">Pre-Processed Inputs</A>
    - <A href="#SecondaryAnalysis">Secondary Analysis (MD, MDD)</A>
@@ -213,6 +214,15 @@ OUTPUT_TYPE='html'
 PLOTALL=True
 ```
 
+<H3 id="BatchCorrection">Batch Correction</H3>
+
+The presence of batch effects is common in sequencing data. TFEA can account for batch effects when performing ROI ranking using DE-Seq using built in functions. To correct for batch effects, specify a comma-separated list of batch labels to apply to your bam files in order of bam1 then bam2. For example:
+
+```
+--bam1 condition1_batch1 condition1_batch2 condition1_batch3
+--bam2 condition2_batch1 condition2_batch2 condition2_batch3
+--batch 1,2,3,1,2,3
+```
 
 <H3 id="UsingSBATCH">Using SBATCH</H3>
 
@@ -430,11 +440,12 @@ usage: TFEA [-h] [--output DIR] [--bed1 [BED1 [BED1 ...]]]
             [--largewindow LARGEWINDOW] [--smallwindow SMALLWINDOW]
             [--padjcutoff PADJCUTOFF] [--plot_format {png,svg,pdf}]
             [--dpi DPI] [--plotall] [--metaprofile] [--output_type {txt,html}]
-            [--cpus CPUS] [--mem MEM] [--motif_annotations MOTIF_ANNOTATIONS]
-            [--bootstrap BOOTSTRAP] [--basemean_cut BASEMEAN_CUT]
-            [--rerun [RERUN [RERUN ...]]] [--gc GC] [--venv VENV] [--debug]
+            [--batch BATCH] [--cpus CPUS] [--mem MEM]
+            [--motif_annotations MOTIF_ANNOTATIONS] [--bootstrap BOOTSTRAP]
+            [--basemean_cut BASEMEAN_CUT] [--rerun [RERUN [RERUN ...]]]
+            [--gc GC] [--venv VENV] [--debug]
 
-Transcription Factor Enrichment Analysis (TFEA) v1.1.1
+Transcription Factor Enrichment Analysis (TFEA) v1.1.3
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -595,6 +606,9 @@ Output Options:
 Miscellaneous Options:
   Other options.
 
+  --batch BATCH         Comma-separated list of batches to assign to bam files
+                        in order of bam1 files then bam2 files. For use only
+                        when ranking with DE-Seq.
   --cpus CPUS           Number of processes to run in parallel. Warning:
                         Increasing this value will significantly increase
                         memory footprint. Default: 1
