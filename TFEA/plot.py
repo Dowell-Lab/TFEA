@@ -18,12 +18,15 @@ import sys
 import math
 import numpy as np
 import matplotlib
+
+# Must set matplotlib use before importing pyplot
+matplotlib.use("Agg")
+matplotlib.rcParams.update({"font.size": 18})
+
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FormatStrFormatter
-matplotlib.use('Agg')
-matplotlib.rcParams.update({'font.size': 18})
 import subprocess
 import warnings
 import pathlib
