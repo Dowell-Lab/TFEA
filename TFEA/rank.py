@@ -595,7 +595,7 @@ cond_vector <- c('''
                     + ', ' 
                     + ', '.join(['"'+label2+'"']*len(bam2)) 
                     + ''')
-batch <- c('''+','.join(batch)+''')
+batch <- c('''+batch+''')
 if (length(batch) == 0) {
     conds <- data.frame(cond_vector)
     colnames(conds) <- c("treatment")
@@ -656,7 +656,7 @@ def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None,
     #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                         count_file=count_file, label1=label1, label2=label2, 
-                        batch='')
+                        batch=batch)
 
     #Execute the DE-Seq R script
     # with open(tempdir / 'DESeq.Rout', 'w') as stdout:

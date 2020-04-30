@@ -236,6 +236,14 @@ def read_arguments():
                                 "Default: 1"), dest='CPUS')
     misc_options.add_argument('--mem', help=("Amount of memory to request for "
                                 "sbatch script. Default: 20gb"), dest='MEM')
+    misc_options.add_argument('--time', help=("Amount of time to request for "
+                                "sbatch script format hh:mm:ss. "
+                                "Default: 24:00:00"), dest='TIME')
+    misc_options.add_argument('--partition', help=("Partition to submit "
+                                "sbatch script (based on time specified, "
+                                "over 24hrs = long). Options: short, "
+                                "long, highmem. Default: short"), 
+                                dest='PARTITION')
     misc_options.add_argument('--motif_annotations', help=("A bed file "
                                 "specifying genomic coordinates for genes "
                                 "corresponding to motifs. Motif name must "
@@ -328,11 +336,13 @@ def read_arguments():
                     'PERMUTATIONS': [1000, [int]], 
                     'LARGEWINDOW': [1500, [int]], 
                     'SMALLWINDOW': [150, [int]], 
-                    'PADJCUTOFF': [1e-6, [float]], 
+                    'PADJCUTOFF': [0.1, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'BATCH': ['', [str]],
                     'CPUS': [1, [int]], 
                     'MEM': ['20gb', [str]],
+                    'TIME': ['24:00:00', [str]],
+                    'PARTITION': ['short', [str]],
                     'BOOTSTRAP': [False, [int, bool]],
                     'VENV': ['.',[Path]],
                     'MOTIF_ANNOTATIONS': [False, [Path, bool]],
@@ -616,6 +626,8 @@ def create_directories(srcdirectory=None):
                                 "--job-name=TFEA_" + config.vars['OUTPUT'].name, 
                                 "--ntasks=" + str(config.vars['CPUS']),
                                 "--mem=" + str(config.vars['MEM']),
+                                "--time=" + str(config.vars['TIME']),
+                                "--partition=" + str(config.vars['PARTITION']),
                                 script], stderr=subprocess.PIPE, 
                                 stdout=subprocess.PIPE, check=True)
         except subprocess.CalledProcessError as e:

@@ -4,7 +4,7 @@
 #SBATCH --job-name=TFEA
 
 ###Specify the queue
-#SBATCH -p short
+#SBATCH --partition=short
 
 ###Specify WallTime
 #SBATCH --time=24:00:00
