@@ -4,6 +4,13 @@ From: ubuntu:bionic
 %help
 Singularity container for TFEA
 
+%files
+README.md /app/README.md
+setup.py /app/setup.py
+requirements.txt /app/requirements.txt
+TFEA /app/TFEA
+bin /app/bin
+
 %post
 MAKEFLAGS=-j4
 export MAKEFLAGS
@@ -23,10 +30,12 @@ apt-get install -yq \
   imagemagick python3 python3-pip build-essential \
   wget bzip2 tar zlib1g-dev libexpat1-dev ghostscript \
 	aptitude libcurl4-openssl-dev libxml2-dev \
-  r-base r-base-dev
+  r-base r-base-dev libstdc++6
 
 ## Install TFEA and Python3 dependencies
-pip3 install tfea
+pip3 install Cython numpy
+pip3 install -r /app/requirements.txt
+pip3 install /app
 
 ## Install DESeq and DESeq2, as well as dependencies
 R --slave -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager')"
@@ -47,7 +56,7 @@ make
 make install
 cd $HOME
 
-# Install MEME Perl Dependencies
+## Install MEME Perl Dependencies
 cd $HOME
 cpan \
   XML::Simple HTML::Treebuilder JSON File::Which Log::Log4perl \
@@ -62,21 +71,18 @@ make
 make install
 perl scripts/dependencies.pl
 
+## Fix ImageMagick Issues
+sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml
+mv /etc/ImageMagick-6/policy.xml /etc/ImageMagick-6/policy.xmlout
+
 ## Done
 cd $HOME
 
-%files
+## Set Variables properly
+echo 'export LC_ALL=C.UTF-8' >> $SINGULARITY_ENVIRONMENT
+echo 'export LANG=C.UTF-8' >> $SINGULARITY_ENVIRONMENT
+echo 'export SINGULARITYENV_PREPEND_PATH=/usr/meme/bin:/usr/meme/libexec/meme-5.1.1' >> $SINGULARITY_ENVIRONMENT
+echo 'export PATH=/usr/meme/bin:/usr/meme/libexec/meme-5.1.1:$PATH' >> $SINGULARITY_ENVIRONMENT
 
 %runscript
 TFEA
-
-%test
-PATH=/usr/meme/bin:/usr/meme/libexec/meme-5.1.1:$PATH
-TFEA --test-install
-TFEA --test-full
-
-%environment
-LC_ALL=C.UTF-8
-LANG=C.UTF-8
-SINGULARITYENV_PREPEND_PATH=/usr/meme/bin:/usr/meme/libexec/meme-5.1.1
-PATH=/usr/meme/bin:/usr/meme/libexec/meme-5.1.1:$PATH
