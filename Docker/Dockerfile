@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:latest
 
 ENV MAKEFLAGS=-j4
 ENV DEBIAN_FRONTEND=noninteractive
