@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:latest
 
 ENV MAKEFLAGS=-j4
 ENV DEBIAN_FRONTEND=noninteractive
@@ -6,8 +6,8 @@ ENV PATH=/usr/meme/bin:/usr/meme/libexec/meme-5.1.1:$PATH
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
-## Initial package install to get GNUPG
-## Add CRAN Repos for R 3.6
+# Initial package install to get GNUPG
+# Add CRAN Repos for R 3.6
 RUN apt-get update && \
 	apt-get install -yq gnupg ca-certificates && \
 	echo "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/" >> /etc/apt/sources.list && \
@@ -19,19 +19,16 @@ RUN apt-get update && \
 	aptitude libcurl4-openssl-dev libxml2-dev \
 	r-base r-base-dev
 
-## Install TFEA and Python3 dependencies
-RUN pip3 install Cython numpy && pip3 install tfea
-
-## Install DESeq and DESeq2, as well as dependencies
+# Install DESeq and DESeq2, as well as dependencies
 RUN R --slave -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager')" && \
 	R --slave -e "BiocManager::install(c('GenomeInfoDb','XML','annotate','latticeExtra','Hmisc','DESeq','DESeq2'))"
 
-## Install bedtools
+# Install bedtools
 RUN wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary && \
 	mv bedtools.static.binary /usr/bin/bedtools && \
 	chmod a+x /usr/bin/bedtools
 
-## Install samtools
+# Install samtools
 RUN wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.10.tar.bz2 && \
 	bzip2 -d samtools-1.10.tar.bz2 && \
 	tar -xf samtools-1.10.tar && \
@@ -45,7 +42,7 @@ RUN cpan \
 	XML::Simple HTML::Treebuilder JSON File::Which Log::Log4perl \
 	Math::CDF XML::Compile::SOAP11 XML::Compile::WSDL11
 
-## Install MEME Suite
+# Install MEME Suite
 RUN wget http://meme-suite.org/meme-software/5.1.1/meme-5.1.1.tar.gz && \
 	tar zxf meme-5.1.1.tar.gz && \
 	cd meme-5.1.1 && \
@@ -54,6 +51,16 @@ RUN wget http://meme-suite.org/meme-software/5.1.1/meme-5.1.1.tar.gz && \
 	make install && \
 	perl scripts/dependencies.pl
 
+# Fix ImageMagick policy to remove errors on conversion
+RUN sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml && \
+	mv /etc/ImageMagick-6/policy.xml /etc/ImageMagick-6/policy.xmlout
+
+# Install TFEA and Python3 dependencies
+# Do this last to cache as much as possible
+ADD . /app
+RUN pip3 install Cython numpy && pip3 install /app
+
+# Actual run command
 CMD	["TFEA"]
 
 # TFEA --test-install
