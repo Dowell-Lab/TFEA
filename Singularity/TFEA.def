@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: ubuntu:bionic
+From: ubuntu:latest
 
 %help
 Singularity container for TFEA
@@ -19,6 +19,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 ## Initial package install to get GNUPG
 apt-get update
+apt-get upgrade
 apt-get install -yq \
 	gnupg ca-certificates
 
@@ -30,14 +31,15 @@ apt-get install -yq \
   imagemagick python3 python3-pip build-essential \
   wget bzip2 tar zlib1g-dev libexpat1-dev ghostscript \
 	aptitude libcurl4-openssl-dev libxml2-dev \
-  r-base r-base-dev libstdc++6
+  r-base r-base-dev r-cran-stringi libicu66 libicu-dev libstdc++6
 
 ## Install TFEA and Python3 dependencies
 pip3 install Cython numpy
-pip3 install -r /app/requirements.txt
+## pip3 install -r /app/requirements.txt
 pip3 install /app
 
 ## Install DESeq and DESeq2, as well as dependencies
+R --slave -e "install.packages('stringi')"
 R --slave -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager')"
 R --slave -e "BiocManager::install(c('GenomeInfoDb','XML','annotate','latticeExtra','Hmisc','DESeq','DESeq2'))"
 
@@ -75,6 +77,9 @@ perl scripts/dependencies.pl
 sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml
 mv /etc/ImageMagick-6/policy.xml /etc/ImageMagick-6/policy.xmlout
 
+## Fix R Path Issues
+echo '.libPaths(c("/usr/local/lib/R/site-library", "/usr/lib/R/site-library", "/usr/lib/R/library"))' >> /app/.Rprofile.site
+
 ## Done
 cd $HOME
 
@@ -83,6 +88,7 @@ echo 'export LC_ALL=C.UTF-8' >> $SINGULARITY_ENVIRONMENT
 echo 'export LANG=C.UTF-8' >> $SINGULARITY_ENVIRONMENT
 echo 'export SINGULARITYENV_PREPEND_PATH=/usr/meme/bin:/usr/meme/libexec/meme-5.1.1' >> $SINGULARITY_ENVIRONMENT
 echo 'export PATH=/usr/meme/bin:/usr/meme/libexec/meme-5.1.1:$PATH' >> $SINGULARITY_ENVIRONMENT
+echo 'export R_PROFILE=/app/.Rprofile.site' >> $SINGULARITY_ENVIRONMENT
 
 %runscript
 TFEA
