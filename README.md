@@ -24,7 +24,12 @@
    - <A href="RerunningTFEA">Rerunning TFEA</A>
    - <A href="#HelpMessage">Help Message</A>
 6. <A href="#ExampleOutput">Example Output</A>
-7. <A href="#ContactInformation">Contact Information</A>
+7. <A href="#ContainerUsage">Container Usage</A>
+   - <A href="#SingularityBuild">Building the Singularity Container</A>
+   - <A href="#SingularityUsage">Using the Singularity Container</A>
+   - <A href="#DockerBuild">Building the Docker Container</A>
+   - <A href="#DockerUsage">Using the Docker Container</A>
+8. <A href="#ContactInformation">Contact Information</A>
  
 <br></br>
  
@@ -729,6 +734,90 @@ Each signficant TF motif (or all motifs if `--plotall` specified) will produce i
 <b>Figure 2: Individual Motif Results Page.</b> An example individual motif results page. (a) The numerical results for this specific motif. (b) A representation of the running sum statistic which increases from 0 as it travels right based on the distance of an observed motif to the center of each ROI. (c) Representation of the amount added to the running sum at each given location. Similar to GSEA enrichment plots. (d) Scatter plot showing the raw motif hits as a function of distance to ROI center (y-axis) and rank (x-axis). (e) Representation of the ranking metric used to rank ROI. Specifically this is the -log10 of the DE-Seq p-value with an added sign (+/-) based on whether the ROI fold change was positive or negative. (f) Meta plots of all regions that contain a motif hit separated by quartiles (n=number of ROI that go into the plot). (g) Heatmaps that represent motif hit distribution across the n ROI, separated again by quartiles. (h) Forward and reverse motif logos. (i) Simulation plot showing the background simulated distribution in blue, the observed non-corrected E-Score in red, and the GC-corrected E-Score in green.
 
 <br></br>
+
+<H2 id="ContainerUsage">Container Usage</H2>
+
+TFEA provides support for the use of container images with all
+dependencies built-in. Both Singularity and Docker images are
+supported. The procedure for building these containers is
+described below, with detailed instructions for use also available.
+
+If you have up-to-date versions of both Singularity and Docker
+installed, the easiest way to build the container images is to run
+`make` at the root of the repository. This will run the build process
+for both Docker and Singularity automatically.
+
+<H3 id="SingularityBuild">Building the Singularity Container</H3>
+
+Documentation for installing singularity can be found at
+<https://sylabs.io/docs/>. A singularity definition file for building
+TFEA is included in this repository at [./Singularity](./Singularity).
+If you have `make` available on your system, simply run `make
+singularity` to build the image automatically. Please note that this
+requires Singularity >3.3 for use of the 'fakeroot' feature so that
+root is not required to build the container.
+
+If you would like to build the container manually, you can do so with
+with the following command, adjusting the flags to `singularity build`
+as appropriate for your system:
+
+```shell
+singularity build -f tfea.sif Singularity/TFEA.def
+```
+
+<H3 id="SingularityUsage">Using the Singularity Container</H3>
+
+You can run the singularity container as follows:
+
+```shell
+singularity exec \
+	--bind $DATA_PATH:$DATA_PATH \
+	--bind $OUTPUT_PATH:$OUTPUT_PATH \
+	tfea.sif TFEA --your-args
+```
+
+It is important that you bind both the path where your data is
+available and the path to your output folder so that TFEA has access
+to your data and a writable filesystem for storing intermediate files
+that are generated. More details on bind paths can be found in the
+singularity documentation.
+
+<H3 id="DockerBuild">Building the Docker Container</H3>
+
+Documentation for installing singularity can be found at
+<https://www.docker.com/>. A Docker definition file for building TFEA
+is included in this repository at [./Docker](./Docker). If you have
+`make` available on your system, simply run `make docker` to build the
+image automatically. Depending on how Docker is installed on your
+system, it may be necessary to run this command as root using `sudo`
+for the build to execute.
+
+If you would like to build the container manually, you can do so with
+with the following command run from the root of the repository,
+adjusting the flags to `docker build` as appropriate for your system:
+
+```shell
+docker build -t jdrubin/tfea -f "$PWD"/Docker/Dockerfile "$PWD"
+```
+
+<H3 id="DockerUsage">Using the Docker Container</H3>
+
+You can run the Docker container as follows:
+
+```shell
+docker run --rm \
+	--mount type=bind,source=$DATA_PATH,target=$DATA_PATH \
+	--mount type=bind,source=$OUTPUT_PATH,target=$OUTPUT_PATH \
+	jdrubin/tfea TFEA --your-args
+```
+
+It is important that you bind both the path where your data is
+available and the path to your output folder so that TFEA has access
+to your data and a writable filesystem for storing intermediate files
+that are generated. More details on bind paths can be found in the
+Docker documentation.
+
+<br/>
 
 <H2 id="ContactInformation">Contact Information</H2>
 <a href="mailto:jonathan.rubin@colorado.edu">Jonathan.Rubin@colorado.edu</a>
