@@ -25,8 +25,7 @@ setuptools.setup(
         "pybedtools",
         "htseq",
         "psutil",
-        "ujson",
-        "pysam==0.15.2"
+        "ujson"
     ],
     zip_safe=False,
 )
