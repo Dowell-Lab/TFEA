@@ -1,4 +1,9 @@
-FROM ubuntu:latest
+FROM memesuite/memesuite:5.5.2 as meme
+
+FROM rocker/r-ubuntu:22.04
+COPY --from=meme /opt/meme/libexec/meme-5.5.2 /bin
+COPY --from=meme /opt/meme/bin /bin
+COPY --from=meme /opt/meme/share/meme-5.5.2/ /opt/meme/share/meme-5.5.2/
 
 ENV MAKEFLAGS=-j4
 ENV DEBIAN_FRONTEND=noninteractive
@@ -13,11 +18,12 @@ RUN apt-get update && \
 	echo "deb https://cloud.r-project.org/bin/linux/ubuntu bionic-cran35/" >> /etc/apt/sources.list && \
 	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9 && \
 	apt-get update && \
+	apt-get upgrade -y &&\
 	apt-get install -yq \
 	imagemagick python3 python3-pip build-essential \
 	wget bzip2 tar zlib1g-dev libexpat1-dev ghostscript \
-	aptitude libcurl4-openssl-dev libxml2-dev \
-	r-base r-base-dev
+	aptitude libcurl4-openssl-dev libxml2-dev libopenmpi-dev
+	# r-base r-base-dev
 
 # Install DESeq and DESeq2, as well as dependencies
 RUN R --slave -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager')" && \
@@ -36,20 +42,6 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.10/samtools-1.
 	./configure --prefix=/ && \
 	make && \
 	make install
-
-# Install MEME Perl Dependencies
-RUN cpan \
-	XML::Simple HTML::Treebuilder JSON File::Which Log::Log4perl \
-	Math::CDF XML::Compile::SOAP11 XML::Compile::WSDL11
-
-# Install MEME Suite
-RUN wget http://meme-suite.org/meme-software/5.1.1/meme-5.1.1.tar.gz && \
-	tar zxf meme-5.1.1.tar.gz && \
-	cd meme-5.1.1 && \
-	./configure --prefix=/usr/meme/ --with-url=http://meme-suite.org/ --enable-build-libxml2 --enable-build-libxslt && \
-	make && \
-	make install && \
-	perl scripts/dependencies.pl
 
 # Fix ImageMagick policy to remove errors on conversion
 RUN sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/g' /etc/ImageMagick-6/policy.xml && \
