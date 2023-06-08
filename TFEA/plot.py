@@ -191,80 +191,13 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
         
         q4negprofile2 = [ujson.loads((meta_profile_dict / f'q4negprofile2_{i}').read_text()) for i in q4_meta_retain]
         q4negprofile2 = [x for x in map(mean, zip(*q4negprofile2))]
-        # #UJSON
-        # meta_profile_dict = ujson.loads(meta_profile_dict.read_text())
-        
-        #Pickle
-        # with open(meta_profile_dict, 'rb') as f:
-        #     meta_profile_dict = pickle.load(f)
 
-        # #Pure Python
-        # temp_dict = {}
-        # key = ''
-        # with open(meta_profile_dict) as F:
-        #     for line in F:
-        #         if '#' in line[0]:
-        #             key = line.strip()[1:]
-        #             temp_dict[key] = []
-        #         else:
-        #             temp_dict[key].append([float(x) for x in line.strip().split(',')])
-        # meta_profile_dict = temp_dict
-
-    #Create Meta Plot
-    # if len(meta_profile_dict) != 0:
+        #Create Meta Plot
         ax3 = plt.subplot(meta_gs[:2, 0])
         ax4 = plt.subplot(meta_gs[:2, 1])
         ax5 = plt.subplot(meta_gs[:2, 2])
         ax6 = plt.subplot(meta_gs[:2, 3])
         xvals = range(-int(largewindow),int(largewindow))
-        # q1posprofile1 = meta_profile_dict['q1posprofile1']
-        # q1posprofile1 = [x for i,x in enumerate(q1posprofile1) if i in q1_meta_retain]
-        # q1posprofile1 = [x for x in map(mean, zip(*q1posprofile1))]
-        # q1negprofile1 = meta_profile_dict['q1negprofile1']
-        # q1negprofile1 = [x for i,x in enumerate(q1negprofile1) if i in q1_meta_retain]
-        # q1negprofile1 = [x for x in map(mean, zip(*q1negprofile1))]
-        # q1posprofile2 = meta_profile_dict['q1posprofile2']
-        # q1posprofile2 = [x for i,x in enumerate(q1posprofile2) if i in q1_meta_retain]
-        # q1posprofile2 = [x for x in map(mean, zip(*q1posprofile2))]
-        # q1negprofile2 = meta_profile_dict['q1negprofile2']
-        # q1negprofile2 = [x for i,x in enumerate(q1negprofile2) if i in q1_meta_retain]
-        # q1negprofile2 = [x for x in map(mean, zip(*q1negprofile2))]
-        # q2posprofile1 = meta_profile_dict['q2posprofile1']
-        # q2posprofile1 = [x for i,x in enumerate(q2posprofile1) if i in q2_meta_retain]
-        # q2posprofile1 = [x for x in map(mean, zip(*q2posprofile1))]
-        # q2negprofile1 = meta_profile_dict['q2negprofile1']
-        # q2negprofile1 = [x for i,x in enumerate(q2negprofile1) if i in q2_meta_retain]
-        # q2negprofile1 = [x for x in map(mean, zip(*q2negprofile1))]
-        # q2posprofile2 = meta_profile_dict['q2posprofile2']
-        # q2posprofile2 = [x for i,x in enumerate(q2posprofile2) if i in q2_meta_retain]
-        # q2posprofile2 = [x for x in map(mean, zip(*q2posprofile2))]
-        # q2negprofile2 = meta_profile_dict['q2negprofile2']
-        # q2negprofile2 = [x for i,x in enumerate(q2negprofile2) if i in q2_meta_retain]
-        # q2negprofile2 = [x for x in map(mean, zip(*q2negprofile2))]
-        # q3posprofile1 = meta_profile_dict['q3posprofile1']
-        # q3posprofile1 = [x for i,x in enumerate(q3posprofile1) if i in q3_meta_retain]
-        # q3posprofile1 = [x for x in map(mean, zip(*q3posprofile1))]
-        # q3negprofile1 = meta_profile_dict['q3negprofile1']
-        # q3negprofile1 = [x for i,x in enumerate(q3negprofile1) if i in q3_meta_retain]
-        # q3negprofile1 = [x for x in map(mean, zip(*q3negprofile1))]
-        # q3posprofile2 = meta_profile_dict['q3posprofile2']
-        # q3posprofile2 = [x for i,x in enumerate(q3posprofile2) if i in q3_meta_retain]
-        # q3posprofile2 = [x for x in map(mean, zip(*q3posprofile2))]
-        # q3negprofile2 = meta_profile_dict['q3negprofile2']
-        # q3negprofile2 = [x for i,x in enumerate(q3negprofile2) if i in q3_meta_retain]
-        # q3negprofile2 = [x for x in map(mean, zip(*q3negprofile2))]
-        # q4posprofile1 = meta_profile_dict['q4posprofile1']
-        # q4posprofile1 = [x for i,x in enumerate(q4posprofile1) if i in q4_meta_retain]
-        # q4posprofile1 = [x for x in map(mean, zip(*q4posprofile1))]
-        # q4negprofile1 = meta_profile_dict['q4negprofile1']
-        # q4negprofile1 = [x for i,x in enumerate(q4negprofile1) if i in q4_meta_retain]
-        # q4negprofile1 = [x for x in map(mean, zip(*q4negprofile1))]
-        # q4posprofile2 = meta_profile_dict['q4posprofile2']
-        # q4posprofile2 = [x for i,x in enumerate(q4posprofile2) if i in q4_meta_retain]
-        # q4posprofile2 = [x for x in map(mean, zip(*q4posprofile2))]
-        # q4negprofile2 = meta_profile_dict['q4negprofile2']
-        # q4negprofile2 = [x for i,x in enumerate(q4negprofile2) if i in q4_meta_retain]
-        # q4negprofile2 = [x for x in map(mean, zip(*q4negprofile2))]
 
         ylim = [min(q1negprofile1+q1negprofile2+q2negprofile1+q2negprofile2
                         +q3negprofile1+q3negprofile2+q4negprofile1+q4negprofile2),
@@ -300,7 +233,6 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     
     bins = 100
     xlim = [int(-largewindow), int(largewindow)]
-    # if len(meta_profile_dict) != 0:
     if type(meta_profile_dict) == pathlib.PosixPath:
         heatmap(q1_distances, ax=ax7, xlim=xlim, bins=bins, largewindow=largewindow)
         heatmap(q2_distances, ax=ax8, xlim=xlim, bins=bins, largewindow=largewindow)
@@ -334,18 +266,10 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
 
     if offset != 0:
         ax.bar(auc,ylim_max,color='red',width=width*2, linewidth=0, label='Non-Corrected E-Score')[0]
-        # height = non_corrected_rect.get_height()
-        # ax.text(non_corrected_rect.get_x() + non_corrected_rect.get_width()/2., 
-        #         1.05*height, 'Non-Corected AUC', ha='center', va='bottom')
 
     ax.bar(auc-offset,ylim_max,color='green',width=width*2, linewidth=0, label='Corrected E-Score')[0]
 
     ax.legend(frameon=False)
-
-    # height = corrected_rect.get_height()
-
-    # ax.text(corrected_rect.get_x() + corrected_rect.get_width()/2., 
-    #         1.05*height, 'Corrected AUC', ha='center', va='bottom')
     ax.set_xlim([min(minimum,auc, auc-offset)-(width*40), max(maximum,auc,auc-offset)+(width*40)])
 
     ax.set_ylim([0,(1.05*ylim_max)+5])
@@ -690,12 +614,6 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
     ax.tick_params(axis='x', which='both', bottom=True, top=False, 
                     labelbottom=True)
     ax.set_xlabel('Motif Distance\nto Center (kb)')
-    # ax.set_xticks(ax.get_xticks())
-    # locs = [item.get_text() for item in ax.get_xticklabels()]
-    # import sys
-    # print(locs, file=sys.stderr)
-    # locs = [str(float(x)/1000.0) for x in locs]
-    # ax.set_xticklabels(locs)
     ax.set_xticks([-int(largewindow), 0, int(largewindow)])
     ax.set_xticklabels([str(-int(largewindow)/1000), 
                         '0', 
@@ -781,18 +699,10 @@ def fillplot(ax=None, xvals=None, yvals=None, xlimits=None, ylimits=None):
     ylim = math.fabs(max([x for x in yvals if -500 < x < 500],key=abs))
     ax.yaxis.set_ticks([int(-ylim), 0, int(ylim)])
     ax.set_xlim(xlimits)
+    ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1])
     ax.set_xticklabels(['0','0.2','0.4','0.6','0.8','1'])
     ax.set_xlabel('Relative Rank (n='+str(len(xvals))+')')
     ax.set_ylabel('Rank Metric', fontsize=14)
-    # try:
-    #     ax2.axvline(len(updistancehist)+1,color='green',alpha=0.25)
-    # except ValueError:
-    #     pass
-    # try:
-    #     ax2.axvline(len(xvals) - len(downdistancehist), color='purple', 
-    #                 alpha=0.25)
-    # except ValueError:
-    #     pass
     return
 
 #==============================================================================
