@@ -673,9 +673,9 @@ def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None,
         raise exceptions.SubprocessError(printmessage)
 
     
-    plot.plot_deseq_MA(deseq_file=deseq_file, label1=label1, label2=label2, 
-                        figuredir=figuredir, basemean_cut=basemean_cut, 
-                        plot_format=plot_format)
+    # plot.plot_deseq_MA(deseq_file=deseq_file, label1=label1, label2=label2, 
+    #                     figuredir=figuredir, basemean_cut=basemean_cut, 
+    #                     plot_format=plot_format)
 
     ranked_file, pvals, fcs = deseq_parse(deseq_file=deseq_file, tempdir=tempdir, 
                                 largewindow=largewindow, rank=rank, 
