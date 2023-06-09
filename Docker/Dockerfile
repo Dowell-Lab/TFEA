@@ -27,7 +27,7 @@ RUN apt-get update && \
 
 # Install DESeq and DESeq2, as well as dependencies
 RUN R --slave -e "if (!requireNamespace('BiocManager', quietly = TRUE)) install.packages('BiocManager')" && \
-	R --slave -e "BiocManager::install(c('GenomeInfoDb','XML','annotate','latticeExtra','Hmisc','DESeq','DESeq2'))"
+	R --slave -e "BiocManager::install(c('GenomeInfoDb','XML','annotate','latticeExtra','Hmisc','DESeq2'))"
 
 # Install bedtools
 RUN wget https://github.com/arq5x/bedtools2/releases/download/v2.29.2/bedtools.static.binary && \
