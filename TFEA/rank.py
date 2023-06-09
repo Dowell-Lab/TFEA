@@ -580,10 +580,9 @@ def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None,
     -------
     None
     '''
-    #If more than 1 replicate, use DE-Seq2
-    if (len(bam1) > 1 and len(bam2) > 1):
-        Rfile = open(tempdir / 'DESeq.R','w')
-        Rfile.write('''library("DESeq2")
+    #Always use DESeq2 because DESeq is deprecated
+    Rfile = open(tempdir / 'DESeq.R','w')
+    Rfile.write('''library("DESeq2")
 data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
 countsTable <- subset(data, select=c('''
                 +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
@@ -621,33 +620,6 @@ res <- res[c(1:3,7,4:6)]
 write.table(res, file = "'''    + (tempdir / 'DESeq.res.txt').as_posix() 
                                 + '''", append = FALSE, sep= "\t" )
 sink()''')
-    else:
-        Rfile = open(tempdir /  'DESeq.R','w')
-        Rfile.write('''library("DESeq")
-data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
-
-countsTable <- subset(data, select=c('''
-            +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
-            +'''))
-
-rownames(countsTable) <- data$region
-conds <- c('''  + ', '.join(['"'+label1+'"']*len(bam1)) 
-                + ', ' 
-                + ', '.join(['"'+label2+'"']*len(bam2)) 
-                + ''')
-
-cds <- newCountDataSet( countsTable, conds )
-cds <- estimateSizeFactors( cds )
-print("Size Factors")
-print(sizeFactors(cds))
-cds <- estimateDispersions( cds ,method="blind", \
-                        sharingMode="fit-only")
-
-res <- nbinomTest( cds, "'''+label1+'''", "'''+label2+'''" )
-rownames(res) <- res$id                      
-write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt') 
-                                + '''", append = FALSE, sep= "\t" )''')
-    Rfile.close()
 
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
