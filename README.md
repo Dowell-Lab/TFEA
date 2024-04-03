@@ -283,7 +283,7 @@ TFEA --output ./TFEA/test/test_files/test_output \
 
 <H4>ranked_file</H4>
 
-A ranked bed file with regions of interest. 
+A ranked bed file with regions of interest. **Important**: The regions must be 3000bp wide (1.5kb around the original middle (or mu) of the region) for proper motif distance analysis.
 
 <b>*Note:*</b> Specifying a ranked_file turns off some plotting functionality
 
