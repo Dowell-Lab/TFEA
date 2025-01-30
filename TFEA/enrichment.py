@@ -8,9 +8,9 @@
 '''
 
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
+__author__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Hope A. Townsend']
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
+               'Hope A. Townsend', 'Robin D. Dowell']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 
@@ -135,6 +135,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
     if enrichment == 'auc':
         gc_correct = {}
         linear_regression = None
+        # If no gc correction, still calculate the regression to graph
         if gc:
             print('\tCorrecting GC:', file=sys.stderr)
             auc_keywords = dict(fimo_motifs=fimo_motifs)
@@ -151,6 +152,20 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
             for key, _, gc in motif_gc_auc:
                 offset = slope*gc + intercept
                 gc_correct[key] = offset
+        else:
+            print('\tNOT correcting for GC:', file=sys.stderr)
+            auc_keywords = dict(fimo_motifs=fimo_motifs)
+            motif_gc_auc = multiprocess.main(function=get_auc_gc, 
+                                        args=motif_distances, kwargs=auc_keywords,
+                                        debug=debug, jobid=jobid, cpus=cpus)
+
+            #Calculate linear regression based on AUC and GC content of motifs
+            varx = np.array([i[2] for i in motif_gc_auc])
+            vary = np.array([i[1] for i in motif_gc_auc])
+            mask = ~np.isnan(varx) & ~np.isnan(vary)
+            linear_regression = [x for x in stats.linregress(varx[mask], vary[mask])]
+            for key, _, gc in motif_gc_auc:
+                gc_correct[key] = 0
 
 
         print('\tCalculating E-Score:', file=sys.stderr)
@@ -168,18 +183,32 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
                                     
-        plot.plot_global_gc(results, p_cutoff=p_cutoff, 
-                                title='TFEA GC-Plot', 
-                                xlabel='Motif GC-content',
-                                ylabel='Non-corrected E-Score', 
-                                savepath=figuredir / ('TFEA_GC.' + plot_format), 
-                                linear_regression=linear_regression,
-                                plot_format=plot_format, 
-                                x_index=4,
-                                y_index=1, 
-                                c_index=2,
-                                p_index=-1,
-                                ylimits=[-1,1])
+        if gc:
+            plot.plot_global_gc(results, p_cutoff=p_cutoff, 
+                                    title='TFEA GC-Plot', 
+                                    xlabel='Motif GC-content',
+                                    ylabel='Non-corrected E-Score', 
+                                    savepath=figuredir / ('TFEA_GC.' + plot_format), 
+                                    linear_regression=linear_regression,
+                                    plot_format=plot_format, 
+                                    x_index=4,
+                                    y_index=1, 
+                                    c_index=2,
+                                    p_index=-1,
+                                    ylimits=[-1,1])
+        else:
+            plot.plot_global_gc(results, p_cutoff=p_cutoff, 
+                                    title='TFEA GC-Plot (BUT correction not applied)', 
+                                    xlabel='Motif GC-content',
+                                    ylabel='Non-corrected E-Score', 
+                                    savepath=figuredir / ('TFEA_GC.' + plot_format), 
+                                    linear_regression=linear_regression,
+                                    plot_format=plot_format, 
+                                    x_index=4,
+                                    y_index=1, 
+                                    c_index=2,
+                                    p_index=-1,
+                                    ylimits=[-1,1])
 
         
         # results = list()
@@ -307,6 +336,47 @@ def get_auc_gc(distances, fimo_motifs=None):
     return [motif, auc, gc]
 
 #==============================================================================
+def get_null_data(ranked_file):
+    """
+    Get the start and the end of the region to consider as the null hypothesis taccording to 
+    p-values being above 0.9.
+    Input: Ranked File WITH a column called "fc,p-value,rank"
+    Output: (pval_09[0], pval_09[-1]): integer positions between which to consider for null data
+    """
+    # read in the ranked file
+    ranked = pandas.read_csv(ranked_file, sep="\t")
+    # get the fc and p-values
+    split = ranked["fc,p-value,rank"].str.split(",", n=2, expand=True)
+    ranked['fc'] = split[0].astype(float)
+    ranked['pval'] = split[1].astype(float)
+    # get where the pvalues are above 0.9
+    pval_09 = np.where(ranked['pval'] > 0.9)[0]
+    print(f'\nRegions considered for middle (Num:{len(pval_09)}, Percentage:{round(100*len(pval_09)/ranked.shape[0],2)}, Start:{pval_09[0]}, End:{pval_09[-1]}', 
+          flush=True, file=sys.stderr)
+    return((pval_09[0], pval_09[-1]))
+
+#==============================================================================
+def get_FC1_perc(fcs):
+    """
+    Get the percentile at which the FC is about 1 (meaning the expected middle region with the most things that 
+    are not changing. We do this by finding the first position where the fc is <=1. It will first check 
+    if there are any negative values
+    Input: fcs (list or numpy array of fold changes (can be LFC or FC))
+    Output: index at which the FC is about 1 (things aren't changing at all)
+    """
+    # get if LFC instead of FC
+    fcs = np.array(fcs)
+    below0_indices = np.where(fcs <= 0)[0]
+    if (len(below0_indices) > 0):
+        print("There are negative FCs indicating that this is likely log fold changes. If this is not the case, then there is a problem with the input. Downstream analysis will be performed assuming LFCs.", 
+             file=sys.stderr)
+        fc1_index = below0_indices[0]
+    else:
+        fc1_index = np.where(fcs <= 1)[0][0]
+    print(f"The position at which FC is 1 or <1 is {fc1_index}", flush=True, file=sys.stderr) 
+    return((fc1_index / (len(fcs) - 1)) )
+
+#==============================================================================
 def auc_simulate_and_plot(distances, use_config=True, output_type=None, 
                         permutations=None, pvals=None,
                         plotall=None, p_cutoff=None, figuredir=None, 
@@ -336,24 +406,26 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
             fpkm = nan
         distances = distances[1:]
         distances_abs = [abs(x)  if x != '.' else x for x in distances]
-
         hits = len([x for x in distances_abs if x != '.'])
-
         #Filter any TFs/files without any hits
         if hits == 0:
             return [motif, 0, 0, hits, gc, fpkm, 0, 0]
 
         #Get -exp() of distance and get cumulative scores
-        #Filter distances into quartiles to get middle distribution
+        # Get the distribution for null (usually just middle)
+        (q1, q3) = get_null_data(ranked_file)
+        print(f"The Q1 and Q3 if using center where pval > 0.8 are {q1} and {q3}", flush=True, file=sys.stdout) 
+        # TODO: put so if null_window pushes to limits outside the numbers then fix it
         q1 = int(round(len(distances)*.25))
         q3 = int(round(len(distances)*.75))
+        print(f"The Q1 and Q3 if using middle are {q1} and {q3}", flush=True, file=sys.stdout) 
         middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
         #In the case where there are no hits in the middle two quartiles, then
         #don't perform computation
         if len(middledistancehist) == 0:
             return [motif, 0, 0, hits, gc, fpkm, 0, 0]
         try:
-            average_distance = np.mean(middledistancehist)#float(sum(middledistancehist))/float(len(middledistancehist))
+            average_distance = np.mean(middledistancehist)
         except ZeroDivisionError:
             return [motif, 0, 0, hits, gc, fpkm, 0, 0]
         
@@ -420,6 +492,14 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         # current exception being handled.
         print(traceback.print_exc())
         raise e
+    ## SAVE THE TEMPORARAY FILES FOR LEADING EDGE ##
+    list_of_tuples = list(zip(distances, distances_abs))
+    df = pandas.DataFrame(list_of_tuples, columns = ['distances', 'distances_abs'])
+    df["score"]=score
+    df["normalized_score"]=normalized_score
+    df["cumscore"]=cumscore
+    tempdir = config.vars['TEMPDIR']
+    df.to_csv(str(tempdir)+"/withAUC"+str(motif)+"__dis_andmore.csv")
     return [motif, auc, corrected_auc, hits, gc, fpkm, p, corrected_p]
 
 #==============================================================================
