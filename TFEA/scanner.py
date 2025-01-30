@@ -9,7 +9,7 @@
 #==============================================================================
 __author__ = 'Jonathan D. Rubin'
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
+                'Robin D. Dowell', 'Hope A. Townsend']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 
@@ -212,6 +212,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
 
         #Perform fimo on desired motifs
         print("\tTFEA:", file=sys.stderr)
+        print(f"\nScanning regions using background file {background_file}", flush=True, file=sys.stderr)
         fimo_keywords = dict(bg_file=background_file, fasta_file=fasta_file, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
                             thresh=fimo_thresh, 
