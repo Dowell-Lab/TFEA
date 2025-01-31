@@ -182,9 +182,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
     #FIMO
     if scanner == 'fimo':
         #Get background file, if none desired set to 'None'
-        if fasta_file and fimo_background:
-            background_file = fasta_markov(tempdir=tempdir, fastafile=fasta_file, order='1')
-        elif fimo_background == 'largewindow':
+        if fimo_background == 'largewindow':
             background_file = fimo_background_file(
                                 window=int(largewindow), 
                                 tempdir=tempdir, bedfile=ranked_file, 
@@ -202,7 +200,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
         elif type(fimo_background) == str:
             background_file = fimo_background
         else:
-            background_file = None
+            background_file = fasta_markov(tempdir=tempdir, fastafile=fasta_file, order='1')
 
         #Get motifs to scan through
         if singlemotif != False:
