@@ -24,6 +24,7 @@ import datetime
 import traceback
 import numpy as np
 import math
+import pandas
 import pathlib
 import ujson
 import shutil
@@ -104,6 +105,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         debug = config.vars['DEBUG']
         largewindow = config.vars['LARGEWINDOW']
         smallwindow = config.vars['SMALLWINDOW']
+        ranked_file = config.vars['RANKED_FILE']
         pvals = config.vars['PVALS']
         fcs = config.vars['FCS']
         md = config.vars['MD']
@@ -178,7 +180,8 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                         meta_profile_dict=meta_profile_dict, label1=label1, 
                         label2=label2, fcs=fcs, motif_fpkm=motif_fpkm, 
                         tests=len(motif_distances), bootstrap=bootstrap, 
-                        gc_correct=gc_correct, plot_format=plot_format)
+                        gc_correct=gc_correct, plot_format=plot_format, 
+                           ranked_file=ranked_file)
         results = multiprocess.main(function=auc_simulate_and_plot, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
@@ -383,7 +386,8 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
                         largewindow=None, fimo_motifs=None, 
                         meta_profile_dict=None, label1=None, label2=None, 
                         dpi=None, fcs=None, tests=None, motif_fpkm=None, 
-                        bootstrap=False, gc_correct=None, plot_format=None):
+                        bootstrap=False, gc_correct=None, plot_format=None, 
+                         ranked_file=None):
     '''Calculates an enrichment score using the area under the curve. This
         method is not as sensitive to artifacts as other methods. It works well
         as an asymmetry detector and will be good at picking up cases where
@@ -413,8 +417,8 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
 
         #Get -exp() of distance and get cumulative scores
         # Get the distribution for null (usually just middle)
-        (q1, q3) = get_null_data(ranked_file)
-        print(f"The Q1 and Q3 if using center where pval > 0.8 are {q1} and {q3}", flush=True, file=sys.stdout) 
+        # (q1, q3) = get_null_data(ranked_file)
+        # print(f"The Q1 and Q3 if using center where pval > 0.8 are {q1} and {q3}", flush=True, file=sys.stdout) 
         # TODO: put so if null_window pushes to limits outside the numbers then fix it
         q1 = int(round(len(distances)*.25))
         q3 = int(round(len(distances)*.75))

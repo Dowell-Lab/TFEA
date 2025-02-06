@@ -3,12 +3,12 @@
 '''This is the main script that runs when the TFEA package is run.
 '''
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
+__author__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Hope A. Townsend']
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
+                'Robin D. Dowell', 'Hope A. Townsend']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
-__version__ = '4.0'
+__version__ = '5.0'
 
 def run():
     #Imports
@@ -163,6 +163,11 @@ def run():
     output.main()
 
     print("TFEA done. Output in:", config.vars['OUTPUT'], file=sys.stderr)
+
+    #LEADING EDGE module
+    #==============================================================================
+    '''A module to run the Leading edge on TFEA significance calls
+    '''
 
     #Delete temp_files directory
     #==============================================================================
