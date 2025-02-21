@@ -5,11 +5,11 @@
     All such scripts are in this module. No exceptions.
 '''
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
-__credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
-__maintainer__ = 'Jonathan D. Rubin'
-__email__ = 'Jonathan.Rubin@colorado.edu'
+__author__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Hope A. Townsend']
+__credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley', 
+                'Hope A. Townsend', 'Robin D. Dowell']
+__maintainer__ = 'Hope A. Townsend'
+__email__ = 'hope.townsend@colorado.edu'
 
 #Imports
 #==============================================================================
@@ -59,7 +59,8 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
                             pvals=None, fcs=None, 
                             cumscore=None, sim_auc=None, auc=None,
                             meta_profile_dict=None, label1=None, label2=None, 
-                            motif=None, offset=None, plot_format=None):
+                            motif=None, offset=None, plot_format=None, 
+                            le_mb=None, le_se=None):
     '''This function plots all TFEA related graphs for an individual motif
     '''
     if use_config:
@@ -80,6 +81,16 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
         meme_logo(fimo_motifs, motif, figuredir, plot_format=plot_format)
     else:
         print("No MEME database inputted, logos will not be displayed.")
+    
+    # Get Nan LEs to be None OR relative length
+    if np.isnan(le_mb):
+        le_mb = None
+    else:
+        le_mb = le_mb/len(distances)
+    if np.isnan(le_se):
+        le_se = None
+    else:
+        le_se = le_se/len(distances)
 
     #Filter distances into quartiles for plotting purposes
     q1 = int(round(np.percentile(np.arange(1, len(distances),1), 25)))
@@ -125,7 +136,7 @@ def plot_individual_graphs(use_config=True, distances=None, figuredir=None,
     scatterplot_ax = plt.subplot(enrichment_gs[2])
     figure_title = motif.split('.bed')[0] + ' Enrichment Plot'
     lineplot(title=figure_title, ax=lineplot_ax, xvals=xvals, yvals=cumscore, 
-                xlimits=xlimits)
+                xlimits=xlimits, le_mb=le_mb, le_se=le_se)
     
     barplot(ax=barplot_ax, xvals=xvals, colorarray=score, xlimits=xlimits)
 
@@ -557,7 +568,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     if len(clean_results) == 0:
         print("No results to plot", file=sys.stderr)
         return
-    ylist = [i[y_index] for i in clean_results]
+    ylist = [i[y_index] for i in clean_results] 
     xlist = [i[x_index] for i in clean_results]
     clist = [i[c_index] for i in clean_results]
     clist = [c-y for y,c in zip(ylist,clist)]
@@ -710,10 +721,14 @@ def heatmap(distances, ax=None, xlim=None, bins=None, title=None,
 
 #==============================================================================
 @force_gc
-def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None):
+def lineplot(title=None, ax=None, xvals=None, yvals=None, xlimits=None, le_mb=None, le_se=None):
     #This is the enrichment score plot (i.e. line plot)
     ax.plot(xvals,yvals,color='green')
     ax.plot([0, 1],[0, 1], '--', alpha=0.75)
+    if le_mb:
+        ax.axvline(x=le_mb, color="red", label="Match_Back_LE")
+    if le_se:
+        ax.axvline(x=le_se, color="purple", label="Stalled_Enrich_LE")
     ax.set_title(title)
     ax.set_ylabel('Enrichment Curve', fontsize=14)
     ax.tick_params(axis='y', which='both', left=True, right=False, 

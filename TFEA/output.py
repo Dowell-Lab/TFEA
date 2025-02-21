@@ -6,11 +6,11 @@
 '''
 
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
+__author__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Hope A. Townsend']
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
-__maintainer__ = 'Jonathan D. Rubin'
-__email__ = 'Jonathan.Rubin@colorado.edu'
+                'Hope A. Townsend', 'Robin D. Dowell']
+__maintainer__ = 'Hope A. Townsend'
+__email__ = 'hope.townsend@colorado.edu'
 
 #Imports
 #==============================================================================
@@ -56,16 +56,42 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
     TFEA_header = ['#TF', 'E-Score', 'Corrected E-Score','Events', 'GC','FPKM', 'P-adj', 'Corrected P-adj']
-    description = ['Motif Name', 'Enrichment Score', 
+
+    TFEA_header_full = ['#TF', 'E-Score', 'Corrected E-Score','Events', 'GC','FPKM', 'P-adj', 'Corrected P-adj', 
+    'MB_LE', 'MB_LE Stdev', 'SE_LE', 'SE_LE Stdev', 'Frac Abv Null']
+    TFEA_header_html = ['#TF', 'E-Score', 'Crrctd E-Score','Events', 'GC','FPKM', 'P-adj', 'Crrctd P-adj', 
+    'MB_LE', 'SE_LE', 'Frac Abv Null']
+
+
+    description_full = ['Motif Name', 'Enrichment Score', 
                     'Enrichment Score following GC correction',
                     'Number of motif instances within analyzed regions',
                     'GC-content of motif',
                     'FPKM of the gene associated with the motif if an annotation is provided',
                     'Adjusted P-value (Bonferroni)',
-                    'Adjusted P-value (Bonferroni) after GC correction']
-    sort_index = [5, 3, 2, -1]
+                    'Adjusted P-value (Bonferroni) after GC correction', 
+                    
+                    'Leading Edge Based on Matching Null Background', 
+                    'Standard Deviation for MB_LE', 
+                    'Leading Edge Based on Stalled Enrichment', 
+                    'Standard Deviation for SE_LE', 
+                    'Fraction Regions with Enrichment Change > Background (>.5 likely indicates FP)']
+
+    description_html = ['Motif Name', 'Enrichment Score', 
+                    'Enrichment Score following GC correction',
+                    'Number of motif instances within analyzed regions',
+                    'GC-content of motif',
+                    'FPKM of the gene associated with the motif if an annotation is provided',
+                    'Adjusted P-value (Bonferroni)',
+                    'Adjusted P-value (Bonferroni) after GC correction', 
+                    
+                    'Leading Edge Based on Matching Null Background', 
+                    'Leading Edge Based on Stalled Enrichment', 
+                    'Fraction Regions with Enrichment Change > Background (>.5 likely indicates FP)']
+    sort_index = [5, 3, 2, 6]
+
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
-                sortindex=sort_index, header=TFEA_header)
+                sortindex=sort_index, header=TFEA_header_full)
     plot.plot_global_MA(results, p_cutoff=p_cutoff, title='TFEA MA-Plot', 
                         xlabel='$Log_{10}$(Events)', 
                         ylabel='E-Score', 
@@ -144,18 +170,18 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                         ('OUTPUT', config.vars['OUTPUT_TYPE'], config.vars['OUTPUTtime'])]
         else:
             module_list = []
-        create_motif_result_htmls(results=results, results_header=TFEA_header, 
+        create_motif_result_htmls(results=results, results_header=TFEA_header_full, 
                                     outputdir=outputdir, 
                                     padj_cutoff=padj_cutoff, 
                                     singlemotif=singlemotif, 
                                     plotall=plotall, auc_index=2, 
                                     padj_index=-1, plot_format=plot_format)
-        html_output(results=results, results_header=TFEA_header,
-                    description=description,
+        html_output(results=results, results_header=TFEA_header_html,
+                    description=description_html,
                     module_list=module_list, 
                     outputdir=outputdir, label1=label1, label2=label2, 
                     padj_cutoff=padj_cutoff, plotall=plotall, auc_index=2, 
-                    padj_index=-1, sortindex=sort_index, plot_format=plot_format)
+                    padj_index=7, sortindex=sort_index, plot_format=plot_format)
         
     print("done in: " + str(datetime.timedelta(seconds=int(total_time))), file=sys.stderr)
 
@@ -176,15 +202,29 @@ def txt_output(results=None, outputdir=None, outname=None,
             results.sort(key=lambda x: x[index], reverse=True)
         results.sort(key=lambda x: x[sortindex[-1]])
         if log:
-            for values in results:
-                for number_result in values[:-2]:
-                    outfile.write(f'{number_result}\t')
-                for number_result in values[-2:]:
-                    if number_result < -1:
-                        outfile.write(f"1e{int(number_result*np.log10(np.e))}\t")
-                    else:
-                        outfile.write(str("%.3g" % np.e**number_result)+ "\t")
-                outfile.write('\n')
+            if len(results[0]) > 9:
+                # If LE included
+                for values in results:
+                    for number_result in values[0:6]:
+                        outfile.write(f'{number_result}\t')
+                    for number_result in values[6:8]:
+                        if number_result < -1:
+                            outfile.write(f"1e{int(number_result*np.log10(np.e))}\t")
+                        else:
+                            outfile.write(str("%.3g" % np.e**number_result)+ "\t")
+                    for number_result in values[8:len(values)+1]:
+                        outfile.write(f'{number_result}\t')
+                    outfile.write('\n')
+            else:
+                for values in results:
+                    for number_result in values[:-2]:
+                        outfile.write(f'{number_result}\t')
+                    for number_result in values[-2:]:
+                        if number_result < -1:
+                            outfile.write(f"1e{int(number_result*np.log10(np.e))}\t")
+                        else:
+                            outfile.write(str("%.3g" % np.e**number_result)+ "\t")
+                    outfile.write('\n')
         else:
             for values in results:
                 outfile.write('\t'.join([str(x) for x in values]) + '\n')
@@ -415,23 +455,39 @@ def html_output(results=None, module_list=None, outputdir=None,
         p_adj = motif_result[padj_index]
         motif = motif_result[0]
         if auc >= 0:
-            if p_adj < padj_cutoff:
-                motif = motif_result[0]
-                outfile.write("""
-                    </tr>
-            <tr style="color: red;">
-                <td><a href="./plots/"""+motif+""".results.html">"""
-                    +motif+"""</td>""")
-                for number_result in motif_result[1:-2]:
+            if (p_adj < padj_cutoff):
+                if motif_result[-1] < .5:
+                    outfile.write("""
+                        </tr>
+                <tr style="color: blue;">
+                    <td><a href="./plots/"""+motif+""".results.html">"""
+                        +motif+"""</td>""")
+                else:
+                    outfile.write("""
+                        </tr>
+                <tr style="color: brown;">
+                    <td><a href="./plots/"""+motif+""".results.html">"""
+                        +motif+"""</td>""")
+                for number_result in motif_result[1:6]:
+                    # for non-pvalue ones
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
-                for number_result in motif_result[-2:]:
+                for number_result in motif_result[6:8]:
+                    # for pvalue ones
                     if number_result < -1:
                         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
+                if (len(motif_result) > 8):
+                    for html_res_index in [8, 10, 12]:
+                        number_result = motif_result[html_res_index]
+                        # for non-pvalue ones
+                        try:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        except TypeError:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             elif plotall:
@@ -439,36 +495,54 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
-                for number_result in motif_result[1:-2]:
+                for number_result in motif_result[1:6]:
+                    # for non-pvalue ones
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
-                for number_result in motif_result[-2:]:
+                for number_result in motif_result[6:8]:
+                    # for pvalue ones
                     if number_result < -1:
                         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
+                if (len(motif_result) > 8):
+                    for html_res_index in [8, 10, 12]:
+                        number_result = motif_result[html_res_index]
+                        # for non-pvalue ones
+                        try:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        except TypeError:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
-
             else:
                 outfile.write("""
             <tr>
                 <td>"""+motif+"""</td>""")
-                for number_result in motif_result[1:-2]:
+                for number_result in motif_result[1:6]:
+                    # for non-pvalue ones
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
-                for number_result in motif_result[-2:]:
+                for number_result in motif_result[6:8]:
+                    # for pvalue ones
                     if number_result < -1:
                         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
+                if (len(motif_result) > 8):
+                    for html_res_index in [8, 10, 12]:
+                        number_result = motif_result[html_res_index]
+                        # for non-pvalue ones
+                        try:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        except TypeError:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
-
 
     outfile.write("""            
         </table>
@@ -489,21 +563,39 @@ def html_output(results=None, module_list=None, outputdir=None,
         p_adj = motif_result[padj_index]
         motif = motif_result[0]
         if auc < 0:
-            if p_adj < padj_cutoff:
-                outfile.write("""
-            <tr style="color: red;">
-                <td><a href="./plots/"""+motif+""".results.html">"""
-                    +motif+"""</td>""")
-                for number_result in motif_result[1:-2]:
+            if (p_adj < padj_cutoff):
+                if motif_result[-1] < .5:
+                    outfile.write("""
+                        </tr>
+                <tr style="color: blue;">
+                    <td><a href="./plots/"""+motif+""".results.html">"""
+                        +motif+"""</td>""")
+                else:
+                    outfile.write("""
+                        </tr>
+                <tr style="color: brown;">
+                    <td><a href="./plots/"""+motif+""".results.html">"""
+                        +motif+"""</td>""")
+                for number_result in motif_result[1:6]:
+                    # for non-pvalue ones
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
-                for number_result in motif_result[-2:]:
+                for number_result in motif_result[6:8]:
+                    # for pvalue ones
                     if number_result < -1:
                         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
+                if (len(motif_result) > 8):
+                    for html_res_index in [8, 10, 12]:
+                        number_result = motif_result[html_res_index]
+                        # for non-pvalue ones
+                        try:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        except TypeError:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             elif plotall:
@@ -511,32 +603,52 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td><a href="./plots/"""+motif+""".results.html">"""
                     +motif+"""</td>""")
-                for number_result in motif_result[1:-2]:
+                for number_result in motif_result[1:6]:
+                    # for non-pvalue ones
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
-                for number_result in motif_result[-2:]:
+                for number_result in motif_result[6:8]:
+                    # for pvalue ones
                     if number_result < -1:
                         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
+                if (len(motif_result) > 8):
+                    for html_res_index in [8, 10, 12]:
+                        number_result = motif_result[html_res_index]
+                        # for non-pvalue ones
+                        try:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        except TypeError:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             else:
                 outfile.write("""
             <tr>
                 <td>"""+motif+"""</td>""")
-                for number_result in motif_result[1:-2]:
+                for number_result in motif_result[1:6]:
+                    # for non-pvalue ones
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
                         outfile.write("<td>" + str(number_result) + "</td>\n")
-                for number_result in motif_result[-2:]:
+                for number_result in motif_result[6:8]:
+                    # for pvalue ones
                     if number_result < -1:
                         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
+                if (len(motif_result) > 8):
+                    for html_res_index in [8, 10, 12]:
+                        number_result = motif_result[html_res_index]
+                        # for non-pvalue ones
+                        try:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        except TypeError:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 
@@ -746,21 +858,22 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                     </tr>
                     <tr>
                         <td>"""+motif+"""</td>""")
-            # for number_result in results[i][1:]:
-            #     if number_result < -1:
-            #         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
-            #     else:
-            #         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
-            for number_result in results[i][1:-2]:
+            for number_result in results[i][1:6]:
                 try:
                     outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                 except TypeError:
                     outfile.write("<td>" + str(number_result) + "</td>\n")
-            for number_result in results[i][-2:]:
+            for number_result in results[i][6:8]:
                 if number_result < -1:
                     outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                 else:
                     outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
+            if len(results[i]) > 8:
+                for number_result in results[i][8:len(results[i])+1]:
+                    try:
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
+                    except TypeError:
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
             outfile.write("""            </tr>
                     
                 </table>

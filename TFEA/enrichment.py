@@ -29,6 +29,8 @@ import pathlib
 import ujson
 import shutil
 from scipy import stats
+from scipy.interpolate import splrep, splev
+import re
 from multiprocessing import Manager
 
 from TFEA import config
@@ -413,7 +415,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         hits = len([x for x in distances_abs if x != '.'])
         #Filter any TFs/files without any hits
         if hits == 0:
-            return [motif, 0, 0, hits, gc, fpkm, 0, 0]
+            return [motif, 0, 0, hits, gc, fpkm, 0, 0, nan, nan, nan, nan, nan]
 
         #Get -exp() of distance and get cumulative scores
         # Get the distribution for null (usually just middle)
@@ -427,11 +429,11 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         #In the case where there are no hits in the middle two quartiles, then
         #don't perform computation
         if len(middledistancehist) == 0:
-            return [motif, 0, 0, hits, gc, fpkm, 0, 0]
+            return [motif, 0, 0, hits, gc, fpkm, 0, 0, nan, nan, nan, nan, nan]
         try:
             average_distance = np.mean(middledistancehist)
         except ZeroDivisionError:
-            return [motif, 0, 0, hits, gc, fpkm, 0, 0]
+            return [motif, 0, 0, hits, gc, fpkm, 0, 0, nan, nan, nan, nan, nan]
         
         score = [math.exp(-float(x)/average_distance) if x != '.' else 0.0 for x in distances_abs]
         total = np.sum(score)
@@ -474,7 +476,17 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         corrected_p = corrected_p+np.log(tests) if corrected_p+np.log(tests) <= 0 else 0
         corrected_p = corrected_p*math.log(np.e, 10)
 
-        if plotall or (output_type=='html' and p < p_cutoff):
+        # GET THE LEADING EDGE
+        if plotall or (p < p_cutoff) or (corrected_p < p_cutoff):
+            le_mb, le_se, le_mb_stdev, le_se_stdev, frac_back = get_lead_edges(cumscores=cumscore, Enr_score=auc, num_motif_regions=hits)
+        else:
+            le_mb = nan
+            le_mb_stdev = nan
+            le_se = nan
+            le_se_stdev = nan
+            frac_back = nan
+
+        if plotall or (output_type=='html' and p < p_cutoff) or (output_type=='html' and corrected_p < p_cutoff):
             from TFEA import plot
             plotting_score = np.divide(score, total)
             # [(float(x)/total) for x in score]
@@ -490,7 +502,14 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
                                         sim_auc=sim_auc, auc=auc,
                                         meta_profile_dict=meta_profile_dict, 
                                         label1=label1, label2=label2, 
-                                        offset=offset, plot_format=plot_format)
+                                        offset=offset, plot_format=plot_format, 
+                                        le_mb=le_mb, le_se=le_se)
+        
+        # once plotted fix the le_mb and le_se to fit the opposite direction if a "repressor"
+        if auc < 0:
+            le_mb = len(distances) - le_mb
+            le_se = len(distances) - le_se
+
     except Exception as e:
         # This prints the type, value, and stack trace of the
         # current exception being handled.
@@ -504,7 +523,10 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
     df["cumscore"]=cumscore
     tempdir = config.vars['TEMPDIR']
     df.to_csv(str(tempdir)+"/withAUC"+str(motif)+"__dis_andmore.csv")
-    return [motif, auc, corrected_auc, hits, gc, fpkm, p, corrected_p]
+    print("MOTIF:" + str(motif) + " AUC:" + str(auc) + " " + str(corrected_auc) + 
+    " Events:" + str(hits) + " Pval: " + str(p) + " " + str(corrected_p) + 
+    "\n\tLEMB: " + str(le_mb) + " Stdev: " + str(le_mb_stdev) + "\tLESE: " + str(le_se) + "Stdev: " + str(le_se_stdev) + "\tFrac: " + str(frac_back), file=sys.stderr)
+    return [motif, auc, corrected_auc, hits, gc, fpkm, p, corrected_p, le_mb, le_mb_stdev, le_se, le_se_stdev, frac_back]
 
 #==============================================================================
 def permute_auc(distances=None, trend=None, permutations=None):
@@ -835,3 +857,467 @@ def get_gc(motif=None, motif_database=None, alphabet=['A','C','G','T']):
     gc = gc/float(len(PSSM))
     
     return gc
+#==============================================================================
+###################### LEADING EDGE FUNCTIONS ########################
+#==============================================================================
+###########################
+###    Main Function    ###
+###########################
+def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5):
+    """
+    Gets the median Leading Edge across multiple splines using both a Matchback and
+    Stalled Enrichment leading edge method.
+
+    Parameters:
+    * cumscores: cumulative enrichment scores from enrichment curve
+    * Enr_score: final AUC of TF
+    * num_motif_regions: number of regions with motif hits
+    * increment_value: positive float of 0.5 or 1 (default 0.5): number of base splines to increment
+         by (e.g. 1 means go from 9e-11 to 8e-11, .5 means go from 9e-11 to 8.5e-11)
+
+    Output:
+    * le_mb: (int) Final median LE according to the place where slope matches null background expectation
+    * le_se: (int) Final median LE according to stalled enrichment across splines
+    * le_mb_stdev: (float, rounded to 3 decimals) Standard deviation of le_mb across splines (If only one spline used, NaN)
+    * le_se_stdev: (float, rounded to 3 decimals) Standard deviation of le_se across splines (If only one spline used, NaN)
+    * final_frac_back: (float, rounded to 2 decimals) Median fraction of regions with enrichment curve
+            slope above background (meant to help pinpoint FPs)
+    """
+    num_regions = len(cumscores)
+    # print("Num regions:", num_regions, "Num Motif Regions:", num_motif_regions, 
+    #  "\tPer", round(num_motif_regions/num_regions, 2)*100, "%")
+    # Get initial spline and incrementation
+    num_der_limit = get_num_der_limit(num_regions)
+    spline_use, spline_power = get_start_spline(num_motif_regions)
+    # ITERATE THROUGH THE SPLINES
+    # Lists ot hold things
+    spline_list = []
+    #der_list = []; second_der_list = []
+    LE_mb_list = []; LE_se_list = []; LE_se_type_list = []
+    frac_back_list = []
+    # Default starting values
+    num_der = 0
+    ranks = np.arange(0, len(cumscores), 1)
+    background_slope=cumscores[-1]/num_regions
+    quint_point = int(num_regions/5)
+    fourquint_point = num_regions - quint_point
+    # If there are more than 14 max/min in second derivative, stop to avoid noise
+    while num_der < num_der_limit:
+        # get the smoothing information for the enrichment curve
+        tck = splrep(ranks, cumscores, k=5, s=spline_use*10**spline_power)
+        # evaluate the spline's first, second, and third derivative
+        y_spline_prime = splev(ranks, tck, der=1)
+        y_spline_2ndder = splev(ranks, tck, der=2)
+        y_spline_3rdder = splev(ranks, tck, der=3)
+        # determine if include this for LE prediction based on # curves in 2nd der near LE
+        if Enr_score > 0:
+            num_der = count_min_max(y_spline_2ndder[0:quint_point])
+        else:
+            num_der = count_min_max(y_spline_2ndder[fourquint_point:len(y_spline_2ndder)])
+        # If reasonable amount of noise
+        #print("NUM DER", num_der, "SPLINE", spline_use*10**spline_power)
+        if num_der < num_der_limit:
+            ## GET THE MIN POSITION WHERE SLOPE MATCHES BACKGROUND
+            stand_list = y_spline_prime - background_slope
+            matchback, frac_back = get_matchback(stand_list, Enr_score)
+            ## GET THE 2nd DER BASED LE (Stalled_enrichment)
+            curve_pos, peak_type = get_LE_stalled_enrichment(num_regions, y_spline_2ndder, y_spline_3rdder, Enr_score)
+            # If the 2nd derivative is at a decent position
+            if ((curve_pos < quint_point) & (Enr_score > 0)) or ((curve_pos > fourquint_point) & (Enr_score < 0)):
+                # print("SPLINE Adding", spline_use, spline_power, Enr_score)
+                # # get graph related lists
+                # spline_list.append(spline_use*10**spline_power)
+                # der_list.append(y_spline_prime)
+                # second_der_list.append(y_spline_2ndder)
+                # Save LEs
+                LE_mb_list.append(matchback)
+                LE_se_list.append(curve_pos)
+                LE_se_type_list.append(peak_type)
+                # Save fraction below background
+                frac_back_list.append(frac_back)
+        elif len(LE_mb_list) == 0:
+            # if couldn't get any , move back the spline and change the num_der
+            spline_use = spline_use + 3
+            if spline_use > 9:
+                spline_use = spline_use - 9 # so 10 becomes 1 and 11 2
+                spline_power = spline_power + 1
+            print("HAD TO START OVER with new spline of ", spline_use*10**spline_power)
+            num_der=0
+        ## ASSESSING THE NEXT SPLINE
+        spline_use, spline_power = get_next_spline_use(spline_use, increment_value, spline_power)
+    le_mb = int(np.median(LE_mb_list))
+    le_se = int(np.median(LE_se_list))
+    if len(LE_mb_list) == 1:
+        le_mb_stdev = np.nan
+        le_se_stdev = np.nan
+    else:
+        le_mb_stdev = round(np.std(LE_mb_list),2)
+        le_se_stdev = round(np.std(LE_se_list),2)
+    
+    final_frac_back = round(np.median(frac_back_list), 2)
+    return le_mb, le_se, le_mb_stdev, le_se_stdev, final_frac_back
+
+########################
+##  GETTING SPLINES  ###
+########################
+def get_next_spline_use(spline_use, increment_value, spline_power):
+    """
+    Gets the next spline smoothing parameter to use given the current
+    spline, power, and increment value. Can handle shifting exponents
+    (e.g. going from 1e-10 to 9e-11 with increment of 1).
+
+    Parameters:
+    * spline_use: current base value of spline (not including exponent)
+    * increment_value: the value by which we change the spline_use.
+    * spline_power: The current exponent used 
+
+    Outputs:
+    * spline_use: new base value of spline to use
+    * spline_power: new exponent of spline to use
+    """
+    spline_use = spline_use - increment_value
+    # if got to 0, make it the next increment
+    if spline_use < 1:
+        spline_use = 10 - increment_value
+        spline_power = spline_power - 1
+    # if changing powers
+    if spline_use < 0:
+        spline_use = 10 + spline_use # so if 5e-10 to 9e-11, 5-6=-1 10+-1=9 & power-1
+        spline_power = spline_power - 1
+    return spline_use, spline_power
+
+# print("Should be 9 and -11", get_next_spline_use(1, 1, -10))
+# print("Should be 9.5 and -11", get_next_spline_use(1, .5, -10))
+
+def get_num_der_limit(num_regions):
+    """
+    Gets the limit to the number of curves that should be within the first part
+    of the enrichment curve's second derivative (according to 
+    if AUC is + or -)
+    """
+    if num_regions > 60000:
+        num_der_limit = 6
+    else:
+        num_der_limit = 4
+    return num_der_limit
+
+def get_start_spline(num_motif_regions):
+    """
+    Gets the starting spline smoothing parameter based on the number
+    of regions with a motif in them.
+    Parameters
+    * num_motif_regions: (int) number of regions with a motif in them
+    Outputs
+    * start_spline: (int) base of exponent for smoothing parameter (e.g. 1 for 1e-X)
+    * spline_power: (int) exponent for smoothing parameter (e.g. -11 for Xe-11)
+    """
+    if num_motif_regions > 30000:
+        start_spline = 3
+        spline_power = -12
+    elif num_motif_regions > 20000:
+        start_spline = 4
+        spline_power = -12
+    elif num_motif_regions > 10000:
+        start_spline = 5
+        spline_power = -12
+    elif num_motif_regions > 8000:
+        start_spline = 2
+        spline_power = -11
+    elif num_motif_regions > 7000:
+        start_spline = 3
+        spline_power = -11
+    elif num_motif_regions > 5000:
+        start_spline = 4
+        spline_power = -11
+    elif num_motif_regions > 4000:
+        start_spline = 5
+        spline_power = -11
+    elif num_motif_regions > 3000:
+        start_spline = 7
+        spline_power = -11
+    elif num_motif_regions > 2500:
+        start_spline = 8
+        spline_power = -11
+    elif num_motif_regions > 2000:
+        start_spline = 9
+        spline_power = -11
+    elif num_motif_regions > 1500:
+        start_spline = 4
+        spline_power = -11
+    elif num_motif_regions > 1000:
+        start_spline = 1
+        spline_power = -10
+    elif num_motif_regions > 750: # help
+        start_spline = 2
+        spline_power = -10
+    elif num_motif_regions > 600: # help
+        start_spline = 3
+        spline_power = -10
+    elif num_motif_regions > 500: # help
+        start_spline = 6
+        spline_power = -10
+    elif num_motif_regions > 200:
+        start_spline = 7
+        spline_power = -10
+    elif num_motif_regions > 100: # help
+        start_spline = 8
+        spline_power = -10
+    return start_spline, spline_power
+
+########################################
+###    Supporter Functions For LE    ###
+########################################
+def find_curve_point(lst, rev=False):
+    """
+    Get the earliest minima and maxima positions. If none then returns None
+    Used for get_LE_stalled_enrichment to find where the first (in the case
+    of an activator) or last (in case of a repressor) local minimum and
+    maximum are.
+
+    Parameters:
+    lst: list of numbers (usually a derivative) 
+    rev: If True then reverses the list 
+
+    Outputs:
+    {"min":min_index, "max":max_index}:
+        * min_index is the first index at which values change from negative to positive
+            (In the case of a derivative -- local minimum)
+        * max_index is the first index at which values change from positive to negative
+            (In the case of a derivative -- local max)
+    """
+    # Convert the list to a NumPy array
+    if rev:
+        lst = lst[::-1]
+    arr = np.array(lst)
+    min_index=None
+    max_index=None
+    # Ensure the array has at least 2 elements
+    if len(arr) < 2:
+        return {"min":None, "max":None}
+    # MAX: Check for transitions from positive to negative (up then down)
+    for i in range(len(arr) - 1):
+        if i==0:
+            i=1
+        if arr[i] > 0 and arr[i + 1] < 0:
+            max_index =  i   # Return the index right before the positive number
+            break
+        elif arr[i] > 0 and arr[i + 1] == 0 and arr[i + 2] < 0:
+            max_index = i + 1 # return the 0 positon
+            break
+    # MIN: Check for transitions from negative to positive (down then up)
+    for i in range(len(arr) - 1):
+        if arr[i] < 0 and arr[i + 1] > 0:
+            min_index = i   # Return the index right before the positive number
+            break
+        elif arr[i] < 0 and arr[i + 1] == 0 and arr[i + 2] > 0:
+            min_index = i + 1 # return the 0 positon
+            break
+    if rev:
+        if min_index is not None:
+            min_index = len(arr) - min_index - 1
+        if max_index is not None:
+            max_index = len(arr) - max_index - 1
+    return {"min":min_index, "max":max_index}
+
+# # Example usage
+# my_list = [-3, -2, 0, 4, -1, 2]
+# print("Should be 2, 3", find_curve_point(my_list)) 
+# print("Should be 4, 2", find_curve_point(my_list, rev=True)) 
+# my_list = [-3, -2, 0, 4, -1, 2, -3, -4]
+# print("Should be 5, 6", find_curve_point(my_list, rev=True)) 
+
+# my_list = [-1, -0.000002, 2, 3, 0, -1]
+# print("Should be 1, 4", find_curve_point(my_list))
+# print("Should be 4, 2", find_curve_point(my_list, rev=True)) 
+
+def get_curve_elbow(num_regions, y_spline_secder, Enr_score=0):
+    """
+    Gets the first (activator) or last (repressor) index where the max distance 
+    from the background line is.
+    If an activator (Enr_score > 0) then looks in the first "half" (len/2.5).
+    If a repressor (Enr_score < 0) then looks in the second "half." If a 
+    Used for get_LE_stalled_enrichment.
+    *Note*: get_dist_point_line is the main time bottleneck.
+
+    Parameters:
+    * num_regions: Number of ranked regions being assessed
+    * y_spline_secder: Spline of second derivative of the enrichment curve
+    * Enr_score: AUC of TF to determine if activator or repressor
+    """
+    half_point = int(num_regions/2.5)
+    tolerance = 1e-15
+    # Get set up for point-line distance computations
+    first_point = np.array([1, y_spline_secder[0]])
+    end_point = np.array([num_regions, y_spline_secder[num_regions - 1]])
+    # get the distances of the second derivative from the null line --> find elbow
+    mfg_dists = [
+        get_dist_point_line(np.array([k+1, y_spline_secder[k]]), first_point, end_point)
+        for k in range(num_regions)
+    ]
+    if Enr_score > 0:
+        # Get the indices that have the maximum distances
+        max_dist_indices = np.where(np.isclose(mfg_dists[0:half_point], max(mfg_dists[0:half_point]), atol=tolerance))[0]
+        return(np.min(max_dist_indices))
+    else:
+        # "half point" is the opposite direction
+        half_point = num_regions - half_point
+        # Get the indices that have the maximum distances
+        max_dist_indices = np.where(np.isclose(mfg_dists[half_point:len(mfg_dists)], 
+                                                  max(mfg_dists[half_point:len(mfg_dists)]), atol=tolerance))[0] 
+        #only consider indices 
+        return(np.max(max_dist_indices)+half_point)
+
+
+# Function to calculate the distance from a point to a line
+def get_dist_point_line(point, line_coord1, line_coord2):
+    """
+    Get the distance from a point to a line with two coordinates: line_coord1 and line_coord2
+    """
+    line_vec = line_coord2 - line_coord1
+    point_vec = point - line_coord1
+    line_len = np.linalg.norm(line_vec)
+    line_unitvec = line_vec / line_len
+    proj_length = np.dot(point_vec, line_unitvec)
+    proj_point = line_coord1 + proj_length * line_unitvec
+    distance = np.linalg.norm(point - proj_point)
+    return distance
+
+# print("Should be 0.1403663161257098", get_dist_point_line(np.array([2, 0.3]), np.array([1, 0]), np.array([20, 3])))
+# print("Should be 3.3593115504912983", get_dist_point_line(np.array([3, 4]), np.array([1, 0]), np.array([20, 5])))
+# print("Should be 4.377284747609873", get_dist_point_line(np.array([3, -4]), np.array([1, 0]), np.array([20, 5])))
+
+
+def count_min_max(arr):
+    """
+    Count the number of curves (min/max) based on the 
+    number of sign changes in the derivative (arr)
+    """
+    signs = np.sign(arr)  # Get the sign of each element (-1, 0, or 1)
+    sign_changes = np.diff(signs) != 0  # Check where the sign changes
+    return int(np.count_nonzero(sign_changes))  # Count the number of changes
+
+# # Example usage
+# arr = np.array([-3, -2, 0, 2, -1, 5, -6, 7])
+# print("Should be:", count_min_max(arr))
+# arr = np.array([7, -1, 2, 4, 1, -2, 3, 9, 10, -3, 0, 4, 2, -4, -5, 2, 3, -6])
+# print("Number of min or max:", count_min_max(arr))
+
+#################################
+###     Individual Methods    ###
+#################################
+def get_LE_stalled_enrichment(num_regions, y_spline_2ndder, y_spline_3rdder, Enr_score=0):
+    """
+    This function returns the median LE across the spline methods where the individual
+       LE for each spline is considered accordingly:
+            1. "MAX": If the 2nd derivative starts out negative, it will return the first max after which the 2nd derivative
+                either stabilizes or becomes more negative.
+            2. "MIN": If the 2nd derivative starts at a positive value, meaning the enrichment scores are increasing, 
+               it will return the first minimum after which the the 2nd derivative starts stabilizing.
+            3. "ELBOW": If there are neither maxima/minima OR the above case leads to a LE call 
+                after the halfway point (hence indicating a noise is captured), the elbow of the
+                2nd derivative is used (Details in get_curve_elbow)
+    
+    Inputs:
+    * num_regions: number of regions under study
+    * y_spline_2ndder: spline based y values for the 2nd derivative
+    * y_spline_3rdder: spline based y values for the 3rd derivative
+    * Enr_score: The enrichment score (to determine if positive or negative)
+
+    Outputs:
+    * curve_pos: The final LE according to the considerations above
+    * peak_type: The methodology used to get the final LE according to the considerations above
+    """
+    half_point = int(num_regions/2.5)
+    if Enr_score > 0:
+        # Get the first min and max of the 2nd derivative from 3rd derivative
+        curve_indices_dict = find_curve_point(y_spline_3rdder)
+        # If the 2nd derivative starts out positive (use position 2 for noise), get the min
+        if y_spline_2ndder[2] > 0:
+            # If no clear minimum or the minimum is > half point, use elbow
+            if curve_indices_dict["min"] is None or curve_indices_dict["min"] > half_point:
+                curve_pos = get_curve_elbow(num_regions, y_spline_2ndder, Enr_score)
+                peak_type = "ELBOW"
+            else:
+                curve_pos = curve_indices_dict["min"]
+                peak_type = "MIN"
+        else:
+            # If starts out negative, get the first max or elbow
+            curve_pos = get_curve_elbow(num_regions, y_spline_2ndder, Enr_score)
+            if curve_indices_dict["max"] is None or curve_indices_dict["max"] > curve_pos:
+                peak_type = "ELBOW"
+            else:
+                curve_pos = curve_indices_dict["max"]
+                peak_type = "MAX"
+    else:
+        # "half point" is in opposite direction
+        half_point = num_regions - half_point
+        # Get the "first" min and max of the 2nd derivative from 3rd derivative (reversed)
+        curve_indices_dict = find_curve_point(y_spline_3rdder, rev=True)
+        # If the 2nd derivative "starts negative" then just get the maximum
+        if y_spline_2ndder[-2] < 0:
+            # If no clear minimum or the minimum is > half point (so <), use elbow
+            if curve_indices_dict["min"] is None or curve_indices_dict["min"] < half_point:
+                curve_pos = get_curve_elbow(num_regions, y_spline_2ndder)
+                peak_type = "ELBOW"
+            else:
+                curve_pos = curve_indices_dict["min"]
+                peak_type = "MIN"
+        else:
+            # If starts out negative, get the first max or elbow
+            curve_pos = get_curve_elbow(num_regions, y_spline_2ndder)
+            # print("CURVE INDICES after negative", curve_indices_dict)
+            # print("CURVE POS", curve_pos)
+            if curve_indices_dict["max"] is None or curve_indices_dict["max"] < curve_pos:
+                peak_type = "ELBOW"
+            else:
+                curve_pos = curve_indices_dict["max"]
+                peak_type = "MAX"
+        
+    # RETURN THE POSITION AND TYPE
+    return(curve_pos, peak_type)
+
+
+def get_matchback(stand_list, Enr_score=0):
+    """
+    Gets the first instance where the cumulative enrichment change lowers to that
+    expected from background with t.
+     Enr_score > 0: ACT: want min index where starts higher then goes below background (so from positive to negative) 
+     Enr_score < 0: REP: want max index where starts lower than goes above background (so from neg to positive)
+
+     Outputs:
+     * matchback:
+     * frac_background: Fraction of tREs at which slope is > than that of background
+    """
+    # change to a numpy array
+    arr = np.array(stand_list)
+    frac_background = np.sum(arr > 0)/len(stand_list)
+    if Enr_score > 0:
+        # Thinking of activator - where goes from higher to lower
+        transitions = np.where((arr[:-1] > 0) & (arr[1:] <= 0))[0]
+        if transitions.size == 0:
+            matchback = 0
+        else:
+            matchback = np.min(transitions) + 1
+    else:
+        # Thinking of activator - where goes from lower to higher
+        transitions = np.where((arr[:-1] < 0) & (arr[1:] >= 0))[0]
+        if transitions.size == 0:
+            matchback = 0
+        else:
+            matchback = np.max(transitions) + 1
+    return matchback, frac_background
+        
+
+# stand_list = [1, 3, 5, 0, -2, -5, 2, 4, 5, -2]
+# print("Should get 3 and .6", get_matchback(stand_list, Enr_score=.1))
+# print("Should get 6 and .3", get_matchback(stand_list, Enr_score=-.1))
+
+# stand_list = [-2, 3, 4, 5, -3, -4, 1, 2, 3, 4]
+# print("Should get 4 and .7", get_matchback(stand_list, Enr_score=.1))
+# print("Should get 6 and .3", get_matchback(stand_list, Enr_score=-.1))
+# # ACT: want min index where starts higher then goes below background (so from positive to negative) 
+# # REP: want max index where starts lower than goes above background (so from neg to positive)
+
+
+
+
