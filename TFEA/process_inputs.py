@@ -84,6 +84,8 @@ def read_arguments():
     # Processed inputs if a user desires to run TFEA from a specific point
     processed_inputs = parser.add_argument_group('Processed Inputs', 
                                         'Input options for pre-processed data')
+    processed_inputs.add_argument('--count_file', nargs='*', help=("Count file from featureCounts."), 
+                                            dest='COUNT_FILE')                                       
     processed_inputs.add_argument('--combined_file', help=("A single bed file "
                                             "combining regions of interest."), 
                                             dest='COMBINED_FILE')
@@ -230,6 +232,10 @@ def read_arguments():
                                 " to assign to bam files in order of bam1 files "
                                 "then bam2 files. For use only when ranking "
                                 "with DE-Seq."), dest='BATCH')
+    misc_options.add_argument('--treatment', help=("Comma-separated list of batches"
+                                " to assign to bam files in order appearing in the counts file. "
+                                " For use only when ranking and count_file"
+                                "with DE-Seq."), dest='TREATMENT')
     misc_options.add_argument('--cpus', help=("Number of processes to run "
                                 "in parallel. Warning: Increasing this value will "
                                 "significantly increase memory footprint. "
@@ -310,6 +316,7 @@ def read_arguments():
                     'COMBINED_FILE': [False, [Path, bool]],
                     'RANKED_FILE': [False, [Path, bool]],
                     'FASTA_FILE': [False, [Path, bool]],
+                    'COUNT_FILE': [False, [Path, bool]],
                     'MD': [False, [bool]],
                     'MDD': [False, [bool]],
                     'MD_BEDFILE1': [False, [Path, bool]],
@@ -339,6 +346,7 @@ def read_arguments():
                     'PADJCUTOFF': [0.1, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'BATCH': ['', [str]],
+                    'TREATMENT': ['', [str]],
                     'CPUS': [1, [int]], 
                     'MEM': ['20gb', [str]],
                     'TIME': ['24:00:00', [str]],
@@ -533,6 +541,8 @@ def verify_arguments(parser=None):
     #Set module booleans based on pre-processed inputs
     if config.vars['COMBINED_FILE']:
         config.vars['COMBINE'] = False
+    if config.vars['COUNT_FILE']:
+        config.vars['COMBINE'] = False
     if config.vars['RANKED_FILE']:
         config.vars['COMBINE'] = False
         config.vars['RANK'] = False
@@ -542,8 +552,8 @@ def verify_arguments(parser=None):
 
     #Verify combine module
     if not config.vars['COMBINE']:
-        if not config.vars['COMBINED_FILE'] and config.vars['RANK']:
-            raise exceptions.InputError('COMBINE module switched off but RANK module switched on without a COMBINED_FILE')
+        if not config.vars['COMBINED_FILE'] and not config.vars['COUNT_FILE'] and config.vars['RANK']:
+            raise exceptions.InputError('COMBINE module switched off but RANK module switched on without a COMBINED_FILE or COUNT_FILE')
         if config.vars['MD']:
             if not config.vars['MD_BEDFILE1'] and not config.vars['MD_FASTA1']:
                 raise exceptions.InputError('COMBINE module switched off but MD module switched on without MD_BEDFILE1 or MD_FASTA1')
@@ -566,7 +576,10 @@ def verify_arguments(parser=None):
                 raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE2 or MDD_FASTA2')
     else:
         if not (config.vars['BAM1'] and config.vars['BAM2']) and not (config.vars['BG1'] and config.vars['BG2']):
-            raise exceptions.InputError('RANK module switched on but one of (BAM1, BAM2) or (BG1, BG2) not specified')
+            if not config.vars['COUNT_FILE']:
+                raise exceptions.InputError('RANK module switched on but no COUNT_FILE and one of (BAM1, BAM2) or (BG1, BG2) not specified')
+            elif not config.vars['TREATMENT']:
+                raise exceptions.InputError('RANK module and COUNT_FILE but no TREATMENT specified')
         if not config.vars['LABEL1']:
             raise exceptions.InputError('RANK module switched on but LABEL1 not specified')
         if not config.vars['LABEL2']:

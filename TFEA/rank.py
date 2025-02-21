@@ -39,7 +39,8 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
             bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
             largewindow=None, mdd=False, mdd_bedfile1=False, mdd_bedfile2=False, 
             motif_annotations=False, debug=False, jobid=None, figuredir=None, 
-            output_type=None, basemean_cut=None, plot_format=None):
+            output_type=None, basemean_cut=None, plot_format=None, 
+            count_file=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -103,6 +104,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         bam2=config.vars['BAM2']
         bg1=config.vars['BG1']
         bg2=config.vars['BG2']
+        count_file=config.vars['COUNT_FILE']
         tempdir=config.vars['TEMPDIR']
         label1=config.vars['LABEL1']
         label2=config.vars['LABEL2']
@@ -121,19 +123,21 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         meta_profile_dict = {}
         metaprofile = config.vars['METAPROFILE']
         batch = config.vars['BATCH']
+        treatment = config.vars['TREATMENT']
     print("Ranking regions...", flush=True, file=sys.stderr)
-
-    #Begin by counting reads from bam files over the combined_file produced
-    # by the combine module
-    if bam1 and bam2:
-        count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
-                            tempdir=tempdir, label1=label1, label2=label2)
-        sample_number = len(bam1+bam2)
-    elif bg1 and bg2:
-        count_file = count_reads_bedtools(bedfile=combined_file, bg1=bg1, 
-                                        bg2=bg2, tempdir=tempdir, label1=label1, 
-                                        label2=label2)
-        sample_number = len(bg1+bg2)
+    # If the count file is not already provided
+    if not count_file:
+        #Begin by counting reads from bam files over the combined_file produced
+        # by the combine module
+        if bam1 and bam2:
+            count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
+                                tempdir=tempdir, label1=label1, label2=label2)
+            sample_number = len(bam1+bam2)
+        elif bg1 and bg2:
+            count_file = count_reads_bedtools(bedfile=combined_file, bg1=bg1, 
+                                            bg2=bg2, tempdir=tempdir, label1=label1, 
+                                            label2=label2)
+            sample_number = len(bg1+bg2)
     millions_mapped = sum_reads(count_file=count_file, sample_number=sample_number)
     if motif_annotations:
         if bam1 and bam2:
@@ -162,14 +166,21 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
                                     basemean_cut=basemean_cut, plot_format=plot_format, 
-                                    batch=batch)
+                                    batch=batch, treatment=None)
         elif bg1 and bg2:
             ranked_file, pvals, fcs = deseq(bam1=bg1, bam2=bg2, tempdir=tempdir, 
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
                                     basemean_cut=basemean_cut, plot_format=plot_format, 
-                                    batch=batch)
+                                    batch=batch, treatment=None)
+        else:
+            ranked_file, pvals, fcs = deseq(bam1=None, bam2=None, tempdir=tempdir, 
+                                    count_file=count_file, label1=label1, 
+                                    label2=label2, largewindow=largewindow, 
+                                    rank=rank, figuredir=figuredir, 
+                                    basemean_cut=basemean_cut, plot_format=plot_format, 
+                                    batch=batch, treatment=treatment)
         if output_type == 'html' and metaprofile:
             print("\tGenerating Meta-Profile per Quartile:", file=sys.stderr)
             q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
@@ -548,7 +559,7 @@ def sum_reads(count_file=None, sample_number=None):
 
 #==============================================================================
 def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None, 
-                        label1=None, label2=None, batch=''):
+                        label1=None, label2=None, batch='', treatment=''):
     '''Writes an R script within the tempdir directory in TFEA output to run 
         either DE-Seq or DE-Seq2 depending on the number of user-inputted 
         replicates.
@@ -580,6 +591,43 @@ def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None,
     -------
     None
     '''
+    # If bams are empty then already a count file so just read in
+    if not bam1 and not bam2:
+         Rfile = open(tempdir / 'DESeq.R','w')
+        Rfile.write('''library("DESeq2")
+data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
+count_table <- data[,7:ncol(data)]
+rownames(count_table) <- data$Geneid
+
+rownames(countsTable) <- data$region
+cond_vector <- c('''+treatment+''')
+batch <- c('''+batch+''')
+if (length(batch) == 0) {
+    conds <- data.frame(cond_vector)
+    colnames(conds) <- c("treatment")
+    ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                colData = conds, 
+                                                design = ~ treatment)
+} else {
+    conds <- data.frame(cond_vector, batch)
+    colnames(conds) <- c("treatment", "batch")
+    ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                colData = conds, 
+                                                design = ~ batch+treatment)
+}
+
+dds <- DESeq(ddsFullCountTable)
+print("Size Factors")
+print(sizeFactors(dds))
+res <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
+                                                            "'''+label1+'''"))
+res$fc <- 2^(res$log2FoldChange)
+res <- res[c(1:3,7,4:6)]
+
+write.table(res, file = "'''    + (tempdir / 'DESeq.res.txt').as_posix() 
+                                + '''", append = FALSE, sep= "\t" )
+sink()''')
+
     #If more than 1 replicate, use DE-Seq2
     if (len(bam1) > 1 and len(bam2) > 1):
         Rfile = open(tempdir / 'DESeq.R','w')
@@ -652,11 +700,11 @@ write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt')
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
             label2=None, largewindow=None, rank=None, figuredir=None, 
-            basemean_cut=None, plot_format=None, batch=''):
+            basemean_cut=None, plot_format=None, batch='', treatment=''):
     #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                         count_file=count_file, label1=label1, label2=label2, 
-                        batch=batch)
+                        batch=batch, treatment=treatment)
 
     #Execute the DE-Seq R script
     # with open(tempdir / 'DESeq.Rout', 'w') as stdout:
