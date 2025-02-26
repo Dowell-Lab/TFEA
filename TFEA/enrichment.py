@@ -478,6 +478,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
 
         # GET THE LEADING EDGE
         if plotall or (p < p_cutoff) or (corrected_p < p_cutoff):
+            print("Getting Leading Edge for", motif)
             le_mb, le_se, le_mb_stdev, le_se_stdev, frac_back = get_lead_edges(cumscores=cumscore, Enr_score=auc, num_motif_regions=hits)
         else:
             le_mb = nan
@@ -901,8 +902,10 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5)
     background_slope=cumscores[-1]/num_regions
     quint_point = int(num_regions/5)
     fourquint_point = num_regions - quint_point
+    # keep track of number of times tried 
+    trials = 0
     # If there are more than 14 max/min in second derivative, stop to avoid noise
-    while num_der < num_der_limit:
+    while (num_der < num_der_limit) and (trials < 20):
         # get the smoothing information for the enrichment curve
         tck = splrep(ranks, cumscores, k=5, s=spline_use*10**spline_power)
         # evaluate the spline's first, second, and third derivative
@@ -916,6 +919,7 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5)
             num_der = count_min_max(y_spline_2ndder[fourquint_point:len(y_spline_2ndder)])
         # If reasonable amount of noise
         #print("NUM DER", num_der, "SPLINE", spline_use*10**spline_power)
+        trials = trials + 1
         if num_der < num_der_limit:
             ## GET THE MIN POSITION WHERE SLOPE MATCHES BACKGROUND
             stand_list = y_spline_prime - background_slope
@@ -936,25 +940,38 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5)
                 # Save fraction below background
                 frac_back_list.append(frac_back)
         elif len(LE_mb_list) == 0:
+            og_spline = spline_use*10**spline_power
             # if couldn't get any , move back the spline and change the num_der
             spline_use = spline_use + 3
             if spline_use > 9:
                 spline_use = spline_use - 9 # so 10 becomes 1 and 11 2
                 spline_power = spline_power + 1
-            print("HAD TO START OVER with new spline of ", spline_use*10**spline_power)
+            print("HAD TO START OVER with new spline of ", spline_use*10**spline_power, " from ", og_spline, num_regions)
             num_der=0
         ## ASSESSING THE NEXT SPLINE
         spline_use, spline_power = get_next_spline_use(spline_use, increment_value, spline_power)
-    le_mb = int(np.median(LE_mb_list))
-    le_se = int(np.median(LE_se_list))
-    if len(LE_mb_list) == 1:
+    # If nothing then just say NA
+    if len(LE_mb_list) == 0:
+        print("REACHED GREATER THAN 20 TRIALS WITH NO LUCK")
+        le_mb = np.nan
+        le_se = np.nan
         le_mb_stdev = np.nan
         le_se_stdev = np.nan
+        final_frac_back = np.nan
+    elif len(LE_mb_list) == 1:
+        le_mb_stdev = np.nan
+        le_se_stdev = np.nan
+        le_mb = int(np.median(LE_mb_list))
+        le_se = int(np.median(LE_se_list))
+        final_frac_back = round(np.median(frac_back_list), 2)
     else:
+        le_mb = int(np.median(LE_mb_list))
+        le_se = int(np.median(LE_se_list))
         le_mb_stdev = round(np.std(LE_mb_list),2)
         le_se_stdev = round(np.std(LE_se_list),2)
+        final_frac_back = round(np.median(frac_back_list), 2)
     
-    final_frac_back = round(np.median(frac_back_list), 2)
+    
     return le_mb, le_se, le_mb_stdev, le_se_stdev, final_frac_back
 
 ########################
@@ -1047,21 +1064,21 @@ def get_start_spline(num_motif_regions):
     elif num_motif_regions > 1000:
         start_spline = 1
         spline_power = -10
-    elif num_motif_regions > 750: # help
+    else:
         start_spline = 2
         spline_power = -10
-    elif num_motif_regions > 600: # help
-        start_spline = 3
-        spline_power = -10
-    elif num_motif_regions > 500: # help
-        start_spline = 6
-        spline_power = -10
-    elif num_motif_regions > 200:
-        start_spline = 7
-        spline_power = -10
-    elif num_motif_regions > 100: # help
-        start_spline = 8
-        spline_power = -10
+    # elif num_motif_regions > 600: # help
+    #     start_spline = 3
+    #     spline_power = -10
+    # elif num_motif_regions > 500: # help
+    #     start_spline = 6
+    #     spline_power = -10
+    # elif num_motif_regions > 200:
+    #     start_spline = 7
+    #     spline_power = -10
+    # elif num_motif_regions > 100: # help
+    #     start_spline = 8
+    #     spline_power = -10
     return start_spline, spline_power
 
 ########################################

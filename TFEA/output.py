@@ -62,7 +62,6 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
     TFEA_header_html = ['#TF', 'E-Score', 'Crrctd E-Score','Events', 'GC','FPKM', 'P-adj', 'Crrctd P-adj', 
     'MB_LE', 'SE_LE', 'Frac Abv Null']
 
-
     description_full = ['Motif Name', 'Enrichment Score', 
                     'Enrichment Score following GC correction',
                     'Number of motif instances within analyzed regions',
@@ -88,7 +87,25 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
                     'Leading Edge Based on Matching Null Background', 
                     'Leading Edge Based on Stalled Enrichment', 
                     'Fraction Regions with Enrichment Change > Background (>.5 likely indicates FP)']
-    sort_index = [5, 3, 2, 6]
+
+    # if no motif annotations, then no FPKM
+    if config.vars['FIMO_MOTIFS'] == False:
+        TFEA_header_html = ['#TF', 'E-Score', 'Crrctd E-Score','Events', 'GC', 'P-adj', 'Crrctd P-adj', 
+    'MB_LE', 'SE_LE', 'Frac.Abv.Null']
+        description_html = ['Motif Name', 'Enrichment Score', 
+                    'Enrichment Score following GC correction',
+                    'Number of motif instances within analyzed regions',
+                    'GC-content of motif',
+                    'Adjusted P-value (Bonferroni)',
+                    'Adjusted P-value (Bonferroni) after GC correction', 
+                    
+                    'Leading Edge Based on Matching Null Background', 
+                    'Leading Edge Based on Stalled Enrichment', 
+                    'Fraction Regions with Enrichment Change > Background (>.5 likely indicates FP)']
+
+
+    
+    sort_index = [5, 3, 2, 7]
 
     txt_output(outputdir=outputdir, results=results, outname='results.txt', 
                 sortindex=sort_index, header=TFEA_header_full)
@@ -468,12 +485,21 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <tr style="color: brown;">
                     <td><a href="./plots/"""+motif+""".results.html">"""
                         +motif+"""</td>""")
-                for number_result in motif_result[1:6]:
-                    # for non-pvalue ones
-                    try:
-                        outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
-                    except TypeError:
-                        outfile.write("<td>" + str(number_result) + "</td>\n")
+                if len(TFEA_header_html) == 10:
+                    # don't include FPKM
+                    for number_result in motif_result[1:5]:
+                        # for non-pvalue ones
+                        try:
+                            outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                        except TypeError:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                else:
+                    for number_result in motif_result[1:6]:
+                        # for non-pvalue ones
+                        try:
+                            outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
+                        except TypeError:
+                            outfile.write("<td>" + str(number_result) + "</td>\n")
                 for number_result in motif_result[6:8]:
                     # for pvalue ones
                     if number_result < -1:
