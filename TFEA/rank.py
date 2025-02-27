@@ -594,7 +594,7 @@ def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None,
     # If bams are empty then already a count file so just read in
     if not bam1 and not bam2:
          Rfile = open(tempdir / 'DESeq.R','w')
-        Rfile.write('''library("DESeq2")
+         Rfile.write('''library("DESeq2")
 data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
 count_table <- data[,7:ncol(data)]
 rownames(count_table) <- data$Geneid

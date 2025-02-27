@@ -485,7 +485,7 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <tr style="color: brown;">
                     <td><a href="./plots/"""+motif+""".results.html">"""
                         +motif+"""</td>""")
-                if len(TFEA_header_html) == 10:
+                if len(results_header) == 10:
                     # don't include FPKM
                     for number_result in motif_result[1:5]:
                         # for non-pvalue ones
