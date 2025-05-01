@@ -47,7 +47,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
             jobid=None, pvals=None, fcs=None, p_cutoff=None, figuredir=None, 
             plotall=False, fimo_motifs=None, meta_profile_dict=None, 
             label1=None, label2=None, dpi=None, motif_fpkm={}, bootstrap=False,
-            gc=None, plot_format=None):
+            gc=None, plot_format=None, num_quants=15):
     '''This is the main script of the ENRICHMENT module. It takes as input
         a list of distances outputted from the SCANNER module and calculates
         an enrichment score, a p-value, and in some instances an adjusted 
@@ -125,6 +125,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         bootstrap = config.vars['BOOTSTRAP']
         gc = config.vars['GC']
         plot_format = config.vars['PLOT_FORMAT']
+        num_quants = config.vars['NUM_QUANTS']
         try:
             motif_fpkm = config.vars['MOTIF_FPKM']
         except:
@@ -175,6 +176,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         print('\tCalculating E-Score:', file=sys.stderr)
         # manager = Manager()
         # meta_profile_dict = manager.dict(meta_profile_dict)
+        quant_size = int(np.ceil(len(motif_distances[0][1:]) / num_quants))
         auc_keywords = dict(permutations=permutations, use_config=use_config, 
                         output_type=output_type, pvals=pvals, plotall=plotall, 
                         p_cutoff=p_cutoff, figuredir=figuredir, 
@@ -183,7 +185,8 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                         label2=label2, fcs=fcs, motif_fpkm=motif_fpkm, 
                         tests=len(motif_distances), bootstrap=bootstrap, 
                         gc_correct=gc_correct, plot_format=plot_format, 
-                           ranked_file=ranked_file)
+                           ranked_file=ranked_file, num_quants=num_quants, quant_size=quant_size, 
+                           debug=debug)
         results = multiprocess.main(function=auc_simulate_and_plot, 
                                     args=motif_distances, kwargs=auc_keywords,
                                     debug=debug, jobid=jobid, cpus=cpus)
@@ -196,10 +199,10 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                     savepath=figuredir / ('TFEA_GC.' + plot_format), 
                                     linear_regression=linear_regression,
                                     plot_format=plot_format, 
-                                    x_index=4,
-                                    y_index=1, 
-                                    c_index=2,
-                                    p_index=-1,
+                                    x_index=4, # GC content
+                                    y_index=1, # E-score
+                                    c_index=2, # Corrected E-score
+                                    p_index=7, # Corrected pval
                                     ylimits=[-1,1])
         else:
             plot.plot_global_gc(results, p_cutoff=p_cutoff, 
@@ -212,8 +215,18 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                     x_index=4,
                                     y_index=1, 
                                     c_index=2,
-                                    p_index=-1,
+                                    p_index=7,
                                     ylimits=[-1,1])
+
+        ## Plot the quantile values for the TFs
+        
+        plot.plot_quant_slopes(results, 
+                                    group_size=quant_size,
+                                    title="", 
+                                    xlabel="Quantiles of Regions Ranked by Sign and Confidence", 
+                                    ylabel="TF Motif", 
+                                    savepath=figuredir / ('Quantile.map.' + plot_format), 
+                                    plot_format=plot_format)
 
         
         # results = list()
@@ -389,7 +402,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
                         meta_profile_dict=None, label1=None, label2=None, 
                         dpi=None, fcs=None, tests=None, motif_fpkm=None, 
                         bootstrap=False, gc_correct=None, plot_format=None, 
-                         ranked_file=None):
+                         ranked_file=None, num_quants=None, quant_size=None, debug=False):
     '''Calculates an enrichment score using the area under the curve. This
         method is not as sensitive to artifacts as other methods. It works well
         as an asymmetry detector and will be good at picking up cases where
@@ -397,6 +410,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         transcribed regions.
     '''
     try:
+        
         #sort distances based on the ranks from TF bed file
         #and calculate the absolute distance
         motif = distances[0]
@@ -479,13 +493,19 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         # GET THE LEADING EDGE
         if plotall or (p < p_cutoff) or (corrected_p < p_cutoff):
             print("Getting Leading Edge for", motif)
-            le_mb, le_se, le_mb_stdev, le_se_stdev, frac_back = get_lead_edges(cumscores=cumscore, Enr_score=auc, num_motif_regions=hits)
+            le_mb, le_se, le_mb_stdev, le_se_stdev, frac_back, max_quant, binned = get_lead_edges(cumscores=cumscore, 
+                                                                                        Enr_score=auc, 
+                                                                                        num_motif_regions=hits, 
+                                                                                        quant_size=quant_size, 
+                                                                                        num_quants=num_quants)
         else:
             le_mb = nan
             le_mb_stdev = nan
             le_se = nan
             le_se_stdev = nan
             frac_back = nan
+            max_quant = nan
+            binned = nan
 
         if plotall or (output_type=='html' and p < p_cutoff) or (output_type=='html' and corrected_p < p_cutoff):
             from TFEA import plot
@@ -524,10 +544,14 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
     df["cumscore"]=cumscore
     tempdir = config.vars['TEMPDIR']
     df.to_csv(str(tempdir)+"/withAUC"+str(motif)+"__dis_andmore.csv")
-    print("MOTIF:" + str(motif) + " AUC:" + str(auc) + " " + str(corrected_auc) + 
-    " Events:" + str(hits) + " Pval: " + str(p) + " " + str(corrected_p) + 
-    "\n\tLEMB: " + str(le_mb) + " Stdev: " + str(le_mb_stdev) + "\tLESE: " + str(le_se) + "Stdev: " + str(le_se_stdev) + "\tFrac: " + str(frac_back), file=sys.stderr)
-    return [motif, auc, corrected_auc, hits, gc, fpkm, p, corrected_p, le_mb, le_mb_stdev, le_se, le_se_stdev, frac_back]
+    if debug:
+        print("MOTIF:" + str(motif) + " AUC:" + str(auc) + " " + str(corrected_auc) + 
+        " Events:" + str(hits) + " Pval: " + str(p) + " " + str(corrected_p) + 
+        "\n\tLEMB: " + str(le_mb) + " Stdev: " + str(le_mb_stdev) + "\tLESE: " + str(le_se) + "Stdev: " + str(le_se_stdev) + 
+        "\tFrac: " + str(frac_back) + "\tMaxQuant" + str(max_quant), file=sys.stderr)
+        print("BINNED", file=sys.stderr)
+        print(binned, file=sys.stderr)
+    return [motif, auc, corrected_auc, hits, gc, fpkm, p, corrected_p, le_mb, le_mb_stdev, le_se, le_se_stdev, frac_back, max_quant, binned]
 
 #==============================================================================
 def permute_auc(distances=None, trend=None, permutations=None):
@@ -864,15 +888,16 @@ def get_gc(motif=None, motif_database=None, alphabet=['A','C','G','T']):
 ###########################
 ###    Main Function    ###
 ###########################
-def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5):
+def get_lead_edges(cumscores, Enr_score, num_motif_regions, quant_size, num_quants, increment_value=0.5):
     """
     Gets the median Leading Edge across multiple splines using both a Matchback and
-    Stalled Enrichment leading edge method.
+    Plateaued Enrichment leading edge method.
 
     Parameters:
     * cumscores: cumulative enrichment scores from enrichment curve
     * Enr_score: final AUC of TF
     * num_motif_regions: number of regions with motif hits
+    * quant_size: The number of regions within each quantile for graphing
     * increment_value: positive float of 0.5 or 1 (default 0.5): number of base splines to increment
          by (e.g. 1 means go from 9e-11 to 8e-11, .5 means go from 9e-11 to 8.5e-11)
 
@@ -883,6 +908,8 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5)
     * le_se_stdev: (float, rounded to 3 decimals) Standard deviation of le_se across splines (If only one spline used, NaN)
     * final_frac_back: (float, rounded to 2 decimals) Median fraction of regions with enrichment curve
             slope above background (meant to help pinpoint FPs)
+    * max_quant: (int) quantile with the max derivative
+    * binned: (np.array) the median derivative for each quantile of ranked regions used for later graphing
     """
     num_regions = len(cumscores)
     # print("Num regions:", num_regions, "Num Motif Regions:", num_motif_regions, 
@@ -891,10 +918,10 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5)
     num_der_limit = get_num_der_limit(num_regions)
     spline_use, spline_power = get_start_spline(num_motif_regions)
     # ITERATE THROUGH THE SPLINES
-    # Lists ot hold things
+    # Lists to hold things
     spline_list = []
-    #der_list = []; second_der_list = []
-    LE_mb_list = []; LE_se_list = []; LE_se_type_list = []
+    der_list = []; second_der_list = []
+    LE_mb_list = []; LE_pe_list = []; LE_pe_type_list = []
     frac_back_list = []
     # Default starting values
     num_der = 0
@@ -924,19 +951,19 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5)
             ## GET THE MIN POSITION WHERE SLOPE MATCHES BACKGROUND
             stand_list = y_spline_prime - background_slope
             matchback, frac_back = get_matchback(stand_list, Enr_score)
-            ## GET THE 2nd DER BASED LE (Stalled_enrichment)
-            curve_pos, peak_type = get_LE_stalled_enrichment(num_regions, y_spline_2ndder, y_spline_3rdder, Enr_score)
+            ## GET THE 2nd DER BASED LE (Plateaued_enrichment)
+            curve_pos, peak_type = get_LE_plat_enrichment(num_regions, y_spline_2ndder, y_spline_3rdder, Enr_score)
             # If the 2nd derivative is at a decent position
             if ((curve_pos < quint_point) & (Enr_score > 0)) or ((curve_pos > fourquint_point) & (Enr_score < 0)):
                 # print("SPLINE Adding", spline_use, spline_power, Enr_score)
                 # # get graph related lists
                 # spline_list.append(spline_use*10**spline_power)
-                # der_list.append(y_spline_prime)
-                # second_der_list.append(y_spline_2ndder)
+                der_list.append(y_spline_prime)
+                second_der_list.append(y_spline_2ndder)
                 # Save LEs
                 LE_mb_list.append(matchback)
-                LE_se_list.append(curve_pos)
-                LE_se_type_list.append(peak_type)
+                LE_pe_list.append(curve_pos)
+                LE_pe_type_list.append(peak_type)
                 # Save fraction below background
                 frac_back_list.append(frac_back)
         elif len(LE_mb_list) == 0:
@@ -954,25 +981,62 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, increment_value=0.5)
     if len(LE_mb_list) == 0:
         print("REACHED GREATER THAN 20 TRIALS WITH NO LUCK")
         le_mb = np.nan
-        le_se = np.nan
+        le_pe = np.nan
         le_mb_stdev = np.nan
-        le_se_stdev = np.nan
+        le_pe_stdev = np.nan
         final_frac_back = np.nan
     elif len(LE_mb_list) == 1:
+        # if only one then stdev no longer applies here so put Nan instead of 0
         le_mb_stdev = np.nan
-        le_se_stdev = np.nan
+        le_pe_stdev = np.nan
         le_mb = int(np.median(LE_mb_list))
-        le_se = int(np.median(LE_se_list))
+        le_pe = int(np.median(LE_pe_list))
         final_frac_back = round(np.median(frac_back_list), 2)
     else:
         le_mb = int(np.median(LE_mb_list))
-        le_se = int(np.median(LE_se_list))
+        le_pe = int(np.median(LE_pe_list))
         le_mb_stdev = round(np.std(LE_mb_list),2)
-        le_se_stdev = round(np.std(LE_se_list),2)
+        le_pe_stdev = round(np.std(LE_pe_list),2)
         final_frac_back = round(np.median(frac_back_list), 2)
+    ## Get the quantile with the greatest slope compared to background
+    # get the der list of median spline
+    med_index = int(len(der_list)/2)
+    der_list = der_list[med_index]
+    max_quant, binned = get_max_quant(quant_size, der_list, background_slope, num_quants)
     
     
-    return le_mb, le_se, le_mb_stdev, le_se_stdev, final_frac_back
+    return le_mb, le_pe, le_mb_stdev, le_pe_stdev, final_frac_back, max_quant, binned
+
+#############################################
+##  GETTING QUANTILE BASED SUMMARY STATS  ###
+#############################################
+def get_max_quant(quant_size, der_list, background_slope, num_quants=15):
+    """
+    Gets the quantile (out of 15) that has the greatest change in cumulative enrichment compared
+    to background.
+
+    Parameters:
+    * quant_size: The number of regions within each quantile to use for graphing
+    * der_list: the list of first derivatives of cum_enr (cumulative enrichment) for splines used
+    * background_slope: the slope of cumulative enrichment when assuming a uniform step size
+    * num_quant: the number of quantiles to use (default is 15)
+
+    Returns:
+    * max_quant: quantile with the max derivative
+    * binned: the derivative for each quantile used for later graphing
+    """
+    # standardize der list so background is 0
+    der_list = der_list - background_slope
+    # Get the binned list
+    der_list = np.array(der_list)
+    print("LENGTH OF DER LIST", len(der_list), file=sys.stderr)
+    binned = [
+        np.median(der_list[i*quant_size:(i+1)*quant_size]) for i in range(num_quants)
+    ]
+    print("MEDIAN", np.median(der_list[4000:6000]), file=sys.stderr)
+    # Get the quantile where max is and add 1 so from 1-15 for easier interpretation
+    return int(np.where(binned == max(binned))[0]) + 1, binned
+
 
 ########################
 ##  GETTING SPLINES  ###
@@ -1153,7 +1217,7 @@ def get_curve_elbow(num_regions, y_spline_secder, Enr_score=0):
     from the background line is.
     If an activator (Enr_score > 0) then looks in the first "half" (len/2.5).
     If a repressor (Enr_score < 0) then looks in the second "half." If a 
-    Used for get_LE_stalled_enrichment.
+    Used for get_LE_plat_enrichment.
     *Note*: get_dist_point_line is the main time bottleneck.
 
     Parameters:
@@ -1222,7 +1286,7 @@ def count_min_max(arr):
 #################################
 ###     Individual Methods    ###
 #################################
-def get_LE_stalled_enrichment(num_regions, y_spline_2ndder, y_spline_3rdder, Enr_score=0):
+def get_LE_plat_enrichment(num_regions, y_spline_2ndder, y_spline_3rdder, Enr_score=0):
     """
     This function returns the median LE across the spline methods where the individual
        LE for each spline is considered accordingly:

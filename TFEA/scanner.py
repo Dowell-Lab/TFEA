@@ -495,7 +495,10 @@ def fimo_background_file(window=None, tempdir=None, bedfile=None,
     with open(bedfile) as F:
         F.readline()
         for line in F:
-            chrom, start, stop, name = line.strip('\n').split('\t')
+            try:
+                chrom, start, stop, name = line.strip('\n').split('\t')
+            except:
+                chrom, start, stop, name, name2 = line.strip('\n').split('\t')
             center = (int(start)+int(stop))/2
             start = int(center - window)
             stop = int(center + window)
@@ -565,7 +568,9 @@ def get_fimo_thresh_dict(fimo_thresh_file):
         are the desired pvalue thresholds for FIMO.
     '''
     # If it is a file then read it
-    if os.path.isfile(str(fimo_thresh_file)):
+    if  type(fimo_thresh_file) == type(0.005):
+        fimo_thresh_dict = fimo_thresh_file
+    elif os.path.isfile(str(fimo_thresh_file)):
         # read in the file
         fimo_thresh_df = pd.read_csv(fimo_thresh_file, sep="\t")
         # get the dictionary

@@ -38,4 +38,6 @@ DPI = None
 PADJCUTOFF = 0.001
 TEXTONLY = False
 CPUS = 10
+NUM_QUANTS = 15
+KEEP_LE_FILES = False
 vars = dict()

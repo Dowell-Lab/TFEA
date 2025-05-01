@@ -1,8 +1,8 @@
 <H1>Transcription Factor Enrichment Analysis (TFEA)</H1>
 <H2 id="TableOfContents">Table of Contents</H2>
 
+0. <A href="#WhatsNew">What's New?</A>
 1. <A href="#Pipeline">Pipeline</A>
-2. <A href="#InterpretingResults">Interpreting Results</A>
 2. <A href="#InstallationandRequirements">Installation and Requirements</A>
    - <A href="#TFEA">TFEA</A>
    - <A href="#InstallingTFEAwithGithub">TFEA with Github</A>
@@ -37,68 +37,60 @@
 8. <A href="#ContactInformation">Contact Information</A>
  
 <br></br>
+
+<H2 id="WhatsNew">What's New?</H2>
+
+### 1. New Recommended Inputs for Nascent RNA-seq
+* We now have an improved Nascent RNA sequencing pipeline for TFEA input at _____
+* The way to use this input is found in <A href="#SuggestedUsage">Suggested Usage</A>
+
+### 2. Choose TF-specific FIMO pvalues
+#### Why should I care?
+TFEA doesn't call significance of a TF well  if there are a ton (e.g. EVENTS > 8,000) or few (e.g. EVENTS < 600) regions with a motif. The complexity of TF motifs means the FIMO p-value cutoffs to use for identifying instances may need to be different for different motifs. 
+#### How do I do this?
+Option —fimo_pval can now take either a single value (e.g. 0.00005) **or** a file with TF motifs and FIMO pvalues to use. A good default is provided at assets/PVAL_CUTOFF_ESTIMATES_H12.CORE.txt.
+
+### 3. Leading Edge
+#### Why should I care?
+**1- Improved metrics for False Positives**:
+    We found that transcription factors were likely false positives if:
+* the fraction of regions with a change in enrichment score > background was higher than 0.5, these (**FrcAbv Back**)
+* The quantile of tREs with the maximum change in enrichment score was in the middle (**MaxQ** is closer to 1/2 of **num_quant** (default 15))
+
+**2- Improved recall of responding regions (e.g. enhancers):**
+The leading edges consider *both motifs and statistical confidence* to call regions changing. Therefore, it performs better than classic approaches (e.g. DESeq2) with small transcriptional changes or where there are sample outliers. 
+
+  * Two versions:
+    1. Plateaued Enrichment: Captures where the change in enrichment scores starts to plateau to noise. More **conservative**.  
+    2. Match Background: Captures where the change in enrichment scores matches what we expect from noise. Less conservative but also reveals **larger scale trends**.
+* How do I use these to get regions changing?
+    * The jupyter notebook X indicates how you can read in TFEA results to get regions
+#### What are the relevant output changes?
+Results:
+  * Check out <A href="#ExampleOutput">Example Output</A>
+
+Files:
+  * The leading edge uses the distances of the ranked regions from a given TF. If you would like to keep these files to find the regions within the leading edge that also fit certain motif distances, use the flag —keep_le_files. 
+
+Plots:
+  * Enrichment curve graphs now include leading edges as vertical lines (purple=Plateaued Enrichment, red=Match Background)
+  * Quantile Map 
+    * Graph of **enrichment trends across all TFs** reaching padj cutoffs in either original or corrected adjusted pvalues. Ranked regions are split into quantiles (num_quant=15 by default). The magnitude of the change in enrichment trends for each graph are plotted where green is greater than background. 
+    * Example below shows two true positives (greatest enrichment increase clearly at poles) and a false positive (greatest enrichment increase at middle where no regions should be changing).
+    * Access via “Quantile Map” link on the results.html (or plots/Quantile.map.png)
+
+### Want the older version?
+* Go to _______.
  
 <H2 id="Pipeline">TFEA Pipeline</H2>
  
 ![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/TFEAPipelinev5.png)
 
-NEED TO ADD THE PNG OF THE LEADING EDGE PIPELINE PART
 
-<H3 id="LeadingEdge">How to use Leading Edge?</H3> 
-
-#### Improved TF False Positive Removal
-* Enrichment scores and adjusted p-values of them can be biased towards signficance due to GC content, the number of regions with the TF motif, and how many regions are actively changing (i.e. the extent of the response). The Leading Edge provides less biased secondary evidence of a TRUE change (see **When to not have confidence in a result**).
-
-#### Improved Differential Expression Calls
-* Bidirectionals are lowly transcribed and therefore classic differential expression tools (e.g. DESeq2, EdgeR) cannot confidently capture a lot of truly changing calls.
-* You can vastly improve sensitivity of calls while controlling for precision by including regions with motifs of responding TFs AND that have evidence of differential transcription.
-* The Leading Edge effectively captures the regions that fit these requirements
-* Getting these calls to add to the more conservative calls of DESeq2 is in LE_DE_motif.csv
-* Details (here)[]
-
-#### Why two methods to get it?
-* The **Match_Background** method produces very consistent results but is less conservative.
-* The **Stalled_Enrichment** method provides a more conservative call of the LE based on when the enrichment of a motif across ranked regions significantly stalls.
-* Further explanation of the two approaches can be found (here)[]
 
 <H2 id="InterpretingResults">Interpreting Results</H2>
 
-### Results.txt 
-- **E-Score**: Enrichment score of the TF motif. Positive means upregulated regions are enriched for this motif, Negative means downregulated regions are enriched for this motif
-- **Corrected E-Score**: Enrichment score of the TF motif corrected for GC motif content.
-- **Events**: Number of regions with the motif
-  * NOTE: Motifs with regions greater than 10,000 can lead to misleading pvalues and leading edges due to the large information input. We recommend increasing the stringency of FIMO pvalue cutoffs (argument fimo_thresh) for any TFs of interest that have >10,000 regions.
-- **GC**: GC content of the motif
-- **FPKM**: FPKM of the motif region *if motif_annotations* are provided
-- **P-adj**: Adjusted Pvalue for the TF-motif being significantly enriched
-- **Corrected P-adj**: Adusted P-value corrected for GC motif content
-- **MB_LE**: Leading edge according to Match_background method. 
-  * Note: If E-Score (NOT Corrected E-Score) is negative, the LE value should be from the end of the ranked list rather than the beginning (e.g. if 2000 regions and LE is 100, Bids within LE are above ranking of 1900)
-- **MB_LE Stdev**: Standard deviation of MB_LE
-- **SE_LE**: Leading edge according to Stalled_Enrichment method
-- **SE_LE Stdev**: Standard deviation of SE_LE
-  * Note: It is normal to have values about 1/3 of the SE_LE. The algorithm uses the more conservative calls. Nan means only one LE was found.
-- **Frac Abv Null**: Fraction of enrichment curve slope being above what expected from background
-  * This provides another proxy of confidence for results not impacted by GC content (see below)
 
-
-### When to not have confidence in a result (in order of information load):
-
-- Frac Abv Null > 0.5
-  * Calls with this are highlighted brown in the html version of results
-- Events > 10000
-- Absolute value of Corrected E-Score < 0.1
-- MB_LE stdev > 1000
-
-### LE_DE_motif.csv
-The list of regions that contain the motif of significantly called TFs AND are within the leading edges of those TFs.
-Listed in order of stringency:
-* SE_mu500: Significant TF Motif within 500bp of regions within the Stalled Enrichment Leading Edge
-* SE_mu1500: Significant TF Motif within 1500bp of regions within the Stalled Enrichment Leading Edge
-* MB_mu500: Significant TF Motif within 500bp of regions within the Match Background Leading Edge
-* MB_mu1500: Significant TF Motif within 1500bp of regions within the Match Background Leading Edge
-
-**Important Note:** The regions are named according to their midpoint to ensure consistency (e.g. if the region from the count_file is named chr1:1-100 or ranked_file/combined_file has coordinates chr1, 1, 100; the region in LE_DE_motif.txt is named chr1:50)
 
  
 <br></br>
@@ -884,10 +876,43 @@ Column Descriptions:
 7. P-adj - The adjusted p-value of the motif using the Bonferroni correction (to get the original p-value, simply divide this by the total number of motifs analyzed).
 8. Corrected P-adj - The adjusted p-value after GC-correction.
 
-<H3 id="">LE_plots</H3>
-* SE/MB = Type of Leading Edge
-* Motifs500bp/1500bp = Motif must be within Xbp of mu
-* Plots how many regions have support from how many TFs for being called.
+### Results.txt 
+- **E-Score**: Enrichment score of the TF motif. Positive means upregulated regions are enriched for this motif, Negative means downregulated regions are enriched for this motif
+- **Corrected E-Score**: Enrichment score of the TF motif corrected for GC motif content.
+- **Events**: Number of regions with the motif
+  * NOTE: Motifs with regions greater than 10,000 can lead to misleading pvalues and leading edges due to the large information input. We recommend increasing the stringency of FIMO pvalue cutoffs (argument fimo_thresh) for any TFs of interest that have >10,000 regions.
+- **GC**: GC content of the motif
+- **FPKM**: FPKM of the motif region *if motif_annotations* are provided
+- **P-adj**: Adjusted Pvalue for the TF-motif being significantly enriched
+- **Corrected P-adj**: Adusted P-value corrected for GC motif content
+- **MB_LE**: Leading edge according to Match_background method. 
+  * Note: If E-Score (NOT Corrected E-Score) is negative, the LE value should be from the end of the ranked list rather than the beginning (e.g. if 2000 regions and LE is 100, Bids within LE are above ranking of 1900)
+- **MB_LE Stdev**: Standard deviation of MB_LE
+- **SE_LE**: Leading edge according to Stalled_Enrichment method
+- **SE_LE Stdev**: Standard deviation of SE_LE
+  * Note: It is normal to have values about 1/3 of the SE_LE. The algorithm uses the more conservative calls. Nan means only one LE was found.
+- **Frac Abv Null**: Fraction of enrichment curve slope being above what expected from background
+  * This provides another proxy of confidence for results not impacted by GC content (see below)
+
+
+### When to not have confidence in a result (in order of information load):
+
+- Frac Abv Null > 0.5
+  * Calls with this are highlighted brown in the html version of results
+- Events > 10000
+- Absolute value of Corrected E-Score < 0.1
+- MB_LE stdev > 1000
+
+### LE_DE_motif.csv
+The list of regions that contain the motif of significantly called TFs AND are within the leading edges of those TFs.
+Listed in order of stringency:
+* SE_mu500: Significant TF Motif within 500bp of regions within the Stalled Enrichment Leading Edge
+* SE_mu1500: Significant TF Motif within 1500bp of regions within the Stalled Enrichment Leading Edge
+* MB_mu500: Significant TF Motif within 500bp of regions within the Match Background Leading Edge
+* MB_mu1500: Significant TF Motif within 1500bp of regions within the Match Background Leading Edge
+
+**Important Note:** The regions are named according to their midpoint to ensure consistency (e.g. if the region from the count_file is named chr1:1-100 or ranked_file/combined_file has coordinates chr1, 1, 100; the region in LE_DE_motif.txt is named chr1:50)
+
 
 <H3 id="">md_results.txt and mdd_results.txt</H3>
 Contains tab-delimited results for secondary MD-Score (MDS) and Differential MD-Score (MDD) analysis if these flags were specified

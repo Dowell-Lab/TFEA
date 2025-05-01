@@ -34,7 +34,11 @@ import ujson
 from statistics import mean, median
 
 import numpy as np
+import pandas as pd
 from scipy import stats
+from matplotlib.colors import ListedColormap, TwoSlopeNorm, LinearSegmentedColormap
+import seaborn as sns
+from scipy.cluster.hierarchy import linkage, leaves_list
 
 from TFEA import exceptions
 
@@ -568,10 +572,10 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     if len(clean_results) == 0:
         print("No results to plot", file=sys.stderr)
         return
-    ylist = [i[y_index] for i in clean_results] 
-    xlist = [i[x_index] for i in clean_results]
-    clist = [i[c_index] for i in clean_results]
-    clist = [c-y for y,c in zip(ylist,clist)]
+    ylist = [i[y_index] for i in clean_results] # 1=AUC (E-Score)
+    xlist = [i[x_index] for i in clean_results] # 4=GC
+    clist = [i[c_index] for i in clean_results] # 2 = Corrected AUC
+    clist = [c-y for y,c in zip(ylist,clist)] # subtract the oriignal from corrected
     try:
         max_c = abs(max([x for x in clist if x == x], key=abs))
     except:
@@ -583,6 +587,7 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     cbar.outline.set_visible(False)
 
     if p_index is not None:
+        print("P ADJUSTED CUTOFF USED", p_cutoff)
         plist = [i[p_index] for i in clean_results]
         sigx = [x for x,p in zip(xlist,plist) if p<p_cutoff]
         sigy = [y for y,p in zip(ylist,plist) if p<p_cutoff]
@@ -619,6 +624,87 @@ def plot_global_gc(results, p_cutoff=None, title=None, xlabel=None,
     F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
     plt.close()
     return
+
+#==============================================================================
+@force_gc
+def plot_quant_slopes(results,  group_size=None, title=None, xlabel=None, 
+                        ylabel=None, savepath=None, dpi=200, plot_format=None):
+    """
+    Plots the slopes at each tRE quantile for the TFs that are called significant
+    by at least GC or uncorrected.
+    """
+
+    # Get the binned derivatives
+    motif_index = 0
+    binned_index = 14
+    # Remove Nans from results
+    clean_results = [i for i in results if i[binned_index] == i[binned_index]]
+    if len(clean_results) == 0:
+        print("No results to plot quantiles", file=sys.stderr)
+        return
+
+    
+    # Step 1: Build heatmap matrix for TFs
+    binned_rows = [i[binned_index] for i in clean_results]
+    heatmap_df = pd.DataFrame(binned_rows)
+    # Step 2: Normalize each row indepndently (row-wise min-max scaling around 0)
+    normed_df = heatmap_df.copy() # make copy to avoid warnings
+    for i in range(normed_df.shape[0]):
+        row = normed_df.iloc[i]
+        max_pos = row[row > 0].max() if any(row > 0) else 1
+        min_neg = row[row < 0].min() if any(row < 0) else -1
+        normed_df.iloc[i] = row.apply(lambda x: x / max_pos if x > 0 else (x / abs(min_neg) if x < 0 else 0))
+    # Set names
+    normed_df.index = [i[motif_index] for i in clean_results]
+    # Step 3: Clusters rows 
+    linkage_matrix = linkage(normed_df.values, method='average', metric='euclidean')
+    order = leaves_list(linkage_matrix)
+    normed_df = normed_df.iloc[order]
+
+    # Step 4: Plot
+    # Initiate plot with enough space to read TF names
+    height=len(clean_results) * 0.2
+    # Create the figure and axis object
+    F, ax = plt.subplots(figsize=(10, max(1, height+1)), constrained_layout=True)
+
+    # Get colors ready
+    cmap = LinearSegmentedColormap.from_list("custom_gradient", ["white", "lightgrey", "#31a354"])
+    norm = TwoSlopeNorm(vmin=-1, vcenter=0, vmax=1)
+    # Plot the heatmap
+    if normed_df.shape[0] > 1000:
+        cbar_size = 0.01
+    elif normed_df.shape[0] > 500:
+        cbar_size = 0.05
+    elif normed_df.shape[0] > 100:
+        cbar_size = 0.01
+    elif normed_df.shape[0] > 10:
+        cbar_size = 0.2
+    else:
+        cbar_size = 0.6
+    heatmap = sns.heatmap(normed_df, cmap=cmap, norm=norm, cbar=True,
+                linewidths=0.001, linecolor='white', 
+                ax=ax, xticklabels=True, yticklabels=True, cbar_kws={'shrink': cbar_size})
+    ax.set_xlabel(f"Regions ranked by direction and confidence\n(grouped every {group_size})", labelpad=5, fontsize=10)
+    ax.set_ylabel(ylabel, fontsize=10, labelpad=8)
+    ax.set_title(title, fontsize=12, pad=5)
+    # Custom x-tick labels
+    ax.set_yticklabels(ax.get_yticklabels(), fontsize=8)
+    ax.set_xticks([0.5 + i for i in range(normed_df.shape[1])])
+    ax.set_xticklabels([str(i+1) for i in range(normed_df.shape[1])], fontsize=9)
+    # Adjust colorbar tick labels and size
+    if heatmap.figure.axes[-1]:
+        ## Get the colorbar object (Colorbar, not Axes)
+        cbar = heatmap.collections[0].colorbar
+        cbar.set_ticks([-1, 0, 1])
+        cbar.set_ticklabels(['Min', 'Background', 'Max'])
+        cbar.ax.tick_params(labelsize=8)
+    if savepath:
+        #plt.tight_layout()
+        F.savefig(str(savepath), format=plot_format)#, dpi=dpi, bbox_inches='tight')
+        plt.close()
+    return
+
+
 
 #==============================================================================
 @force_gc

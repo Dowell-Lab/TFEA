@@ -84,7 +84,7 @@ def read_arguments():
     # Processed inputs if a user desires to run TFEA from a specific point
     processed_inputs = parser.add_argument_group('Processed Inputs', 
                                         'Input options for pre-processed data')
-    processed_inputs.add_argument('--count_file', nargs='*', help=("Count file from featureCounts."), 
+    processed_inputs.add_argument('--count_file',  help=("Count file from featureCounts."), 
                                             dest='COUNT_FILE')                                       
     processed_inputs.add_argument('--combined_file', help=("A single bed file "
                                             "combining regions of interest."), 
@@ -200,13 +200,16 @@ def read_arguments():
                                         "that captures signal. Default: "
                                         "150"), 
                                         dest='SMALLWINDOW')
+    enrichment_options.add_argument('--num_quants', help=("The number of quantiles considered. Default: "
+                                        "15"), 
+                                        dest='NUM_QUANTS', default=15)
     
     # Output Options
     output_options = parser.add_argument_group('Output Options', 
                                                 'Options for the output.')
     output_options.add_argument('--padjcutoff', help=("A p-adjusted cutoff "
                                     "value that determines some plotting output."), 
-                                    dest='PADJCUTOFF')
+                                    dest='PADJCUTOFF', default=0.001)
     output_options.add_argument('--plot_format', help=("Format of saved figures. "
                                     "Default: png"), choices=['png', 'svg', 'pdf'], 
                                     dest='PLOT_FORMAT')
@@ -225,6 +228,9 @@ def read_arguments():
                                     "html will increase processing time and "
                                     "memory usage. Default: txt", 
                                     choices=['txt', 'html'], dest='OUTPUT_TYPE')
+    output_options.add_argument('--keep_le_files', help="Keep motif distance files "
+                                    "in the temporary directory. Default: False", 
+                                    choices=[True, False], dest='KEEP_LE_FILES')
 
     #Miscellaneous Options
     misc_options = parser.add_argument_group('Miscellaneous Options', 'Other options.')
@@ -316,7 +322,7 @@ def read_arguments():
                     'COMBINED_FILE': [False, [Path, bool]],
                     'RANKED_FILE': [False, [Path, bool]],
                     'FASTA_FILE': [False, [Path, bool]],
-                    'COUNT_FILE': [False, [Path, bool]],
+                    'COUNT_FILE': [False, [str]],
                     'MD': [False, [bool]],
                     'MDD': [False, [bool]],
                     'MD_BEDFILE1': [False, [Path, bool]],
@@ -343,7 +349,7 @@ def read_arguments():
                     'PERMUTATIONS': [1000, [int]], 
                     'LARGEWINDOW': [1500, [int]], 
                     'SMALLWINDOW': [150, [int]], 
-                    'PADJCUTOFF': [0.1, [float]], 
+                    'PADJCUTOFF': [0.001, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'BATCH': ['', [str]],
                     'TREATMENT': ['', [str]],
@@ -360,7 +366,9 @@ def read_arguments():
                     'PLOTALL': [False, [bool]],
                     'PLOT_FORMAT': ['png', [str]],
                     'DPI': [100, [int]], 
-                    'METAPROFILE': [False, [bool]]}
+                    'METAPROFILE': [False, [bool]], 
+                    'NUM_QUANTS': [15, [int]], 
+                    'KEEP_LE_FILES': [False, [bool]]}
 
     #Save default arguments in config
     from TFEA import config
@@ -537,6 +545,7 @@ def verify_arguments(parser=None):
     config.vars['RESULTS'] = []
     config.vars['MD_RESULTS'] = []
     config.vars['MDD_RESULTS'] = []
+    config.vars['NUM_QUANTS'] = 15
 
     #Set module booleans based on pre-processed inputs
     if config.vars['COMBINED_FILE']:
