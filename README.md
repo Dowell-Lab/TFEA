@@ -43,7 +43,7 @@
 
    <H3 id="TFEA">TFEA</H3>
 
-To install, this package and all python3 dependencies:
+<!-- To install, this package and all python3 dependencies:
 
 ```
 python3 -m pip install tfea
@@ -51,10 +51,19 @@ python3 -m pip install tfea
 
 This should take no longer than several minutes.
 
-Once successfully installed, you should be able to run the tfea command from anywhere, try:
+Once successfully installed, you should be able to run the tfea command from anywhere, try: -->
+
+Github would provide the most uptodate version of the code. To install and build TFEA, run the following with python 3.7 (if on Fiji you can use  `module load python/3.7.4`)
+
 
 ```
-TFEA --help
+git clone git@github.com:Dowell-Lab/TFEA.git
+cd TFEA
+python -m venv vir_TFEA # create virtual python environment (might need to use python3 instead of python)
+source vir_TFEA/bin/activate # activate the environment
+pip3 install -r requirements.txt # install the requirements
+python setup.py build
+python setup.py install
 ```
 
 <b>*Note:*</B> If you plan to run TFEA only on FIJI using the --sbatch flag, then you only need to install DESeq and DESeq2. Otherwise, follow the instructions below for installing all TFEA dependencies.
@@ -64,12 +73,14 @@ TFEA --help
   
   ```
   module unload gcc
+  module load R/4.4.0
   ```
   
   or
   
   ```
   module purge
+  module load R/4.4.0
   ```
   
   To install DESeq and DESeq2 type in your terminal:
@@ -131,28 +142,33 @@ TFEA --help
   Below is a summary of all FIJI modules needed to run TFEA.
   
   ```
-  module load python/3.6.3
-  module load python/3.6.3/matplotlib/1.5.1
-  module load python/3.6.3/scipy/0.17.1
-  module load python/3.6.3/numpy/1.14.1
-  module load python/3.6.3/htseq/0.9.1
-  module load python/3.6.3/pybedtools/0.7.10
+  module purge
 
-  module load samtools/1.8
+  module load python/3.7.4
+  module load samtools/1.3.1
   module load bedtools/2.25.0
   module load meme/5.0.3
+  module load samtools/1.3.1
+  module load gcc/7.1.0
+  module load R/4.4.0
+
+  source /path/to/TFEA/vir_TFEA/bin/activate
   ```
 
 <br></br>
 <H2 id="BasicUsage">BasicUsage</H2>
+
+<span style="color:red">s**IMPORTANT NOTE**</span>.
+
+: If you installed via Github, everywhere the command is ```TFEA```, use this command instead `python3 /path/to/TFEA/vir_TFEA/lib/python3.7/site-packages/tfea-1.1.4-py3.7.egg/TFEA`
 <H3 id="TestingTFEA">Testing TFEA</H3>
 To make sure TFEA is installed properly, run the following tests:
 
 <b>*Note:*</b> If you chose to skip installations because you were going to run TFEA using the --sbatch flag, make sure you load the appropriate modules on FIJI or these tests will fail.
 
 ```
-TFEA --test-install
-TFEA --test-full
+TFEA --test-install 
+TFEA --test-full 
 ```
 
 These should each take no longer than several minutes to run
