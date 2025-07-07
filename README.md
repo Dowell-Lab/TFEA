@@ -50,24 +50,26 @@ TFEA doesn't call significance of a TF well  if there are a ton (e.g. EVENTS > 8
 #### How do I do this?
 Option —fimo_pval can now take either a single value (e.g. 0.00005) **or** a file with TF motifs and FIMO pvalues to use. A good default is provided at assets/PVAL_CUTOFF_ESTIMATES_H12.CORE.txt.
 
-### 3. Leading Edge
-#### Why should I care?
-**1- Improved metrics for False Positives**:
-    We found that transcription factors were likely false positives if:
+### 3. Leading Edge to address false positives & recall of chaning regions
+#### A. Get Improved metrics for False Positives:
+We found that transcription factors were likely false positives if:
 * the fraction of regions with a change in enrichment score > background was higher than 0.5, these (**FrcAbv Back**)
 * The quantile of tREs with the maximum change in enrichment score was in the middle (**MaxQ** is closer to 1/2 of **num_quant** (default 15))
 
-**2- Improved recall of responding regions (e.g. enhancers):**
+#### B. Get Improved recall of responding regions (e.g. enhancers):
 The leading edges consider *both motifs and statistical confidence* to call regions changing. Therefore, it performs better than classic approaches (e.g. DESeq2) with small transcriptional changes or where there are sample outliers. 
+
+![LE_Method](./README_images/LE_Method_Repo.png)
+
 
   * Two versions:
     1. Plateaued Enrichment: Captures where the change in enrichment scores starts to plateau to noise. More **conservative**.  
     2. Match Background: Captures where the change in enrichment scores matches what we expect from noise. Less conservative but also reveals **larger scale trends**.
 * How do I use these to get regions changing?
-    * The jupyter notebook X indicates how you can read in TFEA results to get regions
+    * The jupyter notebook X indicates how you can read in TFEA results to get regions either specific to a TF or across all significant TFs.
 #### What are the relevant output changes?
 Results:
-  * Check out <A href="#ExampleOutput">Example Output</A>
+  * Check out the Results.txt at <A href="#ExampleOutput">Example Output</A>
 
 Files:
   * The leading edge uses the distances of the ranked regions from a given TF. If you would like to keep these files to find the regions within the leading edge that also fit certain motif distances, use the flag —keep_le_files. 
@@ -76,20 +78,16 @@ Plots:
   * Enrichment curve graphs now include leading edges as vertical lines (purple=Plateaued Enrichment, red=Match Background)
   * Quantile Map 
     * Graph of **enrichment trends across all TFs** reaching padj cutoffs in either original or corrected adjusted pvalues. Ranked regions are split into quantiles (num_quant=15 by default). The magnitude of the change in enrichment trends for each graph are plotted where green is greater than background. 
-    * Example below shows two true positives (greatest enrichment increase clearly at poles) and a false positive (greatest enrichment increase at middle where no regions should be changing).
+    * Example below shows two false positives (greatest enrichment increase at middle where no regions should be changing), weak positives (enrichment change extended throughout regions), and true positives (greatest enrichment increase clearly at poles).
     * Access via “Quantile Map” link on the results.html (or plots/Quantile.map.png)
+![LE_Method](./README_images/Ex_Quant_Plot_Repo.png)
 
 ### Want the older version?
 * Go to _______.
  
 <H2 id="Pipeline">TFEA Pipeline</H2>
  
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/TFEAPipelinev5.png)
-
-
-
-<H2 id="InterpretingResults">Interpreting Results</H2>
-
+![TFEA Pipeline](./README_images/TFEAPipelinev5.png)
 
 
  
@@ -131,17 +129,9 @@ python setup.py install
 <b>*Note:*</B> If you plan to run TFEA only on FIJI using the --sbatch flag, then you only need to install DESeq and DESeq2. Otherwise, follow the instructions below for installing all TFEA dependencies.
   
   <H3 id="DESeq">DESeq</H3>
-  TFEA uses DESeq or DESeq2 (depending on replicate number) to rank inputted bed files based on fold change significance. If on FIJI, make sure all gcc modules are unloaded before installing DESeq or DESeq2. This can be accomplished with:
+  TFEA uses DESeq or DESeq2 (depending on replicate number) to rank inputted bed files based on fold change significance. If on FIJI, make sure all gcc modules are unloaded before installing DESeq or DESeq2. This can be accomplished with
   
-  ```
-  module unload gcc
-  ```
-  
-  or
-  
-  ```
-  module purge
-  ```
+  `module unload gcc`   or  `module purge`.
   
   To install DESeq and DESeq2 type in your terminal:
     
@@ -722,7 +712,8 @@ Scanner Options:
   Options for performing motif scanning
 
   --fimo_thresh FIMO_THRESH
-                        P-value threshold for calling FIMO motif hits.
+                        P-value threshold for calling FIMO motif hits OR file 
+                        with XXX.
                         Default: 1e-6
   --fimo_background FIMO_BACKGROUND
                         Options for choosing mononucleotide background
@@ -841,6 +832,33 @@ TFEA will output all files and folders into the directory specified by the `--ou
 
 A brief description of the files contained within this output directory are below:
 
+<H3 id="">results.txt</H3>
+Contains TFEA results tab-delimited in .txt format. For example:
+
+```
+#TF     E-Score Corrected E-Score       Events  GC      FPKM    P-adj   Corrected P-adj MB_LE MB_LE_Stdev PE_LE PE_LE_Stdev Frac_Abv_Back Max_Quant
+P53.H12CORE.0.P.B	0.6633942557032672	0.49695943025583045	992	0.5377877178268567	nan	1e-112	1e-63	5764	470.44	2651	176.58	0.09	1  
+SP2.H12CORE.1.P.B	-0.08979879452438855	-0.19534176832036465	4646	0.6861772486772487	nan	1e-8	1e-40	32276	6779.7	5936	2796.04	0.52	9
+```
+
+- **E-Score**: Enrichment score of the TF motif. Positive means upregulated regions are enriched for this motif, Negative means downregulated regions are enriched for this motif
+- **Corrected E-Score**: Enrichment score of the TF motif corrected for GC motif content.
+- **Events**: Number of regions with the motif
+  * NOTE: Motifs with regions greater than 10,000 can lead to misleading pvalues and leading edges due to the large information input. We recommend increasing the stringency of FIMO pvalue cutoffs (argument fimo_thresh) for any TFs of interest that have >10,000 regions.
+- **GC**: GC content of the motif
+- **FPKM**: FPKM of the motif region *if motif_annotations* are provided
+- **P-adj**: Adjusted Pvalue for the TF-motif being significantly enriched
+- **Corrected P-adj**: Adusted P-value corrected for GC motif content
+- **MB_LE**: Leading edge according to Match_background method. 
+  * Note: If E-Score (NOT Corrected E-Score) is negative, the LE value should be from the end of the ranked list rather than the beginning (e.g. if 2000 regions and LE is 100, Bids within LE are above ranking of 1900)
+- **MB_LE Stdev**: Standard deviation of MB_LE
+- **PE_LE**: Leading edge according to Plateaued Enrichment method (best for getting regions changing)
+- **PE_LE Stdev**: Standard deviation of PE_LE
+  * Note: It is normal to have values about 1/3 of the SE_LE. The algorithm uses the more conservative calls. Nan means only one LE was found.
+- **Frac_Abv_Back**: Fraction of tREs where increase in enrichment is above what expected from background
+  * This provides another proxy of confidence for results not impacted by GC content (see below)
+- **Max_Quant**: The quantile (out of num_quants (Default=15)) with the maximum increase in enrichment score
+
 <H3 id="">rerun.sh</H3>
 This bash script can be used at any time to regenerate a TFEA output folder in its entirety, run it using:
 
@@ -857,57 +875,12 @@ TFEA copies the config file you are using into the output directoy. This file is
 
 A .txt file that contains all user-provided inputs into TFEA
 
-<H3 id="">results.txt</H3>
-Contains TFEA results tab-delimited in .txt format. For example:
-
-```
-#TF     E-Score Corrected E-Score       Events  GC      FPKM    P-adj   Corrected P-adj
-ZN121_HUMAN.H11MO.0.C   0.03850103634523616     0.10374224445904234     230     0.5825102880658438      nan     0.637   1e-1
-SP2_HUMAN.H11MO.0.A     -0.14690991996820513    -0.09232220913971645    119     0.7937748120168564      nan     1e0     0.494
-```
-Column Descriptions:
-
-1. TF - The name of the motif analyzed as it appears in the .meme database or filename within the genome hits directory without the '.bed' extension.
-2. E-Score - The enrichment score of the given motif. Ranges from -1 to 1.
-3. Corrected E-Score - The GC-corrected E-Score. Calculated by fitting a linear regression to the E-Score vs. motif GC content of results and correcting to obtain a flat line.
-4. Events - Number of motif hits within the analyzed regions of interest.
-5. GC - GC content of the analyzed motif
-6. FPKM - FPKM of the gene associated with the analyzed motif, see `--motif_annotations` flag.
-7. P-adj - The adjusted p-value of the motif using the Bonferroni correction (to get the original p-value, simply divide this by the total number of motifs analyzed).
-8. Corrected P-adj - The adjusted p-value after GC-correction.
-
-### Results.txt 
-- **E-Score**: Enrichment score of the TF motif. Positive means upregulated regions are enriched for this motif, Negative means downregulated regions are enriched for this motif
-- **Corrected E-Score**: Enrichment score of the TF motif corrected for GC motif content.
-- **Events**: Number of regions with the motif
-  * NOTE: Motifs with regions greater than 10,000 can lead to misleading pvalues and leading edges due to the large information input. We recommend increasing the stringency of FIMO pvalue cutoffs (argument fimo_thresh) for any TFs of interest that have >10,000 regions.
-- **GC**: GC content of the motif
-- **FPKM**: FPKM of the motif region *if motif_annotations* are provided
-- **P-adj**: Adjusted Pvalue for the TF-motif being significantly enriched
-- **Corrected P-adj**: Adusted P-value corrected for GC motif content
-- **MB_LE**: Leading edge according to Match_background method. 
-  * Note: If E-Score (NOT Corrected E-Score) is negative, the LE value should be from the end of the ranked list rather than the beginning (e.g. if 2000 regions and LE is 100, Bids within LE are above ranking of 1900)
-- **MB_LE Stdev**: Standard deviation of MB_LE
-- **SE_LE**: Leading edge according to Stalled_Enrichment method
-- **SE_LE Stdev**: Standard deviation of SE_LE
-  * Note: It is normal to have values about 1/3 of the SE_LE. The algorithm uses the more conservative calls. Nan means only one LE was found.
-- **Frac Abv Null**: Fraction of enrichment curve slope being above what expected from background
-  * This provides another proxy of confidence for results not impacted by GC content (see below)
-
-
-### When to not have confidence in a result (in order of information load):
-
-- Frac Abv Null > 0.5
-  * Calls with this are highlighted brown in the html version of results
-- Events > 10000
-- Absolute value of Corrected E-Score < 0.1
-- MB_LE stdev > 1000
 
 ### LE_DE_motif.csv
 The list of regions that contain the motif of significantly called TFs AND are within the leading edges of those TFs.
 Listed in order of stringency:
-* SE_mu500: Significant TF Motif within 500bp of regions within the Stalled Enrichment Leading Edge
-* SE_mu1500: Significant TF Motif within 1500bp of regions within the Stalled Enrichment Leading Edge
+* PE_mu500: Significant TF Motif within 500bp of regions within the Stalled Enrichment Leading Edge
+* PE_mu1500: Significant TF Motif within 1500bp of regions within the Stalled Enrichment Leading Edge
 * MB_mu500: Significant TF Motif within 500bp of regions within the Match Background Leading Edge
 * MB_mu1500: Significant TF Motif within 1500bp of regions within the Match Background Leading Edge
 
@@ -921,7 +894,7 @@ Contains tab-delimited results for secondary MD-Score (MDS) and Differential MD-
 
 The main results html (if `--output_type 'html'` specified). For example:
 
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleResults_v2.png)
+![TFEA Pipeline](./README_images/ExampleResults_v2.png)
 
 <b>Figure 1: Main Results Page.</b> An example main results page (i.e. `results.html`). (a) <i>TFEA GC-Plot.</i> A scatter plot showing the raw calculated E-Score as a function of GC-content. A linear regression is fit (red line) to these data to determine if there is a GC-bias. E-Scores are then corrected to flatten the line by subtracting the y-offset from each motif to yield the corrected E-Score. TFs are also colored on the subsequent correction to be applied. (b) <i>TFEA MA-Plot.</i> A scatter plot showing E-Score vs. Log10(Events). Analogous to an MA-Plot produced from DE-Seq, these are a good way to judge believable motifs. The further you go to the right, the more confidence you have in smaller absolute E-Score values. (c) <i>DE-Seq MA-Plot.</i> A scatter plot showing all input ROIs as an MA-Plot showing fold change in reads vs. average reads across conditions. Colored based on the subsequent rank of each ROI. (d) Links to supplementary infromation, secondary analyses performed, and runtime information. (e) Lists of all motifs analyzed separated on positive and negative E-Scores. Significant motifs (or any if `--plotall` is specified) may be clicked to bring up individual motif plots
 
@@ -929,7 +902,7 @@ The main results html (if `--output_type 'html'` specified). For example:
 
 Each signficant TF motif (or all motifs if `--plotall` specified) will produce its own MOTIF.results.html file contained within the plots/ directory in the specified output directory. All images are also self-contained within the plots/ folder. For example:
 
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleMotifResults_v2.png)
+![TFEA Pipeline](./README_images/ExampleMotifResults_v2.png)
 
 <b>Figure 2: Individual Motif Results Page.</b> An example individual motif results page. (a) The numerical results for this specific motif. (b) A representation of the running sum statistic which increases from 0 as it travels right based on the distance of an observed motif to the center of each ROI. (c) Representation of the amount added to the running sum at each given location. Similar to GSEA enrichment plots. (d) Scatter plot showing the raw motif hits as a function of distance to ROI center (y-axis) and rank (x-axis). (e) Representation of the ranking metric used to rank ROI. Specifically this is the -log10 of the DE-Seq p-value with an added sign (+/-) based on whether the ROI fold change was positive or negative. (f) Meta plots of all regions that contain a motif hit separated by quartiles (n=number of ROI that go into the plot). (g) Heatmaps that represent motif hit distribution across the n ROI, separated again by quartiles. (h) Forward and reverse motif logos. (i) Simulation plot showing the background simulated distribution in blue, the observed non-corrected E-Score in red, and the GC-corrected E-Score in green.
 
