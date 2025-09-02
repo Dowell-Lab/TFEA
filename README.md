@@ -227,6 +227,7 @@ Quick Parameter Explanations:
 <H2 id="BasicUsage">Basic Usage for Other data types</H2>
 
 <H3 id="TestingTFEA">Testing TFEA</H3>
+
 To make sure TFEA is installed properly, run the file `test_run_TFEA_fiji.sh` using `sbatch test_run_TFEA_fiji.sh`:
 
 Make sure to edit the following components of the file before running it:
@@ -237,7 +238,7 @@ Make sure to edit the following components of the file before running it:
 This file runs TFEA with 3 different inputs: 1) just a combined file (like output from muMerge), 2) count file as suggested if running Nascent RNA sequencing, 3) ranked file. The outputs will be found in test/out/. If html files are not created, then it failed. If you want to look at the html results, make sure to download them to your local computer using `scp -r`
 
 
-These should each take no longer than several minutes to run
+These should each take no longer than 15 minutes to run.
 
 
 <H3 id="RunningTFEA">Running TFEA</H3>
