@@ -97,7 +97,7 @@ Plots:
 
 
 <H3 id="InstallingTFEAwithGithub">Installing TFEA with Github</H3>
-Github would provide the most uptodate version of the code. To install and build TFEA, run the following
+Github would provide the most uptodate version of the code. To install and build TFEA, run the following with python 3.7 (if on Fiji you can use module load python/3.7.4)
 
 ```
 git clone git@github.com:Dowell-Lab/TFEA.git
