@@ -588,12 +588,15 @@ def html_output(results=None, module_list=None, outputdir=None,
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 if (len(motif_result) > 8):
                     for html_res_index in [8, 10, 12, 13]:
+                        if len(motif_result) < html_res_index - 1:
+                            print(f"Error for {motif} where index {str(html_res_index)} not found in result with length {str(len(motif_result))}", file=sys.stderr)
+                            print(motif_result, file=sys.stderr)
                         number_result = motif_result[html_res_index]
                         # for non-pvalue ones
                         try:
                             outfile.write("<td>" + str(number_result) + "</td>\n")
                         except TypeError:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                            outfile.write("<td>" + "NA" + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 

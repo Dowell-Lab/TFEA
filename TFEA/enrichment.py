@@ -143,11 +143,13 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         # If no gc correction, still calculate the regression to graph
         if gc:
             print('\tCorrecting GC:', file=sys.stderr)
+            print('\tdistances:', motif_distances, file=sys.stderr)
             auc_keywords = dict(fimo_motifs=fimo_motifs)
+            print('\tauc_keywords:', fimo_motifs, file=sys.stderr)
             motif_gc_auc = multiprocess.main(function=get_auc_gc, 
                                         args=motif_distances, kwargs=auc_keywords,
                                         debug=debug, jobid=jobid, cpus=cpus)
-
+            print('\tmotif_gc_auc:', motif_gc_auc, file=sys.stderr)
             #Calculate linear regression based on AUC and GC content of motifs
             varx = np.array([i[2] for i in motif_gc_auc])
             vary = np.array([i[1] for i in motif_gc_auc])
@@ -192,6 +194,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                     debug=debug, jobid=jobid, cpus=cpus)
                                     
         if gc:
+            print('\tPlotting GC:', file=sys.stderr)
             plot.plot_global_gc(results, p_cutoff=p_cutoff, 
                                     title='TFEA GC-Plot', 
                                     xlabel='Motif GC-content',
@@ -205,6 +208,7 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                     p_index=7, # Corrected pval
                                     ylimits=[-1,1])
         else:
+            print('\tPlotting GC:', file=sys.stderr)
             plot.plot_global_gc(results, p_cutoff=p_cutoff, 
                                     title='TFEA GC-Plot (BUT correction not applied)', 
                                     xlabel='Motif GC-content',
@@ -219,14 +223,17 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
                                     ylimits=[-1,1])
 
         ## Plot the quantile values for the TFs
-        
-        plot.plot_quant_slopes(results, 
-                                    group_size=quant_size,
-                                    title="", 
-                                    xlabel="Quantiles of Regions Ranked by Sign and Confidence", 
-                                    ylabel="TF Motif", 
-                                    savepath=figuredir / ('Quantile.map.' + plot_format), 
-                                    plot_format=plot_format)
+        print('\tPlotting quantile values:', file=sys.stderr)
+        try:
+            plot.plot_quant_slopes(results, 
+                                        group_size=quant_size,
+                                        title="", 
+                                        xlabel="Quantiles of Regions Ranked by Sign and Confidence", 
+                                        ylabel="TF Motif", 
+                                        savepath=figuredir / ('Quantile.map.' + plot_format), 
+                                        plot_format=plot_format)
+        except Exception as e:
+            print(f"An error in plotting quantile values occurred: {e}", file=sys.stderr)
 
         
         # results = list()
@@ -369,8 +376,8 @@ def get_null_data(ranked_file):
     ranked['pval'] = split[1].astype(float)
     # get where the pvalues are above 0.9
     pval_09 = np.where(ranked['pval'] > 0.9)[0]
-    print(f'\nRegions considered for middle (Num:{len(pval_09)}, Percentage:{round(100*len(pval_09)/ranked.shape[0],2)}, Start:{pval_09[0]}, End:{pval_09[-1]}', 
-          flush=True, file=sys.stderr)
+    # print(f'\nRegions considered for middle (Num:{len(pval_09)}, Percentage:{round(100*len(pval_09)/ranked.shape[0],2)}, Start:{pval_09[0]}, End:{pval_09[-1]}', 
+    #       flush=True, file=sys.stderr)
     return((pval_09[0], pval_09[-1]))
 
 #==============================================================================
@@ -438,7 +445,7 @@ def auc_simulate_and_plot(distances, use_config=True, output_type=None,
         # TODO: put so if null_window pushes to limits outside the numbers then fix it
         q1 = int(round(len(distances)*.25))
         q3 = int(round(len(distances)*.75))
-        print(f"The Q1 and Q3 if using middle are {q1} and {q3}", flush=True, file=sys.stdout) 
+        # print(f"The Q1 and Q3 if using middle are {q1} and {q3}", flush=True, file=sys.stdout) 
         middledistancehist =  [x for x in distances_abs[int(q1):int(q3)] if x != '.']
         #In the case where there are no hits in the middle two quartiles, then
         #don't perform computation

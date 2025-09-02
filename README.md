@@ -82,8 +82,8 @@ Plots:
     * Access via “Quantile Map” link on the results.html (or plots/Quantile.map.png)
 ![LE_Method](./README_images/Ex_Quant_Plot_Repo.png)
 
-### Want the older version?
-* Go to _______.
+### Want the "original" version?
+* Go to [Release 1.1.2](https://github.com/Dowell-Lab/TFEA/releases/tag/v1.1.2).
  
 <H2 id="Pipeline">TFEA Pipeline</H2>
  
@@ -95,21 +95,6 @@ Plots:
 
 <H2 id="InstallationandRequirements">Installation and Requirements</H2>
 
-   <H3 id="TFEA">TFEA</H3>
-
-To install, this package and all python3 dependencies:
-
-```
-python3 -m pip install tfea
-```
-
-This should take no longer than several minutes.
-
-Once successfully installed, you should be able to run the tfea command from anywhere, try:
-
-```
-TFEA --help
-```
 
 <H3 id="InstallingTFEAwithGithub">Installing TFEA with Github</H3>
 Github would provide the most uptodate version of the code. To install and build TFEA, run the following
@@ -242,22 +227,18 @@ Quick Parameter Explanations:
 <H2 id="BasicUsage">Basic Usage for Other data types</H2>
 
 <H3 id="TestingTFEA">Testing TFEA</H3>
-To make sure TFEA is installed properly, run the following tests:
+To make sure TFEA is installed properly, run the file `test_run_TFEA_fiji.sh` using `sbatch test_run_TFEA_fiji.sh`:
 
-<b>*Note:*</b> If you chose to skip installations because you were going to run TFEA using the --sbatch flag, make sure you load the appropriate modules on FIJI or these tests will fail.
+Make sure to edit the following components of the file before running it:
+* OUTPUT and ERROR (edit path to match yours)
+* Edit so the variable SRC_DIR points to wherever you installed TFEA
+* Ensure that the proper python environment is being used
 
-```
-TFEA --test-install
-TFEA --test-full
-```
+This file runs TFEA with 3 different inputs: 1) just a combined file (like output from muMerge), 2) count file as suggested if running Nascent RNA sequencing, 3) ranked file. The outputs will be found in test/out/. If html files are not created, then it failed. If you want to look at the html results, make sure to download them to your local computer using `scp -r`
+
 
 These should each take no longer than several minutes to run
 
-If on a compute cluster with slurm the --sbatch flag is compatible with --test-full and is recommended on FIJI. Execute like so:
-
-```
-TFEA --test-full --sbatch your_email@address.com
-```
 
 <H3 id="RunningTFEA">Running TFEA</H3>
 Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below are the minimum required inputs to run the full TFEA pipeline. Test files are provided in './TFEA/test/test_files' within this repository.

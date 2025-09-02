@@ -7,10 +7,10 @@
 '''
 
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
+__author__ = 'Jonathan D. Rubin, Rutendo F. Sigauke, Hope A. Townsend'
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
-__maintainer__ = 'Jonathan D. Rubin'
+                'Robin D. Dowell', 'Hope A. Townsend']
+__maintainer__ = 'Hope A. Townsend'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 
 #Imports
