@@ -83,7 +83,7 @@ Plots:
 ![LE_Method](./README_images/Ex_Quant_Plot_Repo.png)
 
 ### Want the "original" version?
-* Go to [Release 1.1.2](https://github.com/Dowell-Lab/TFEA/releases/tag/v1.1.2).
+* Go to [Release 1.1.2](https://github.com/Dowell-Lab/TFEA/releases/tag/v1.1.2) for the saved source code or you can checkout the branch [TFEA_v112](https://github.com/Dowell-Lab/TFEA/tree/TFEA_v112) by doing `git checkout TFEA_v112`.
  
 <H2 id="Pipeline">TFEA Pipeline</H2>
  
