@@ -95,7 +95,7 @@ python3 ${SRC_DIR}/vir_TFEA/lib/python3.7/site-packages/tfea-1.1.4-py3.7.egg/TFE
 echo "Running TFEA with a ranked file"
 python3 ${SRC_DIR}/vir_TFEA/lib/python3.7/site-packages/tfea-1.1.4-py3.7.egg/TFEA  \
         --output ${outdir}/via_ranked_file2/ \
-        --ranked_file /Users/hoto7260/src/TFEA/test_set/ranked_file.bed \
+        --ranked_file ${input_dir}/New_TFEA/ranked_file.bed \
         --label1 VEH \
         --label2 Nutlin \
         --genomefasta ${genomefasta} \
