@@ -143,7 +143,8 @@ def main(use_config=True, motif_distances=None, md_distances1=None,
         # If no gc correction, still calculate the regression to graph
         if gc:
             print('\tCorrecting GC:', file=sys.stderr)
-            print('\tdistances:', motif_distances, file=sys.stderr)
+            if debug:
+                print('\tdistances:', motif_distances, file=sys.stderr)
             auc_keywords = dict(fimo_motifs=fimo_motifs)
             print('\tauc_keywords:', fimo_motifs, file=sys.stderr)
             motif_gc_auc = multiprocess.main(function=get_auc_gc, 
@@ -992,6 +993,8 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, quant_size, num_quan
         le_mb_stdev = np.nan
         le_pe_stdev = np.nan
         final_frac_back = np.nan
+        max_quant = np.nan
+        binned = np.nan
     elif len(LE_mb_list) == 1:
         # if only one then stdev no longer applies here so put Nan instead of 0
         le_mb_stdev = np.nan
@@ -999,17 +1002,18 @@ def get_lead_edges(cumscores, Enr_score, num_motif_regions, quant_size, num_quan
         le_mb = int(np.median(LE_mb_list))
         le_pe = int(np.median(LE_pe_list))
         final_frac_back = round(np.median(frac_back_list), 2)
+        max_quant, binned = get_max_quant(quant_size, der_list[0], background_slope, num_quants)
     else:
         le_mb = int(np.median(LE_mb_list))
         le_pe = int(np.median(LE_pe_list))
         le_mb_stdev = round(np.std(LE_mb_list),2)
         le_pe_stdev = round(np.std(LE_pe_list),2)
         final_frac_back = round(np.median(frac_back_list), 2)
-    ## Get the quantile with the greatest slope compared to background
-    # get the der list of median spline
-    med_index = int(len(der_list)/2)
-    der_list = der_list[med_index]
-    max_quant, binned = get_max_quant(quant_size, der_list, background_slope, num_quants)
+        ## Get the quantile with the greatest slope compared to background
+        # get the der list of median spline
+        med_index = int(len(der_list)/2)
+        der_list = der_list[med_index]
+        max_quant, binned = get_max_quant(quant_size, der_list, background_slope, num_quants)
     
     
     return le_mb, le_pe, le_mb_stdev, le_pe_stdev, final_frac_back, max_quant, binned

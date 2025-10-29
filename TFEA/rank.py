@@ -594,6 +594,12 @@ def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None,
     label2 : string
         the name of the treatment or condition corresponding to bam2 list
 
+    batch: string
+        the variable indicating a batch if included
+
+    treatment: string
+        the variable indicating the treatment if included
+
     Returns
     -------
     None
@@ -710,7 +716,7 @@ write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt')
 
 #==============================================================================
 def write_deseq_rank_script(bam1=None, bam2=None, tempdir=None, count_file=None, 
-                        label1=None, label2=None, batch='', treatment=''):
+                        label1=None, label2=None, batch='', treatment='', largewindow=1500):
     '''Writes an R script within the tempdir directory in TFEA output to run 
         either DE-Seq or DE-Seq2 depending on the number of user-inputted 
         replicates AND get the ranked results.
@@ -737,6 +743,9 @@ def write_deseq_rank_script(bam1=None, bam2=None, tempdir=None, count_file=None,
 
     label2 : string
         the name of the treatment or condition corresponding to bam2 list
+
+    largewindow: int
+        the half size window of the region used for motif enrichment (default=1500bp)
 
     Returns
     -------
@@ -798,8 +807,8 @@ def write_deseq_rank_script(bam1=None, bam2=None, tempdir=None, count_file=None,
     colnames(tfea_input) <- c("#chrom", "start_stop", "fc,p-value,rank")
     tfea_input_points = str_split_fixed(tfea_input$start_stop, "-", 2)
     tfea_input$mu <- as.integer((as.numeric(tfea_input_points[,1]) + as.numeric(tfea_input_points[,2]))/2)
-    tfea_input$start = tfea_input$mu - 1500
-    tfea_input$stop = tfea_input$mu + 1500
+    tfea_input$start = tfea_input$mu - '''+largewindow+'''
+    tfea_input$stop = tfea_input$mu + '''+largewindow+'''
     print(tfea_input[1:2,])
     write.table(tfea_input[,c("#chrom", "start", "stop", "fc,p-value,rank")], 
                 '''+ranked_file+''', 

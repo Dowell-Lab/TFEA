@@ -637,8 +637,16 @@ def plot_quant_slopes(results,  group_size=None, title=None, xlabel=None,
     # Get the binned derivatives
     motif_index = 0
     binned_index = 14
-    # Remove Nans from results
-    clean_results = [i for i in results if i[binned_index] == i[binned_index]]
+    print("About to get the clean results", file=sys.stderr)
+    # Remove Nans from results and note if improper length
+    clean_results = []
+    for idx, i in enumerate(results):
+        try:
+            if i[binned_index] == i[binned_index]:
+                clean_results.append(i)
+        except IndexError:
+            print(f"IndexError at entry {idx}: len={len(i)}, i={i}, binned_index={binned_index}")
+    print("Got the clean results", file=sys.stderr)
     if len(clean_results) == 0:
         print("No results to plot quantiles", file=sys.stderr)
         return
@@ -646,6 +654,7 @@ def plot_quant_slopes(results,  group_size=None, title=None, xlabel=None,
     
     # Step 1: Build heatmap matrix for TFs
     binned_rows = [i[binned_index] for i in clean_results]
+    print("Got the binned rows", file=sys.stderr)
     heatmap_df = pd.DataFrame(binned_rows)
     # Step 2: Normalize each row indepndently (row-wise min-max scaling around 0)
     normed_df = heatmap_df.copy() # make copy to avoid warnings
