@@ -25,6 +25,23 @@ from TFEA import multiprocess
 from TFEA import plot
 
 #Main Script
+
+# FOR REFERENCE, RESULTS LIST HAS THE FOLLOWING INDICES:
+# TF (motif name) (0)
+# AUC (1)
+# GC_corrected_AUC (2)
+# Events (3)
+# GC (4)
+# FPKM (5) (not printed in html format)
+# P_value (6) 6
+# GC_P_value (7) 6
+# MB_LE (8)
+# MB_LE_stdev (9)
+# PE_LE (10)
+# PE_LE_stdev (11)
+# Frac_Abv_back (12) -3
+# Max_Quant (13) -2
+# Binned (14) (not printed)
 #==============================================================================
 def main(use_config=True, outputdir=None, results=None, md_results=None, 
             mdd_results=None, motif_distances=None, md=False, mdd=False, 
@@ -59,8 +76,8 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
 
     TFEA_header_full = ['#TF', 'E-Score', 'Corrected_E-Score','Events', 'GC','FPKM', 'P-adj', 'Corrected P-adj', 
     'MB_LE', 'MB_LE_Stdev', 'PE_LE', 'PE_LE_Stdev', 'Frac_Abv_Back', 'Max_Quant']
-    TFEA_header_html = ['#TF', 'E-Score', 'Crrctd E-Score','Events', 'GC','P-adj', 'Crrctd P-adj', 
-    'MB_LE', 'PE_LE', 'FrcAbv Back', 'MaxQ']
+    TFEA_header_html = ['#TF', 'E-Score', 'Crrctd E-Score','Events', 'P-adj', 'Crrctd P-adj', 
+    'MB LE', 'PE LE', 'FrcAbv Back', 'MaxQ']
 
     description_full = ['Motif Name', 'Enrichment Score', 
                     'Enrichment Score following GC correction',
@@ -332,6 +349,7 @@ def html_output(results=None, module_list=None, outputdir=None,
     -------
     None
     '''
+
     for index in sortindex[:-1]:
         results.sort(key=lambda x: x[index], reverse=True)
     results.sort(key=lambda x: x[sortindex[-1]])
@@ -478,7 +496,7 @@ def html_output(results=None, module_list=None, outputdir=None,
         motif = motif_result[0]
         if auc >= 0:
             if (p_adj < padj_cutoff):
-                ## if the Frac or Max quant is questionable, make brown
+                ## if the Frac >= 0.5 or Max quant is questionable, make brown
                 if (motif_result[-3] < .5) & (motif_result[-2] in [1,2,3,4,5,11,12,13,14,15]):
                     outfile.write("""
                         </tr>
@@ -491,8 +509,8 @@ def html_output(results=None, module_list=None, outputdir=None,
                 <tr style="color: brown;">
                     <td><a href="./plots/"""+motif+""".results.html">"""
                         +motif+"""</td>""")
-                # For non-pvalue ones and no FPKM
-                for number_result in motif_result[1:5]:
+                # For non-pvalue ones and no FPKM or GC
+                for number_result in motif_result[1:4]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
@@ -504,21 +522,19 @@ def html_output(results=None, module_list=None, outputdir=None,
                         outfile.write("<td>" + f"1e{int(number_result*np.log10(np.e))}" + "</td>\n")
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
-                if (len(motif_result) > 8):
-                    for html_res_index in [8, 10, 12, 13]:
-                        number_result = motif_result[html_res_index]
+                if (len(motif_result) > 8): # only if we include the other things
+                    for html_res_index in [8, 10, 12, 13]: # MB_LE, PE_LE, Frac_abv_back, Max_Quant
+                        if len(motif_result) < html_res_index + 1:
+                            print(f"Error for {motif} where index {str(html_res_index)} not found in result with length {str(len(motif_result))}", file=sys.stderr)
+                            print(motif_result, file=sys.stderr)
+                            number_result = "NaN"
+                        else:
+                            number_result = motif_result[html_res_index]
                         # for non-pvalue ones
-                        try:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
-                        except TypeError:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             elif plotall:
-                outfile.write("""
-            <tr>
-                <td><a href="./plots/"""+motif+""".results.html">"""
-                    +motif+"""</td>""")
                 ## if the Frac or Max quant is questionable, make brown
                 if (motif_result[-3] < .5) & (motif_result[-2] in [1,2,3,4,5,11,12,13,14,15]):
                     outfile.write("""
@@ -533,7 +549,7 @@ def html_output(results=None, module_list=None, outputdir=None,
                     <td><a href="./plots/"""+motif+""".results.html">"""
                         +motif+"""</td>""")
                 # For non-pvalue ones & skip over FPKM
-                for number_result in motif_result[1:5]:
+                for number_result in motif_result[1:4]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
@@ -546,20 +562,19 @@ def html_output(results=None, module_list=None, outputdir=None,
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 if (len(motif_result) > 8):
-                    for html_res_index in [8, 10, 12, 13]:
-                        number_result = motif_result[html_res_index]
+                    for html_res_index in [8, 10, 12, 13]: # MB_LE, PE_LE, Frac_abv_back, Max_Quant
+                        if len(motif_result) < html_res_index + 1:
+                            print(f"Error for {motif} where index {str(html_res_index)} not found in result with length {str(len(motif_result))}", file=sys.stderr)
+                            print(motif_result, file=sys.stderr)
+                            number_result = "NaN"
+                        else:
+                            number_result = motif_result[html_res_index]
                         # for non-pvalue ones
-                        try:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
-                        except TypeError:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             else:
                 # NON SIGNIFICANT CALLS
-                outfile.write("""
-            <tr>
-                <td>"""+motif+"""</td>""")
                 ## if the uncorrected pval and le metrics good make blue
                 if (motif_result[6] < padj_cutoff) & (motif_result[-3] < .5) & (motif_result[-2] in [1,2,3,4,5,11,12,13,14,15]):
                     outfile.write("""
@@ -574,7 +589,7 @@ def html_output(results=None, module_list=None, outputdir=None,
                     <td>"""
                         +motif+"""</td>""")
                 # For non-pvalue ones & skip over FPKM
-                for number_result in motif_result[1:5]:
+                for number_result in motif_result[1:4]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
@@ -587,16 +602,15 @@ def html_output(results=None, module_list=None, outputdir=None,
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 if (len(motif_result) > 8):
-                    for html_res_index in [8, 10, 12, 13]:
-                        if len(motif_result) < html_res_index - 1:
+                    for html_res_index in [8, 10, 12, 13]: # MB_LE, PE_LE, Frac_abv_back, Max_Quant
+                        if len(motif_result) < html_res_index + 1:
                             print(f"Error for {motif} where index {str(html_res_index)} not found in result with length {str(len(motif_result))}", file=sys.stderr)
                             print(motif_result, file=sys.stderr)
-                        number_result = motif_result[html_res_index]
+                            number_result = "NaN"
+                        else:
+                            number_result = motif_result[html_res_index]
                         # for non-pvalue ones
-                        try:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
-                        except TypeError:
-                            outfile.write("<td>" + "NA" + "</td>\n")
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 
@@ -634,7 +648,7 @@ def html_output(results=None, module_list=None, outputdir=None,
                     <td><a href="./plots/"""+motif+""".results.html">"""
                         +motif+"""</td>""")
                 # For non-pvalue ones & skip over FPKM
-                for number_result in motif_result[1:5]:
+                for number_result in motif_result[1:4]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
@@ -647,21 +661,19 @@ def html_output(results=None, module_list=None, outputdir=None,
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 if (len(motif_result) > 8):
-                    for html_res_index in [8, 10, 12, 13]:
-                        number_result = motif_result[html_res_index]
+                    for html_res_index in [8, 10, 12, 13]: # MB_LE, PE_LE, Frac_abv_back, Max_Quant
+                        if len(motif_result) < html_res_index + 1:
+                            print(f"Error for {motif} where index {str(html_res_index)} not found in result with length {str(len(motif_result))}", file=sys.stderr)
+                            print(motif_result, file=sys.stderr)
+                            number_result = "NaN"
+                        else:
+                            number_result = motif_result[html_res_index]
                         # for non-pvalue ones
-                        try:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
-                        except TypeError:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             elif plotall:
-                outfile.write("""
-            <tr>
-                <td><a href="./plots/"""+motif+""".results.html">"""
-                    +motif+"""</td>""")
-                ## if the Frac or Max quant is questionable, make brown
+                ## if un GC corrected p-value is good and so is LE reuslts then blue
                 if (motif_result[6] < padj_cutoff) & (motif_result[-3] < .5) & (motif_result[-2] in [1,2,3,4,5,11,12,13,14,15]):
                     outfile.write("""
                         </tr>
@@ -675,7 +687,7 @@ def html_output(results=None, module_list=None, outputdir=None,
                     <td><a href="./plots/"""+motif+""".results.html">"""
                         +motif+"""</td>""")
                 # For non-pvalue ones & skip over FPKM
-                for number_result in motif_result[1:5]:
+                for number_result in motif_result[1:4]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
@@ -689,12 +701,14 @@ def html_output(results=None, module_list=None, outputdir=None,
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 if (len(motif_result) > 8):
                     for html_res_index in [8, 10, 12, 13]:
-                        number_result = motif_result[html_res_index]
+                        if len(motif_result) < html_res_index + 1:
+                            print(f"Error for {motif} where index {str(html_res_index)} not found in result with length {str(len(motif_result))}", file=sys.stderr)
+                            print(motif_result, file=sys.stderr)
+                            number_result = "NaN"
+                        else:
+                            number_result = motif_result[html_res_index]
                         # for non-pvalue ones
-                        try:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
-                        except TypeError:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
             else:
@@ -711,7 +725,7 @@ def html_output(results=None, module_list=None, outputdir=None,
             <tr>
                 <td>"""+motif+"""</td>""")
                 # For non-pvalue ones & skip over FPKM
-                for number_result in motif_result[1:5]:
+                for number_result in motif_result[1:4]:
                     try:
                         outfile.write("<td>" + str("%.3g" % number_result) + "</td>\n")
                     except TypeError:
@@ -724,13 +738,15 @@ def html_output(results=None, module_list=None, outputdir=None,
                     else:
                         outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
                 if (len(motif_result) > 8):
-                    for html_res_index in [8, 10, 12, 13]:
-                        number_result = motif_result[html_res_index]
+                    for html_res_index in [8, 10, 12, 13]: # MB_LE, PE_LE, Frac_abv_back, Max_Quant
+                        if len(motif_result) < html_res_index + 1:
+                            print(f"Error for {motif} where index {str(html_res_index)} not found in result with length {str(len(motif_result))}", file=sys.stderr)
+                            print(motif_result, file=sys.stderr)
+                            number_result = "NaN"
+                        else:
+                            number_result = motif_result[html_res_index]
                         # for non-pvalue ones
-                        try:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
-                        except TypeError:
-                            outfile.write("<td>" + str(number_result) + "</td>\n")
+                        outfile.write("<td>" + str(number_result) + "</td>\n")
                 outfile.write("""            </tr>
                     """)
 
@@ -953,11 +969,15 @@ def create_motif_result_htmls(results=None, outputdir=None, padj_cutoff=None,
                     outfile.write("<td>" + str("%.3g" % np.e**number_result) + "</td>\n")
             if len(results[i]) > 8:
                 for html_res_index in [8, 9, 10, 11, 12, 13]:
-                    number_result = results[i][html_res_index]
-                    try:
-                        outfile.write("<td>" + str(number_result) + "</td>\n")
-                    except TypeError:
-                        outfile.write("<td>" + str(number_result) + "</td>\n")
+                    if len(results[i]) < html_res_index + 1:
+                        print(f"Error for {motif} where index {str(html_res_index)} not found in result with length {str(len(results[i]))}", file=sys.stderr)
+                        print(results[i], file=sys.stderr)
+                        number_result = "NaN"
+                    else:
+                        number_result = results[i][html_res_index]
+                    # for non-pvalue ones
+                    outfile.write("<td>" + str(number_result) + "</td>\n")
+ 
             outfile.write("""            </tr>
                     
                 </table>

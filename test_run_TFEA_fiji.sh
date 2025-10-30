@@ -24,7 +24,6 @@ module load python/3.7.4
 module load samtools/1.3.1
 module load bedtools/2.25.0
 module load meme/5.0.3
-module load samtools/1.3.1
 module load gcc/7.1.0
 module load R/4.4.0
 
@@ -56,24 +55,25 @@ echo Using $SLURM_NTASKS processors, across $SLURM_NNODES nodes, with $SLURM_JOB
 # make the out directory
 mkdir ${outdir}
 
+# only run that below if first time running or changed code in the src/ path
 #cd ${SRC_DIR}
-#python setup.py build
-#python setup.py install
+#python3 setup.py build
+#python3 setup.py install
 
 # #######################################
 # ###########  RUN TFEA  ################
 # #######################################
 echo "Running TFEA with just a consensus file"
-#python3 ${SRC_DIR}/vir_TFEA/lib/python3.7/site-packages/tfea-1.1.4-py3.7.egg/TFEA \
-#    --output ${outdir}/via_combined_file/ \
-#    --combined_file ${input_dir}/test_combined_file.bed \
-#    --bam1 ${input_dir}/SRR1105736.sorted.chr22.subsample.bam ${input_dir}/SRR1105737.sorted.chr22.subsample.bam \
-#    --bam2 ${input_dir}/SRR1105738.sorted.chr22.subsample.bam ${input_dir}/SRR1105739.sorted.chr22.subsample.bam \
-#    --label1 condition1 --label2 condition2 \
-#    --genomefasta ${input_dir}/chr22.fa \
-#    --fimo_motifs ${input_dir}/test_database.meme \
-#    --cpus 5 \
-#    --mem 10gb \
+python3 ${SRC_DIR}/vir_TFEA/lib/python3.7/site-packages/tfea-1.1.4-py3.7.egg/TFEA \
+    --output ${outdir}/via_combined_file/ \
+    --combined_file ${input_dir}/test_combined_file.bed \
+    --bam1 ${input_dir}/SRR1105736.sorted.chr22.subsample.bam ${input_dir}/SRR1105737.sorted.chr22.subsample.bam \
+    --bam2 ${input_dir}/SRR1105738.sorted.chr22.subsample.bam ${input_dir}/SRR1105739.sorted.chr22.subsample.bam \
+    --label1 condition1 --label2 condition2 \
+    --genomefasta ${input_dir}/chr22.fa \
+    --fimo_motifs ${input_dir}/test_database.meme \
+    --cpus 5 \
+    --mem 10gb \
 
 
 echo "Running TFEA with counts (Suggested for Nascent)"

@@ -209,7 +209,7 @@ def read_arguments():
                                                 'Options for the output.')
     output_options.add_argument('--padjcutoff', help=("A p-adjusted cutoff "
                                     "value that determines some plotting output."), 
-                                    dest='PADJCUTOFF', default=0.001)
+                                    dest='PADJCUTOFF', default=0.02)
     output_options.add_argument('--plot_format', help=("Format of saved figures. "
                                     "Default: png"), choices=['png', 'svg', 'pdf'], 
                                     dest='PLOT_FORMAT')
@@ -349,7 +349,7 @@ def read_arguments():
                     'PERMUTATIONS': [1000, [int]], 
                     'LARGEWINDOW': [1500, [int]], 
                     'SMALLWINDOW': [150, [int]], 
-                    'PADJCUTOFF': [0.001, [float]], 
+                    'PADJCUTOFF': [0.02, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'BATCH': ['', [str]],
                     'TREATMENT': ['', [str]],
