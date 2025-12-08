@@ -74,7 +74,7 @@ def main(use_config=True, outputdir=None, results=None, md_results=None,
     print("Creating output...", end=' ', flush=True, file=sys.stderr)
     TFEA_header = ['#TF', 'E-Score', 'Corrected E-Score','Events', 'GC','FPKM', 'P-adj', 'Corrected P-adj']
 
-    TFEA_header_full = ['#TF', 'E-Score', 'Corrected_E-Score','Events', 'GC','FPKM', 'P-adj', 'Corrected P-adj', 
+    TFEA_header_full = ['#TF', 'E-Score', 'Corrected_E-Score','Events', 'GC','FPKM', 'P-adj', 'Corrected_Padj', 
     'MB_LE', 'MB_LE_Stdev', 'PE_LE', 'PE_LE_Stdev', 'Frac_Abv_Back', 'Max_Quant']
     TFEA_header_html = ['#TF', 'E-Score', 'Crrctd E-Score','Events', 'P-adj', 'Crrctd P-adj', 
     'MB LE', 'PE LE', 'FrcAbv Back', 'MaxQ']
