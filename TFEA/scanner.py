@@ -7,9 +7,9 @@
 '''
 
 #==============================================================================
-__author__ = 'Jonathan D. Rubin'
+__author__ = ['Jonathan D. Rubin', 'Hope A. Townsend']
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
+                'Robin D. Dowell', 'Hope A. Townsend']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 
@@ -24,6 +24,7 @@ import traceback
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from pybedtools import BedTool
 from pybedtools import featurefuncs
 
@@ -138,7 +139,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
         tempdir = config.vars['TEMPDIR']
         fimo_motifs = config.vars['FIMO_MOTIFS']
         singlemotif = config.vars['SINGLEMOTIF']
-        fimo_thresh = config.vars['FIMO_THRESH']
+        fimo_thresh_file = config.vars['FIMO_THRESH']
         debug = config.vars['DEBUG']
         mdd = config.vars['MDD']
         mdd_pval = config.vars['MDD_PVAL']
@@ -148,6 +149,9 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
         jobid = config.vars['JOBID']
 
     print("Scanning regions using " + scanner + "...", flush=True, file=sys.stderr)
+    print(f"Using background file {fimo_background}", flush=True, file=sys.stderr)
+    print(f"Using FIMO pval thresholds from file {fimo_thresh_file}", flush=True, file=sys.stderr)
+
 
     motif_distances = None
     md_distances1 = None
@@ -182,9 +186,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
     #FIMO
     if scanner == 'fimo':
         #Get background file, if none desired set to 'None'
-        if fasta_file and fimo_background:
-            background_file = fasta_markov(tempdir=tempdir, fastafile=fasta_file, order='1')
-        elif fimo_background == 'largewindow':
+        if fimo_background == 'largewindow':
             background_file = fimo_background_file(
                                 window=int(largewindow), 
                                 tempdir=tempdir, bedfile=ranked_file, 
@@ -202,7 +204,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
         elif type(fimo_background) == str:
             background_file = fimo_background
         else:
-            background_file = None
+            background_file = fasta_markov(tempdir=tempdir, fastafile=fasta_file, order='1')
 
         #Get motifs to scan through
         if singlemotif != False:
@@ -210,11 +212,14 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
         else:
             motif_list = fimo_motif_names(motifdatabase=fimo_motifs)
 
+        #Get the pvalue cutoffs for each motif from the fimo file
+        fimo_thresh_dict = get_fimo_thresh_dict(fimo_thresh_file)
+        #print("FIMO_THRESH_DICT" + str(fimo_thresh_dict), file=sys.stderr)
+
         #Perform fimo on desired motifs
-        print("\tTFEA:", file=sys.stderr)
         fimo_keywords = dict(bg_file=background_file, fasta_file=fasta_file, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
-                            thresh=fimo_thresh, 
+                            thresh=fimo_thresh_dict, 
                             largewindow=largewindow)
 
         motif_distances = multiprocess.main(function=fimo, args=motif_list, 
@@ -226,7 +231,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
             print("\tMD:", file=sys.stderr)
             fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta1, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
-                            thresh=fimo_thresh, 
+                            thresh=fimo_thresh_dict, 
                             largewindow=largewindow)
             md_distances1 = multiprocess.main(function=fimo, args=motif_list, 
                                                 kwargs=fimo_keywords, 
@@ -235,7 +240,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
             
             fimo_keywords = dict(bg_file=background_file, fasta_file=md_fasta2, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
-                            thresh=fimo_thresh, 
+                            thresh=fimo_thresh_dict, 
                             largewindow=largewindow)
             md_distances2 = multiprocess.main(function=fimo, args=motif_list, 
                                                 kwargs=fimo_keywords, 
@@ -251,7 +256,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
             print(f'\t Completed: 0/{len(motif_distances)} ', end=' ', file=sys.stderr)
             fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta1, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
-                            thresh=fimo_thresh, 
+                            thresh=fimo_thresh_dict, 
                             largewindow=largewindow)
             mdd_distances1 = multiprocess.main(function=fimo, args=motif_list, 
                                                 kwargs=fimo_keywords, 
@@ -260,7 +265,7 @@ def main(use_config=True, fasta_file=False, md_fasta1=False, md_fasta2=False,
             
             fimo_keywords = dict(bg_file=background_file, fasta_file=mdd_fasta2, 
                             tempdir=tempdir, motifdatabase=fimo_motifs, 
-                            thresh=fimo_thresh, 
+                            thresh=fimo_thresh_dict, 
                             largewindow=largewindow)
             mdd_distances2 = multiprocess.main(function=fimo, args=motif_list, 
                                                 kwargs=fimo_keywords, 
@@ -490,7 +495,10 @@ def fimo_background_file(window=None, tempdir=None, bedfile=None,
     with open(bedfile) as F:
         F.readline()
         for line in F:
-            chrom, start, stop, name = line.strip('\n').split('\t')
+            try:
+                chrom, start, stop, name = line.strip('\n').split('\t')
+            except:
+                chrom, start, stop, name, name2 = line.strip('\n').split('\t')
             center = (int(start)+int(stop))/2
             start = int(center - window)
             stop = int(center + window)
@@ -540,6 +548,40 @@ def fasta_markov(tempdir=None, fastafile=None, order=None):
     return markov_background
 
 #==============================================================================
+def get_fimo_thresh_dict(fimo_thresh_file):
+    '''This function takes in either a file or a single pvalue cutoff
+       to get the pvalue cutoffs for FIMO for each motif in the given 
+       file.
+    Parameters
+    ----------
+    fimo_thresh_file : string
+        EITHER full path to a tab delimited file with minimum 
+        the following columns: MOTIF, best_pval OR 
+        a single pvalue threshold
+    
+    Returns
+    -------
+    fimo_thresh_dict: either dict or string
+        If fimo_thresh_file is not a file, then just the threshold
+        If fimo_thresh_file is a path to a file, then a dictionary
+        where the keys are the MOTIFs in the motif file and values
+        are the desired pvalue thresholds for FIMO.
+    '''
+    # If it is a file then read it
+    if  type(fimo_thresh_file) == type(0.005):
+        fimo_thresh_dict = fimo_thresh_file
+    elif os.path.isfile(str(fimo_thresh_file)):
+        # read in the file
+        fimo_thresh_df = pd.read_csv(fimo_thresh_file, sep="\t")
+        # get the dictionary
+        fimo_thresh_dict = pd.Series(fimo_thresh_df.best_pval.values, 
+        index=fimo_thresh_df.MOTIF).to_dict()
+    else:
+        # if not a file then just return as is (a float)
+        fimo_thresh_dict = fimo_thresh_file
+    return fimo_thresh_dict
+
+#==============================================================================
 def fimo(motif, bg_file=None, fasta_file=None, tempdir=None, 
         motifdatabase=None, thresh=None, largewindow=None):
     '''This function runs fimo on a given fastafile for a single motif in a 
@@ -560,6 +602,11 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
     motif : string
         the name of a motif that matches a motif within motifdatabase
 
+    thresh : float or dict
+        if a dictionary then threshold is the value of the motif key.
+        If the dictionary does not contain the motif, use 1e-6
+        If a float then just use that threshold.
+
     fastafile : string
         full path to a fasta file that fimo will perform motif scanning on
         
@@ -570,17 +617,29 @@ def fimo(motif, bg_file=None, fasta_file=None, tempdir=None,
         directory.
     '''
     fimo_out = tempdir / (motif+'.fimo.bed')
+    # Get the threshold (if a dict then from there)
+    if isinstance(thresh, dict):
+        # check if in the dictionary
+        if motif in thresh.keys():
+            final_thresh = thresh[motif]
+            print("MOTIF" + str(motif) + "FIMO THRESH of" + str(final_thresh), file=sys.stderr)
+        else:
+            print("MOTIF" + str(motif) + "FIMO THRESH NOT PROVIDED, 1e-6 used", file=sys.stderr)
+            final_thresh = "0.000001"
+    else:
+        final_thresh = thresh
+    
     if bg_file is not None:
         command = ("fimo", "--skip-matched-sequence", 
                     "--verbosity", "1", 
-                    "--thresh", str(thresh),
+                    "--thresh", str(final_thresh),
                     "--bgfile", bg_file,
                     "--motif", motif, 
                     motifdatabase, fasta_file)
     else:
         command = ("fimo", "--skip-matched-sequence", 
                     "--verbosity", "1", 
-                    "--thresh",str(thresh),
+                    "--thresh",str(final_thresh),
                     "--motif", motif, 
                     motifdatabase, fasta_file)
 

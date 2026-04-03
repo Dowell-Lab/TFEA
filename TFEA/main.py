@@ -3,17 +3,18 @@
 '''This is the main script that runs when the TFEA package is run.
 '''
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
+__author__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Hope A. Townsend']
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
+                'Robin D. Dowell', 'Hope A. Townsend']
 __maintainer__ = 'Jonathan D. Rubin'
 __email__ = 'Jonathan.Rubin@colorado.edu'
-__version__ = '4.0'
+__version__ = '5.0'
 
 def run():
     #Imports
     #==============================================================================
     import sys
+    import os
     import subprocess
     import shutil
     from pathlib import Path
@@ -149,7 +150,7 @@ def run():
         
     #ENRICHMENT module
     #==============================================================================
-    '''Where the bulk of TFEA analysis occurs. Some components of plotting module 
+    '''Where the bulk of TFEA and leading edgeanalysis occurs. Some components of plotting module 
         are contained within this enrichment module
     '''
     from TFEA import enrichment
@@ -167,7 +168,11 @@ def run():
     #Delete temp_files directory
     #==============================================================================
     if not config.vars['DEBUG']:
+        os.remove("".join([config.vars['TEMPDIR'], "/ranked_file.fa"]))
+    if not config.vars['DEBUG'] and not config.vars['KEEP_LE_FILES']:
         shutil.rmtree(config.vars['TEMPDIR'])
+    
+    
 
     #==============================================================================
     #END OF MAIN SCRIPT

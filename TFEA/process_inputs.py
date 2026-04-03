@@ -84,6 +84,8 @@ def read_arguments():
     # Processed inputs if a user desires to run TFEA from a specific point
     processed_inputs = parser.add_argument_group('Processed Inputs', 
                                         'Input options for pre-processed data')
+    processed_inputs.add_argument('--count_file',  help=("Count file from featureCounts."), 
+                                            dest='COUNT_FILE')                                       
     processed_inputs.add_argument('--combined_file', help=("A single bed file "
                                             "combining regions of interest."), 
                                             dest='COMBINED_FILE')
@@ -198,13 +200,16 @@ def read_arguments():
                                         "that captures signal. Default: "
                                         "150"), 
                                         dest='SMALLWINDOW')
+    enrichment_options.add_argument('--num_quants', help=("The number of quantiles considered. Default: "
+                                        "15"), 
+                                        dest='NUM_QUANTS', default=15)
     
     # Output Options
     output_options = parser.add_argument_group('Output Options', 
                                                 'Options for the output.')
     output_options.add_argument('--padjcutoff', help=("A p-adjusted cutoff "
                                     "value that determines some plotting output."), 
-                                    dest='PADJCUTOFF')
+                                    dest='PADJCUTOFF', default=0.02)
     output_options.add_argument('--plot_format', help=("Format of saved figures. "
                                     "Default: png"), choices=['png', 'svg', 'pdf'], 
                                     dest='PLOT_FORMAT')
@@ -223,6 +228,9 @@ def read_arguments():
                                     "html will increase processing time and "
                                     "memory usage. Default: txt", 
                                     choices=['txt', 'html'], dest='OUTPUT_TYPE')
+    output_options.add_argument('--keep_le_files', help="Keep motif distance files "
+                                    "in the temporary directory. Default: False", 
+                                    choices=[True, False], dest='KEEP_LE_FILES')
 
     #Miscellaneous Options
     misc_options = parser.add_argument_group('Miscellaneous Options', 'Other options.')
@@ -230,6 +238,10 @@ def read_arguments():
                                 " to assign to bam files in order of bam1 files "
                                 "then bam2 files. For use only when ranking "
                                 "with DE-Seq."), dest='BATCH')
+    misc_options.add_argument('--treatment', help=("Comma-separated list of batches"
+                                " to assign to bam files in order appearing in the counts file. "
+                                " For use only when ranking and count_file"
+                                "with DE-Seq."), dest='TREATMENT')
     misc_options.add_argument('--cpus', help=("Number of processes to run "
                                 "in parallel. Warning: Increasing this value will "
                                 "significantly increase memory footprint. "
@@ -310,6 +322,7 @@ def read_arguments():
                     'COMBINED_FILE': [False, [Path, bool]],
                     'RANKED_FILE': [False, [Path, bool]],
                     'FASTA_FILE': [False, [Path, bool]],
+                    'COUNT_FILE': [False, [str]],
                     'MD': [False, [bool]],
                     'MDD': [False, [bool]],
                     'MD_BEDFILE1': [False, [Path, bool]],
@@ -336,9 +349,10 @@ def read_arguments():
                     'PERMUTATIONS': [1000, [int]], 
                     'LARGEWINDOW': [1500, [int]], 
                     'SMALLWINDOW': [150, [int]], 
-                    'PADJCUTOFF': [0.1, [float]], 
+                    'PADJCUTOFF': [0.02, [float]], 
                     'OUTPUT_TYPE': ['txt', [str]],
                     'BATCH': ['', [str]],
+                    'TREATMENT': ['', [str]],
                     'CPUS': [1, [int]], 
                     'MEM': ['20gb', [str]],
                     'TIME': ['24:00:00', [str]],
@@ -352,7 +366,9 @@ def read_arguments():
                     'PLOTALL': [False, [bool]],
                     'PLOT_FORMAT': ['png', [str]],
                     'DPI': [100, [int]], 
-                    'METAPROFILE': [False, [bool]]}
+                    'METAPROFILE': [False, [bool]], 
+                    'NUM_QUANTS': [15, [int]], 
+                    'KEEP_LE_FILES': [False, [bool]]}
 
     #Save default arguments in config
     from TFEA import config
@@ -529,9 +545,12 @@ def verify_arguments(parser=None):
     config.vars['RESULTS'] = []
     config.vars['MD_RESULTS'] = []
     config.vars['MDD_RESULTS'] = []
+    config.vars['NUM_QUANTS'] = 15
 
     #Set module booleans based on pre-processed inputs
     if config.vars['COMBINED_FILE']:
+        config.vars['COMBINE'] = False
+    if config.vars['COUNT_FILE']:
         config.vars['COMBINE'] = False
     if config.vars['RANKED_FILE']:
         config.vars['COMBINE'] = False
@@ -542,8 +561,8 @@ def verify_arguments(parser=None):
 
     #Verify combine module
     if not config.vars['COMBINE']:
-        if not config.vars['COMBINED_FILE'] and config.vars['RANK']:
-            raise exceptions.InputError('COMBINE module switched off but RANK module switched on without a COMBINED_FILE')
+        if not config.vars['COMBINED_FILE'] and not config.vars['COUNT_FILE'] and config.vars['RANK']:
+            raise exceptions.InputError('COMBINE module switched off but RANK module switched on without a COMBINED_FILE or COUNT_FILE')
         if config.vars['MD']:
             if not config.vars['MD_BEDFILE1'] and not config.vars['MD_FASTA1']:
                 raise exceptions.InputError('COMBINE module switched off but MD module switched on without MD_BEDFILE1 or MD_FASTA1')
@@ -566,7 +585,10 @@ def verify_arguments(parser=None):
                 raise exceptions.InputError('RANK module switched off but MDD module switched on without MDD_BEDFILE2 or MDD_FASTA2')
     else:
         if not (config.vars['BAM1'] and config.vars['BAM2']) and not (config.vars['BG1'] and config.vars['BG2']):
-            raise exceptions.InputError('RANK module switched on but one of (BAM1, BAM2) or (BG1, BG2) not specified')
+            if not config.vars['COUNT_FILE']:
+                raise exceptions.InputError('RANK module switched on but no COUNT_FILE and one of (BAM1, BAM2) or (BG1, BG2) not specified')
+            elif not config.vars['TREATMENT']:
+                raise exceptions.InputError('RANK module and COUNT_FILE but no TREATMENT specified')
         if not config.vars['LABEL1']:
             raise exceptions.InputError('RANK module switched on but LABEL1 not specified')
         if not config.vars['LABEL2']:

@@ -1,21 +1,26 @@
 <H1>Transcription Factor Enrichment Analysis (TFEA)</H1>
 <H2 id="TableOfContents">Table of Contents</H2>
 
+0. <A href="#WhatsNew">What's New?</A>
 1. <A href="#Pipeline">Pipeline</A>
 2. <A href="#InstallationandRequirements">Installation and Requirements</A>
    - <A href="#TFEA">TFEA</A>
+   - <A href="#InstallingTFEAwithGithub">TFEA with Github</A>
    - <A href="#DESeq">DESeq</A>
    - <A href="#Bedtools">Bedtools</A>
    - <A href="#Samtools">Samtools</A>
    - <A href="#MEMESuite">MEME Suite</A>
      - <A href="#ImageMagick">Image Magick</A>
    - <A href="#FIJIModules">FIJI Modules</A>
+3. <A href="#SuggestedUsage">Suggested Usage</A>
 4. <A href="#BasicUsage">Basic Usage</A>
    - <A href="#TestingTFEA">Testing TFEA</A>
    - <A href="#RunningTFEA">Running TFEA</A>
 5. <A href="#AdvancedUsage">Advanced Usage</A>
-   - <A href="#ConfigurationFile">Configuration File</A>
-   - <A href="#BatchCorrection">Batch Correction</A>
+   - <A href="#AdvancedParameters">Advanced Parameters</A>
+      - <A href="#FIMO">FIMO</A>
+      - <A href="#BatchCorrection">Batch Correction</A>
+      - <A href="#ConfigurationFile">Configuration File</A>
    - <A href="#UsingSBATCH">Using SBATCH</A>
    - <A href="#PreProcessedInputs">Pre-Processed Inputs</A>
    - <A href="#SecondaryAnalysis">Secondary Analysis (MD, MDD)</A>
@@ -32,56 +37,86 @@
 8. <A href="#ContactInformation">Contact Information</A>
  
 <br></br>
+
+<H2 id="WhatsNew">What's New?</H2>
+
+### 1. New Recommended Inputs for Nascent RNA-seq
+* We now have an improved Nascent RNA sequencing pipeline for TFEA input at _____
+* The way to use this input is found in <A href="#SuggestedUsage">Suggested Usage</A>
+
+### 2. Choose TF-specific FIMO pvalues
+#### Why should I care?
+TFEA doesn't call significance of a TF well  if there are a ton (e.g. EVENTS > 8,000) or few (e.g. EVENTS < 600) regions with a motif. The complexity of TF motifs means the FIMO p-value cutoffs to use for identifying instances may need to be different for different motifs. 
+#### How do I do this?
+Option —fimo_pval can now take either a single value (e.g. 0.00005) **or** a file with TF motifs and FIMO pvalues to use. A good default is provided at assets/PVAL_CUTOFF_ESTIMATES_H12.CORE.txt.
+
+### 3. Leading Edge to address false positives & recall of chaning regions
+#### A. Get Improved metrics for False Positives:
+We found that transcription factors were likely false positives if:
+* the fraction of regions with a change in enrichment score > background was higher than 0.5, these (**FrcAbv Back**)
+* The quantile of tREs with the maximum change in enrichment score was in the middle (**MaxQ** is closer to 1/2 of **num_quant** (default 15))
+
+#### B. Get Improved recall of responding regions (e.g. enhancers):
+The leading edges consider *both motifs and statistical confidence* to call regions changing. Therefore, it performs better than classic approaches (e.g. DESeq2) with small transcriptional changes or where there are sample outliers. 
+
+![LE_Method](./README_images/LE_Method_Repo.png)
+
+
+  * Two versions:
+    1. Plateaued Enrichment: Captures where the change in enrichment scores starts to plateau to noise. More **conservative**.  
+    2. Match Background: Captures where the change in enrichment scores matches what we expect from noise. Less conservative but also reveals **larger scale trends**.
+* How do I use these to get regions changing?
+    * The jupyter notebook X indicates how you can read in TFEA results to get regions either specific to a TF or across all significant TFs.
+#### What are the relevant output changes?
+Results:
+  * Check out the Results.txt at <A href="#ExampleOutput">Example Output</A>
+
+Files:
+  * The leading edge uses the distances of the ranked regions from a given TF. If you would like to keep these files to find the regions within the leading edge that also fit certain motif distances, use the flag —keep_le_files. 
+
+Plots:
+  * Enrichment curve graphs now include leading edges as vertical lines (purple=Plateaued Enrichment, red=Match Background)
+  * Quantile Map 
+    * Graph of **enrichment trends across all TFs** reaching padj cutoffs in either original or corrected adjusted pvalues. Ranked regions are split into quantiles (num_quant=15 by default). The magnitude of the change in enrichment trends for each graph are plotted where green is greater than background. 
+    * Example below shows two false positives (greatest enrichment increase at middle where no regions should be changing), weak positives (enrichment change extended throughout regions), and true positives (greatest enrichment increase clearly at poles).
+    * Access via “Quantile Map” link on the results.html (or plots/Quantile.map.png)
+![LE_Method](./README_images/Ex_Quant_Plot_Repo.png)
+
+### Want the "original" version?
+* Go to [Release 1.1.2](https://github.com/Dowell-Lab/TFEA/releases/tag/v1.1.2) for the saved source code or you can checkout the branch [TFEA_v112](https://github.com/Dowell-Lab/TFEA/tree/TFEA_v112) by doing `git checkout TFEA_v112`.
  
 <H2 id="Pipeline">TFEA Pipeline</H2>
  
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/TFEAPipelinev5.png)
+![TFEA Pipeline](./README_images/TFEAPipelinev5.png)
+
+
  
 <br></br>
 
 <H2 id="InstallationandRequirements">Installation and Requirements</H2>
 
-   <H3 id="TFEA">TFEA</H3>
 
-<!-- To install, this package and all python3 dependencies:
-
-```
-python3 -m pip install tfea
-```
-
-This should take no longer than several minutes.
-
-Once successfully installed, you should be able to run the tfea command from anywhere, try: -->
-
-Github would provide the most uptodate version of the code. To install and build TFEA, run the following with python 3.7 (if on Fiji you can use  `module load python/3.7.4`)
-
+<H3 id="InstallingTFEAwithGithub">Installing TFEA with Github</H3>
+Github would provide the most uptodate version of the code. To install and build TFEA, run the following with python 3.7 (if on Fiji you can use module load python/3.7.4)
 
 ```
 git clone git@github.com:Dowell-Lab/TFEA.git
 cd TFEA
-python -m venv vir_TFEA # create virtual python environment (might need to use python3 instead of python)
+python -m venv vir_TFEA # create virtual python environment
 source vir_TFEA/bin/activate # activate the environment
 pip3 install -r requirements.txt # install the requirements
 python setup.py build
 python setup.py install
 ```
 
-<b>*Note:*</B> If you plan to run TFEA only on FIJI using the --sbatch flag, then you only need to install DESeq and DESeq2. Otherwise, follow the instructions below for installing all TFEA dependencies.
+<b>*Note for Advanced users:*</b> If you edit any of the source code (e.g. TFEA/enrichment.py), you will need to rerun the setup.py build and install to apply your changes.
 
+<b>*Note:*</B> If you plan to run TFEA only on FIJI using the --sbatch flag, then you only need to install DESeq and DESeq2. Otherwise, follow the instructions below for installing all TFEA dependencies.
+  
   <H3 id="DESeq">DESeq</H3>
-  TFEA uses DESeq or DESeq2 (depending on replicate number) to rank inputted bed files based on fold change significance. If on FIJI, make sure all gcc modules are unloaded before installing DESeq or DESeq2. This can be accomplished with:
+  TFEA uses DESeq or DESeq2 (depending on replicate number) to rank inputted bed files based on fold change significance. If on FIJI, make sure all gcc modules are unloaded before installing DESeq or DESeq2. This can be accomplished with
   
-  ```
-  module unload gcc
-  module load R/4.4.0
-  ```
-  
-  or
-  
-  ```
-  module purge
-  module load R/4.4.0
-  ```
+  `module unload gcc`   or  `module purge`.
   
   To install DESeq and DESeq2 type in your terminal:
     
@@ -139,48 +174,77 @@ python setup.py install
   <a href="https://imagemagick.org/script/install-source.php">Image Magick Download and Installation</a>
   
   <H3 id="FIJIModules">FIJI Modules</H3>
-  Below is a summary of all FIJI modules needed to run TFEA.
+  Below is a summary of all FIJI modules needed to run TFEA (not including R). A full example can be found with example_slurm_usage.sbatch.
   
   ```
-  module purge
-
   module load python/3.7.4
+
   module load samtools/1.3.1
   module load bedtools/2.25.0
   module load meme/5.0.3
-  module load samtools/1.3.1
-  module load gcc/7.1.0
-  module load R/4.4.0
-
-  source /path/to/TFEA/vir_TFEA/bin/activate
   ```
 
 <br></br>
-<H2 id="BasicUsage">BasicUsage</H2>
+<H2 id="SuggestedUsage">Suggested Usage with Nascent RNA sequencing</H2>
+The following (work)[] has shown below to be the best pipeline for running TFEA with Nascent RNA sequencing (e.g. PRO-seq, GRO-seq):
 
-<span style="color:red">s**IMPORTANT NOTE**</span>.
+### 1. Get Bidirectionals 
+- Use Tfit [and optionally dREG] with 3' bedgraphs of each of your samples. You can use the Dowell Lab **[Nextflow pipeline](https://github.com/Dowell-Lab/Bidirectional-Flow)** for this.
 
-: If you installed via Github, everywhere the command is ```TFEA```, use this command instead `python3 /path/to/TFEA/vir_TFEA/lib/python3.7/site-packages/tfea-1.1.4-py3.7.egg/TFEA`
+### 2. Get the consensus regions for these bidirectionals 
+- Use **[muMerge](https://github.com/Dowell-Lab/muMerge)**
+
+### 3. Obtain Bidirectional counts and Categorize Gene TSS vs. NonTSS Bidirectionals
+- Use the following **[pipeline](https://github.com/Dowell-Lab/Bidir_Counting_Analysis)** (Nextflow and bash options)
+    
+#### Why is this step crucial?
+1. **Accurate ranking of differentially transcribed bidirectionals is key to TFEA**, yet obtaining bidirectional counts is nontrivial. This pipeline provides a streamlined solution.
+2. **Gene TSS bidirectionals can introduce noise**, obscuring the enrichment of enhancer-focused TFs (e.g., P5*). Separating NonTSS from TSS bidirectionals improves sensitivity of TF calls.
+### 4. Use the Processed Counts for TFEA
+- The **NonTSS** (and separately, **TSS**) bidirectional counts obtained in the previous step should be used as input into TFEA:
+
+```
+python3 /Users/hoto7260/src/TFEA/vir_TFEA/lib/python3.7/site-packages/tfea-1.1.4-py3.7.egg/TFEA  \
+        --output /out/dir \
+        --count_file /nontsscount/file/from/BCA.txt \
+        --label1 CTL \
+        --label2 TMT \
+        --treatment CTL,CTL,TMT,TMT
+        --fimo_motifs ~/TFEA/motif_files/HOCOv12_HUMAN.meme \
+        --fimo_thresh ~/TFEA/assets/HOCOv12_HUMAN_thresh.txt \
+        --fimo_background ~/TFEA/assets/enhancer_background_flat \
+        --output_type html
+```
+
+Quick Parameter Explanations:
+* **label1** & **label2** are the labels used for your baseline (label1) vs treatment (label2)
+* **treatment** specifies the order of the labels according to your count file to be used for DESeq2 (In this case showing that the first two count columns correspond to label 1 (control) and the second label 2 (treatment))
+* **fimo_motifs** has the TF motifs of interest in meme format
+* **fimo_thresh** corresponds to the pvalue cutoff for a TF motif to be called. It can be a number (e.g. 0.00005) or file with a cutoff for each TF motif in fimo_motifs
+* **fimo_background** is an optional file with the background on which FIMO bases it's analysis. In this case we do uniform 
+
+
+<H2 id="BasicUsage">Basic Usage for Other data types</H2>
+
 <H3 id="TestingTFEA">Testing TFEA</H3>
-To make sure TFEA is installed properly, run the following tests:
 
-<b>*Note:*</b> If you chose to skip installations because you were going to run TFEA using the --sbatch flag, make sure you load the appropriate modules on FIJI or these tests will fail.
+To make sure TFEA is installed properly, run the file `test_run_TFEA_fiji.sh` using `sbatch test_run_TFEA_fiji.sh`:
 
-```
-TFEA --test-install 
-TFEA --test-full 
-```
+Make sure to edit the following components of the file before running it:
+* OUTPUT and ERROR (edit path to match yours)
+* Edit so the variable SRC_DIR points to wherever you installed TFEA
+* Ensure that the proper python environment is being used
 
-These should each take no longer than several minutes to run
+This file runs TFEA with 3 different inputs: 1) just a combined file (like output from muMerge), 2) count file as suggested if running Nascent RNA sequencing, 3) ranked file. The outputs will be found in test/out/. If html files are not created, then it failed. If you want to look at the html results, make sure to download them to your local computer using `scp -r`
 
-If on a compute cluster with slurm the --sbatch flag is compatible with --test-full and is recommended on FIJI. Execute like so:
 
-```
-TFEA --test-full --sbatch your_email@address.com
-```
+These should each take no longer than 15 minutes to run.
+
 
 <H3 id="RunningTFEA">Running TFEA</H3>
 Once you've run the above tests successfully, you should be ready to run the full version of TFEA. Below are the minimum required inputs to run the full TFEA pipeline. Test files are provided in './TFEA/test/test_files' within this repository.
+
+An example sbatch script is found with example_slurm_usage.sbatch. Importantly, this is built for Fiji so some of the module loads may not be available to you.
 
 ```
 TFEA --output ./TFEA/test/test_files/test_output \
@@ -194,7 +258,40 @@ TFEA --output ./TFEA/test/test_files/test_output \
 ```
 
 <H2 id="AdvancedUsage">Advanced Usage</H2> 
-<H3 id="ConfigurationFile">Configuration File</H3>
+
+<H3 id="AdvancedParameters">Additional Parameters</H3>
+
+<H4 id="FIMO">Fimo Scanning</H4>
+
+Results from motifs with more than 10,000 (preferably 8,000) regions with motifs can lead to false positive calls and less confident Leading Edges. There are two ways to avoid this:
+1. FIMO Pvalue
+- Argument **fimo_thresh** takes in either a fixed number (e.g. 0.00005) or a file with the TF motifs and coressponding pvalue motifs. If a motif is not within the file, the pvalue of 1e-6 is used. 
+  - We provide a default file in assets for HOCOv12: HOCOv12_HUMAN_thresh.txt. (Also includes the number of Bidirectionals in the DBNascent database with the motif at different p-value cutoffs)
+  - File must be tab delimited with *at least* columns MOTIF and best_pval. 
+
+  ```
+    MOTIF  	best_pval
+    AHR.H12CORE.0.P.B	10	1e-05
+    AHRR.H12CORE.0.P.C	11	1e-05
+    ALX1.H12CORE.0.SM.B	20	1e-06
+  ```
+
+2. FIMO Background
+- At default, TFEA uses the background frequency of ATGC from the regions themselves.
+- You can use argument **fimo_background** to provide a different background.
+- We provide a file for uniform background in assets: enhancer_background_flat.
+
+<H4 id="BatchCorrection">Batch Correction</H4>
+
+The presence of batch effects is common in sequencing data. TFEA can account for batch effects when performing ROI ranking using DE-Seq using built in functions. To correct for batch effects, specify a comma-separated list of batch labels to apply to your bam files in order of bam1 then bam2. For example:
+
+```
+--bam1 condition1_batch1 condition1_batch2 condition1_batch3
+--bam2 condition2_batch1 condition2_batch2 condition2_batch3
+--batch 1,2,3,1,2,3
+```
+
+<H4 id="ConfigurationFile">Configuration File</H4>
 TFEA can be run exclusively through the command line using flags. Alternatively, TFEA can be run using a configuration file (.ini) that takes in flags as variables. For example:
 
 ```
@@ -233,16 +330,6 @@ GENOMEFASTA=${TEST_FILES}+'chr22.fa'
 [OPTIONS]
 OUTPUT_TYPE='html'
 PLOTALL=True
-```
-
-<H3 id="BatchCorrection">Batch Correction</H3>
-
-The presence of batch effects is common in sequencing data. TFEA can account for batch effects when performing ROI ranking using DE-Seq using built in functions. To correct for batch effects, specify a comma-separated list of batch labels to apply to your bam files in order of bam1 then bam2. For example:
-
-```
---bam1 condition1_batch1 condition1_batch2 condition1_batch3
---bam2 condition2_batch1 condition2_batch2 condition2_batch3
---batch 1,2,3,1,2,3
 ```
 
 <H3 id="UsingSBATCH">Using SBATCH</H3>
@@ -296,6 +383,37 @@ TFEA --output ./TFEA/test/test_files/test_output \
 --genomefasta ./TFEA/test/test_files/chr22.fa \
 --fimo_motifs ./TFEA/test/test_files/test_database.meme
 ```
+
+<H4>count_file</H4>
+
+A featurecounts formatted output file with counts of the different bidirectionals. The Geneid must be in the format chr:X:Y where the midpoint between X and Y is the mu for the bidirectional (or midpoint around which you want to predict motifs). Using the pipeline suggested in "SUGGESTED USAGE" will ensure this. The bam names are inconsequential due to the treatment parameter.
+
+Example (./test_files/test_count.bed)
+
+```
+Geneid	Chr	Start	End	Strand	Length	./bam1	./bam2	./bam3	./bam4
+chr21:5010512-5012512	chr21;chr21	5010512;5011512	5011512;5012512	+;-	1000;1000	20	30	16	10
+chr21:5013005-5015005	chr21;chr21	5013005;5014005	5014005;5015005	+;-	1000;1000	11	25	51	42
+chr21:5018120-5020120	chr21;chr21	5018120;5019120	5019120;5020020	+;-	1000;900	20	24	25	17
+```
+
+Usage with TFEA
+
+```
+python3 /Users/hoto7260/src/TFEA/vir_TFEA/lib/python3.7/site-packages/tfea-1.1.4-py3.7.egg/TFEA  \
+        --output /out/dir \
+        --count_file /nontsscount/file/from/BCA.txt \
+        --label1 CTL \
+        --label2 TMT \
+        --treatment CTL,CTL,TMT,TMT
+        --fimo_motifs ~/TFEA/motif_files/HOCOv12_HUMAN.meme \
+        --fimo_thresh ~/TFEA/assets/HOCOv12_HUMAN_thresh.txt \
+        --fimo_background ~/TFEA/assets/enhancer_background_flat \
+        --output_type html
+```
+
+* **treatment** is needed to indicate which of the labels each bam in the counts file corresponds to. 
+  - In this case bams 1 & 2 are control (CTL) and 3 & 4 are treatment (TMT)
 
 <H4>ranked_file</H4>
 
@@ -576,7 +694,8 @@ Scanner Options:
   Options for performing motif scanning
 
   --fimo_thresh FIMO_THRESH
-                        P-value threshold for calling FIMO motif hits.
+                        P-value threshold for calling FIMO motif hits OR file 
+                        with XXX.
                         Default: 1e-6
   --fimo_background FIMO_BACKGROUND
                         Options for choosing mononucleotide background
@@ -695,6 +814,33 @@ TFEA will output all files and folders into the directory specified by the `--ou
 
 A brief description of the files contained within this output directory are below:
 
+<H3 id="">results.txt</H3>
+Contains TFEA results tab-delimited in .txt format. For example:
+
+```
+#TF     E-Score Corrected E-Score       Events  GC      FPKM    P-adj   Corrected P-adj MB_LE MB_LE_Stdev PE_LE PE_LE_Stdev Frac_Abv_Back Max_Quant
+P53.H12CORE.0.P.B	0.6633942557032672	0.49695943025583045	992	0.5377877178268567	nan	1e-112	1e-63	5764	470.44	2651	176.58	0.09	1  
+SP2.H12CORE.1.P.B	-0.08979879452438855	-0.19534176832036465	4646	0.6861772486772487	nan	1e-8	1e-40	32276	6779.7	5936	2796.04	0.52	9
+```
+
+- **E-Score**: Enrichment score of the TF motif. Positive means upregulated regions are enriched for this motif, Negative means downregulated regions are enriched for this motif
+- **Corrected E-Score**: Enrichment score of the TF motif corrected for GC motif content.
+- **Events**: Number of regions with the motif
+  * NOTE: Motifs with regions greater than 10,000 can lead to misleading pvalues and leading edges due to the large information input. We recommend increasing the stringency of FIMO pvalue cutoffs (argument fimo_thresh) for any TFs of interest that have >10,000 regions.
+- **GC**: GC content of the motif
+- **FPKM**: FPKM of the motif region *if motif_annotations* are provided
+- **P-adj**: Adjusted Pvalue for the TF-motif being significantly enriched
+- **Corrected P-adj**: Adusted P-value corrected for GC motif content
+- **MB_LE**: Leading edge according to Match_background method. 
+  * Note: If E-Score (NOT Corrected E-Score) is negative, the LE value should be from the end of the ranked list rather than the beginning (e.g. if 2000 regions and LE is 100, Bids within LE are above ranking of 1900)
+- **MB_LE Stdev**: Standard deviation of MB_LE
+- **PE_LE**: Leading edge according to Plateaued Enrichment method (best for getting regions changing)
+- **PE_LE Stdev**: Standard deviation of PE_LE
+  * Note: It is normal to have values about 1/3 of the SE_LE. The algorithm uses the more conservative calls. Nan means only one LE was found.
+- **Frac_Abv_Back**: Fraction of tREs where increase in enrichment is above what expected from background
+  * This provides another proxy of confidence for results not impacted by GC content (see below)
+- **Max_Quant**: The quantile (out of num_quants (Default=15)) with the maximum increase in enrichment score
+
 <H3 id="">rerun.sh</H3>
 This bash script can be used at any time to regenerate a TFEA output folder in its entirety, run it using:
 
@@ -711,24 +857,17 @@ TFEA copies the config file you are using into the output directoy. This file is
 
 A .txt file that contains all user-provided inputs into TFEA
 
-<H3 id="">results.txt</H3>
-Contains TFEA results tab-delimited in .txt format. For example:
 
-```
-#TF     E-Score Corrected E-Score       Events  GC      FPKM    P-adj   Corrected P-adj
-ZN121_HUMAN.H11MO.0.C   0.03850103634523616     0.10374224445904234     230     0.5825102880658438      nan     0.637   1e-1
-SP2_HUMAN.H11MO.0.A     -0.14690991996820513    -0.09232220913971645    119     0.7937748120168564      nan     1e0     0.494
-```
-Column Descriptions:
+### LE_DE_motif.csv
+The list of regions that contain the motif of significantly called TFs AND are within the leading edges of those TFs.
+Listed in order of stringency:
+* PE_mu500: Significant TF Motif within 500bp of regions within the Stalled Enrichment Leading Edge
+* PE_mu1500: Significant TF Motif within 1500bp of regions within the Stalled Enrichment Leading Edge
+* MB_mu500: Significant TF Motif within 500bp of regions within the Match Background Leading Edge
+* MB_mu1500: Significant TF Motif within 1500bp of regions within the Match Background Leading Edge
 
-1. TF - The name of the motif analyzed as it appears in the .meme database or filename within the genome hits directory without the '.bed' extension.
-2. E-Score - The enrichment score of the given motif. Ranges from -1 to 1.
-3. Corrected E-Score - The GC-corrected E-Score. Calculated by fitting a linear regression to the E-Score vs. motif GC content of results and correcting to obtain a flat line.
-4. Events - Number of motif hits within the analyzed regions of interest.
-5. GC - GC content of the analyzed motif
-6. FPKM - FPKM of the gene associated with the analyzed motif, see `--motif_annotations` flag.
-7. P-adj - The adjusted p-value of the motif using the Bonferroni correction (to get the original p-value, simply divide this by the total number of motifs analyzed).
-8. Corrected P-adj - The adjusted p-value after GC-correction.
+**Important Note:** The regions are named according to their midpoint to ensure consistency (e.g. if the region from the count_file is named chr1:1-100 or ranked_file/combined_file has coordinates chr1, 1, 100; the region in LE_DE_motif.txt is named chr1:50)
+
 
 <H3 id="">md_results.txt and mdd_results.txt</H3>
 Contains tab-delimited results for secondary MD-Score (MDS) and Differential MD-Score (MDD) analysis if these flags were specified
@@ -737,7 +876,7 @@ Contains tab-delimited results for secondary MD-Score (MDS) and Differential MD-
 
 The main results html (if `--output_type 'html'` specified). For example:
 
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleResults_v2.png)
+![TFEA Pipeline](./README_images/ExampleResults_v2.png)
 
 <b>Figure 1: Main Results Page.</b> An example main results page (i.e. `results.html`). (a) <i>TFEA GC-Plot.</i> A scatter plot showing the raw calculated E-Score as a function of GC-content. A linear regression is fit (red line) to these data to determine if there is a GC-bias. E-Scores are then corrected to flatten the line by subtracting the y-offset from each motif to yield the corrected E-Score. TFs are also colored on the subsequent correction to be applied. (b) <i>TFEA MA-Plot.</i> A scatter plot showing E-Score vs. Log10(Events). Analogous to an MA-Plot produced from DE-Seq, these are a good way to judge believable motifs. The further you go to the right, the more confidence you have in smaller absolute E-Score values. (c) <i>DE-Seq MA-Plot.</i> A scatter plot showing all input ROIs as an MA-Plot showing fold change in reads vs. average reads across conditions. Colored based on the subsequent rank of each ROI. (d) Links to supplementary infromation, secondary analyses performed, and runtime information. (e) Lists of all motifs analyzed separated on positive and negative E-Scores. Significant motifs (or any if `--plotall` is specified) may be clicked to bring up individual motif plots
 
@@ -745,7 +884,7 @@ The main results html (if `--output_type 'html'` specified). For example:
 
 Each signficant TF motif (or all motifs if `--plotall` specified) will produce its own MOTIF.results.html file contained within the plots/ directory in the specified output directory. All images are also self-contained within the plots/ folder. For example:
 
-![TFEA Pipeline](https://github.com/jdrubin91/TFEA/blob/master/README_images/ExampleMotifResults_v2.png)
+![TFEA Pipeline](./README_images/ExampleMotifResults_v2.png)
 
 <b>Figure 2: Individual Motif Results Page.</b> An example individual motif results page. (a) The numerical results for this specific motif. (b) A representation of the running sum statistic which increases from 0 as it travels right based on the distance of an observed motif to the center of each ROI. (c) Representation of the amount added to the running sum at each given location. Similar to GSEA enrichment plots. (d) Scatter plot showing the raw motif hits as a function of distance to ROI center (y-axis) and rank (x-axis). (e) Representation of the ranking metric used to rank ROI. Specifically this is the -log10 of the DE-Seq p-value with an added sign (+/-) based on whether the ROI fold change was positive or negative. (f) Meta plots of all regions that contain a motif hit separated by quartiles (n=number of ROI that go into the plot). (g) Heatmaps that represent motif hit distribution across the n ROI, separated again by quartiles. (h) Forward and reverse motif logos. (i) Simulation plot showing the background simulated distribution in blue, the observed non-corrected E-Score in red, and the GC-corrected E-Score in green.
 
@@ -836,5 +975,6 @@ Docker documentation.
 <br/>
 
 <H2 id="ContactInformation">Contact Information</H2>
+<a href="mailto:hope.townsend@colorado.edu">hope.townsend@colorado.edu</a>
 <a href="mailto:jonathan.rubin@colorado.edu">Jonathan.Rubin@colorado.edu</a>
 

@@ -7,10 +7,10 @@
 '''
 
 #==============================================================================
-__author__ = 'Jonathan D. Rubin and Rutendo F. Sigauke'
+__author__ = 'Jonathan D. Rubin, Rutendo F. Sigauke, Hope A. Townsend'
 __credits__ = ['Jonathan D. Rubin', 'Rutendo F. Sigauke', 'Jacob T. Stanley',
-                'Robin D. Dowell']
-__maintainer__ = 'Jonathan D. Rubin'
+                'Robin D. Dowell', 'Hope A. Townsend']
+__maintainer__ = 'Hope A. Townsend'
 __email__ = 'Jonathan.Rubin@colorado.edu'
 
 #Imports
@@ -29,6 +29,7 @@ from pybedtools import BedTool
 import HTSeq as hts
 import numpy as np
 
+
 from TFEA import exceptions
 from TFEA import multiprocess
 from TFEA import plot
@@ -39,7 +40,8 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
             bam1=None, bam2=None, tempdir=None, label1=None, label2=None, 
             largewindow=None, mdd=False, mdd_bedfile1=False, mdd_bedfile2=False, 
             motif_annotations=False, debug=False, jobid=None, figuredir=None, 
-            output_type=None, basemean_cut=None, plot_format=None):
+            output_type=None, basemean_cut=None, plot_format=None, 
+            count_file=None):
     '''This is the main script of the RANK module which takes as input a
         count file and bam files and ranks the regions within the count file
         according to a user specified 
@@ -103,6 +105,7 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         bam2=config.vars['BAM2']
         bg1=config.vars['BG1']
         bg2=config.vars['BG2']
+        count_file=config.vars['COUNT_FILE']
         tempdir=config.vars['TEMPDIR']
         label1=config.vars['LABEL1']
         label2=config.vars['LABEL2']
@@ -121,19 +124,26 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
         meta_profile_dict = {}
         metaprofile = config.vars['METAPROFILE']
         batch = config.vars['BATCH']
+        treatment = config.vars['TREATMENT']
     print("Ranking regions...", flush=True, file=sys.stderr)
-
-    #Begin by counting reads from bam files over the combined_file produced
-    # by the combine module
-    if bam1 and bam2:
-        count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
-                            tempdir=tempdir, label1=label1, label2=label2)
-        sample_number = len(bam1+bam2)
-    elif bg1 and bg2:
-        count_file = count_reads_bedtools(bedfile=combined_file, bg1=bg1, 
-                                        bg2=bg2, tempdir=tempdir, label1=label1, 
-                                        label2=label2)
-        sample_number = len(bg1+bg2)
+    # If the count file is not already provided
+    if not count_file:
+        #Begin by counting reads from bam files over the combined_file produced
+        # by the combine module
+        if bam1 and bam2:
+            count_file = count_reads(bedfile=combined_file, bam1=bam1, bam2=bam2, 
+                                tempdir=tempdir, label1=label1, label2=label2)
+            sample_number = len(bam1+bam2)
+        elif bg1 and bg2:
+            count_file = count_reads_bedtools(bedfile=combined_file, bg1=bg1, 
+                                            bg2=bg2, tempdir=tempdir, label1=label1, 
+                                            label2=label2)
+            sample_number = len(bg1+bg2)
+    else:
+        sample_number = len(treatment.split(","))
+        print("COUNT FILE AND SAMPLE NUMBER", count_file, str(sample_number), file=sys.stderr)
+        print("\tTemporary directory", tempdir,
+                file=sys.stderr)
     millions_mapped = sum_reads(count_file=count_file, sample_number=sample_number)
     if motif_annotations:
         if bam1 and bam2:
@@ -162,14 +172,22 @@ def main(use_config=True, combined_file=None, rank=None, scanner=None,
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
                                     basemean_cut=basemean_cut, plot_format=plot_format, 
-                                    batch=batch)
+                                    batch=batch, treatment=None)
         elif bg1 and bg2:
             ranked_file, pvals, fcs = deseq(bam1=bg1, bam2=bg2, tempdir=tempdir, 
                                     count_file=count_file, label1=label1, 
                                     label2=label2, largewindow=largewindow, 
                                     rank=rank, figuredir=figuredir, 
                                     basemean_cut=basemean_cut, plot_format=plot_format, 
-                                    batch=batch)
+                                    batch=batch, treatment=None)
+        else:
+            # if no files then just use the count file
+            ranked_file, pvals, fcs = deseq(bam1=None, bam2=None, tempdir=tempdir, 
+                                    count_file=count_file, label1=label1, 
+                                    label2=label2, largewindow=largewindow, 
+                                    rank=rank, figuredir=figuredir, 
+                                    basemean_cut=basemean_cut, plot_format=plot_format, 
+                                    batch=batch, treatment=treatment)
         if output_type == 'html' and metaprofile:
             print("\tGenerating Meta-Profile per Quartile:", file=sys.stderr)
             q1regions, q2regions, q3regions, q4regions = quartile_split(ranked_file)
@@ -548,7 +566,7 @@ def sum_reads(count_file=None, sample_number=None):
 
 #==============================================================================
 def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None, 
-                        label1=None, label2=None, batch=''):
+                        label1=None, label2=None, batch='', treatment=''):
     '''Writes an R script within the tempdir directory in TFEA output to run 
         either DE-Seq or DE-Seq2 depending on the number of user-inputted 
         replicates.
@@ -576,12 +594,231 @@ def write_deseq_script(bam1=None, bam2=None, tempdir=None, count_file=None,
     label2 : string
         the name of the treatment or condition corresponding to bam2 list
 
+    batch: string
+        the variable indicating a batch if included
+
+    treatment: string
+        the variable indicating the treatment if included
+
     Returns
     -------
     None
     '''
+    # If bams are empty then already a count file so just read in
+    if not bam1 and not bam2:
+        Rfile = open(tempdir / 'DESeq.R','w')
+        Rfile.write('''library("DESeq2")
+    data <- read.delim("'''+count_file+'''", sep="\t", header=TRUE)
+    countsTable <- data[,7:ncol(data)]
+    rownames(countsTable) <- data$Geneid
+    countsTable[1:3,]
+
+    cond_vector <- c('''+"".join(['"', '","'.join(treatment.split(",")), '"'])+''')
+    batch <- c('''+batch+''')
+    if (length(batch) == 0) {
+        conds <- data.frame(cond_vector)
+        colnames(conds) <- c("treatment")
+        ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                    colData = conds, 
+                                                    design = ~ treatment)
+    } else {
+        conds <- data.frame(cond_vector, batch)
+        colnames(conds) <- c("treatment", "batch")
+        ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                    colData = conds, 
+                                                    design = ~ batch+treatment)
+    }
+    ddsFullCountTable[1:3,]
+    dds <- DESeq(ddsFullCountTable)
+    print("Size Factors")
+    print(sizeFactors(dds))
+    res <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
+                                                                "'''+label1+'''"))
+    res$fc <- 2^(res$log2FoldChange)
+    res[1:2,]
+    res <- res[c(1:3,7,4:6)]
+
+    write.table(res, file = "'''    + (tempdir / 'DESeq.res.txt').as_posix()
+                                    + '''", append = FALSE, sep= "\t" )
+    sink()''')
+        Rfile.close()
+
+
     #If more than 1 replicate, use DE-Seq2
-    if (len(bam1) > 1 and len(bam2) > 1):
+    elif (len(bam1) > 1 and len(bam2) > 1):
+        Rfile = open(tempdir / 'DESeq.R','w')
+        Rfile.write('''library("DESeq2")
+data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
+countsTable <- subset(data, select=c('''
+                +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
+                +'''))
+
+rownames(countsTable) <- data$region
+cond_vector <- c(''' 
+                    + ', '.join(['"'+label1+'"']*len(bam1)) 
+                    + ', ' 
+                    + ', '.join(['"'+label2+'"']*len(bam2)) 
+                    + ''')
+batch <- c('''+batch+''')
+if (length(batch) == 0) {
+    conds <- data.frame(cond_vector)
+    colnames(conds) <- c("treatment")
+    ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                colData = conds, 
+                                                design = ~ treatment)
+} else {
+    conds <- data.frame(cond_vector, batch)
+    colnames(conds) <- c("treatment", "batch")
+    ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                colData = conds, 
+                                                design = ~ batch+treatment)
+}
+
+dds <- DESeq(ddsFullCountTable)
+print("Size Factors")
+print(sizeFactors(dds))
+res <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
+                                                            "'''+label1+'''"))
+res$fc <- 2^(res$log2FoldChange)
+res <- res[c(1:3,7,4:6)]
+
+write.table(res, file = "'''    + (tempdir / 'DESeq.res.txt').as_posix() 
+                                + '''", append = FALSE, sep= "\t" )
+sink()''')
+    else:
+        Rfile = open(tempdir /  'DESeq.R','w')
+        Rfile.write('''library("DESeq")
+data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
+
+countsTable <- subset(data, select=c('''
+            +', '.join([str(i) for i in range(5,5+len(bam1)+len(bam2))])
+            +'''))
+
+rownames(countsTable) <- data$region
+conds <- c('''  + ', '.join(['"'+label1+'"']*len(bam1)) 
+                + ', ' 
+                + ', '.join(['"'+label2+'"']*len(bam2)) 
+                + ''')
+
+cds <- newCountDataSet( countsTable, conds )
+cds <- estimateSizeFactors( cds )
+print("Size Factors")
+print(sizeFactors(cds))
+cds <- estimateDispersions( cds ,method="blind", \
+                        sharingMode="fit-only")
+
+res <- nbinomTest( cds, "'''+label1+'''", "'''+label2+'''" )
+rownames(res) <- res$id                      
+write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt') 
+                                + '''", append = FALSE, sep= "\t" )''')
+    Rfile.close()
+
+
+#==============================================================================
+def write_deseq_rank_script(bam1=None, bam2=None, tempdir=None, count_file=None, 
+                        label1=None, label2=None, batch='', treatment='', largewindow=1500):
+    '''Writes an R script within the tempdir directory in TFEA output to run 
+        either DE-Seq or DE-Seq2 depending on the number of user-inputted 
+        replicates AND get the ranked results.
+
+    Parameters
+    ----------
+    bedfile : string
+        full path to a bed file containing full regions of interest which will
+        be counted using bedtools multicov
+
+    bam1 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    bam2 : list or array
+        a list of full paths to bam files pertaining to a single condition 
+        (i.e. replicates of a single treatment)
+
+    tempdir : string
+        full path to temp directory in output directory (created by TFEA)
+
+    label1 : string
+        the name of the treatment or condition corresponding to bam1 list
+
+    label2 : string
+        the name of the treatment or condition corresponding to bam2 list
+
+    largewindow: int
+        the half size window of the region used for motif enrichment (default=1500bp)
+
+    Returns
+    -------
+    None
+    '''
+    # If bams are empty then already a count file so just read in
+    ranked_file = tempdir / "ranked_file.bed"
+    if not bam1 and not bam2:
+        Rfile = open(tempdir / 'DESeq_rank.R','w')
+        Rfile.write('''library("DESeq2")
+    data <- read.delim("'''+count_file+'''", sep="\t", header=TRUE)
+    countsTable <- data[,7:ncol(data)]
+    rownames(countsTable) <- data$Geneid
+    countsTable[1:3,]
+
+    cond_vector <- c('''+"".join(['"', '","'.join(treatment.split(",")), '"'])+''')
+    batch <- c('''+batch+''')
+    if (length(batch) == 0) {
+        conds <- data.frame(cond_vector)
+        colnames(conds) <- c("treatment")
+        ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                    colData = conds, 
+                                                    design = ~ treatment)
+    } else {
+        conds <- data.frame(cond_vector, batch)
+        colnames(conds) <- c("treatment", "batch")
+        ddsFullCountTable <- DESeqDataSetFromMatrix(countData = countsTable, 
+                                                    colData = conds, 
+                                                    design = ~ batch+treatment)
+    }
+    ddsFullCountTable[1:3,]
+    dds <- DESeq(ddsFullCountTable)
+    print("Size Factors")
+    print(sizeFactors(dds))
+    res <- results(dds, alpha = 0.05, contrast=c("treatment", "'''+label2+'''",
+                                                                "'''+label1+'''"))
+    res$fc <- 2^(res$log2FoldChange)
+    # Split by log fold change
+    res <- as.data.frame(res)
+    pos_FC <- res[res$log2FoldChange > 0,]
+    neg_FC <- res[res$log2FoldChange < 0,]
+    zero_FC <- res[res$log2FoldChange == 0,]
+    # rank by p-value then FC
+    pos_FC <- pos_FC %>%
+      arrange(pvalue, desc(log2FoldChange))  # Sort by pval (ascending), then L2FC (descending)
+    neg_FC <- neg_FC %>%
+      arrange(desc(pvalue), desc(log2FoldChange)) # Sort by pval (descending), then L2FC (descending since most negative last)
+    # recombine with any 0s in between
+    pos_cutoff = nrow(pos_FC); neg_cutoff = nrow(neg_FC)
+    if (nrow(zero_FC) != 0) {
+        full_res = rbind(pos_FC, zero_FC, neg_FC)
+        } else {
+        full_res = rbind(pos_FC, neg_FC) }
+    set_used <- rownames(full_res)
+    # now get the dataframe to save
+    tfea_input <- data.frame(str_split_fixed(set_used, ":", 2))
+   # fc,p-value,rank
+    tfea_input$fc_info <- paste0(2**(full_res$log2FoldChange), ",", full_res$pvalue, ",", paste0(seq(1, nrow(tfea_input))))
+    colnames(tfea_input) <- c("#chrom", "start_stop", "fc,p-value,rank")
+    tfea_input_points = str_split_fixed(tfea_input$start_stop, "-", 2)
+    tfea_input$mu <- as.integer((as.numeric(tfea_input_points[,1]) + as.numeric(tfea_input_points[,2]))/2)
+    tfea_input$start = tfea_input$mu - '''+largewindow+'''
+    tfea_input$stop = tfea_input$mu + '''+largewindow+'''
+    print(tfea_input[1:2,])
+    write.table(tfea_input[,c("#chrom", "start", "stop", "fc,p-value,rank")], 
+                '''+ranked_file+''', 
+                quote=FALSE, sep="\t", row.names=FALSE)
+    sink()''')
+        Rfile.close()
+
+
+    #If more than 1 replicate, use DE-Seq2
+    elif (len(bam1) > 1 and len(bam2) > 1):
         Rfile = open(tempdir / 'DESeq.R','w')
         Rfile.write('''library("DESeq2")
 data <- read.delim("'''+count_file.as_posix()+'''", sep="\t", header=TRUE)
@@ -652,11 +889,11 @@ write.table(res, file = "'''    + os.path.join(tempdir,'DESeq.res.txt')
 #==============================================================================
 def deseq(bam1=None, bam2=None, tempdir=None, count_file=None, label1=None, 
             label2=None, largewindow=None, rank=None, figuredir=None, 
-            basemean_cut=None, plot_format=None, batch=''):
+            basemean_cut=None, plot_format=None, batch='', treatment=''):
     #Write the DE-Seq R script
     write_deseq_script(bam1=bam1, bam2=bam2, tempdir=tempdir, 
                         count_file=count_file, label1=label1, label2=label2, 
-                        batch=batch)
+                        batch=batch, treatment=treatment)
 
     #Execute the DE-Seq R script
     # with open(tempdir / 'DESeq.Rout', 'w') as stdout:
@@ -747,14 +984,16 @@ def deseq_parse(deseq_file=None, tempdir=None, largewindow=None, rank=None,
                         + '\n')
         r=1
         if rank == 'deseq':
-            for region in sorted(up, key=lambda x: x[4]):
+            # Sort by p-value ascending (x[4]), then FC descending (x[3])
+            for region in sorted(up, key=lambda x: (float(x[4]), -float(x[3]))):
                 outfile.write('\t'.join(region[:3]) 
                             + '\t' + ','.join(region[3:]+[str(r)]) 
                             + '\n')
                 pvals.append(float(region[-1]))
                 fcs.append(float(region[3]))
                 r += 1
-            for region in sorted(down, key=lambda x: x[4], reverse=True):
+            # Sort by p-value descending (x[4]), then FC descending (x[3])
+            for region in sorted(down, key=lambda x: (-float(x[4]), -float(x[3]))):
                 outfile.write('\t'.join(region[:3]) 
                             + '\t' + ','.join(region[3:]+[str(r)]) 
                             + '\n')
