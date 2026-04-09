@@ -502,8 +502,8 @@ def fimo_background_file(window=None, tempdir=None, bedfile=None,
             center = (int(start)+int(stop))/2
             start = int(center - window)
             if start < 0:
-		start = 0
-	    stop = int(center + window)
+				start = 0
+	    	stop = int(center + window)
             outfile.write('\t'.join([chrom, str(start), str(stop), name]) + '\n')
     outfile.close()
     
