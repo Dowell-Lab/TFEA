@@ -4,7 +4,6 @@
 0. <A href="#WhatsNew">What's New?</A>
 1. <A href="#Pipeline">Pipeline</A>
 2. <A href="#InstallationandRequirements">Installation and Requirements</A>
-   - <A href="#TFEA">TFEA</A>
    - <A href="#InstallingTFEAwithGithub">TFEA with Github</A>
    - <A href="#DESeq">DESeq</A>
    - <A href="#Bedtools">Bedtools</A>
@@ -16,6 +15,7 @@
 4. <A href="#BasicUsage">Basic Usage</A>
    - <A href="#TestingTFEA">Testing TFEA</A>
    - <A href="#RunningTFEA">Running TFEA</A>
+   - <A href="#RunningLeadingEdge">Running Leading Edge</A>
 5. <A href="#AdvancedUsage">Advanced Usage</A>
    - <A href="#AdvancedParameters">Advanced Parameters</A>
       - <A href="#FIMO">FIMO</A>
@@ -29,12 +29,7 @@
    - <A href="RerunningTFEA">Rerunning TFEA</A>
    - <A href="#HelpMessage">Help Message</A>
 6. <A href="#ExampleOutput">Example Output</A>
-7. <A href="#ContainerUsage">Container Usage</A>
-   - <A href="#SingularityBuild">Building the Singularity Container</A>
-   - <A href="#SingularityUsage">Using the Singularity Container</A>
-   - <A href="#DockerBuild">Building the Docker Container</A>
-   - <A href="#DockerUsage">Using the Docker Container</A>
-8. <A href="#ContactInformation">Contact Information</A>
+7. <A href="#ContactInformation">Contact Information</A>
  
 <br></br>
 
@@ -57,7 +52,7 @@ We found that transcription factors were likely false positives if:
 * The quantile of tREs with the maximum change in enrichment score was in the middle (**MaxQ** is closer to 1/2 of **num_quant** (default 15))
 
 #### B. Get Improved recall of responding regions (e.g. enhancers):
-The leading edges consider *both motifs and statistical confidence* to call regions changing. Therefore, it performs better than classic approaches (e.g. DESeq2) with small transcriptional changes or where there are sample outliers. 
+The leading edges consider *both motifs and statistical confidence* to call regions changing. Therefore, it performs better than classic approaches (e.g. DESeq2) with small transcriptional changes or where there are sample outliers. You can run the leading edge using `Get_LE.R` after you run TFEA-LE. 
 
 ![LE_Method](./README_images/LE_Method_Repo.png)
 
@@ -223,6 +218,8 @@ Quick Parameter Explanations:
 * **fimo_thresh** corresponds to the pvalue cutoff for a TF motif to be called. It can be a number (e.g. 0.00005) or file with a cutoff for each TF motif in fimo_motifs
 * **fimo_background** is an optional file with the background on which FIMO bases it's analysis. In this case we do uniform 
 
+### 4. IF you want to get the leading edge bidirectionals of a TF
+- Run the script `Get_LE.R` for your TF of interest (instructions in script)
 
 <H2 id="BasicUsage">Basic Usage for Other data types</H2>
 
@@ -256,6 +253,11 @@ TFEA --output ./TFEA/test/test_files/test_output \
 --genomefasta ./TFEA/test/test_files/chr22.fa \
 --fimo_motifs ./TFEA/test/test_files/test_database.meme
 ```
+
+<H3 id="RunningLeadingEdge">Running Leading Edge</H3>
+
+IF you want to get the leading edge bidirectionals of a TF
+- Edit and run the script `Get_LE.R` for your TF of interest (instructions in script)
 
 <H2 id="AdvancedUsage">Advanced Usage</H2> 
 
@@ -890,89 +892,6 @@ Each signficant TF motif (or all motifs if `--plotall` specified) will produce i
 
 <br></br>
 
-<H2 id="ContainerUsage">Container Usage</H2>
-
-TFEA provides support for the use of container images with all
-dependencies built-in. Both Singularity and Docker images are
-supported. The procedure for building these containers is
-described below, with detailed instructions for use also available.
-
-If you have up-to-date versions of both Singularity and Docker
-installed, the easiest way to build the container images is to run
-`make` at the root of the repository. This will run the build process
-for both Docker and Singularity automatically.
-
-<H3 id="SingularityBuild">Building the Singularity Container</H3>
-
-Documentation for installing singularity can be found at
-<https://sylabs.io/docs/>. A singularity definition file for building
-TFEA is included in this repository at [./Singularity](./Singularity).
-If you have `make` available on your system, simply run `make
-singularity` to build the image automatically. Please note that this
-requires Singularity >3.3 for use of the 'fakeroot' feature so that
-root is not required to build the container.
-
-If you would like to build the container manually, you can do so with
-with the following command, adjusting the flags to `singularity build`
-as appropriate for your system:
-
-```shell
-singularity build -f tfea.sif Singularity/TFEA.def
-```
-
-<H3 id="SingularityUsage">Using the Singularity Container</H3>
-
-You can run the singularity container as follows:
-
-```shell
-singularity exec \
-	--bind $DATA_PATH:$DATA_PATH \
-	--bind $OUTPUT_PATH:$OUTPUT_PATH \
-	tfea.sif TFEA --your-args
-```
-
-It is important that you bind both the path where your data is
-available and the path to your output folder so that TFEA has access
-to your data and a writable filesystem for storing intermediate files
-that are generated. More details on bind paths can be found in the
-singularity documentation.
-
-<H3 id="DockerBuild">Building the Docker Container</H3>
-
-Documentation for installing singularity can be found at
-<https://www.docker.com/>. A Docker definition file for building TFEA
-is included in this repository at [./Docker](./Docker). If you have
-`make` available on your system, simply run `make docker` to build the
-image automatically. Depending on how Docker is installed on your
-system, it may be necessary to run this command as root using `sudo`
-for the build to execute.
-
-If you would like to build the container manually, you can do so with
-with the following command run from the root of the repository,
-adjusting the flags to `docker build` as appropriate for your system:
-
-```shell
-docker build -t jdrubin/tfea -f "$PWD"/Docker/Dockerfile "$PWD"
-```
-
-<H3 id="DockerUsage">Using the Docker Container</H3>
-
-You can run the Docker container as follows:
-
-```shell
-docker run --rm \
-	--mount type=bind,source=$DATA_PATH,target=$DATA_PATH \
-	--mount type=bind,source=$OUTPUT_PATH,target=$OUTPUT_PATH \
-	jdrubin/tfea TFEA --your-args
-```
-
-It is important that you bind both the path where your data is
-available and the path to your output folder so that TFEA has access
-to your data and a writable filesystem for storing intermediate files
-that are generated. More details on bind paths can be found in the
-Docker documentation.
-
-<br/>
 
 <H2 id="ContactInformation">Contact Information</H2>
 <a href="mailto:hope.townsend@colorado.edu">hope.townsend@colorado.edu</a>
